@@ -3,6 +3,7 @@ namespace wcf\system\exporter;
 use wcf\system\database\DatabaseException;
 use wcf\system\exception\SystemException;
 use wcf\system\importer\ImportHandler;
+use wcf\system\WCF;
 
 /**
  * Exporter for Burning Board 3.x
@@ -63,7 +64,8 @@ class WBB3xExporter extends AbstractExporter {
 				'com.woltlab.wcf.user.avatar',
 				'com.woltlab.wcf.user.option',
 				'com.woltlab.wcf.user.comment',
-				'com.woltlab.wcf.user.follower'
+				'com.woltlab.wcf.user.follower',
+				'com.woltlab.wcf.user.rank'
 			),
 			'com.woltlab.wbb.board' => array(
 				'com.woltlab.wbb.moderator',
@@ -129,6 +131,7 @@ class WBB3xExporter extends AbstractExporter {
 		if (in_array('com.woltlab.wcf.user', $this->selectedData)) {
 			if (in_array('com.woltlab.wcf.user.group', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.group';
 			if (in_array('com.woltlab.wcf.user.option', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.option';
+			if (in_array('com.woltlab.wcf.user.rank', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.rank';
 			$queue[] = 'com.woltlab.wcf.user';
 			if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.avatar';
 			
@@ -228,18 +231,87 @@ class WBB3xExporter extends AbstractExporter {
 	 * Exports users.
 	 */
 	public function exportUsers($offset, $limit) {
-		$sql = "SELECT		*
-			FROM		wcf".$this->dbNo."_user
-			ORDER BY	userID";
+		// cache existing user options
+		$existingUserOptions = array();
+		$sql = "SELECT	optionName, optionID
+			FROM	wcf".WCF_N."_user_option
+			WHERE	optionName NOT LIKE 'option%'";
+		$statement = WCF::getDB()->prepareStatement($sql);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			$existingUserOptions[$row['optionName']] = true;
+		}
+		
+		// cache user options
+		$userOptions = array();
+		$sql = "SELECT	optionName, optionID
+			FROM	wcf".$this->dbNo."_user_option";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			$userOptions[$row['optionID']] = (isset($existingUserOptions[$row['optionName']]) ? $row['optionName'] : $row['optionID']);
+		}
+		
+		// prepare password update
+		$sql = "UPDATE	wcf".WCF_N."_user
+			SET	password = ?
+			WHERE	userID = ?";
+		$passwordUpdateStatement = WCF::getDB()->prepareStatement($sql);
+		
+		// get users
+		$sql = "SELECT		user_option_value.*, user_table.*,
+					(
+						SELECT	GROUP_CONCAT(groupID)
+						FROM 	wcf".$this->dbNo."_user_to_groups
+						WHERE 	userID = user_table.userID
+					) AS groupIDs
+			FROM		wcf".$this->dbNo."_user user_table
+			LEFT JOIN	wcf".$this->dbNo."_user_option_value user_option_value
+			ON		(user_option_value.userID = user_table.userID)
+			ORDER BY	user_table.userID";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
-			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user')->import($row['userID'], array(
+			$data = array(
 				'username' => $row['username'],
-				'password' => 'wcf1:'.$row['salt'].':'.$row['password'],
+				'password' => '',
 				'email' => $row['email'],
-				'registrationDate' => $row['registrationDate']
-			));
+				'registrationDate' => $row['registrationDate'],
+				'banned' => $row['banned'],
+				'banReason' => $row['banReason'],
+				'activationCode' => $row['activationCode'],
+				'oldUsername' => $row['oldUsername'],
+				'registrationIpAddress' => $row['registrationIpAddress'],
+				'disableAvatar' => $row['disableAvatar'],
+				'disableAvatarReason' => $row['disableAvatarReason'],
+				'enableGravatar' => ($row['gravatar'] == $row['email'] ? 1 : 0),
+				'signature' => $row['signature'],
+				'signatureEnableBBCodes' => $row['enableSignatureBBCodes'],
+				'signatureEnableHtml' => $row['enableSignatureHtml'],
+				'signatureEnableSmilies' => $row['enableSignatureSmilies'],
+				'disableSignature' => $row['disableSignature'],
+				'disableSignatureReason' => $row['disableSignatureReason'],
+				'profileHits' => $row['profileHits'],
+				'userTitle' => $row['userTitle'],
+				'lastActivityTime' => $row['lastActivityTime'],
+				'groupIDs' => explode(',', $row['groupIDs']),
+				'options' => array()
+			);
+			
+			// handle user options
+			foreach ($userOptions as $optionID => $optionName) {
+				if (isset($row['userOption'.$optionID])) {
+					$data['options'][$optionName] = $row['userOption'.$optionID];
+				}
+			}
+			
+			// import user
+			$newUserID = ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user')->import($row['userID'], $data);
+			
+			// update password hash
+			if ($newUserID) {
+				$passwordUpdateStatement->execute(array('wcf1:'.$row['salt'].':'.$row['password'], $newUserID));
+			}
 		}
 	}
 }
