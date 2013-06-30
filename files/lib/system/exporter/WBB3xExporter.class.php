@@ -39,7 +39,16 @@ class WBB3xExporter extends AbstractExporter {
 	 */
 	protected $methods = array(
 		'com.woltlab.wcf.user' => 'Users',
-		'com.woltlab.wcf.user.group' => 'UserGroups'
+		'com.woltlab.wcf.user.group' => 'UserGroups',
+		'com.woltlab.wcf.user.rank' => 'UserRanks',
+		'com.woltlab.wcf.user.follower' => 'Followers'
+	);
+	
+	/**
+	 * @see wcf\system\exporter\AbstractExporter::$limits
+	 */
+	protected $limits = array(
+		'com.woltlab.wcf.user' => 200
 	);
 	
 	/**
@@ -129,9 +138,11 @@ class WBB3xExporter extends AbstractExporter {
 		
 		// user
 		if (in_array('com.woltlab.wcf.user', $this->selectedData)) {
-			if (in_array('com.woltlab.wcf.user.group', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.group';
+			if (in_array('com.woltlab.wcf.user.group', $this->selectedData)) {
+				$queue[] = 'com.woltlab.wcf.user.group';
+				if (in_array('com.woltlab.wcf.user.rank', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.rank';
+			}
 			if (in_array('com.woltlab.wcf.user.option', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.option';
-			if (in_array('com.woltlab.wcf.user.rank', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.rank';
 			$queue[] = 'com.woltlab.wcf.user';
 			if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.avatar';
 			
@@ -219,6 +230,8 @@ class WBB3xExporter extends AbstractExporter {
 	 * Counts users.
 	 */
 	public function countUsers() {
+		return 2000; // @todo
+		
 		$sql = "SELECT	COUNT(*) AS count
 			FROM	wcf".$this->dbNo."_user";
 		$statement = $this->database->prepareStatement($sql);
@@ -271,6 +284,8 @@ class WBB3xExporter extends AbstractExporter {
 			ORDER BY	user_table.userID";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
+		
+		WCF::getDB()->beginTransaction();
 		while ($row = $statement->fetchArray()) {
 			$data = array(
 				'username' => $row['username'],
@@ -312,6 +327,70 @@ class WBB3xExporter extends AbstractExporter {
 			if ($newUserID) {
 				$passwordUpdateStatement->execute(array('wcf1:'.$row['salt'].':'.$row['password'], $newUserID));
 			}
+		}
+		WCF::getDB()->commitTransaction();
+	}
+	
+	/**
+	 * Counts user ranks.
+	 */
+	public function countUserRanks() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	wcf".$this->dbNo."_user_rank";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports user ranks.
+	 */
+	public function exportUserRanks($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		wcf".$this->dbNo."_user_rank
+			ORDER BY	rankID";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.rank')->import($row['rankID'], array(
+				'groupID' => $row['groupID'],
+				'requiredPoints' => $row['neededPoints'],
+				'rankTitle' => $row['rankTitle'],
+				'rankImage' => $row['rankImage'],
+				'repeatImage' => $row['repeatImage'],
+				'requiredGender' => $row['gender']
+			));
+		}
+	}
+	
+	/**
+	 * Counts followers.
+	 */
+	public function countFollowers() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	wcf".$this->dbNo."_user_whitelist";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports followers.
+	 */
+	public function exportFollowers($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		wcf".$this->dbNo."_user_whitelist
+			ORDER BY	userID, whiteUserID";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.follower')->import(0, array(
+				'userID' => $row['userID'],
+				'followUserID' => $row['whiteUserID'],
+				'time' => $row['time']
+			));
 		}
 	}
 }
