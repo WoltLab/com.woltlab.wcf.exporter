@@ -228,6 +228,8 @@ class WBB3xExporter extends AbstractExporter {
 	 * Counts users.
 	 */
 	public function countUsers() {
+		return 0; // @todo
+		
 		$sql = "SELECT	COUNT(*) AS count
 			FROM	wcf".$this->dbNo."_user";
 		$statement = $this->database->prepareStatement($sql);
@@ -596,7 +598,7 @@ class WBB3xExporter extends AbstractExporter {
 			}
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.option')->import($row['optionID'], array(
-				'name' => ($row['name'] ? $row['name'] : $row['optionName']),
+				'name' => ($row['name'] ?: $row['optionName']),
 				'categoryName' => $row['categoryName'],
 				'optionType' => $row['optionType'],
 				'defaultValue' => $row['defaultValue'],
@@ -610,5 +612,24 @@ class WBB3xExporter extends AbstractExporter {
 				'visible' => $visible
 			));
 		}
+	}
+	
+	/**
+	 * Gets existing WCF2.0 user options.
+	 *
+	 * @return array
+	 */
+	private function getExistingUserOptions() {
+		$optionsNames = array();
+		$sql = "SELECT	optionName
+			FROM	wcf".WCF_N."_user_option
+			WHERE	optionName NOT LIKE ?";
+		$statement = WCF::getDB()->prepareStatement($sql);
+		$statement->execute(array('option%'));
+		while ($row = $statement->fetchArray()) {
+			$optionsNames[] = $row['optionName'];
+		}
+	
+		return $optionsNames;
 	}
 }
