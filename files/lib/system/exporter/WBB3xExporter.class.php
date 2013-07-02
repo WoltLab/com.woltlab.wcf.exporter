@@ -1,9 +1,7 @@
 <?php
 namespace wcf\system\exporter;
 use wcf\data\user\option\UserOption;
-
 use wcf\system\database\util\PreparedStatementConditionBuilder;
-
 use wcf\system\database\DatabaseException;
 use wcf\system\exception\SystemException;
 use wcf\system\importer\ImportHandler;
@@ -24,13 +22,13 @@ class WBB3xExporter extends AbstractExporter {
 	 * wcf installation number
 	 * @var integer
 	 */
-	protected $dbNo = 1;
+	protected $dbNo = 0;
 	
 	/**
 	 * wbb installation number
 	 * @var integer
 	 */
-	protected $instanceNo = 1;
+	protected $instanceNo = 0;
 	
 	/**
 	 * selected import data
@@ -66,7 +64,7 @@ class WBB3xExporter extends AbstractExporter {
 	public function init() {
 		parent::init();
 		
-		if (!preg_match('/^wbb(\d)_(\d)_$/', $this->databasePrefix, $match)) {
+		if (preg_match('/^wbb(\d)_(\d)_$/', $this->databasePrefix, $match)) {
 			$this->dbNo = $match[1];
 			$this->instanceNo = $match[2];
 		}
@@ -103,20 +101,11 @@ class WBB3xExporter extends AbstractExporter {
 	 * @see wcf\system\exporter\IExporter::validateDatabaseAccess()
 	 */
 	public function validateDatabaseAccess() {
-		if (!parent::validateDatabaseAccess()) return false;
+		parent::validateDatabaseAccess();
 		
-		if (!preg_match('/^wbb\d_\d_$/', $this->databasePrefix)) return false;
-		
-		try {
-			$sql = "SELECT COUNT(*) FROM ".$this->databasePrefix."post";
-			$statement = $this->database->prepareStatement($sql);
-			$statement->execute();
-		}
-		catch (DatabaseException $e) {
-			return false;
-		}
-		
-		return true;
+		$sql = "SELECT COUNT(*) FROM wbb".$this->dbNo."_".$this->instanceNo."_post";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
 	}
 	
 	/**
