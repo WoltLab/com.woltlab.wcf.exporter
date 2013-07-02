@@ -1,5 +1,9 @@
 <?php
 namespace wcf\system\exporter;
+use wcf\data\user\option\UserOption;
+
+use wcf\system\database\util\PreparedStatementConditionBuilder;
+
 use wcf\system\database\DatabaseException;
 use wcf\system\exception\SystemException;
 use wcf\system\importer\ImportHandler;
@@ -41,14 +45,19 @@ class WBB3xExporter extends AbstractExporter {
 		'com.woltlab.wcf.user' => 'Users',
 		'com.woltlab.wcf.user.group' => 'UserGroups',
 		'com.woltlab.wcf.user.rank' => 'UserRanks',
-		'com.woltlab.wcf.user.follower' => 'Followers'
+		'com.woltlab.wcf.user.follower' => 'Followers',
+		'com.woltlab.wcf.user.comment' => 'GuestbookEntries',
+		'com.woltlab.wcf.user.comment.response' => 'GuestbookResponses',
+		'com.woltlab.wcf.user.avatar' => 'UserAvatars',
+		'com.woltlab.wcf.user.option' => 'UserOptions'
 	);
 	
 	/**
 	 * @see wcf\system\exporter\AbstractExporter::$limits
 	 */
 	protected $limits = array(
-		'com.woltlab.wcf.user' => 200
+		'com.woltlab.wcf.user' => 200,
+		'com.woltlab.wcf.user.avatar' => 100
 	);
 	
 	/**
@@ -230,8 +239,6 @@ class WBB3xExporter extends AbstractExporter {
 	 * Counts users.
 	 */
 	public function countUsers() {
-		return 2000; // @todo
-		
 		$sql = "SELECT	COUNT(*) AS count
 			FROM	wcf".$this->dbNo."_user";
 		$statement = $this->database->prepareStatement($sql);
@@ -390,6 +397,228 @@ class WBB3xExporter extends AbstractExporter {
 				'userID' => $row['userID'],
 				'followUserID' => $row['whiteUserID'],
 				'time' => $row['time']
+			));
+		}
+	}
+	
+	/**
+	 * Counts guestbook entries.
+	 */
+	public function countGuestbookEntries() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	wcf".$this->dbNo."_user_guestbook";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports guestbook entries.
+	 */
+	public function exportGuestbookEntries($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		wcf".$this->dbNo."_user_guestbook
+			ORDER BY	entryID";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.comment')->import($row['entryID'], array(
+				'objectID' => $row['ownerID'],
+				'userID' => $row['userID'],
+				'username' => $row['username'],
+				'message' => $row['message'],
+				'time' => $row['time']
+			));
+		}
+	}
+	
+	/**
+	 * Counts guestbook responses.
+	 */
+	public function countGuestbookResponses() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	wcf".$this->dbNo."_user_guestbook
+			WHERE	commentTime > ?";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array(0));
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports guestbook responses.
+	 */
+	public function exportGuestbookResponses($offset, $limit) {
+		$sql = "SELECT		user_guestbook.*, user_table.username AS ownerName
+			FROM		wcf".$this->dbNo."_user_guestbook user_guestbook
+			LEFT JOIN	wcf".$this->dbNo."_user user_table
+			ON 		(user_table.userID = user_guestbook.ownerID)
+			WHERE		user_guestbook.commentTime > ?
+			ORDER BY	user_guestbook.entryID";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute(array(0));
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.comment.response')->import($row['entryID'], array(
+				'commentID' => $row['entryID'],
+				'time' => $row['commentTime'],
+				'userID' => $row['ownerID'],
+				'username' => $row['ownerName'],
+				'message' => $row['comment'],
+			));
+		}
+	}
+	
+	/**
+	 * Counts user avatars.
+	 */
+	public function countUserAvatars() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	wcf".$this->dbNo."_avatar
+			WHERE	userID <> ?";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array(0));
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports user avatars.
+	 */
+	public function exportUserAvatars($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		wcf".$this->dbNo."_avatar
+			WHERE		userID <> ?
+			ORDER BY	avatarID";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute(array(0));
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.avatar')->import($row['avatarID'], array(
+				'avatarName' => $row['avatarName'],
+				'avatarExtension' => $row['avatarExtension'],
+				'width' => $row['width'],
+				'height' => $row['height'],
+				'userID' => $row['userID'],
+				'fileLocation' => $this->fileSystemPath . 'images/avatars/avatar-' . $row['avatarID'] . '.' . $row['avatarExtension']
+			));
+		}
+	}
+	
+	/**
+	 * Counts user options.
+	 */
+	public function countUserOptions() {
+		// get existing option names
+		$optionsNames = $this->getExistingUserOptions();
+		
+		$conditionBuilder = new PreparedStatementConditionBuilder();
+		$conditionBuilder->add('categoryName LIKE ?', array('profile%'));
+		if (!empty($optionsNames)) $conditionBuilder->add('optionName NOT IN (?)', array($optionsNames));
+		
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	wcf".$this->dbNo."_user_option
+			".$conditionBuilder;
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute($conditionBuilder->getParameters());
+		$row = $statement->fetchArray();
+		return ($row['count'] ? 1 : 0);
+	}
+	
+	/**
+	 * Exports user options.
+	 */
+	public function exportUserOptions($offset, $limit) {
+		// get existing option names
+		$optionsNames = $this->getExistingUserOptions();
+		
+		$conditionBuilder = new PreparedStatementConditionBuilder();
+		$conditionBuilder->add('categoryName LIKE ?', array('profile%'));
+		if (!empty($optionsNames)) $conditionBuilder->add('optionName NOT IN (?)', array($optionsNames));
+		
+		$sql = "SELECT 	user_option.*, (
+					SELECT	languageItemValue
+					FROM	wcf".$this->dbNo."_language_item
+					WHERE	languageItem = CONCAT('wcf.user.option.', user_option.optionName)
+						AND languageID = (
+							SELECT	languageID
+							FROM	wcf".$this->dbNo."_language
+							WHERE	isDefault = 1
+						)
+					LIMIT	1
+				) AS name
+			FROM	wcf".$this->dbNo."_user_option user_option
+			".$conditionBuilder;
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute($conditionBuilder->getParameters());
+		while ($row = $statement->fetchArray()) {
+			$editable = 0;
+			switch ($row['editable']) {
+				case 0:
+					$editable = UserOption::EDITABILITY_ALL;
+					break;
+				case 1:
+				case 2:
+					$editable = UserOption::EDITABILITY_OWNER;
+					break;
+				case 3:
+					$editable = UserOption::EDITABILITY_ADMINISTRATOR;
+					break;
+			}
+			
+			$visible = 0;
+			switch ($row['visible']) {
+				case 0:
+					$visible = UserOption::VISIBILITY_ALL;
+					break;
+				case 1:
+					$visible = UserOption::VISIBILITY_OWNER | UserOption::VISIBILITY_ADMINISTRATOR;
+					break;
+				case 2:
+					$visible = UserOption::VISIBILITY_OWNER;
+					break;
+				case 3:
+					$visible = UserOption::VISIBILITY_ADMINISTRATOR;
+					break;
+			}
+			
+			// fix option types
+			switch ($row['optionType']) {
+				case 'multiselect':
+					$row['optionType'] = 'multiSelect';
+					break;
+				case 'radiobuttons':
+					$row['optionType'] = 'radioButton';
+					break;
+					
+				case 'birthday':
+				case 'boolean':
+				case 'date':
+				case 'integer':
+				case 'float':
+				case 'password':
+				case 'select':
+				case 'text':
+				case 'textarea':
+				case 'message':
+					break;
+				
+				default:
+					$row['optionType'] = 'textarea';
+			}
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.option')->import($row['optionID'], array(
+				'name' => ($row['name'] ? $row['name'] : $row['optionName']),
+				'categoryName' => $row['categoryName'],
+				'optionType' => $row['optionType'],
+				'defaultValue' => $row['defaultValue'],
+				'validationPattern' => $row['validationPattern'],
+				'selectOptions' => $row['selectOptions'],
+				'required' => $row['required'],
+				'askDuringRegistration' => $row['askDuringRegistration'],
+				'searchable' => $row['searchable'],
+				'isDisabled' => $row['disabled'],
+				'editable' => $editable,
+				'visible' => $visible
 			));
 		}
 	}
