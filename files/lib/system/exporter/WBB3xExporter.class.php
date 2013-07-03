@@ -47,7 +47,12 @@ class WBB3xExporter extends AbstractExporter {
 		'com.woltlab.wcf.user.comment' => 'GuestbookEntries',
 		'com.woltlab.wcf.user.comment.response' => 'GuestbookResponses',
 		'com.woltlab.wcf.user.avatar' => 'UserAvatars',
-		'com.woltlab.wcf.user.option' => 'UserOptions'
+		'com.woltlab.wcf.user.option' => 'UserOptions',
+		'com.woltlab.wcf.conversation.label' => 'ConversationFolders',
+		'com.woltlab.wcf.conversation' => 'Conversations',
+		'com.woltlab.wcf.conversation.message' => 'ConversationMessages',
+		'com.woltlab.wcf.conversation.user' => 'ConversationUsers',
+		'com.woltlab.wcf.conversation.attachment' => 'ConversationAttachments'
 	);
 	
 	/**
@@ -92,6 +97,7 @@ class WBB3xExporter extends AbstractExporter {
 			),
 			'com.woltlab.wcf.conversation' => array(
 				'com.woltlab.wcf.conversation.attachment',
+				'com.woltlab.wcf.conversation.label'
 			),
 			'com.woltlab.wcf.smiley' => array()
 		);
@@ -153,6 +159,8 @@ class WBB3xExporter extends AbstractExporter {
 			
 			// conversation
 			if (in_array('com.woltlab.wcf.conversation', $this->selectedData)) {
+				if (in_array('com.woltlab.wcf.conversation.label', $this->selectedData)) $queue[] = 'com.woltlab.wcf.conversation.label';
+				
 				$queue[] = 'com.woltlab.wcf.conversation';
 				$queue[] = 'com.woltlab.wcf.conversation.message';
 				$queue[] = 'com.woltlab.wcf.conversation.user';
@@ -228,8 +236,6 @@ class WBB3xExporter extends AbstractExporter {
 	 * Counts users.
 	 */
 	public function countUsers() {
-		return 0; // @todo
-		
 		$sql = "SELECT	COUNT(*) AS count
 			FROM	wcf".$this->dbNo."_user";
 		$statement = $this->database->prepareStatement($sql);
@@ -610,6 +616,196 @@ class WBB3xExporter extends AbstractExporter {
 				'isDisabled' => $row['disabled'],
 				'editable' => $editable,
 				'visible' => $visible
+			));
+		}
+	}
+	
+	/**
+	 * Counts conversation folders.
+	 */
+	public function countConversationFolders() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	wcf".$this->dbNo."_pm_folder";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports conversation folders.
+	 */
+	public function exportConversationFolders($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		wcf".$this->dbNo."_pm_folder
+			ORDER BY	folderID";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			$cssClassName = '';
+			switch ($row['color']) {
+				case 'yellow':
+				case 'red':
+				case 'blue':
+				case 'green':
+					$cssClassName = $row['color'];
+					break;
+			}
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.label')->import($row['folderID'], array(
+				'userID' => $row['userID'],
+				'label' => $row['folderName'],
+				'cssClassName' => $cssClassName
+			));
+		}
+	}
+	
+	/**
+	 * Counts conversations.
+	 */
+	public function countConversations() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	wcf".$this->dbNo."_pm
+			WHERE	parentPmID = ?
+				OR pmID = parentPmID";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array(0));
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports conversations.
+	 */
+	public function exportConversations($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		wcf".$this->dbNo."_pm
+			WHERE		parentPmID = ?
+					OR pmID = parentPmID
+			ORDER BY	folderID";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute(array(0));
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import($row['pmID'], array(
+				'subject' => $row['subject'],
+				'time' => $row['time'],
+				'userID' => $row['userID'],
+				'username' => $row['username'],
+				'isDraft' => $row['isDraft']
+			));
+		}
+	}
+	
+	/**
+	 * Counts conversation messages.
+	 */
+	public function countConversationMessages() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	wcf".$this->dbNo."_pm";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports conversation messages.
+	 */
+	public function exportConversationMessages($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		wcf".$this->dbNo."_pm
+			ORDER BY	folderID";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.message')->import($row['pmID'], array(
+				'conversationID' => ($row['parentPmID'] ?: $row['pmID']),
+				'userID' => $row['userID'],
+				'username' => $row['username'],
+				'message' => $row['message'],
+				'time' => $row['time'],
+				'attachments' => $row['attachments'],
+				'enableSmilies' => $row['enableSmilies'],
+				'enableHtml' => $row['enableHtml'],
+				'enableBBCodes' => $row['enableBBCodes'],
+				'showSignature' => $row['showSignature']
+			));
+		}
+	}
+	
+	/**
+	 * Counts conversation recipients.
+	 */
+	public function countConversationUsers() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	wcf".$this->dbNo."_pm_to_user";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports conversation recipients.
+	 */
+	public function exportConversationUsers($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		wcf".$this->dbNo."_pm_to_user
+			ORDER BY	pmID, recipientID";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.user')->import(0, array(
+				'conversationID' => $row['pmID'],
+				'participantID' => $row['recipientID'],
+				'hideConversation' => $row['isDeleted'],
+				'isInvisible' => $row['isBlindCopy'],
+				'lastVisitTime' => $row['isViewed'],
+				'labelIDs' => ($row['folderID'] ? array($row['folderID']) : array())
+			));
+		}
+	}
+	
+	/**
+	 * Counts conversation attachments.
+	 */
+	public function countConversationAttachments() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	wcf".$this->dbNo."_attachment
+			WHERE	containerType = ?
+				AND containerID > ?";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array('pm', 0));
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports conversation attachments.
+	 */
+	public function exportConversationAttachments($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		wcf".$this->dbNo."_attachment
+			WHERE		containerType = ?
+					AND containerID > ?
+			ORDER BY	attachmentID DESC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.attachment')->import($row['attachmentID'], array(
+				'objectID' => $row['containerID'],
+				'userID' => $row['recipientID'],
+				'filename' => $row['attachmentName'],
+				'filesize' => $row['attachmentSize'],
+				'fileType' => $row['fileType'],
+				'isImage' => $row['isImage'],
+				'width' => $row['width'],
+				'height' => $row['height'],
+				'downloads' => $row['downloads'],
+				'lastDownloadTime' => $row['lastDownloadTime'],
+				'uploadTime' => $row['uploadTime'],
+				'showOrder' => $row['showOrder'],
+				'fileLocation' => ''		
 			));
 		}
 	}
