@@ -60,7 +60,8 @@ class WBB3xExporter extends AbstractExporter {
 	 */
 	protected $limits = array(
 		'com.woltlab.wcf.user' => 200,
-		'com.woltlab.wcf.user.avatar' => 100
+		'com.woltlab.wcf.user.avatar' => 100,
+		'com.woltlab.wcf.conversation.attachment' => 100
 	);
 	
 	/**
@@ -236,6 +237,8 @@ class WBB3xExporter extends AbstractExporter {
 	 * Counts users.
 	 */
 	public function countUsers() {
+		return 0; // @todo
+		
 		$sql = "SELECT	COUNT(*) AS count
 			FROM	wcf".$this->dbNo."_user";
 		$statement = $this->database->prepareStatement($sql);
@@ -329,7 +332,7 @@ class WBB3xExporter extends AbstractExporter {
 			
 			// update password hash
 			if ($newUserID) {
-				$passwordUpdateStatement->execute(array('wcf1:'.$row['salt'].':'.$row['password'], $newUserID));
+				$passwordUpdateStatement->execute(array('wcf1:'.$row['password'].':'.$row['salt'], $newUserID));
 			}
 		}
 		WCF::getDB()->commitTransaction();
@@ -682,7 +685,7 @@ class WBB3xExporter extends AbstractExporter {
 			FROM		wcf".$this->dbNo."_pm
 			WHERE		parentPmID = ?
 					OR pmID = parentPmID
-			ORDER BY	folderID";
+			ORDER BY	pmID";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array(0));
 		while ($row = $statement->fetchArray()) {
@@ -714,7 +717,7 @@ class WBB3xExporter extends AbstractExporter {
 	public function exportConversationMessages($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		wcf".$this->dbNo."_pm
-			ORDER BY	folderID";
+			ORDER BY	pmID";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
@@ -749,14 +752,16 @@ class WBB3xExporter extends AbstractExporter {
 	 * Exports conversation recipients.
 	 */
 	public function exportConversationUsers($offset, $limit) {
-		$sql = "SELECT		*
-			FROM		wcf".$this->dbNo."_pm_to_user
-			ORDER BY	pmID, recipientID";
+		$sql = "SELECT		pm_to_user.*, pm.parentPmID
+			FROM		wcf".$this->dbNo."_pm_to_user pm_to_user
+			LEFT JOIN	wcf".$this->dbNo."_pm pm
+			ON		(pm.pmID = pm_to_user.pmID)
+			ORDER BY	pm_to_user.pmID, pm_to_user.recipientID";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.user')->import(0, array(
-				'conversationID' => $row['pmID'],
+				'conversationID' => ($row['parentPmID'] ?: $row['pmID']),
 				'participantID' => $row['recipientID'],
 				'hideConversation' => $row['isDeleted'],
 				'isInvisible' => $row['isBlindCopy'],
@@ -790,11 +795,13 @@ class WBB3xExporter extends AbstractExporter {
 					AND containerID > ?
 			ORDER BY	attachmentID DESC";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement->execute(array('pm', 0));
 		while ($row = $statement->fetchArray()) {
+			$fileLocation = $this->fileSystemPath.'attachments/attachment-'.$row['attachmentID'];
+			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.attachment')->import($row['attachmentID'], array(
 				'objectID' => $row['containerID'],
-				'userID' => $row['recipientID'],
+				'userID' => ($row['userID'] ?: null),
 				'filename' => $row['attachmentName'],
 				'filesize' => $row['attachmentSize'],
 				'fileType' => $row['fileType'],
@@ -805,7 +812,7 @@ class WBB3xExporter extends AbstractExporter {
 				'lastDownloadTime' => $row['lastDownloadTime'],
 				'uploadTime' => $row['uploadTime'],
 				'showOrder' => $row['showOrder'],
-				'fileLocation' => ''		
+				'fileLocation' => $fileLocation
 			));
 		}
 	}
