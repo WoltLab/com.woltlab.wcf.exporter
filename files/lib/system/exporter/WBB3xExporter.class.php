@@ -689,12 +689,25 @@ class WBB3xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array(0));
 		while ($row = $statement->fetchArray()) {
-			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import($row['pmID'], array(
+			$conversationID = ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import($row['pmID'], array(
 				'subject' => $row['subject'],
 				'time' => $row['time'],
 				'userID' => $row['userID'],
 				'username' => $row['username'],
 				'isDraft' => $row['isDraft']
+			));
+			
+			// add author
+			$sql = "INSERT IGNORE INTO	wcf".WCF_N."_conversation_to_user
+							(conversationID, participantID, hideConversation, isInvisible, lastVisitTime)
+				VALUES			(?, ?, ?, ?, ?)";
+			$statement = WCF::getDB()->prepareStatement($sql);
+			$statement->execute(array(
+				$conversationID,
+				ImportHandler::getInstance()->getNewID('com.woltlab.wcf.user', $row['userID']),
+				0,
+				0,
+				TIME_NOW
 			));
 		}
 	}
@@ -756,7 +769,7 @@ class WBB3xExporter extends AbstractExporter {
 			FROM		wcf".$this->dbNo."_pm_to_user pm_to_user
 			LEFT JOIN	wcf".$this->dbNo."_pm pm
 			ON		(pm.pmID = pm_to_user.pmID)
-			ORDER BY	pm_to_user.pmID, pm_to_user.recipientID";
+			ORDER BY	pm_to_user.pmID DESC, pm_to_user.recipientID";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
