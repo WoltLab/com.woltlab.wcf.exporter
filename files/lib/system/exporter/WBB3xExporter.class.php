@@ -681,6 +681,11 @@ class WBB3xExporter extends AbstractExporter {
 	 * Exports conversations.
 	 */
 	public function exportConversations($offset, $limit) {
+		$sql = "INSERT IGNORE INTO	wcf".WCF_N."_conversation_to_user
+						(conversationID, participantID, hideConversation, isInvisible, lastVisitTime)
+			VALUES			(?, ?, ?, ?, ?)";
+		$insertStatement = WCF::getDB()->prepareStatement($sql);
+		
 		$sql = "SELECT		*
 			FROM		wcf".$this->dbNo."_pm
 			WHERE		parentPmID = ?
@@ -698,11 +703,7 @@ class WBB3xExporter extends AbstractExporter {
 			));
 			
 			// add author
-			$sql = "INSERT IGNORE INTO	wcf".WCF_N."_conversation_to_user
-							(conversationID, participantID, hideConversation, isInvisible, lastVisitTime)
-				VALUES			(?, ?, ?, ?, ?)";
-			$statement = WCF::getDB()->prepareStatement($sql);
-			$statement->execute(array(
+			$insertStatement->execute(array(
 				$conversationID,
 				ImportHandler::getInstance()->getNewID('com.woltlab.wcf.user', $row['userID']),
 				0,
