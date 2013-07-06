@@ -37,6 +37,12 @@ class WBB3xExporter extends AbstractExporter {
 	protected $selectedData = array();
 	
 	/**
+	 * board cache
+	 * @var array
+	 */
+	protected $boardCache = array();
+	
+	/**
 	 * @see wcf\system\exporter\AbstractExporter::$methods
 	 */
 	protected $methods = array(
@@ -52,7 +58,15 @@ class WBB3xExporter extends AbstractExporter {
 		'com.woltlab.wcf.conversation' => 'Conversations',
 		'com.woltlab.wcf.conversation.message' => 'ConversationMessages',
 		'com.woltlab.wcf.conversation.user' => 'ConversationUsers',
-		'com.woltlab.wcf.conversation.attachment' => 'ConversationAttachments'
+		'com.woltlab.wcf.conversation.attachment' => 'ConversationAttachments',
+		'com.woltlab.wbb.board' => 'Boards',
+		'com.woltlab.wbb.thread' => 'Threads',
+		'com.woltlab.wbb.post' => 'Posts',
+		'com.woltlab.wbb.attachment' => 'PostAttachments',
+		'com.woltlab.wbb.watchedThread' => 'WatchedThreads',
+		'com.woltlab.wbb.poll' => 'Polls',
+		'com.woltlab.wbb.poll.option' => 'PollOptions',
+		'com.woltlab.wbb.poll.option.vote' => 'PollOptionVotes'
 	);
 	
 	/**
@@ -61,7 +75,8 @@ class WBB3xExporter extends AbstractExporter {
 	protected $limits = array(
 		'com.woltlab.wcf.user' => 200,
 		'com.woltlab.wcf.user.avatar' => 100,
-		'com.woltlab.wcf.conversation.attachment' => 100
+		'com.woltlab.wcf.conversation.attachment' => 100,
+		'com.woltlab.wbb.thread' => 200
 	);
 	
 	/**
@@ -171,19 +186,19 @@ class WBB3xExporter extends AbstractExporter {
 		}
 		
 		// board
-		if (in_array('com.woltlab.wcf.board', $this->selectedData)) {
-			$queue[] = 'com.woltlab.wcf.board';
-			$queue[] = 'com.woltlab.wcf.thread';
-			$queue[] = 'com.woltlab.wcf.post';
+		if (in_array('com.woltlab.wbb.board', $this->selectedData)) {
+			$queue[] = 'com.woltlab.wbb.board';
+			$queue[] = 'com.woltlab.wbb.thread';
+			$queue[] = 'com.woltlab.wbb.post';
 			
 			if (in_array('com.woltlab.wbb.moderator', $this->selectedData)) $queue[] = 'com.woltlab.wbb.moderator';
 			if (in_array('com.woltlab.wbb.acl', $this->selectedData)) $queue[] = 'com.woltlab.wbb.acl';
 			if (in_array('com.woltlab.wbb.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wbb.attachment';
 			if (in_array('com.woltlab.wbb.watchedThread', $this->selectedData)) $queue[] = 'com.woltlab.wbb.watchedThread';
-			if (in_array('com.woltlab.wcf.poll', $this->selectedData)) {
-				$queue[] = 'com.woltlab.wcf.poll';
-				$queue[] = 'com.woltlab.wcf.poll.option';
-				$queue[] = 'com.woltlab.wcf.poll.option.vote';
+			if (in_array('com.woltlab.wbb.poll', $this->selectedData)) {
+				$queue[] = 'com.woltlab.wbb.poll';
+				$queue[] = 'com.woltlab.wbb.poll.option';
+				$queue[] = 'com.woltlab.wbb.poll.option.vote';
 			}
 		}
 		
@@ -827,6 +842,396 @@ class WBB3xExporter extends AbstractExporter {
 				'uploadTime' => $row['uploadTime'],
 				'showOrder' => $row['showOrder'],
 				'fileLocation' => $fileLocation
+			));
+		}
+	}
+	
+	/**
+	 * Counts boards.
+	 */
+	public function countBoards() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	wbb".$this->dbNo."_".$this->instanceNo."_board";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return ($row['count'] ? 1 : 0);
+	}
+	
+	/**
+	 * Exports boards.
+	 */
+	public function exportBoards($offset, $limit) {
+		$sql = "SELECT		board.*, structure.position
+			FROM		wbb".$this->dbNo."_".$this->instanceNo."_board board
+			LEFT JOIN	wbb".$this->dbNo."_".$this->instanceNo."_board_structure structure
+			ON		(board_structure.boardID = board.boardID)	
+			ORDER BY	board.parentID, structure.position";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			$this->boardCache[$row['parentID']][] = $row;
+		}
+		
+		$this->exportBoardsRecursively();
+	}
+	
+	/**
+	 * Exports the boards recursively.
+	 */
+	protected function exportBoardsRecursively($parentID = 0) {
+		if (!isset($this->boardCache[$parentID])) return;
+	
+		foreach ($this->boardCache[$parentID] as $board) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import($board['boardID'], array(
+				'parentID' => ($board['parentID'] ?: null),
+				'position' => $board['position'],
+				'boardType' => $board['boardType'],
+				'title' => $board['title'],
+				'description' => $board['description'],
+				'descriptionUseHtml' => $board['allowDescriptionHtml'],
+				'externalURL' => $board['externalURL'],
+				'time' => $board['time'],
+				'countUserPosts' => $board['countUserPosts'],
+				'daysPrune' => $board['daysPrune'],
+				'enableMarkingAsDone' => $board['enableMarkingAsDone'],
+				'ignorable' => $board['ignorable'],
+				'isClosed' => $board['isClosed'],
+				'isInvisible' => $board['isInvisible'],
+				'postSortOrder' => $board['postSortOrder'],
+				'postsPerPage' => $board['postsPerPage'],
+				'searchable' => $board['searchable'],
+				'searchableForSimilarThreads' => $board['searchableForSimilarThreads'],
+				'showSubBoards' => $board['showSubBoards'],
+				'sortField' => $board['sortField'],
+				'sortOrder' => $board['sortOrder'],
+				'threadsPerPage' => $board['threadsPerPage'],
+				'clicks' => $board['clicks'],
+				'posts' => $board['posts'],
+				'threads' => $board['threads']
+			));
+				
+			$this->exportBoardsRecursively($board['boardID']);
+		}
+	}
+	
+	/**
+	 * Counts threads.
+	 */
+	public function countThreads() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	wbb".$this->dbNo."_".$this->instanceNo."_thread";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports threads.
+	 */
+	public function exportThreads($offset, $limit) {
+		// get thread ids
+		$threadIDs = $announcementIDs = array();
+		$sql = "SELECT		threadID, isAnnouncement
+			FROM		wbb".$this->dbNo."_".$this->instanceNo."_thread
+			ORDER BY	threadID";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			$threadIDs[] = $row['threadID'];
+			if ($row['isAnnouncement']) $announcementIDs[] = $row['threadID'];
+		}
+	
+		// get assigned boards (for announcements)
+		$assignedBoards = array();
+		if (!empty($announcementIDs)) {
+			$conditionBuilder = new PreparedStatementConditionBuilder();
+			$conditionBuilder->add('threadID IN (?)', array($announcementIDs));
+			
+			$sql = "SELECT		boardID, threadID
+				FROM		wbb".$this->dbNo."_".$this->instanceNo."_thread_announcement
+				".$conditionBuilder;
+			$statement = $this->database->prepareStatement($sql);
+			$statement->execute($conditionBuilder->getParameters());
+			while ($row = $statement->fetchArray()) {
+				if (!isset($assignedBoards[$row['threadID']])) $assignedBoards[$row['threadID']] = array();
+				$assignedBoards[$row['threadID']][] = $row['boardID'];
+			}
+		}
+		
+		// get threads
+		$conditionBuilder = new PreparedStatementConditionBuilder();
+		$conditionBuilder->add('threadID IN (?)', array($threadIDs));
+		
+		$sql = "SELECT		thread.*, language.languageCode
+			FROM		wbb".$this->dbNo."_".$this->instanceNo."_thread thread
+			LEFT JOIN	wcf".$this->dbNo."_language language
+			ON		(language.languageID = thread.languageID)
+			".$conditionBuilder;
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute($conditionBuilder->getParameters());
+		while ($row = $statement->fetchArray()) {
+			$data = array(
+				'boardID' => $row['boardID'],
+				'topic' => $row['topic'],
+				'time' => $row['time'],
+				'userID' => $row['userID'],
+				'username' => $row['username'],
+				'views' => $row['views'],
+				'isAnnouncement' => $row['isAnnouncement'],
+				'isSticky' => $row['isSticky'],
+				'isDisabled' => $row['isDisabled'],
+				'isClosed' => $row['isClosed'],
+				'isDeleted' => $row['isDeleted'],
+				'movedThreadID' => $row['movedThreadID'],
+				'movedTime' => $row['movedTime'],
+				'isDone' => $row['isDone'],
+				'deleteTime' => $row['deleteTime']
+			);
+			if ($row['languageCode']) $data['languageCode'] = $row['languageCode'];
+			if (!empty($assignedBoards[$row['threadID']])) $data['assignedBoards'] = $assignedBoards[$row['threadID']];
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.thread')->import($row['threadID'], $data);
+		}
+	}
+	
+	/**
+	 * Counts posts.
+	 */
+	public function countPosts() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	wbb".$this->dbNo."_".$this->instanceNo."_post";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports posts.
+	 */
+	public function exportPosts($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		wbb".$this->dbNo."_".$this->instanceNo."_post
+			ORDER BY	postID";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.post')->import($row['postID'], array(
+				'threadID' => $row['threadID'],
+				'userID' => $row['userID'],
+				'username' => $row['username'],
+				'subject' => $row['subject'],
+				'message' => $row['message'],
+				'time' => $row['time'],
+				'isDeleted' => $row['isDeleted'],
+				'isDisabled' => $row['isDisabled'],
+				'isClosed' => $row['isClosed'],
+				'editorID' => $row['editorID'],
+				'editor' => $row['editor'],
+				'lastEditTime' => $row['lastEditTime'],
+				'editCount' => $row['editCount'],
+				'editReason' => $row['editReason'],
+				'attachments' => $row['attachments'],
+				'enableSmilies' => $row['enableSmilies'],
+				'enableHtml' => $row['enableHtml'],
+				'enableBBCodes' => $row['enableBBCodes'],
+				'showSignature' => $row['showSignature'],
+				'ipAddress' => $row['ipAddress'],
+				'deleteTime' => $row['deleteTime']
+			));
+		}
+	}
+	
+	/**
+	 * Counts post attachments.
+	 */
+	public function countPostAttachments() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	wcf".$this->dbNo."_attachment
+			WHERE	containerType = ?
+				AND containerID > ?";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array('post', 0));
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports post attachments.
+	 */
+	public function exportPostAttachments($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		wcf".$this->dbNo."_attachment
+			WHERE		containerType = ?
+					AND containerID > ?
+			ORDER BY	attachmentID DESC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute(array('post', 0));
+		while ($row = $statement->fetchArray()) {
+			$fileLocation = $this->fileSystemPath.'attachments/attachment-'.$row['attachmentID'];
+				
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.attachment')->import($row['attachmentID'], array(
+				'objectID' => $row['containerID'],
+				'userID' => ($row['userID'] ?: null),
+				'filename' => $row['attachmentName'],
+				'filesize' => $row['attachmentSize'],
+				'fileType' => $row['fileType'],
+				'isImage' => $row['isImage'],
+				'width' => $row['width'],
+				'height' => $row['height'],
+				'downloads' => $row['downloads'],
+				'lastDownloadTime' => $row['lastDownloadTime'],
+				'uploadTime' => $row['uploadTime'],
+				'showOrder' => $row['showOrder'],
+				'fileLocation' => $fileLocation
+			));
+		}
+	}
+	
+	/**
+	 * Counts watched threads.
+	 */
+	public function countWatchedThreads() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	wbb".$this->dbNo."_".$this->instanceNo."_thread_subscription";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports watched threads.
+	 */
+	public function exportWatchedThreads($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		wbb".$this->dbNo."_".$this->instanceNo."_thread_subscription
+			ORDER BY	userID, threadID";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.watchedThread')->import(0, array(
+				'objectID' => $row['threadID'],
+				'userID' => $row['userID']
+			));
+		}
+	}
+	
+	/**
+	 * Counts polls.
+	 */
+	public function countPolls() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	wcf".$this->dbNo."_poll
+			WHERE	messageType = ?";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array('post'));
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports polls.
+	 */
+	public function exportPolls($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		wcf".$this->dbNo."_poll
+			WHERE		messageType = ?
+			ORDER BY	pollID";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute(array('post'));
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll')->import($row['pollID'], array(
+				'objectID' => $row['messageID'],
+				'question' => $row['question'],
+				'time' => $row['time'],
+				'endTime' => $row['endTime'],
+				'isChangeable' => ($row['votesNotChangeable'] ? 0 : 1),
+				'isPublic' => $row['isPublic'],
+				'sortByVotes' => $row['sortByResult'],
+				'maxVotes' => $row['maxVotes']
+			));
+		}
+	}
+	
+	/**
+	 * Counts poll options.
+	 */
+	public function countPollOptions() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	wcf".$this->dbNo."_poll_option
+			WHERE	pollID IN (
+					SELECT	pollID
+					FROM	wcf".$this->dbNo."_poll
+					WHERE 	messageType = ?	
+				)";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array('post'));
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports poll options.
+	 */
+	public function exportPollOptions($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		wcf".$this->dbNo."_poll_option
+			WHERE		pollID IN (
+						SELECT	pollID
+						FROM	wcf".$this->dbNo."_poll
+						WHERE 	messageType = ?	
+					)
+			ORDER BY	pollOptionID";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute(array('post'));
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll.option')->import($row['pollOptionID'], array(
+				'pollID' => $row['pollID'],
+				'optionValue' => $row['pollOption'],
+				'showOrder' => $row['showOrder']
+			));
+		}
+	}
+	
+	/**
+	 * Counts poll option votes.
+	 */
+	public function countPollOptionVotes() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	wcf".$this->dbNo."_poll_option_vote
+			WHERE	pollID IN (
+					SELECT	pollID
+					FROM	wcf".$this->dbNo."_poll
+					WHERE 	messageType = ?
+				)";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array('post'));
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports poll option votes.
+	 */
+	public function exportPollOptionVotes($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		wcf".$this->dbNo."_poll_option_vote
+			WHERE		pollID IN (
+						SELECT	pollID
+						FROM	wcf".$this->dbNo."_poll
+						WHERE 	messageType = ?
+					)
+			ORDER BY	pollOptionID, userID";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute(array('post'));
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll.option.vote')->import(0, array(
+				'pollID' => $row['pollID'],
+				'optionID' => $row['pollOptionID'],
+				'userID' => $row['userID']
 			));
 		}
 	}
