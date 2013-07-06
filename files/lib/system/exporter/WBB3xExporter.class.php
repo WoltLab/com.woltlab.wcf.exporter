@@ -76,7 +76,8 @@ class WBB3xExporter extends AbstractExporter {
 		'com.woltlab.wcf.user' => 200,
 		'com.woltlab.wcf.user.avatar' => 100,
 		'com.woltlab.wcf.conversation.attachment' => 100,
-		'com.woltlab.wbb.thread' => 200
+		'com.woltlab.wbb.thread' => 200,
+		'com.woltlab.wbb.attachment' => 100,
 	);
 	
 	/**
@@ -252,8 +253,6 @@ class WBB3xExporter extends AbstractExporter {
 	 * Counts users.
 	 */
 	public function countUsers() {
-		return 0; // @todo
-		
 		$sql = "SELECT	COUNT(*) AS count
 			FROM	wcf".$this->dbNo."_user";
 		$statement = $this->database->prepareStatement($sql);
@@ -865,7 +864,7 @@ class WBB3xExporter extends AbstractExporter {
 		$sql = "SELECT		board.*, structure.position
 			FROM		wbb".$this->dbNo."_".$this->instanceNo."_board board
 			LEFT JOIN	wbb".$this->dbNo."_".$this->instanceNo."_board_structure structure
-			ON		(board_structure.boardID = board.boardID)	
+			ON		(structure.boardID = board.boardID)	
 			ORDER BY	board.parentID, structure.position";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
@@ -984,7 +983,7 @@ class WBB3xExporter extends AbstractExporter {
 				'isDisabled' => $row['isDisabled'],
 				'isClosed' => $row['isClosed'],
 				'isDeleted' => $row['isDeleted'],
-				'movedThreadID' => $row['movedThreadID'],
+				'movedThreadID' => ($row['movedThreadID'] ?: null),
 				'movedTime' => $row['movedTime'],
 				'isDone' => $row['isDone'],
 				'deleteTime' => $row['deleteTime']
@@ -1028,7 +1027,7 @@ class WBB3xExporter extends AbstractExporter {
 				'isDeleted' => $row['isDeleted'],
 				'isDisabled' => $row['isDisabled'],
 				'isClosed' => $row['isClosed'],
-				'editorID' => $row['editorID'],
+				'editorID' => ($row['editorID'] ?: null),
 				'editor' => $row['editor'],
 				'lastEditTime' => $row['lastEditTime'],
 				'editCount' => $row['editCount'],
@@ -1151,7 +1150,7 @@ class WBB3xExporter extends AbstractExporter {
 				'isChangeable' => ($row['votesNotChangeable'] ? 0 : 1),
 				'isPublic' => $row['isPublic'],
 				'sortByVotes' => $row['sortByResult'],
-				'maxVotes' => $row['maxVotes']
+				'maxVotes' => $row['choiceCount']
 			));
 		}
 	}
