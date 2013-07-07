@@ -2,7 +2,9 @@
 <package name="com.woltlab.wcf.exporter" xmlns="http://www.woltlab.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.woltlab.com http://www.woltlab.com/XSD/maelstrom/package.xsd">
 	<packageinformation>
 		<packagename>Importer</packagename>
-		<packagedescription>Import data from other discussion board systems</packagedescription>
+		<packagename language="de">Datenimport</packagename>
+		<packagedescription>Import data from other discussion board systems.</packagedescription>
+		<packagedescription language="de">Ermöglicht den Datenimport aus anderen Forensystemen.</packagedescription>
 		<version>2.0.0 Beta 1</version>
 		<date>2013-06-19</date>
 	</packageinformation>
