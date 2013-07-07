@@ -1,11 +1,14 @@
 <?php
 namespace wcf\system\exporter;
+use wcf\data\like\Like;
+use wcf\data\object\type\ObjectTypeCache;
 use wcf\data\user\option\UserOption;
 use wcf\system\database\util\PreparedStatementConditionBuilder;
 use wcf\system\database\DatabaseException;
 use wcf\system\exception\SystemException;
 use wcf\system\importer\ImportHandler;
 use wcf\system\WCF;
+use wcf\util\StringUtil;
 
 /**
  * Exporter for Burning Board 3.x
@@ -66,7 +69,9 @@ class WBB3xExporter extends AbstractExporter {
 		'com.woltlab.wbb.watchedThread' => 'WatchedThreads',
 		'com.woltlab.wbb.poll' => 'Polls',
 		'com.woltlab.wbb.poll.option' => 'PollOptions',
-		'com.woltlab.wbb.poll.option.vote' => 'PollOptionVotes'
+		'com.woltlab.wbb.poll.option.vote' => 'PollOptionVotes',
+		'com.woltlab.wbb.like' => 'Likes',
+		'com.woltlab.wcf.label' => 'Labels'
 	);
 	
 	/**
@@ -111,6 +116,8 @@ class WBB3xExporter extends AbstractExporter {
 				'com.woltlab.wbb.attachment',
 				'com.woltlab.wbb.poll',
 				'com.woltlab.wbb.watchedThread',
+				'com.woltlab.wbb.like',
+				'com.woltlab.wcf.label'
 			),
 			'com.woltlab.wcf.conversation' => array(
 				'com.woltlab.wcf.conversation.attachment',
@@ -189,6 +196,7 @@ class WBB3xExporter extends AbstractExporter {
 		// board
 		if (in_array('com.woltlab.wbb.board', $this->selectedData)) {
 			$queue[] = 'com.woltlab.wbb.board';
+			if (in_array('com.woltlab.wcf.label', $this->selectedData)) $queue[] = 'com.woltlab.wcf.label';
 			$queue[] = 'com.woltlab.wbb.thread';
 			$queue[] = 'com.woltlab.wbb.post';
 			
@@ -201,6 +209,7 @@ class WBB3xExporter extends AbstractExporter {
 				$queue[] = 'com.woltlab.wbb.poll.option';
 				$queue[] = 'com.woltlab.wbb.poll.option.vote';
 			}
+			if (in_array('com.woltlab.wbb.like', $this->selectedData)) $queue[] = 'com.woltlab.wbb.like';
 		}
 		
 		// smiley
@@ -329,20 +338,25 @@ class WBB3xExporter extends AbstractExporter {
 				'disableSignatureReason' => $row['disableSignatureReason'],
 				'profileHits' => $row['profileHits'],
 				'userTitle' => $row['userTitle'],
-				'lastActivityTime' => $row['lastActivityTime'],
+				'lastActivityTime' => $row['lastActivityTime']
+				
+			);
+			$additionalData = array(
 				'groupIDs' => explode(',', $row['groupIDs']),
 				'options' => array()
 			);
 			
 			// handle user options
 			foreach ($userOptions as $optionID => $optionName) {
+				if ($optionName == 'timezone') continue; // skip broken timezone setting
+				
 				if (isset($row['userOption'.$optionID])) {
 					$data['options'][$optionName] = $row['userOption'.$optionID];
 				}
 			}
 			
 			// import user
-			$newUserID = ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user')->import($row['userID'], $data);
+			$newUserID = ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user')->import($row['userID'], $data, $additionalData);
 			
 			// update password hash
 			if ($newUserID) {
@@ -512,9 +526,8 @@ class WBB3xExporter extends AbstractExporter {
 				'avatarExtension' => $row['avatarExtension'],
 				'width' => $row['width'],
 				'height' => $row['height'],
-				'userID' => $row['userID'],
-				'fileLocation' => $this->fileSystemPath . 'images/avatars/avatar-' . $row['avatarID'] . '.' . $row['avatarExtension']
-			));
+				'userID' => $row['userID']
+			), array('fileLocation' => $this->fileSystemPath . 'images/avatars/avatar-' . $row['avatarID'] . '.' . $row['avatarExtension']));
 		}
 	}
 	
@@ -621,7 +634,6 @@ class WBB3xExporter extends AbstractExporter {
 			}
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.option')->import($row['optionID'], array(
-				'name' => ($row['name'] ?: $row['optionName']),
 				'categoryName' => $row['categoryName'],
 				'optionType' => $row['optionType'],
 				'defaultValue' => $row['defaultValue'],
@@ -633,7 +645,7 @@ class WBB3xExporter extends AbstractExporter {
 				'isDisabled' => $row['disabled'],
 				'editable' => $editable,
 				'visible' => $visible
-			));
+			), array('name' => ($row['name'] ?: $row['optionName'])));
 		}
 	}
 	
@@ -793,9 +805,8 @@ class WBB3xExporter extends AbstractExporter {
 				'participantID' => $row['recipientID'],
 				'hideConversation' => $row['isDeleted'],
 				'isInvisible' => $row['isBlindCopy'],
-				'lastVisitTime' => $row['isViewed'],
-				'labelIDs' => ($row['folderID'] ? array($row['folderID']) : array())
-			));
+				'lastVisitTime' => $row['isViewed']
+			), array('labelIDs' => ($row['folderID'] ? array($row['folderID']) : array())));
 		}
 	}
 	
@@ -839,9 +850,8 @@ class WBB3xExporter extends AbstractExporter {
 				'downloads' => $row['downloads'],
 				'lastDownloadTime' => $row['lastDownloadTime'],
 				'uploadTime' => $row['uploadTime'],
-				'showOrder' => $row['showOrder'],
-				'fileLocation' => $fileLocation
-			));
+				'showOrder' => $row['showOrder']
+			), array('fileLocation' => $fileLocation));
 		}
 	}
 	
@@ -930,6 +940,46 @@ class WBB3xExporter extends AbstractExporter {
 	 * Exports threads.
 	 */
 	public function exportThreads($offset, $limit) {
+		// get global prefixes
+		$globalPrefixes = '';
+		$sql = "SELECT	optionValue
+			FROM	wcf".$this->dbNo."_option
+			WHERE	optionName = ?";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array('thread_default_prefixes'));
+		$row = $statement->fetchArray();
+		if ($row !== false) $globalPrefixes = $row['optionValue'];
+		
+		// get boards
+		$boardPrefixes = array();
+		$sql = "SELECT		boardID, prefixes, prefixMode
+			FROM		wbb".$this->dbNo."_".$this->instanceNo."_board
+			WHERE		prefixMode > ?";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array(0));
+		while ($row = $statement->fetchArray()) {
+			$prefixes = '';
+				
+			switch ($row['prefixMode']) {
+				case 1:
+					$prefixes = $globalPrefixes;
+					break;
+				case 2:
+					$prefixes = $row['prefixes'];
+					break;
+				case 3:
+					$prefixes = $globalPrefixes . "\n" . $row['prefixes'];
+					break;
+			}
+				
+			$prefixes = StringUtil::trim(StringUtil::unifyNewlines($prefixes));
+			if ($prefixes) {
+				$key = StringUtil::getHash($prefixes);
+				$boardPrefixes[$row['boardID']] = $key;
+			}
+		}
+		
+		
 		// get thread ids
 		$threadIDs = $announcementIDs = array();
 		$sql = "SELECT		threadID, isAnnouncement
@@ -988,10 +1038,12 @@ class WBB3xExporter extends AbstractExporter {
 				'isDone' => $row['isDone'],
 				'deleteTime' => $row['deleteTime']
 			);
-			if ($row['languageCode']) $data['languageCode'] = $row['languageCode'];
-			if (!empty($assignedBoards[$row['threadID']])) $data['assignedBoards'] = $assignedBoards[$row['threadID']];
+			$additionalData = array();
+			if ($row['languageCode']) $additionalData['languageCode'] = $row['languageCode'];
+			if (!empty($assignedBoards[$row['threadID']])) $additionalData['assignedBoards'] = $assignedBoards[$row['threadID']];
+			if ($row['prefix'] && isset($boardPrefixes[$row['boardID']])) $additionalData['labels'] = array($boardPrefixes[$row['boardID']].'-'.$row['prefix']);
 			
-			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.thread')->import($row['threadID'], $data);
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.thread')->import($row['threadID'], $data, $additionalData);
 		}
 	}
 	
@@ -1083,9 +1135,8 @@ class WBB3xExporter extends AbstractExporter {
 				'downloads' => $row['downloads'],
 				'lastDownloadTime' => $row['lastDownloadTime'],
 				'uploadTime' => $row['uploadTime'],
-				'showOrder' => $row['showOrder'],
-				'fileLocation' => $fileLocation
-			));
+				'showOrder' => $row['showOrder']
+			), array('fileLocation' => $fileLocation));
 		}
 	}
 	
@@ -1205,9 +1256,10 @@ class WBB3xExporter extends AbstractExporter {
 					SELECT	pollID
 					FROM	wcf".$this->dbNo."_poll
 					WHERE 	messageType = ?
-				)";
+				)
+				AND userID <> ?";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array('post'));
+		$statement->execute(array('post', 0));
 		$row = $statement->fetchArray();
 		return $row['count'];
 	}
@@ -1223,15 +1275,143 @@ class WBB3xExporter extends AbstractExporter {
 						FROM	wcf".$this->dbNo."_poll
 						WHERE 	messageType = ?
 					)
+					AND userID <> ?
 			ORDER BY	pollOptionID, userID";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute(array('post'));
+		$statement->execute(array('post', 0));
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll.option.vote')->import(0, array(
 				'pollID' => $row['pollID'],
 				'optionID' => $row['pollOptionID'],
 				'userID' => $row['userID']
 			));
+		}
+	}
+	
+	/**
+	 * Counts likes.
+	 */
+	public function countLikes() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	wbb".$this->dbNo."_".$this->instanceNo."_thread_rating
+			WHERE	userID <> ?
+				AND rating NOT IN (?, ?)";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array(0, 0, 3));
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports likes.
+	 */
+	public function exportLikes($offset, $limit) {
+		$sql = "SELECT		thread_rating.*, thread.firstPostID, thread.userID AS objectUserID
+			FROM		wbb".$this->dbNo."_".$this->instanceNo."_thread_rating thread_rating
+			LEFT JOIN	wbb".$this->dbNo."_".$this->instanceNo."_thread thread
+			ON		(thread.threadID = thread_rating.threadID)
+			WHERE		thread_rating.userID <> ?
+					AND thread_rating.rating NOT IN (?, ?)
+			ORDER BY	thread_rating.threadID, thread_rating.userID";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute(array(0, 0, 3));
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.like')->import(0, array(
+				'objectID' => $row['firstPostID'],
+				'objectUserID' => ($row['objectUserID'] ?: null),
+				'userID' => $row['userID'],
+				'likeValue' => ($row['rating'] > 3 ? Like::LIKE : Like::DISLIKE)
+			));
+		}
+	}
+	
+	/**
+	 * Counts labels.
+	 */
+	public function countLabels() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	wbb".$this->dbNo."_".$this->instanceNo."_board
+			WHERE	prefixMode > ?";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array(0));
+		$row = $statement->fetchArray();
+		return ($row['count'] ? 1 : 0);
+	}
+	
+	/**
+	 * Exports likes.
+	 */
+	public function exportLabels($offset, $limit) {
+		$prefixMap = array();
+		
+		// get global prefixes
+		$globalPrefixes = '';
+		$sql = "SELECT	optionValue
+			FROM	wcf".$this->dbNo."_option
+			WHERE	optionName = ?";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array('thread_default_prefixes'));
+		$row = $statement->fetchArray();
+		if ($row !== false) $globalPrefixes = $row['optionValue'];
+		
+		// get boards
+		$sql = "SELECT		boardID, prefixes, prefixMode
+			FROM		wbb".$this->dbNo."_".$this->instanceNo."_board
+			WHERE		prefixMode > ?";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array(0));
+		while ($row = $statement->fetchArray()) {
+			$prefixes = '';
+			
+			switch ($row['prefixMode']) {
+				case 1:
+					$prefixes = $globalPrefixes;
+					break;
+				case 2:
+					$prefixes = $row['prefixes'];
+					break;
+				case 3:
+					$prefixes = $globalPrefixes . "\n" . $row['prefixes'];
+					break;
+			}
+			
+			$prefixes = StringUtil::trim(StringUtil::unifyNewlines($prefixes));
+			if ($prefixes) {
+				$key = StringUtil::getHash($prefixes);
+				if (!isset($prefixMap[$key])) {
+					$prefixMap[$key] = array(
+						'prefixes' => $prefixes,
+						'boardIDs' => array()
+					);
+				}
+				
+				$boardID = ImportHandler::getInstance()->getNewID('com.woltlab.wbb.board', $row['boardID']);
+				if ($boardID) $prefixMap[$key]['boardIDs'][] = $boardID;
+			}
+		}
+		
+		// save prefixes
+		if (!empty($prefixMap)) {
+			$i = 1;
+			$objectType = ObjectTypeCache::getInstance()->getObjectTypeByName('com.woltlab.wcf.label.objectType', 'com.woltlab.wbb.board');
+			
+			foreach ($prefixMap as $key => $data) {
+				// import label group
+				ImportHandler::getInstance()->getImporter('com.woltlab.wcf.label.group')->import($key, array(
+					'groupName' => 'labelgroup'.$i
+				), array('objects' => array($objectType->objectTypeID => $data['boardIDs'])));
+				
+				// import labels
+				$labels = explode("\n", $data['prefixes']);
+				foreach ($labels as $label) {
+					ImportHandler::getInstance()->getImporter('com.woltlab.wcf.label')->import($key.'-'.$label, array(
+						'groupID' => $key,
+						'label' => $label
+					));
+				}
+				
+				$i++;
+			}
 		}
 	}
 	
