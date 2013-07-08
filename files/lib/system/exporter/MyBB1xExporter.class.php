@@ -1,5 +1,7 @@
 <?php
 namespace wcf\system\exporter;
+use wcf\util\ArrayUtil;
+
 use wcf\data\like\Like;
 use wcf\data\object\type\ObjectTypeCache;
 use wcf\data\user\group\UserGroup;
@@ -70,7 +72,8 @@ class MyBB1xExporter extends AbstractExporter {
 	 * @see wcf\system\exporter\AbstractExporter::$limits
 	 */
 	protected $limits = array(
-		'com.woltlab.wcf.user' => 200
+		'com.woltlab.wcf.user' => 200,
+		'com.woltlab.wcf.user.follower' => 100
 	);
 	
 	/**
@@ -80,7 +83,8 @@ class MyBB1xExporter extends AbstractExporter {
 		return array(
 			'com.woltlab.wcf.user' => array(
 				'com.woltlab.wcf.user.group',
-				'com.woltlab.wcf.user.rank'
+				'com.woltlab.wcf.user.rank',
+				'com.woltlab.wcf.user.follower'
 			)
 		);
 	}
@@ -130,6 +134,8 @@ class MyBB1xExporter extends AbstractExporter {
 			}
 			
 			$queue[] = 'com.woltlab.wcf.user';
+			
+			if (in_array('com.woltlab.wcf.user.follower', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.follower';
 		}
 		
 		return $queue;
@@ -276,7 +282,7 @@ class MyBB1xExporter extends AbstractExporter {
 			)
 			UNION
 			(
-				SELECT		-gid AS utid, gid, 0 AS posts, usertitle AS title, starimage, stars
+				SELECT		0 AS utid, gid, 0 AS posts, usertitle AS title, starimage, stars
 				FROM		".$this->databasePrefix."usergroups
 				WHERE		usertitle <> ?
 					AND	gid <> ?
@@ -293,6 +299,34 @@ class MyBB1xExporter extends AbstractExporter {
 				'repeatImage' => $row['stars'],
 				'requiredGender' => 0 // neutral
 			));
+		}
+	}
+	
+	/**
+	 * Counts followers.
+	 */
+	public function countFollowers() {
+		return $this->countUsers();
+	}
+	
+	/**
+	 * Exports followers.
+	 */
+	public function exportFollowers($offset, $limit) {
+		$sql = "SELECT		uid, buddylist
+			FROM		".$this->databasePrefix."users
+			ORDER BY	uid";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			$buddylist = array_unique(ArrayUtil::toIntegerArray(explode(',', $row['buddylist'])));
+			
+			foreach ($buddylist as $buddy) {
+				ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.follower')->import(0, array(
+					'userID' => $row['uid'],
+					'followUserID' => $buddy
+				));
+			}
 		}
 	}
 }
