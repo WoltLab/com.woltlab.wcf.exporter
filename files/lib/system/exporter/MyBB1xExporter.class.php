@@ -1,5 +1,7 @@
 <?php
 namespace wcf\system\exporter;
+use wbb\data\board\Board;
+
 use wcf\util\ArrayUtil;
 
 use wcf\data\like\Like;
@@ -73,6 +75,7 @@ class MyBB1xExporter extends AbstractExporter {
 	 */
 	protected $limits = array(
 		'com.woltlab.wcf.user' => 200,
+		'com.woltlab.wcf.user.avatar' => 100,
 		'com.woltlab.wcf.user.follower' => 100
 	);
 	
@@ -86,7 +89,16 @@ class MyBB1xExporter extends AbstractExporter {
 				'com.woltlab.wcf.user.avatar',
 				'com.woltlab.wcf.user.follower',
 				'com.woltlab.wcf.user.rank'
-			)
+			),
+			'com.woltlab.wbb.board' => array(
+				/*'com.woltlab.wbb.moderator',
+				'com.woltlab.wbb.acl',
+				'com.woltlab.wbb.attachment',
+				'com.woltlab.wbb.poll',
+				'com.woltlab.wbb.watchedThread',
+				'com.woltlab.wbb.like',
+				'com.woltlab.wcf.label'*/
+			),
 		);
 	}
 	
@@ -138,6 +150,11 @@ class MyBB1xExporter extends AbstractExporter {
 			if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.avatar';
 			
 			if (in_array('com.woltlab.wcf.user.follower', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.follower';
+		}
+		
+		// board
+		if (in_array('com.woltlab.wbb.board', $this->selectedData)) {
+			$queue[] = 'com.woltlab.wbb.board';
 		}
 		
 		return $queue;
@@ -375,6 +392,60 @@ class MyBB1xExporter extends AbstractExporter {
 				'height' => $height,
 				'userID' => $row['uid']
 			), array('fileLocation' => $this->fileSystemPath . $path['path']));
+		}
+	}
+	
+	/**
+	 * Counts boards.
+	 */
+	public function countBoards() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."forums";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return ($row['count'] ? 1 : 0);
+	}
+	
+	/**
+	 * Exports boards.
+	 */
+	public function exportBoards($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."forums
+			ORDER BY	pid, disporder, fid";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			$this->boardCache[$row['pid']][] = $row;
+		}
+		
+		$this->exportBoardsRecursively();
+	}
+	
+	/**
+	 * Exports the boards recursively.
+	 */
+	protected function exportBoardsRecursively($parentID = 0) {
+		if (!isset($this->boardCache[$parentID])) return;
+		
+		foreach ($this->boardCache[$parentID] as $board) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import($board['fid'], array(
+				'parentID' => ($board['pid'] ?: null),
+				'position' => $board['disporder'],
+				'boardType' => ($board['linkto'] ? Board::TYPE_LINK : ($board['type'] == 'c' ? Board::TYPE_CATEGORY : Board::TYPE_BOARD)),
+				'title' => $board['name'],
+				'description' => $board['description'],
+				'descriptionUseHtml' => 1, // cannot be disabled
+				'externalURL' => $board['linkto'],
+				'countUserPosts' => $board['usepostcounts'],
+				'isClosed' => $board['open'] ? 0 : 1,
+				'isInvisible' => $board['active'] ? 0 : 1,
+				'posts' => $board['posts'],
+				'threads' => $board['threads']
+			));
+			
+			$this->exportBoardsRecursively($board['fid']);
 		}
 	}
 }
