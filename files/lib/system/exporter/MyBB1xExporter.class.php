@@ -1,5 +1,7 @@
 <?php
 namespace wcf\system\exporter;
+use wbb\data\board\BoardCache;
+
 use wbb\data\board\Board;
 
 use wcf\util\ArrayUtil;
@@ -96,8 +98,8 @@ class MyBB1xExporter extends AbstractExporter {
 				'com.woltlab.wbb.attachment',
 				'com.woltlab.wbb.poll',
 				'com.woltlab.wbb.watchedThread',
-				'com.woltlab.wbb.like',
-				'com.woltlab.wcf.label'*/
+				'com.woltlab.wbb.like',*/
+				'com.woltlab.wcf.label'
 			),
 		);
 	}
@@ -155,6 +157,8 @@ class MyBB1xExporter extends AbstractExporter {
 		// board
 		if (in_array('com.woltlab.wbb.board', $this->selectedData)) {
 			$queue[] = 'com.woltlab.wbb.board';
+			if (in_array('com.woltlab.wcf.label', $this->selectedData)) $queue[] = 'com.woltlab.wcf.label';
+			$queue[] = 'com.woltlab.wbb.thread';
 		}
 		
 		return $queue;
@@ -446,6 +450,108 @@ class MyBB1xExporter extends AbstractExporter {
 			));
 			
 			$this->exportBoardsRecursively($board['fid']);
+		}
+	}
+	
+	/**
+	 * Counts threads.
+	 */
+	public function countThreads() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."threads";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports threads.
+	 */
+	public function exportThreads($offset, $limit) {
+		// TODO: This is untested
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."threads";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		
+		while ($row = $statement->fetchArray()) {
+			$data = array(
+				'boardID' => $row['fid'],
+				'topic' => $row['subject'],
+				'time' => $row['dateline'],
+				'userID' => $row['uid'],
+				'username' => $row['username'],
+				'views' => $row['views'],
+				'isSticky' => $row['sticky'],
+				'isDisabled' => $row['visible'] ? 0 : 1,
+				'isClosed' => $row['closed'],
+				'isDeleted' => $row['deletetime'] ? 1 : 0,
+				'deleteTime' => $row['deletetime']
+			);
+			
+			$additionalData = array();
+			if ($row['prefix']) $additionalData['labels'] = array($row['fid'].'-'.$row['prefix']);
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.thread')->import($row['tid'], $data, $additionalData);
+		}
+	}
+	
+	/**
+	 * Counts labels.
+	 */
+	public function countLabels() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."threadprefixes";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array(0));
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports labels.
+	 */
+	public function exportLabels($offset, $limit) {
+		$prefixMap = array();
+		
+		$sql = "SELECT	*
+			FROM	".$this->databasePrefix."threadprefixes";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array(0));
+		while ($row = $statement->fetchArray()) {
+			$forums = array_unique(ArrayUtil::toIntegerArray(explode(',', $row['forums'])));
+			foreach ($forums as $forum) {
+				if (!isset($prefixMap[$forum])) $prefixMap[$forum] = array();
+				$prefixMap[$forum][$row['pid']] = $row['prefix'];
+			}
+		}
+		
+		// save prefixes
+		if (!empty($prefixMap)) {
+			$objectType = ObjectTypeCache::getInstance()->getObjectTypeByName('com.woltlab.wcf.label.objectType', 'com.woltlab.wbb.board');
+			
+			foreach ($prefixMap as $forumID => $data) {
+				$boardIDs = array($forumID);
+				if ($forumID == -1) {
+					$boardIDs = array_keys(BoardCache::getInstance()->getBoards());
+				}
+				
+				// import label group
+				ImportHandler::getInstance()->getImporter('com.woltlab.wcf.label.group')->import($forumID, array(
+					'groupName' => 'labelgroup'.$forumID
+				), array('objects' => array($objectType->objectTypeID => $boardIDs)));
+				
+				// TODO: LabelImporter seems broken at the moment, the label groups are not properly mapped
+				// import labels
+				foreach ($data as $prefixID => $prefix) {
+					ImportHandler::getInstance()->getImporter('com.woltlab.wcf.label')->import($forumID.'-'.$prefixID, array(
+						'groupID' => $forumID,
+						'label' => $prefix,
+						'cssClassName' => ''
+					));
+				}
+			}
 		}
 	}
 }
