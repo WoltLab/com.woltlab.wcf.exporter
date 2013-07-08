@@ -351,7 +351,7 @@ class WBB3xExporter extends AbstractExporter {
 				if ($optionName == 'timezone') continue; // skip broken timezone setting
 				
 				if (isset($row['userOption'.$optionID])) {
-					$data['options'][$optionName] = $row['userOption'.$optionID];
+					$additionalData['options'][$optionName] = $row['userOption'.$optionID];
 				}
 			}
 			
