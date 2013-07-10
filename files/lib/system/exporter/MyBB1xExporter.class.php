@@ -100,9 +100,9 @@ class MyBB1xExporter extends AbstractExporter {
 				/*'com.woltlab.wbb.moderator',
 				'com.woltlab.wbb.acl',*/
 				'com.woltlab.wbb.attachment',
-				/*'com.woltlab.wbb.poll',
+				/*'com.woltlab.wbb.poll',*/
 				'com.woltlab.wbb.watchedThread',
-				'com.woltlab.wbb.like',*/
+				/*'com.woltlab.wbb.like',*/
 				'com.woltlab.wcf.label'
 			),
 		);
@@ -175,6 +175,7 @@ class MyBB1xExporter extends AbstractExporter {
 			$queue[] = 'com.woltlab.wbb.post';
 			
 			if (in_array('com.woltlab.wbb.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wbb.attachment';
+			if (in_array('com.woltlab.wbb.watchedThread', $this->selectedData)) $queue[] = 'com.woltlab.wbb.watchedThread';
 		}
 		
 		return $queue;
@@ -644,6 +645,36 @@ class MyBB1xExporter extends AbstractExporter {
 				'downloads' => $row['downloads'],
 				'uploadTime' => $row['dateuploaded']
 			), array('fileLocation' => $fileLocation));
+		}
+	}
+	
+	/**
+	 * Counts watched threads.
+	 */
+	public function countWatchedThreads() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."threadsubscriptions";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports watched threads.
+	 */
+	public function exportWatchedThreads($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."threadsubscriptions
+			ORDER BY	sid";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.watchedThread')->import($row['sid'], array(
+				'objectID' => $row['tid'],
+				'userID' => $row['uid'],
+				'notification' => $row['notification']
+			));
 		}
 	}
 	
