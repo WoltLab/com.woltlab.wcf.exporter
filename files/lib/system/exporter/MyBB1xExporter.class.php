@@ -159,6 +159,7 @@ class MyBB1xExporter extends AbstractExporter {
 			$queue[] = 'com.woltlab.wbb.board';
 			if (in_array('com.woltlab.wcf.label', $this->selectedData)) $queue[] = 'com.woltlab.wcf.label';
 			$queue[] = 'com.woltlab.wbb.thread';
+			$queue[] = 'com.woltlab.wbb.post';
 		}
 		
 		return $queue;
@@ -493,6 +494,49 @@ class MyBB1xExporter extends AbstractExporter {
 			if ($row['prefix']) $additionalData['labels'] = array($row['fid'].'-'.$row['prefix']);
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.thread')->import($row['tid'], $data, $additionalData);
+		}
+	}
+	
+	/**
+	 * Counts posts.
+	 */
+	public function countPosts() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."posts";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports posts.
+	 */
+	public function exportPosts($offset, $limit) {
+		$sql = "SELECT		post_table.*, user_table.username AS editor
+			FROM		".$this->databasePrefix."posts post_table
+			LEFT JOIN	".$this->databasePrefix."users user_table
+			ON		user_table.uid = post_table.edituid
+			ORDER BY	pid";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.post')->import($row['pid'], array(
+				'threadID' => $row['tid'],
+				'userID' => $row['uid'],
+				'username' => $row['username'],
+				'subject' => $row['subject'],
+				'message' => $row['message'],
+				'time' => $row['dateline'],
+				'isDisabled' => $row['visible'] ? 0 : 1,
+				'editorID' => ($row['edituid'] ?: null),
+				'editor' => $row['editor'] ?: '',
+				'lastEditTime' => $row['edittime'],
+				'editCount' => $row['editor'] ? 1 : 0,
+				'enableSmilies' => $row['smilieoff'] ? 0 : 1,
+				'showSignature' => $row['includesig'],
+				'ipAddress' => $row['ipaddress']
+			));
 		}
 	}
 	
