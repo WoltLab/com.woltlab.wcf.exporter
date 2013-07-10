@@ -98,9 +98,9 @@ class MyBB1xExporter extends AbstractExporter {
 			),*/
 			'com.woltlab.wbb.board' => array(
 				/*'com.woltlab.wbb.moderator',
-				'com.woltlab.wbb.acl',
+				'com.woltlab.wbb.acl',*/
 				'com.woltlab.wbb.attachment',
-				'com.woltlab.wbb.poll',
+				/*'com.woltlab.wbb.poll',
 				'com.woltlab.wbb.watchedThread',
 				'com.woltlab.wbb.like',*/
 				'com.woltlab.wcf.label'
@@ -173,6 +173,8 @@ class MyBB1xExporter extends AbstractExporter {
 			if (in_array('com.woltlab.wcf.label', $this->selectedData)) $queue[] = 'com.woltlab.wcf.label';
 			$queue[] = 'com.woltlab.wbb.thread';
 			$queue[] = 'com.woltlab.wbb.post';
+			
+			if (in_array('com.woltlab.wbb.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wbb.attachment';
 		}
 		
 		return $queue;
@@ -594,6 +596,54 @@ class MyBB1xExporter extends AbstractExporter {
 				'showSignature' => $row['includesig'],
 				'ipAddress' => $row['ipaddress']
 			));
+		}
+	}
+	
+	/**
+	 * Counts post attachments.
+	 */
+	public function countPostAttachments() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."attachments";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array());
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports post attachments.
+	 */
+	public function exportPostAttachments($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."attachments
+			ORDER BY	aid ASC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute(array('post', 0));
+		while ($row = $statement->fetchArray()) {
+			$fileLocation = $this->fileSystemPath.'uploads/'.$row['attachname'];
+			
+			if ($imageSize = getimagesize($fileLocation)) {
+				$row['isImage'] = 1;
+				$row['width'] = $imageSize[0];
+				$row['height'] = $imageSize[1];
+			}
+			else {
+				$row['isImage'] = $row['width'] = $row['height'] = 0;
+			}
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.attachment')->import($row['aid'], array(
+				'objectID' => $row['pid'],
+				'userID' => ($row['uid'] ?: null),
+				'filename' => $row['filename'],
+				'filesize' => $row['filesize'],
+				'fileType' => $row['filetype'],
+				'isImage' => $row['isImage'],
+				'width' => $row['width'],
+				'height' => $row['height'],
+				'downloads' => $row['downloads'],
+				'uploadTime' => $row['dateuploaded']
+			), array('fileLocation' => $fileLocation));
 		}
 	}
 	

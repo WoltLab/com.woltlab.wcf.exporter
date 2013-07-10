@@ -1122,7 +1122,7 @@ class WBB3xExporter extends AbstractExporter {
 		$statement->execute(array('post', 0));
 		while ($row = $statement->fetchArray()) {
 			$fileLocation = $this->fileSystemPath.'attachments/attachment-'.$row['attachmentID'];
-				
+			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.attachment')->import($row['attachmentID'], array(
 				'objectID' => $row['containerID'],
 				'userID' => ($row['userID'] ?: null),
