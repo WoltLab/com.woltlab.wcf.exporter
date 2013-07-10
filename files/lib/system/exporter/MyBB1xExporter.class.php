@@ -102,7 +102,7 @@ class MyBB1xExporter extends AbstractExporter {
 				'com.woltlab.wbb.attachment',
 				/*'com.woltlab.wbb.poll',*/
 				'com.woltlab.wbb.watchedThread',
-				/*'com.woltlab.wbb.like',*/
+				'com.woltlab.wbb.like',
 				'com.woltlab.wcf.label'
 			),
 		);
@@ -176,6 +176,7 @@ class MyBB1xExporter extends AbstractExporter {
 			
 			if (in_array('com.woltlab.wbb.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wbb.attachment';
 			if (in_array('com.woltlab.wbb.watchedThread', $this->selectedData)) $queue[] = 'com.woltlab.wbb.watchedThread';
+			if (in_array('com.woltlab.wbb.like', $this->selectedData)) $queue[] = 'com.woltlab.wbb.like';
 		}
 		
 		return $queue;
@@ -668,7 +669,7 @@ class MyBB1xExporter extends AbstractExporter {
 	public function exportWatchedThreads($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."threadsubscriptions
-			ORDER BY	sid";
+			ORDER BY	sid ASC";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
@@ -676,6 +677,44 @@ class MyBB1xExporter extends AbstractExporter {
 				'objectID' => $row['tid'],
 				'userID' => $row['uid'],
 				'notification' => $row['notification']
+			));
+		}
+	}
+	
+	/**
+	 * Counts likes.
+	 */
+	public function countLikes() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."reputation
+			WHERE		pid <> ?
+				AND	adduid <> ?
+				AND	reputation <> ?";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array(0, 0, 0));
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports likes.
+	 */
+	public function exportLikes($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."reputation
+			WHERE		pid <> ?
+				AND	adduid <> ?
+				AND	reputation <> ?
+			ORDER BY	rid ASC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute(array(0, 0, 0));
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.like')->import($row['rid'], array(
+				'objectID' => $row['pid'],
+				'objectUserID' => ($row['uid'] ?: null),
+				'userID' => $row['adduid'],
+				'likeValue' => ($row['reputation'] > 0 ? Like::LIKE : Like::DISLIKE),
+				'time' => $row['dateline']
 			));
 		}
 	}
