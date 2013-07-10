@@ -92,6 +92,10 @@ class MyBB1xExporter extends AbstractExporter {
 				'com.woltlab.wcf.user.follower',
 				'com.woltlab.wcf.user.rank'
 			),
+			/*'com.woltlab.wcf.conversation' => array(
+				'com.woltlab.wcf.conversation.attachment',
+				'com.woltlab.wcf.conversation.label'
+			),*/
 			'com.woltlab.wbb.board' => array(
 				/*'com.woltlab.wbb.moderator',
 				'com.woltlab.wbb.acl',
@@ -152,6 +156,15 @@ class MyBB1xExporter extends AbstractExporter {
 			if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.avatar';
 			
 			if (in_array('com.woltlab.wcf.user.follower', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.follower';
+			
+			// conversation
+			/*if (in_array('com.woltlab.wcf.conversation', $this->selectedData)) {
+				if (in_array('com.woltlab.wcf.conversation.label', $this->selectedData)) $queue[] = 'com.woltlab.wcf.conversation.label';
+				
+				$queue[] = 'com.woltlab.wcf.conversation';
+				$queue[] = 'com.woltlab.wcf.conversation.message';
+				$queue[] = 'com.woltlab.wcf.conversation.user';
+			}*/
 		}
 		
 		// board
@@ -398,6 +411,50 @@ class MyBB1xExporter extends AbstractExporter {
 				'userID' => $row['uid']
 			), array('fileLocation' => $this->fileSystemPath . $path['path']));
 		}
+	}
+	
+	/**
+	 * Counts conversation folders.
+	 */
+	public function countConversationFolders() {
+		return $this->countUsers();
+	}
+	
+	/**
+	 * Exports conversation folders.
+	 */
+	public function exportConversationFolders($offset, $limit) {
+		$sql = "SELECT		uid, pmfolders
+			FROM		".$this->databasePrefix."users
+			ORDER BY	folderID";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			$folders = explode('$%%$', $row['pmfolders']);
+			foreach ($folders as $folder) {
+				list($folderID, $folderName) = explode('**', $folder);
+				if ($folderID <= 4) continue; // the first 4 folders are the default folders
+				
+				ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.label')->import($row['uid'].'-'.$folderID, array(
+					'userID' => $row['uid'],
+					'label' => $folderName
+				));
+			}
+		}
+	}
+	
+	/**
+	 * Counts conversations.
+	 */
+	public function countConversations() {
+		// TODO: Find out how to group messages belonging together
+	}
+	
+	/**
+	 * Exports conversations.
+	 */
+	public function exportConversations($offset, $limit) {
+		
 	}
 	
 	/**
