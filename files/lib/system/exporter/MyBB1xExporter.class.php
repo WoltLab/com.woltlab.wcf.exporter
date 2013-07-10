@@ -514,6 +514,7 @@ class MyBB1xExporter extends AbstractExporter {
 	 */
 	public function exportLabels($offset, $limit) {
 		$prefixMap = array();
+		$boardIDs = array_keys(BoardCache::getInstance()->getBoards());
 		
 		$sql = "SELECT	*
 			FROM	".$this->databasePrefix."threadprefixes";
@@ -521,6 +522,9 @@ class MyBB1xExporter extends AbstractExporter {
 		$statement->execute(array(0));
 		while ($row = $statement->fetchArray()) {
 			$forums = array_unique(ArrayUtil::toIntegerArray(explode(',', $row['forums'])));
+			// -1 = global
+			if (in_array('-1', $forums)) $forums = $boardIDs;
+			
 			foreach ($forums as $forum) {
 				if (!isset($prefixMap[$forum])) $prefixMap[$forum] = array();
 				$prefixMap[$forum][$row['pid']] = $row['prefix'];
@@ -532,23 +536,16 @@ class MyBB1xExporter extends AbstractExporter {
 			$objectType = ObjectTypeCache::getInstance()->getObjectTypeByName('com.woltlab.wcf.label.objectType', 'com.woltlab.wbb.board');
 			
 			foreach ($prefixMap as $forumID => $data) {
-				$boardIDs = array($forumID);
-				if ($forumID == -1) {
-					$boardIDs = array_keys(BoardCache::getInstance()->getBoards());
-				}
-				
 				// import label group
 				ImportHandler::getInstance()->getImporter('com.woltlab.wcf.label.group')->import($forumID, array(
 					'groupName' => 'labelgroup'.$forumID
-				), array('objects' => array($objectType->objectTypeID => $boardIDs)));
+				), array('objects' => array($objectType->objectTypeID => array($forumID))));
 				
-				// TODO: LabelImporter seems broken at the moment, the label groups are not properly mapped
 				// import labels
 				foreach ($data as $prefixID => $prefix) {
 					ImportHandler::getInstance()->getImporter('com.woltlab.wcf.label')->import($forumID.'-'.$prefixID, array(
 						'groupID' => $forumID,
-						'label' => $prefix,
-						'cssClassName' => ''
+						'label' => $prefix
 					));
 				}
 			}
