@@ -469,7 +469,6 @@ class MyBB1xExporter extends AbstractExporter {
 	 * Exports threads.
 	 */
 	public function exportThreads($offset, $limit) {
-		// TODO: This is untested
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."threads";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
@@ -483,9 +482,9 @@ class MyBB1xExporter extends AbstractExporter {
 				'userID' => $row['uid'],
 				'username' => $row['username'],
 				'views' => $row['views'],
-				'isSticky' => $row['sticky'],
+				'isSticky' => $row['sticky'] ? 1 : 0,
 				'isDisabled' => $row['visible'] ? 0 : 1,
-				'isClosed' => $row['closed'],
+				'isClosed' => $row['closed'] ? 1 : 0,
 				'isDeleted' => $row['deletetime'] ? 1 : 0,
 				'deleteTime' => $row['deletetime']
 			);
