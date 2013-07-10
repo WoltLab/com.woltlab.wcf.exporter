@@ -551,6 +551,7 @@ class MyBB1xExporter extends AbstractExporter {
 			);
 			
 			$additionalData = array();
+			// TODO: Labels don't work fully yet
 			if ($row['prefix']) $additionalData['labels'] = array($row['fid'].'-'.$row['prefix']);
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.thread')->import($row['tid'], $data, $additionalData);
@@ -622,6 +623,7 @@ class MyBB1xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array('post', 0));
 		while ($row = $statement->fetchArray()) {
+			// TODO: respect uploads/-setting of MyBB
 			$fileLocation = $this->fileSystemPath.'uploads/'.$row['attachname'];
 			
 			if ($imageSize = getimagesize($fileLocation)) {
