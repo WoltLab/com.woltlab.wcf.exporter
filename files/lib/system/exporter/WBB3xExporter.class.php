@@ -765,7 +765,7 @@ class WBB3xExporter extends AbstractExporter {
 				'conversationID' => ($row['parentPmID'] ?: $row['pmID']),
 				'userID' => $row['userID'],
 				'username' => $row['username'],
-				'message' => $row['message'],
+				'message' => self::fixBBCodes($row['message']),
 				'time' => $row['time'],
 				'attachments' => $row['attachments'],
 				'enableSmilies' => $row['enableSmilies'],
@@ -1074,7 +1074,7 @@ class WBB3xExporter extends AbstractExporter {
 				'userID' => $row['userID'],
 				'username' => $row['username'],
 				'subject' => $row['subject'],
-				'message' => $row['message'],
+				'message' => self::fixBBCodes($row['message']),
 				'time' => $row['time'],
 				'isDeleted' => $row['isDeleted'],
 				'isDisabled' => $row['isDisabled'],
@@ -1201,7 +1201,8 @@ class WBB3xExporter extends AbstractExporter {
 				'isChangeable' => ($row['votesNotChangeable'] ? 0 : 1),
 				'isPublic' => $row['isPublic'],
 				'sortByVotes' => $row['sortByResult'],
-				'maxVotes' => $row['choiceCount']
+				'maxVotes' => $row['choiceCount'],
+				'votes' => $row['votes']
 			));
 		}
 	}
@@ -1241,7 +1242,8 @@ class WBB3xExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll.option')->import($row['pollOptionID'], array(
 				'pollID' => $row['pollID'],
 				'optionValue' => $row['pollOption'],
-				'showOrder' => $row['showOrder']
+				'showOrder' => $row['showOrder'],
+				'votes' => $row['votes']
 			));
 		}
 	}
@@ -1552,5 +1554,20 @@ class WBB3xExporter extends AbstractExporter {
 		}
 	
 		return $optionsNames;
+	}
+	
+	private static function fixBBCodes($message) {
+		// code bbcodes
+		$message = preg_replace('~\[(php|java|css|html|xml|tpl|js|c)\]~', '[code=\\1]', $message);
+		$message = preg_replace('~\[(php|java|css|html|xml|tpl|js|c)=(\d+)\]~', '[code=\\1,\\2]', $message);
+		$message = str_replace('[mysql]', '[code=sql]', $message);
+		$message = preg_replace('~\[mysql=(\d+)\]~', '[code=sql,\\1]', $message);
+		$message = preg_replace('~\[/(?:php|java|css|html|xml|tpl|js|c|mysql)\]~', '[/code]', $message);
+		
+		// media bbcodes
+		$message = preg_replace("~\[(?:youtube|myvideo|myspace|googlevideo|clipfish|sevenload)(?:='?([^'\],]+)'?)?(?:,[^\]]+)?\]~", '[media]\\1', $message);
+		$message = preg_replace('~\[/(?:youtube|myvideo|myspace|googlevideo|clipfish|sevenload)\]~', '[/media]', $message);
+		
+		return $message;
 	}
 }
