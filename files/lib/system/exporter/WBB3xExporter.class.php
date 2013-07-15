@@ -71,7 +71,8 @@ class WBB3xExporter extends AbstractExporter {
 		'com.woltlab.wbb.poll.option' => 'PollOptions',
 		'com.woltlab.wbb.poll.option.vote' => 'PollOptionVotes',
 		'com.woltlab.wbb.like' => 'Likes',
-		'com.woltlab.wcf.label' => 'Labels'
+		'com.woltlab.wcf.label' => 'Labels',
+		'com.woltlab.wbb.acl' => 'ACLs'
 	);
 	
 	/**
@@ -83,6 +84,7 @@ class WBB3xExporter extends AbstractExporter {
 		'com.woltlab.wcf.conversation.attachment' => 100,
 		'com.woltlab.wbb.thread' => 200,
 		'com.woltlab.wbb.attachment' => 100,
+		'com.woltlab.wbb.acl' => 50
 	);
 	
 	/**
@@ -111,7 +113,6 @@ class WBB3xExporter extends AbstractExporter {
 				'com.woltlab.wcf.user.rank'
 			),
 			'com.woltlab.wbb.board' => array(
-				'com.woltlab.wbb.moderator',
 				'com.woltlab.wbb.acl',
 				'com.woltlab.wbb.attachment',
 				'com.woltlab.wbb.poll',
@@ -200,7 +201,6 @@ class WBB3xExporter extends AbstractExporter {
 			$queue[] = 'com.woltlab.wbb.thread';
 			$queue[] = 'com.woltlab.wbb.post';
 			
-			if (in_array('com.woltlab.wbb.moderator', $this->selectedData)) $queue[] = 'com.woltlab.wbb.moderator';
 			if (in_array('com.woltlab.wbb.acl', $this->selectedData)) $queue[] = 'com.woltlab.wbb.acl';
 			if (in_array('com.woltlab.wbb.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wbb.attachment';
 			if (in_array('com.woltlab.wbb.watchedThread', $this->selectedData)) $queue[] = 'com.woltlab.wbb.watchedThread';
@@ -351,7 +351,7 @@ class WBB3xExporter extends AbstractExporter {
 				if ($optionName == 'timezone') continue; // skip broken timezone setting
 				
 				if (isset($row['userOption'.$optionID])) {
-					$data['options'][$optionName] = $row['userOption'.$optionID];
+					$additionalData['options'][$optionName] = $row['userOption'.$optionID];
 				}
 			}
 			
@@ -765,7 +765,7 @@ class WBB3xExporter extends AbstractExporter {
 				'conversationID' => ($row['parentPmID'] ?: $row['pmID']),
 				'userID' => $row['userID'],
 				'username' => $row['username'],
-				'message' => $row['message'],
+				'message' => self::fixBBCodes($row['message']),
 				'time' => $row['time'],
 				'attachments' => $row['attachments'],
 				'enableSmilies' => $row['enableSmilies'],
@@ -1074,7 +1074,7 @@ class WBB3xExporter extends AbstractExporter {
 				'userID' => $row['userID'],
 				'username' => $row['username'],
 				'subject' => $row['subject'],
-				'message' => $row['message'],
+				'message' => self::fixBBCodes($row['message']),
 				'time' => $row['time'],
 				'isDeleted' => $row['isDeleted'],
 				'isDisabled' => $row['isDisabled'],
@@ -1201,7 +1201,8 @@ class WBB3xExporter extends AbstractExporter {
 				'isChangeable' => ($row['votesNotChangeable'] ? 0 : 1),
 				'isPublic' => $row['isPublic'],
 				'sortByVotes' => $row['sortByResult'],
-				'maxVotes' => $row['choiceCount']
+				'maxVotes' => $row['choiceCount'],
+				'votes' => $row['votes']
 			));
 		}
 	}
@@ -1241,7 +1242,8 @@ class WBB3xExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll.option')->import($row['pollOptionID'], array(
 				'pollID' => $row['pollID'],
 				'optionValue' => $row['pollOption'],
-				'showOrder' => $row['showOrder']
+				'showOrder' => $row['showOrder'],
+				'votes' => $row['votes']
 			));
 		}
 	}
@@ -1416,6 +1418,126 @@ class WBB3xExporter extends AbstractExporter {
 	}
 	
 	/**
+	 * Counts ACLs.
+	 */
+	public function countACLs() {
+		$sql = "SELECT	(SELECT COUNT(*) FROM wbb".$this->dbNo."_".$this->instanceNo."_board_moderator)
+				+ (SELECT COUNT(*) FROM wbb".$this->dbNo."_".$this->instanceNo."_board_to_group)
+				+ (SELECT COUNT(*) FROM wbb".$this->dbNo."_".$this->instanceNo."_board_to_user) AS count";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array(0));
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports ACLs.
+	 */
+	public function exportACLs($offset, $limit) {
+		// get ids
+		$mod = $user = $group = array();
+		$sql = "(
+				SELECT	boardID, userID, groupID, 'mod' AS type
+				FROM	wbb".$this->dbNo."_".$this->instanceNo."_board_moderator
+			)
+			UNION
+			(
+				SELECT	boardID, 0 AS userID, groupID, 'group' AS type
+				FROM	wbb".$this->dbNo."_".$this->instanceNo."_board_to_group
+			)
+			UNION			
+			(
+				SELECT	boardID, userID, 0 AS groupID, 'user' AS type
+				FROM	wbb".$this->dbNo."_".$this->instanceNo."_board_to_user
+			)			
+			ORDER BY	boardID, userID, groupID, type";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			${$row['type']}[] = $row; 
+		}
+		
+		// mods
+		if (!empty($mod)) {
+			$conditionBuilder = new PreparedStatementConditionBuilder(true, 'OR');
+			foreach ($mod as $row) {
+				$conditionBuilder->add('(boardID = ? AND userID = ? AND groupID = ?)', array($row['boardID'], $row['userID'], $row['groupID']));
+			}
+			
+			$sql = "SELECT	*
+				FROM	wbb".$this->dbNo."_".$this->instanceNo."_board_moderator
+				".$conditionBuilder;
+			$statement = $this->database->prepareStatement($sql);
+			$statement->execute($conditionBuilder->getParameters());
+			while ($row = $statement->fetchArray()) {
+				$data = array(
+					'objectID' => $row['boardID']
+				);
+				if ($row['userID']) $data['userID'] = $row['userID'];
+				else if ($row['groupID']) $data['groupID'] = $row['groupID'];
+				
+				unset($row['boardID'], $row['userID'], $row['groupID']);
+				
+				foreach ($row as $permission => $value) {
+					ImportHandler::getInstance()->getImporter('com.woltlab.wbb.acl')->import(0, array_merge($data, array('optionValue' => $value)), array('optionName' => $permission));
+				}
+			}
+		}
+		
+		// groups
+		if (!empty($group)) {
+			$conditionBuilder = new PreparedStatementConditionBuilder(true, 'OR');
+			foreach ($group as $row) {
+				$conditionBuilder->add('(boardID = ? AND groupID = ?)', array($row['boardID'], $row['groupID']));
+			}
+				
+			$sql = "SELECT	*
+				FROM	wbb".$this->dbNo."_".$this->instanceNo."_board_to_group
+				".$conditionBuilder;
+			$statement = $this->database->prepareStatement($sql);
+			$statement->execute($conditionBuilder->getParameters());
+			while ($row = $statement->fetchArray()) {
+				$data = array(
+					'objectID' => $row['boardID']
+				);
+				$data['groupID'] = $row['groupID'];
+		
+				unset($row['boardID'], $row['groupID']);
+		
+				foreach ($row as $permission => $value) {
+					ImportHandler::getInstance()->getImporter('com.woltlab.wbb.acl')->import(0, array_merge($data, array('optionValue' => $value)), array('optionName' => $permission));
+				}
+			}
+		}
+		
+		// users
+		if (!empty($group)) {
+			$conditionBuilder = new PreparedStatementConditionBuilder(true, 'OR');
+			foreach ($user as $row) {
+				$conditionBuilder->add('(boardID = ? AND userID = ?)', array($row['boardID'], $row['userID']));
+			}
+		
+			$sql = "SELECT	*
+				FROM	wbb".$this->dbNo."_".$this->instanceNo."_board_to_user
+				".$conditionBuilder;
+			$statement = $this->database->prepareStatement($sql);
+			$statement->execute($conditionBuilder->getParameters());
+			while ($row = $statement->fetchArray()) {
+				$data = array(
+					'objectID' => $row['boardID']
+				);
+				$data['userID'] = $row['userID'];
+		
+				unset($row['boardID'], $row['userID']);
+		
+				foreach ($row as $permission => $value) {
+					ImportHandler::getInstance()->getImporter('com.woltlab.wbb.acl')->import(0, array_merge($data, array('optionValue' => $value)), array('optionName' => $permission));
+				}
+			}
+		}
+	}
+	
+	/**
 	 * Gets existing WCF2.0 user options.
 	 *
 	 * @return array
@@ -1432,5 +1554,20 @@ class WBB3xExporter extends AbstractExporter {
 		}
 	
 		return $optionsNames;
+	}
+	
+	private static function fixBBCodes($message) {
+		// code bbcodes
+		$message = preg_replace('~\[(php|java|css|html|xml|tpl|js|c)\]~', '[code=\\1]', $message);
+		$message = preg_replace('~\[(php|java|css|html|xml|tpl|js|c)=(\d+)\]~', '[code=\\1,\\2]', $message);
+		$message = str_replace('[mysql]', '[code=sql]', $message);
+		$message = preg_replace('~\[mysql=(\d+)\]~', '[code=sql,\\1]', $message);
+		$message = preg_replace('~\[/(?:php|java|css|html|xml|tpl|js|c|mysql)\]~', '[/code]', $message);
+		
+		// media bbcodes
+		$message = preg_replace("~\[(?:youtube|myvideo|myspace|googlevideo|clipfish|sevenload)(?:='?([^'\],]+)'?)?(?:,[^\]]+)?\]~", '[media]\\1', $message);
+		$message = preg_replace('~\[/(?:youtube|myvideo|myspace|googlevideo|clipfish|sevenload)\]~', '[/media]', $message);
+		
+		return $message;
 	}
 }
