@@ -103,8 +103,7 @@ class MyBB1xExporter extends AbstractExporter {
 				'com.woltlab.wcf.conversation.label'
 			),*/
 			'com.woltlab.wbb.board' => array(
-				/*'com.woltlab.wbb.moderator',
-				'com.woltlab.wbb.acl',*/
+				/*'com.woltlab.wbb.acl',*/
 				'com.woltlab.wbb.attachment',
 				'com.woltlab.wbb.poll',
 				'com.woltlab.wbb.watchedThread',
@@ -257,13 +256,17 @@ class MyBB1xExporter extends AbstractExporter {
 		$passwordUpdateStatement = WCF::getDB()->prepareStatement($sql);
 		
 		// get users
-		$sql = "SELECT		user_table.*, activation_table.code AS activationCode, activation_table.type AS activationType, activation_table.misc AS newEmail
+		$sql = "SELECT		user_table.*, activation_table.code AS activationCode, activation_table.type AS activationType,
+					activation_table.misc AS newEmail, ban_table.reason AS banReason
 			FROM		".$this->databasePrefix."users user_table
 			LEFT JOIN	".$this->databasePrefix."awaitingactivation activation_table
 			ON		user_table.uid = activation_table.uid
+			LEFT JOIN	".$this->databasePrefix."banned ban_table
+			ON			user_table.uid = ban_table.uid
+					AND	ban_table.lifted <> ?
 			ORDER BY	uid";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement->execute(array(0));
 		
 		WCF::getDB()->beginTransaction();
 		while ($row = $statement->fetchArray()) {
@@ -272,8 +275,8 @@ class MyBB1xExporter extends AbstractExporter {
 				'password' => '',
 				'email' => $row['email'],
 				'registrationDate' => $row['regdate'],
-				'banned' => 0, // TODO: banned
-				'banReason' => '',
+				'banned' => $row['banReason'] === null ? 0 : 1,
+				'banReason' => $row['banReason'],
 				($row['activationType'] == 'e' ? 're' : '').'activationCode' => $row['activationCode'] ? UserRegistrationUtil::getActivationCode() : 0, // mybb's codes are strings
 				'newEmail' => $row['newEmail'] ?: '',
 				'oldUsername' => '',
