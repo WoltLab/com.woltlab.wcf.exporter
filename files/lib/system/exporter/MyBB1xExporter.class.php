@@ -106,7 +106,7 @@ class MyBB1xExporter extends AbstractExporter {
 				/*'com.woltlab.wbb.moderator',
 				'com.woltlab.wbb.acl',*/
 				'com.woltlab.wbb.attachment',
-				/*'com.woltlab.wbb.poll',*/
+				'com.woltlab.wbb.poll',
 				'com.woltlab.wbb.watchedThread',
 				'com.woltlab.wbb.like',
 				'com.woltlab.wcf.label'
@@ -182,6 +182,11 @@ class MyBB1xExporter extends AbstractExporter {
 			
 			if (in_array('com.woltlab.wbb.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wbb.attachment';
 			if (in_array('com.woltlab.wbb.watchedThread', $this->selectedData)) $queue[] = 'com.woltlab.wbb.watchedThread';
+			if (in_array('com.woltlab.wbb.poll', $this->selectedData)) {
+				$queue[] = 'com.woltlab.wbb.poll';
+				$queue[] = 'com.woltlab.wbb.poll.option';
+				$queue[] = 'com.woltlab.wbb.poll.option.vote';
+			}
 			if (in_array('com.woltlab.wbb.like', $this->selectedData)) $queue[] = 'com.woltlab.wbb.like';
 		}
 		
@@ -683,6 +688,107 @@ class MyBB1xExporter extends AbstractExporter {
 				'objectID' => $row['tid'],
 				'userID' => $row['uid'],
 				'notification' => $row['notification']
+			));
+		}
+	}
+	
+	/**
+	 * Counts polls.
+	 */
+	public function countPolls() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."polls";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports polls.
+	 */
+	public function exportPolls($offset, $limit) {
+		$sql = "SELECT		poll_table.*, thread_table.firstpost
+			FROM		".$this->databasePrefix."polls poll_table
+			LEFT JOIN	".$this->databasePrefix."threads thread_table
+			ON		poll_table.tid = thread_table.tid
+			ORDER BY	pid";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll')->import($row['pid'], array(
+				'objectID' => $row['firstpost'],
+				'question' => $row['question'],
+				'time' => $row['dateline'],
+				'endTime' => $row['timeout'] ? $row['dateline'] + $row['timeout'] * 86400 : 0,
+				'isChangeable' => 0,
+				'isPublic' => $row['public'],
+				'maxVotes' => $row['multiple'] ? $row['numoptions'] : 1,
+				'votes' => $row['numvotes']
+			));
+		}
+	}
+	
+	/**
+	 * Counts poll options.
+	 */
+	public function countPollOptions() {
+		return $this->countPolls();
+	}
+	
+	/**
+	 * Exports poll options.
+	 */
+	public function exportPollOptions($offset, $limit) {
+		$sql = "SELECT		pid, options, votes
+			FROM		".$this->databasePrefix."polls
+			ORDER BY	pid";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			$options = explode('||~|~||', $row['options']);
+			$votes = explode('||~|~||', $row['votes']);
+			$i = 1;
+			foreach ($options as $key => $option) {
+				ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll.option')->import($row['pid'].'-'.$i, array(
+					'pollID' => $row['pid'],
+					'optionValue' => $option,
+					'showOrder' => $i,
+					'votes' => $votes[$key]
+				));
+				
+				$i++;
+			}
+		}
+	}
+	
+	/**
+	 * Counts poll option votes.
+	 */
+	public function countPollOptionVotes() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."pollvotes";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports poll option votes.
+	 */
+	public function exportPollOptionVotes($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."pollvotes
+			ORDER BY	vid";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll.option.vote')->import($row['vid'], array(
+				'pollID' => $row['pid'],
+				'optionID' => $row['pid'].'-'.$row['voteoption'],
+				'userID' => $row['uid']
 			));
 		}
 	}
