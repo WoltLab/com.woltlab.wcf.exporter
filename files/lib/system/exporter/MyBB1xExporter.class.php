@@ -1,17 +1,7 @@
 <?php
 namespace wcf\system\exporter;
-use wcf\system\request\LinkHandler;
-
-use wcf\system\Callback;
-
-use wcf\system\Regex;
-
-use wbb\data\board\BoardCache;
-
 use wbb\data\board\Board;
-
-use wcf\util\ArrayUtil;
-
+use wbb\data\board\BoardCache;
 use wcf\data\like\Like;
 use wcf\data\object\type\ObjectTypeCache;
 use wcf\data\user\group\UserGroup;
@@ -22,9 +12,13 @@ use wcf\system\database\util\PreparedStatementConditionBuilder;
 use wcf\system\database\DatabaseException;
 use wcf\system\exception\SystemException;
 use wcf\system\importer\ImportHandler;
+use wcf\system\request\LinkHandler;
+use wcf\system\Callback;
+use wcf\system\Regex;
 use wcf\system\WCF;
-use wcf\util\UserRegistrationUtil;
+use wcf\util\ArrayUtil;
 use wcf\util\StringUtil;
+use wcf\util\UserRegistrationUtil;
 
 /**
  * Exporter for MyBB 1.x
