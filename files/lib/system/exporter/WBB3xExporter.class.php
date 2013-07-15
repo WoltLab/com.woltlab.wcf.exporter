@@ -876,7 +876,7 @@ class WBB3xExporter extends AbstractExporter {
 			LEFT JOIN	wbb".$this->dbNo."_".$this->instanceNo."_board_structure structure
 			ON		(structure.boardID = board.boardID)	
 			ORDER BY	board.parentID, structure.position";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement = $this->database->prepareStatement($sql);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
 			$this->boardCache[$row['parentID']][] = $row;
