@@ -92,10 +92,10 @@ class MyBB1xExporter extends AbstractExporter {
 				'com.woltlab.wcf.user.follower',
 				'com.woltlab.wcf.user.rank'
 			),
-			/*'com.woltlab.wcf.conversation' => array(
-				'com.woltlab.wcf.conversation.attachment',
+			'com.woltlab.wcf.conversation' => array(
+				/*'com.woltlab.wcf.conversation.attachment',*/
 				'com.woltlab.wcf.conversation.label'
-			),*/
+			),
 			'com.woltlab.wbb.board' => array(
 				/*'com.woltlab.wbb.acl',*/
 				'com.woltlab.wbb.attachment',
@@ -157,13 +157,13 @@ class MyBB1xExporter extends AbstractExporter {
 			if (in_array('com.woltlab.wcf.user.follower', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.follower';
 			
 			// conversation
-			/*if (in_array('com.woltlab.wcf.conversation', $this->selectedData)) {
+			if (in_array('com.woltlab.wcf.conversation', $this->selectedData)) {
 				if (in_array('com.woltlab.wcf.conversation.label', $this->selectedData)) $queue[] = 'com.woltlab.wcf.conversation.label';
 				
 				$queue[] = 'com.woltlab.wcf.conversation';
 				$queue[] = 'com.woltlab.wcf.conversation.message';
 				$queue[] = 'com.woltlab.wcf.conversation.user';
-			}*/
+			}
 		}
 		
 		// board
@@ -438,7 +438,7 @@ class MyBB1xExporter extends AbstractExporter {
 	public function exportConversationFolders($offset, $limit) {
 		$sql = "SELECT		uid, pmfolders
 			FROM		".$this->databasePrefix."users
-			ORDER BY	folderID";
+			ORDER BY	uid";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
@@ -459,14 +459,158 @@ class MyBB1xExporter extends AbstractExporter {
 	 * Counts conversations.
 	 */
 	public function countConversations() {
-		// TODO: Find out how to group messages belonging together
+		return $this->countConversationMessages();
 	}
 	
 	/**
 	 * Exports conversations.
 	 */
 	public function exportConversations($offset, $limit) {
+		static $titleRegex = null;
+		if ($titleRegex === null) {
+			$titleRegex = new Regex('^(re:\s+)+', Regex::CASE_INSENSITIVE);
+		}
 		
+		$sql = "INSERT IGNORE INTO	wcf".WCF_N."_conversation_to_user
+						(conversationID, participantID, hideConversation, isInvisible, lastVisitTime)
+			VALUES			(?, ?, ?, ?, ?)";
+		$insertStatement = WCF::getDB()->prepareStatement($sql);
+		
+		$sql = "SELECT		message_table.*, user_table.username
+			FROM		".$this->databasePrefix."privatemessages message_table
+			LEFT JOIN	".$this->databasePrefix."users user_table
+			ON 		user_table.uid = message_table.fromid
+			WHERE		pmid IN (	SELECT 		MIN(pmID)
+							FROM		".$this->databasePrefix."privatemessages
+							GROUP BY	fromid, dateline
+			)
+			ORDER BY	pmid ASC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			$tmp = unserialize($row['recipients']);
+			$recipients = array_unique(array_merge($tmp['to'], (isset($tmp['bcc']) ? $tmp['bcc'] : array()), array($row['fromid'])));
+			sort($recipients);
+			
+			$baseTitle = $titleRegex->replace($row['subject'], '');
+			
+			$row['isDraft'] = $row['folder'] == 3 ? 1 : 0;
+			$oldID = StringUtil::getHash(implode(',', $recipients).'-'.$baseTitle).($row['isDraft'] ? '-'.$row['fromid'] : '');
+			
+			if (ImportHandler::getInstance()->getNewID('com.woltlab.wcf.conversation', $oldID)) continue;
+			
+			$conversationID = ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import($oldID, array(
+				'subject' => $row['subject'],
+				'time' => $row['dateline'],
+				'userID' => $row['fromid'],
+				'username' => $row['username'],
+				'isDraft' => $row['isDraft']
+			));
+			
+			// add author
+			$insertStatement->execute(array(
+				$conversationID,
+				ImportHandler::getInstance()->getNewID('com.woltlab.wcf.user', $row['fromid']),
+				0,
+				0,
+				TIME_NOW
+			));
+		}
+	}
+	
+	/**
+	 * Counts conversation messages.
+	 */
+	public function countConversationMessages() {
+		$sql = "SELECT		COUNT(DISTINCT fromid, dateline) AS count
+			FROM		".$this->databasePrefix."privatemessages";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports conversation messages.
+	 */
+	public function exportConversationMessages($offset, $limit) {
+		static $titleRegex = null;
+		if ($titleRegex === null) {
+			$titleRegex = new Regex('^(re:\s+)+', Regex::CASE_INSENSITIVE);
+		}
+		
+		$sql = "SELECT		message_table.*, user_table.username
+			FROM		".$this->databasePrefix."privatemessages message_table
+			LEFT JOIN	".$this->databasePrefix."users user_table
+			ON 		user_table.uid = message_table.fromid
+			WHERE		pmid IN (	SELECT 		MIN(pmID)
+							FROM		".$this->databasePrefix."privatemessages
+							GROUP BY	fromid, dateline
+			)
+			ORDER BY	pmid ASC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			$tmp = unserialize($row['recipients']);
+			$recipients = array_unique(array_merge($tmp['to'], (isset($tmp['bcc']) ? $tmp['bcc'] : array()), array($row['fromid'])));
+			sort($recipients);
+			
+			$baseTitle = $titleRegex->replace($row['subject'], '');
+			
+			$row['isDraft'] = $row['folder'] == 3 ? 1 : 0;
+			$conversationID = StringUtil::getHash(implode(',', $recipients).'-'.$baseTitle).($row['isDraft'] ? '-'.$row['fromid'] : '');
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.message')->import($row['pmid'], array(
+				'conversationID' => $conversationID,
+				'userID' => $row['fromid'],
+				'username' => $row['username'],
+				'message' => self::fixBBCodes($row['message']),
+				'time' => $row['dateline'],
+				'enableSmilies' => $row['smilieoff'] ? 0 : 1,
+				'showSignature' => $row['includesig'] ? 1 : 0
+			));
+		}
+	}
+	
+	/**
+	 * Counts conversation recipients.
+	 */
+	public function countConversationUsers() {
+		return $this->countConversationMessages();
+	}
+	
+	/**
+	 * Exports conversation recipients.
+	 */
+	public function exportConversationUsers($offset, $limit) {
+		static $titleRegex = null;
+		if ($titleRegex === null) {
+			$titleRegex = new Regex('^(re:\s+)+', Regex::CASE_INSENSITIVE);
+		}
+		
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."privatemessages
+			ORDER BY	pmid";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			$tmp = unserialize($row['recipients']);
+			$recipients = array_unique(array_merge($tmp['to'], (isset($tmp['bcc']) ? $tmp['bcc'] : array()), array($row['fromid'])));
+			sort($recipients);
+			
+			$baseTitle = $titleRegex->replace($row['subject'], '');
+			
+			$row['isDraft'] = $row['folder'] == 3 ? 1 : 0;
+			$conversationID = StringUtil::getHash(implode(',', $recipients).'-'.$baseTitle).($row['isDraft'] ? '-'.$row['fromid'] : '');
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.user')->import(0, array(
+				'conversationID' => $conversationID,
+				'participantID' => $row['uid'],
+				'hideConversation' => 0, // TODO: Check this out
+				'isInvisible' => 0, // TODO: Check this out
+				'lastVisitTime' => 0 // TODO: Check this out
+			), array('labelIDs' => ($row['folder'] > 4 ? array($row['folder']) : array())));
+		}
 	}
 	
 	/**
