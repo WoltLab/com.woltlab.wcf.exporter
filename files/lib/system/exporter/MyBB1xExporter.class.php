@@ -1,5 +1,11 @@
 <?php
 namespace wcf\system\exporter;
+use wcf\system\request\LinkHandler;
+
+use wcf\system\Callback;
+
+use wcf\system\Regex;
+
 use wbb\data\board\BoardCache;
 
 use wbb\data\board\Board;
@@ -588,7 +594,7 @@ class MyBB1xExporter extends AbstractExporter {
 				'userID' => $row['uid'],
 				'username' => $row['username'],
 				'subject' => $row['subject'],
-				'message' => $row['message'],
+				'message' => self::fixBBCodes($row['message']),
 				'time' => $row['dateline'],
 				'isDisabled' => $row['visible'] ? 0 : 1,
 				'editorID' => ($row['edituid'] ?: null),
@@ -772,5 +778,41 @@ class MyBB1xExporter extends AbstractExporter {
 				}
 			}
 		}
+	}
+
+	private static function fixBBCodes($message) {
+		static $videoRegex = null;
+		static $quoteRegex = null;
+		static $quoteCallback = null;
+		
+		if ($videoRegex === null) {
+			$videoRegex = new Regex('\[video=[a-z]+\]');
+			$quoteRegex = new Regex('\[quote=\'(.*?)\' pid=\'(\d+)\' dateline=\'\d+\'\]');
+			$quoteCallback = new Callback(function ($matches) {
+				$username = StringUtil::replace(array("\\", "'"), array("\\\\", "\'"), $matches[1]);
+				$postID = $matches[2];
+				
+				$postLink = LinkHandler::getInstance()->getLink('Thread', array(
+					'application' => 'wbb',
+					'postID' => $postID,
+					'forceFrontend' = true
+				)).'#post'.$postID;
+				$postLink = StringUtil::replace(array("\\", "'"), array("\\\\", "\'"), $postLink);
+				
+				return "[quote='".$username."','".$postLink."']";
+			});
+		}
+		
+		// code bbcodes
+		$message = StringUtil::replace('[php]', '[code=php]', $message);
+		
+		// media bbcodes
+		$message = $videoRegex->replace($message, '[media]\\1');
+		$message = StringUtil::replace('[/video]', '[/media]', $message);
+		
+		// quotes
+		$message = $quoteRegex->replace($message, $quoteCallback);
+	
+		return $message;
 	}
 }
