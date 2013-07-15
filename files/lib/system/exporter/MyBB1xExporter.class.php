@@ -770,14 +770,25 @@ class MyBB1xExporter extends AbstractExporter {
 	 * Exports post attachments.
 	 */
 	public function exportPostAttachments($offset, $limit) {
+		static $uploadsPath = null;
+		if ($uploadsPath === null) {
+			// TODO: untested
+			$sql = "SELECT	value
+				FROM	".$this->databasePrefix."settings
+				WHERE	name = ?";
+			$statement = $this->database->prepareStatement($sql);
+			$statement->execute(array('uploadspath'));
+			$row = $statement->fetchArray();
+			$uploadsPath = $row['value'];
+			if (!StringUtil::startsWith($uploadsPath, '/')) $uploadsPath = realpath($this->fileSystemPath.$uploadsPath);
+		}
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."attachments
 			ORDER BY	aid ASC";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array('post', 0));
 		while ($row = $statement->fetchArray()) {
-			// TODO: respect uploads/-setting of MyBB
-			$fileLocation = $this->fileSystemPath.'uploads/'.$row['attachname'];
+			$fileLocation = $uploadsPath.$row['attachname'];
 			
 			if ($imageSize = getimagesize($fileLocation)) {
 				$row['isImage'] = 1;
