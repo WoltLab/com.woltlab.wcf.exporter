@@ -199,7 +199,7 @@ class MyBB1xExporter extends AbstractExporter {
 	public function countUserGroups() {
 		$sql = "SELECT	COUNT(*) AS count
 			FROM	".$this->databasePrefix."usergroups
-			WHERE	gID > ?";
+			WHERE	gid > ?";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute(array(2));
 		$row = $statement->fetchArray();
@@ -488,7 +488,7 @@ class MyBB1xExporter extends AbstractExporter {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."forums
 			ORDER BY	pid, disporder, fid";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement = $this->database->prepareStatement($sql);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
 			$this->boardCache[$row['pid']][] = $row;
