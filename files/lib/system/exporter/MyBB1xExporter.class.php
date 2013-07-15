@@ -795,7 +795,7 @@ class MyBB1xExporter extends AbstractExporter {
 				$postLink = LinkHandler::getInstance()->getLink('Thread', array(
 					'application' => 'wbb',
 					'postID' => $postID,
-					'forceFrontend' = true
+					'forceFrontend' => true
 				)).'#post'.$postID;
 				$postLink = StringUtil::replace(array("\\", "'"), array("\\\\", "\'"), $postLink);
 				
