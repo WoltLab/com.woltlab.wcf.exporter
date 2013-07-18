@@ -32,12 +32,6 @@ use wcf\util\UserRegistrationUtil;
  */
 class MyBB1xExporter extends AbstractExporter {
 	/**
-	 * selected import data
-	 * @var array
-	 */
-	protected $selectedData = array();
-	
-	/**
 	 * board cache
 	 * @var array
 	 */
