@@ -34,12 +34,6 @@ class WBB3xExporter extends AbstractExporter {
 	protected $instanceNo = 0;
 	
 	/**
-	 * selected import data
-	 * @var array
-	 */
-	protected $selectedData = array();
-	
-	/**
 	 * board cache
 	 * @var array
 	 */
@@ -72,7 +66,8 @@ class WBB3xExporter extends AbstractExporter {
 		'com.woltlab.wbb.poll.option.vote' => 'PollOptionVotes',
 		'com.woltlab.wbb.like' => 'Likes',
 		'com.woltlab.wcf.label' => 'Labels',
-		'com.woltlab.wbb.acl' => 'ACLs'
+		'com.woltlab.wbb.acl' => 'ACLs',
+		'com.woltlab.wcf.smiley' => 'Smilies'
 	);
 	
 	/**
@@ -151,15 +146,6 @@ class WBB3xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see wcf\system\exporter\IExporter::validateSelectedData()
-	 */
-	public function validateSelectedData(array $selectedData) {
-		$this->selectedData = $selectedData;
-		
-		return true;
-	}
-	
-	/**
 	 * @see wcf\system\exporter\IExporter::getQueue()
 	 */
 	public function getQueue() {
@@ -175,9 +161,11 @@ class WBB3xExporter extends AbstractExporter {
 			$queue[] = 'com.woltlab.wcf.user';
 			if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.avatar';
 			
-			if (in_array('com.woltlab.wcf.user.comment', $this->selectedData)) {
-				$queue[] = 'com.woltlab.wcf.user.comment';
-				$queue[] = 'com.woltlab.wcf.user.comment.response';
+			if ($this->searchPlugin('com.woltlab.wcf.user.guestbook')) {
+				if (in_array('com.woltlab.wcf.user.comment', $this->selectedData)) {
+					$queue[] = 'com.woltlab.wcf.user.comment';
+					$queue[] = 'com.woltlab.wcf.user.comment.response';
+				}
 			}
 			
 			if (in_array('com.woltlab.wcf.user.follower', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.follower';
@@ -876,7 +864,7 @@ class WBB3xExporter extends AbstractExporter {
 			LEFT JOIN	wbb".$this->dbNo."_".$this->instanceNo."_board_structure structure
 			ON		(structure.boardID = board.boardID)	
 			ORDER BY	board.parentID, structure.position";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement = $this->database->prepareStatement($sql);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
 			$this->boardCache[$row['parentID']][] = $row;
@@ -1538,6 +1526,38 @@ class WBB3xExporter extends AbstractExporter {
 	}
 	
 	/**
+	 * Counts smilies.
+	 */
+	public function countSmilies() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	wcf".$this->dbNo."_smiley";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports smilies.
+	 */
+	public function exportSmilies($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		wcf".$this->dbNo."_smiley
+			ORDER BY	smileyID";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute(array());
+		while ($row = $statement->fetchArray()) {
+			$fileLocation = $this->fileSystemPath . $row['smileyPath'];
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.smiley')->import($row['smileyID'], array(
+				'smileyTitle' => $row['smileyTitle'],
+				'smileyCode' => $row['smileyCode'],
+				'showOrder' => $row['showOrder']
+			), array('fileLocation' => $fileLocation));
+		}
+	}
+	
+	/**
 	 * Gets existing WCF2.0 user options.
 	 *
 	 * @return array
@@ -1554,6 +1574,17 @@ class WBB3xExporter extends AbstractExporter {
 		}
 	
 		return $optionsNames;
+	}
+	
+	private function searchPlugin($name) {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	wcf".$this->dbNo."_package
+			WHERE	package = ?";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($name));
+		$row = $statement->fetchArray();
+		if ($row['count']) return true;
+		return false;
 	}
 	
 	private static function fixBBCodes($message) {
