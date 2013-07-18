@@ -767,7 +767,6 @@ class MyBB1xExporter extends AbstractExporter {
 	public function exportPostAttachments($offset, $limit) {
 		static $uploadsPath = null;
 		if ($uploadsPath === null) {
-			// TODO: untested
 			$sql = "SELECT	value
 				FROM	".$this->databasePrefix."settings
 				WHERE	name = ?";
