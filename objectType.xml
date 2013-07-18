@@ -6,5 +6,11 @@
 			<definitionname>com.woltlab.wcf.exporter</definitionname>
 			<classname>wcf\system\exporter\WBB3xExporter</classname>
 		</type>
+		
+		<type>
+			<name>com.woltlab.wcf.exporter.mybb1x</name>
+			<definitionname>com.woltlab.wcf.exporter</definitionname>
+			<classname>wcf\system\exporter\MyBB1xExporter</classname>
+		</type>
 	</import>
 </data>
