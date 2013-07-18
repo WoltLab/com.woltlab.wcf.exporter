@@ -17,6 +17,7 @@ use wcf\system\Callback;
 use wcf\system\Regex;
 use wcf\system\WCF;
 use wcf\util\ArrayUtil;
+use wcf\util\FileUtil;
 use wcf\util\StringUtil;
 use wcf\util\UserRegistrationUtil;
 
@@ -782,7 +783,7 @@ class MyBB1xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array('post', 0));
 		while ($row = $statement->fetchArray()) {
-			$fileLocation = $uploadsPath.$row['attachname'];
+			$fileLocation = FileUtil::addTrailingSlash($uploadsPath).$row['attachname'];
 			
 			if ($imageSize = getimagesize($fileLocation)) {
 				$row['isImage'] = 1;
