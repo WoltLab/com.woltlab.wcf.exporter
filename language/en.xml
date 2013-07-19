@@ -2,6 +2,6 @@
 <language xmlns="http://www.woltlab.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.woltlab.com http://www.woltlab.com/XSD/maelstrom/language.xsd" languagecode="en">
 	<category name="wcf.acp.dataImport">
 		<item name="wcf.acp.dataImport.exporter.com.woltlab.wcf.exporter.wbb3x"><![CDATA[Burning Board 3.x]]></item>
-		<item name="wcf.acp.dataImport.exporter.com.woltlab.wcf.exporter.mybb1x"><![CDATA[MyBB 1.x]]></item>
+		<item name="wcf.acp.dataImport.exporter.com.woltlab.wcf.exporter.mybb16x"><![CDATA[MyBB 1.6.x]]></item>
 	</category>
 </language>

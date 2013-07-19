@@ -8,9 +8,9 @@
 		</type>
 		
 		<type>
-			<name>com.woltlab.wcf.exporter.mybb1x</name>
+			<name>com.woltlab.wcf.exporter.mybb16x</name>
 			<definitionname>com.woltlab.wcf.exporter</definitionname>
-			<classname>wcf\system\exporter\MyBB1xExporter</classname>
+			<classname>wcf\system\exporter\MyBB16xExporter</classname>
 		</type>
 	</import>
 </data>

@@ -22,7 +22,7 @@ use wcf\util\StringUtil;
 use wcf\util\UserRegistrationUtil;
 
 /**
- * Exporter for MyBB 1.x
+ * Exporter for MyBB 1.6.x
  *
  * @author	Tim Duesterhus
  * @copyright	2001-2013 WoltLab GmbH
@@ -31,7 +31,7 @@ use wcf\util\UserRegistrationUtil;
  * @subpackage	system.exporter
  * @category	Community Framework (commercial)
  */
-class MyBB1xExporter extends AbstractExporter {
+class MyBB16xExporter extends AbstractExporter {
 	/**
 	 * board cache
 	 * @var array
@@ -64,7 +64,9 @@ class MyBB1xExporter extends AbstractExporter {
 		'com.woltlab.wbb.poll.option' => 'PollOptions',
 		'com.woltlab.wbb.poll.option.vote' => 'PollOptionVotes',
 		'com.woltlab.wbb.like' => 'Likes',
-		'com.woltlab.wcf.label' => 'Labels'
+		'com.woltlab.wcf.label' => 'Labels',
+		'com.woltlab.wbb.acl' => 'ACLs',
+		'com.woltlab.wcf.smiley' => 'Smilies'
 	);
 	
 	/**
@@ -84,12 +86,9 @@ class MyBB1xExporter extends AbstractExporter {
 			'com.woltlab.wcf.user' => array(
 				'com.woltlab.wcf.user.group',
 				'com.woltlab.wcf.user.avatar',
+				/*'com.woltlab.wcf.user.option',*/
 				'com.woltlab.wcf.user.follower',
 				'com.woltlab.wcf.user.rank'
-			),
-			'com.woltlab.wcf.conversation' => array(
-				/*'com.woltlab.wcf.conversation.attachment',*/
-				'com.woltlab.wcf.conversation.label'
 			),
 			'com.woltlab.wbb.board' => array(
 				/*'com.woltlab.wbb.acl',*/
@@ -99,6 +98,10 @@ class MyBB1xExporter extends AbstractExporter {
 				'com.woltlab.wbb.like',
 				'com.woltlab.wcf.label'
 			),
+			'com.woltlab.wcf.conversation' => array(
+				'com.woltlab.wcf.conversation.label'
+			),
+			/*'com.woltlab.wcf.smiley' => array()*/
 		);
 	}
 	
@@ -108,9 +111,15 @@ class MyBB1xExporter extends AbstractExporter {
 	public function validateDatabaseAccess() {
 		parent::validateDatabaseAccess();
 		
-		$sql = "SELECT COUNT(*) FROM ".$this->databasePrefix."awaitingactivation";
+		$sql = "SELECT	cache
+			FROM	".$this->databasePrefix."datacache
+			WHERE	title = ?";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
+		$statement->execute(array('version'));
+		$row = $statement->fetchArray();
+		$data = unserialize($row['cache']);
+		
+		if ($data['version_code'] < 1600) throw new DatabaseException('Cannot import MyBB 1.4.x or less', $this->database);
 	}
 	
 	/**
@@ -120,15 +129,6 @@ class MyBB1xExporter extends AbstractExporter {
 		if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData) || in_array('com.woltlab.wbb.attachment', $this->selectedData) || in_array('com.woltlab.wcf.conversation.attachment', $this->selectedData)) {
 			if (empty($this->fileSystemPath) || !@file_exists($this->fileSystemPath . 'inc/mybb_group.php')) return false;
 		}
-		
-		return true;
-	}
-	
-	/**
-	 * @see wcf\system\exporter\IExporter::validateSelectedData()
-	 */
-	public function validateSelectedData(array $selectedData) {
-		$this->selectedData = $selectedData;
 		
 		return true;
 	}
@@ -146,6 +146,7 @@ class MyBB1xExporter extends AbstractExporter {
 				if (in_array('com.woltlab.wcf.user.rank', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.rank';
 			}
 			
+			/*if (in_array('com.woltlab.wcf.user.option', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.option';*/
 			$queue[] = 'com.woltlab.wcf.user';
 			if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.avatar';
 			
@@ -177,6 +178,9 @@ class MyBB1xExporter extends AbstractExporter {
 			}
 			if (in_array('com.woltlab.wbb.like', $this->selectedData)) $queue[] = 'com.woltlab.wbb.like';
 		}
+		
+		// smiley
+		/*if (in_array('com.woltlab.wcf.smiley', $this->selectedData)) $queue[] = 'com.woltlab.wcf.smiley';*/
 		
 		return $queue;
 	}
@@ -299,21 +303,13 @@ class MyBB1xExporter extends AbstractExporter {
 	 * Counts user ranks.
 	 */
 	public function countUserRanks() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."usertitles";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$userTitleRow = $statement->fetchArray();
-		
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."usergroups
-			WHERE		usertitle <> ?
-				AND	gid <> ?";
+		$sql = "SELECT	(SELECT COUNT(*) FROM ".$this->databasePrefix."usertitles)
+				+ (SELECT COUNT(*) FROM ".$this->databasePrefix."usergroups WHERE usertitle <> ? AND gid <> ?) AS count";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute(array('', 1));
-		$userGroupsRow = $statement->fetchArray();
+		$row = $statement->fetchArray();
 		
-		return $userTitleRow['count'] + $userGroupsRow['count'];
+		return $row['count'];
 	}
 	
 	/**
