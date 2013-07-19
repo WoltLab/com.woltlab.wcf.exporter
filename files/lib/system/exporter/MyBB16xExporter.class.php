@@ -211,7 +211,7 @@ class MyBB16xExporter extends AbstractExporter {
 	public function exportUserGroups($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."usergroups
-			ORDER BY	gid";
+			ORDER BY	gid ASC";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
@@ -265,7 +265,7 @@ class MyBB16xExporter extends AbstractExporter {
 			LEFT JOIN	".$this->databasePrefix."banned ban_table
 			ON			user_table.uid = ban_table.uid
 					AND	ban_table.lifted <> ?
-			ORDER BY	uid";
+			ORDER BY	uid ASC";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array(0));
 		
@@ -335,7 +335,7 @@ class MyBB16xExporter extends AbstractExporter {
 				WHERE		usertitle <> ?
 					AND	gid <> ?
 			)
-			ORDER BY	utid";
+			ORDER BY	utid ASC";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array('', 1));
 		while ($row = $statement->fetchArray()) {
@@ -406,7 +406,8 @@ class MyBB16xExporter extends AbstractExporter {
 		$sql = "SELECT		uid, avatar, avatardimensions, avatartype
 			FROM		".$this->databasePrefix."users
 			WHERE		avatar <> ?
-				AND	avatartype IN (?, ?)";
+				AND	avatartype IN (?, ?)
+			ORDER BY	uid ASC";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array('', 'upload', 'gallery'));
 		
@@ -437,7 +438,7 @@ class MyBB16xExporter extends AbstractExporter {
 	public function exportConversationFolders($offset, $limit) {
 		$sql = "SELECT		uid, pmfolders
 			FROM		".$this->databasePrefix."users
-			ORDER BY	uid";
+			ORDER BY	uid ASC";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
@@ -589,7 +590,7 @@ class MyBB16xExporter extends AbstractExporter {
 		
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."privatemessages
-			ORDER BY	pmid";
+			ORDER BY	pmid ASC";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
@@ -630,7 +631,7 @@ class MyBB16xExporter extends AbstractExporter {
 	public function exportBoards($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."forums
-			ORDER BY	pid, disporder, fid";
+			ORDER BY	pid ASC, disporder ASC, fid ASC";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
@@ -683,7 +684,8 @@ class MyBB16xExporter extends AbstractExporter {
 	 */
 	public function exportThreads($offset, $limit) {
 		$sql = "SELECT		*
-			FROM		".$this->databasePrefix."threads";
+			FROM		".$this->databasePrefix."threads
+			ORDER BY	tid ASC";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		
@@ -729,7 +731,7 @@ class MyBB16xExporter extends AbstractExporter {
 			FROM		".$this->databasePrefix."posts post_table
 			LEFT JOIN	".$this->databasePrefix."users user_table
 			ON		user_table.uid = post_table.edituid
-			ORDER BY	pid";
+			ORDER BY	pid ASC";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
@@ -861,7 +863,7 @@ class MyBB16xExporter extends AbstractExporter {
 			FROM		".$this->databasePrefix."polls poll_table
 			LEFT JOIN	".$this->databasePrefix."threads thread_table
 			ON		poll_table.tid = thread_table.tid
-			ORDER BY	pid";
+			ORDER BY	pid ASC";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
@@ -891,7 +893,7 @@ class MyBB16xExporter extends AbstractExporter {
 	public function exportPollOptions($offset, $limit) {
 		$sql = "SELECT		pid, options, votes
 			FROM		".$this->databasePrefix."polls
-			ORDER BY	pid";
+			ORDER BY	pid ASC";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
@@ -929,7 +931,7 @@ class MyBB16xExporter extends AbstractExporter {
 	public function exportPollOptionVotes($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."pollvotes
-			ORDER BY	vid";
+			ORDER BY	vid ASC";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		
@@ -1069,7 +1071,7 @@ class MyBB16xExporter extends AbstractExporter {
 				SELECT	pid AS id, 'group' AS type
 				FROM ".$this->databasePrefix."forumpermissions
 			)
-			ORDER BY	type, id";
+			ORDER BY	type ASC, id ASC";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array(0));
 		while ($row = $statement->fetchArray()) {
@@ -1202,7 +1204,7 @@ class MyBB16xExporter extends AbstractExporter {
 	public function exportSmilies($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."smilies
-			ORDER BY	sid";
+			ORDER BY	sid ASC";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array());
 		while ($row = $statement->fetchArray()) {
