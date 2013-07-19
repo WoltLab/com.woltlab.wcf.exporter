@@ -967,7 +967,6 @@ class WBB3xExporter extends AbstractExporter {
 			}
 		}
 		
-		
 		// get thread ids
 		$threadIDs = $announcementIDs = array();
 		$sql = "SELECT		threadID, isAnnouncement
@@ -979,7 +978,7 @@ class WBB3xExporter extends AbstractExporter {
 			$threadIDs[] = $row['threadID'];
 			if ($row['isAnnouncement']) $announcementIDs[] = $row['threadID'];
 		}
-	
+		
 		// get assigned boards (for announcements)
 		$assignedBoards = array();
 		if (!empty($announcementIDs)) {
@@ -1345,9 +1344,9 @@ class WBB3xExporter extends AbstractExporter {
 		if ($row !== false) $globalPrefixes = $row['optionValue'];
 		
 		// get boards
-		$sql = "SELECT		boardID, prefixes, prefixMode
-			FROM		wbb".$this->dbNo."_".$this->instanceNo."_board
-			WHERE		prefixMode > ?";
+		$sql = "SELECT	boardID, prefixes, prefixMode
+			FROM	wbb".$this->dbNo."_".$this->instanceNo."_board
+			WHERE	prefixMode > ?";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute(array(0));
 		while ($row = $statement->fetchArray()) {
@@ -1433,11 +1432,11 @@ class WBB3xExporter extends AbstractExporter {
 				SELECT	boardID, 0 AS userID, groupID, 'group' AS type
 				FROM	wbb".$this->dbNo."_".$this->instanceNo."_board_to_group
 			)
-			UNION			
+			UNION
 			(
 				SELECT	boardID, userID, 0 AS groupID, 'user' AS type
 				FROM	wbb".$this->dbNo."_".$this->instanceNo."_board_to_user
-			)			
+			)
 			ORDER BY	boardID, userID, groupID, type";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
@@ -1489,9 +1488,9 @@ class WBB3xExporter extends AbstractExporter {
 					'objectID' => $row['boardID']
 				);
 				$data['groupID'] = $row['groupID'];
-		
+				
 				unset($row['boardID'], $row['groupID']);
-		
+				
 				foreach ($row as $permission => $value) {
 					ImportHandler::getInstance()->getImporter('com.woltlab.wbb.acl')->import(0, array_merge($data, array('optionValue' => $value)), array('optionName' => $permission));
 				}
@@ -1504,7 +1503,7 @@ class WBB3xExporter extends AbstractExporter {
 			foreach ($user as $row) {
 				$conditionBuilder->add('(boardID = ? AND userID = ?)', array($row['boardID'], $row['userID']));
 			}
-		
+			
 			$sql = "SELECT	*
 				FROM	wbb".$this->dbNo."_".$this->instanceNo."_board_to_user
 				".$conditionBuilder;
@@ -1515,9 +1514,9 @@ class WBB3xExporter extends AbstractExporter {
 					'objectID' => $row['boardID']
 				);
 				$data['userID'] = $row['userID'];
-		
+				
 				unset($row['boardID'], $row['userID']);
-		
+				
 				foreach ($row as $permission => $value) {
 					ImportHandler::getInstance()->getImporter('com.woltlab.wbb.acl')->import(0, array_merge($data, array('optionValue' => $value)), array('optionName' => $permission));
 				}

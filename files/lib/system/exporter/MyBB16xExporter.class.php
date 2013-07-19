@@ -480,10 +480,11 @@ class MyBB16xExporter extends AbstractExporter {
 			FROM		".$this->databasePrefix."privatemessages message_table
 			LEFT JOIN	".$this->databasePrefix."users user_table
 			ON 		user_table.uid = message_table.fromid
-			WHERE		pmid IN (	SELECT 		MIN(pmID)
-							FROM		".$this->databasePrefix."privatemessages
-							GROUP BY	fromid, dateline
-			)
+			WHERE		pmid IN (
+						SELECT		MIN(pmID)
+						FROM		".$this->databasePrefix."privatemessages
+						GROUP BY	fromid, dateline
+					)
 			ORDER BY	pmid ASC";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
@@ -543,10 +544,11 @@ class MyBB16xExporter extends AbstractExporter {
 			FROM		".$this->databasePrefix."privatemessages message_table
 			LEFT JOIN	".$this->databasePrefix."users user_table
 			ON 		user_table.uid = message_table.fromid
-			WHERE		pmid IN (	SELECT 		MIN(pmID)
-							FROM		".$this->databasePrefix."privatemessages
-							GROUP BY	fromid, dateline
-			)
+			WHERE		pmid IN (	
+						SELECT		MIN(pmID)
+						FROM		".$this->databasePrefix."privatemessages
+						GROUP BY	fromid, dateline
+					)
 			ORDER BY	pmid ASC";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
