@@ -86,15 +86,15 @@ class PhpBB3xExporter extends AbstractExporter {
 	 */
 	public function getSupportedData() {
 		return array(
-			/*'com.woltlab.wcf.user' => array(
+			'com.woltlab.wcf.user' => array(
 				'com.woltlab.wcf.user.group',
-				'com.woltlab.wcf.user.avatar',
+				/*'com.woltlab.wcf.user.avatar',
 				'com.woltlab.wcf.user.option',
 				'com.woltlab.wcf.user.comment',
 				'com.woltlab.wcf.user.follower',
-				'com.woltlab.wcf.user.rank'
+				'com.woltlab.wcf.user.rank'*/
 			),
-			'com.woltlab.wbb.board' => array(
+			/*'com.woltlab.wbb.board' => array(
 				'com.woltlab.wbb.acl',
 				'com.woltlab.wbb.attachment',
 				'com.woltlab.wbb.poll',
@@ -138,13 +138,13 @@ class PhpBB3xExporter extends AbstractExporter {
 	public function getQueue() {
 		$queue = array();
 		
-		/*// user
+		// user
 		if (in_array('com.woltlab.wcf.user', $this->selectedData)) {
 			if (in_array('com.woltlab.wcf.user.group', $this->selectedData)) {
 				$queue[] = 'com.woltlab.wcf.user.group';
-				if (in_array('com.woltlab.wcf.user.rank', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.rank';
+				/*if (in_array('com.woltlab.wcf.user.rank', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.rank';*/
 			}
-			if (in_array('com.woltlab.wcf.user.option', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.option';
+			/*if (in_array('com.woltlab.wcf.user.option', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.option';
 			$queue[] = 'com.woltlab.wcf.user';
 			if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.avatar';
 			
@@ -166,9 +166,9 @@ class PhpBB3xExporter extends AbstractExporter {
 				$queue[] = 'com.woltlab.wcf.conversation.user';
 					
 				if (in_array('com.woltlab.wcf.conversation.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wcf.conversation.attachment';
-			}
+			}*/
 		}
-		
+		/*
 		// board
 		if (in_array('com.woltlab.wbb.board', $this->selectedData)) {
 			$queue[] = 'com.woltlab.wbb.board';
@@ -200,6 +200,44 @@ class PhpBB3xExporter extends AbstractExporter {
 		return 'phpbb_';
 	}
 	
+	/**
+	 * Counts user groups.
+	 */
+	public function countUserGroups() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."groups";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
 	
+	/**
+	 * Exports user groups.
+	 */
+	public function exportUserGroups($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."groups
+			ORDER BY	group_id ASC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			if ($row['gid'] == 1) {
+				ImportHandler::getInstance()->saveNewID('com.woltlab.wcf.user.group', 1, UserGroup::getGroupByType(UserGroup::GUESTS)->groupID);
+				continue;
+			}
+			if ($row['gid'] == 2) {
+				ImportHandler::getInstance()->saveNewID('com.woltlab.wcf.user.group', 2, UserGroup::getGroupByType(UserGroup::USERS)->groupID);
+				continue;
+			}
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.group')->import($row['group_id'], array(
+				'groupName' => $row['group_name'],
+				'groupType' => UserGroup::OTHER,
+				'userOnlineMarking' => ($row['group_colour'] ? '<span style="color: #'.$row['group_colour'].'">%s</span>' : '%s'),
+				'showOnTeamPage' => $row['group_legend']
+			));
+		}
+	}
 }
 	
