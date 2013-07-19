@@ -1329,7 +1329,7 @@ class WBB3xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * Exports likes.
+	 * Exports labels.
 	 */
 	public function exportLabels($offset, $limit) {
 		$prefixMap = array();
@@ -1413,7 +1413,7 @@ class WBB3xExporter extends AbstractExporter {
 				+ (SELECT COUNT(*) FROM wbb".$this->dbNo."_".$this->instanceNo."_board_to_group)
 				+ (SELECT COUNT(*) FROM wbb".$this->dbNo."_".$this->instanceNo."_board_to_user) AS count";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array(0));
+		$statement->execute();
 		$row = $statement->fetchArray();
 		return $row['count'];
 	}
@@ -1499,7 +1499,7 @@ class WBB3xExporter extends AbstractExporter {
 		}
 		
 		// users
-		if (!empty($group)) {
+		if (!empty($user)) {
 			$conditionBuilder = new PreparedStatementConditionBuilder(true, 'OR');
 			foreach ($user as $row) {
 				$conditionBuilder->add('(boardID = ? AND userID = ?)', array($row['boardID'], $row['userID']));
