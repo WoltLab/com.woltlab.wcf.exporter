@@ -144,9 +144,9 @@ class PhpBB3xExporter extends AbstractExporter {
 				$queue[] = 'com.woltlab.wcf.user.group';
 				/*if (in_array('com.woltlab.wcf.user.rank', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.rank';*/
 			}
-			/*if (in_array('com.woltlab.wcf.user.option', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.option';
+			/*if (in_array('com.woltlab.wcf.user.option', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.option';*/
 			$queue[] = 'com.woltlab.wcf.user';
-			if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.avatar';
+			/*if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.avatar';
 			
 			if ($this->searchPlugin('com.woltlab.wcf.user.guestbook')) {
 				if (in_array('com.woltlab.wcf.user.comment', $this->selectedData)) {
@@ -222,12 +222,18 @@ class PhpBB3xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
-			if ($row['gid'] == 1) {
+			if ($row['group_id'] == 1) {
+				// GUESTS
 				ImportHandler::getInstance()->saveNewID('com.woltlab.wcf.user.group', 1, UserGroup::getGroupByType(UserGroup::GUESTS)->groupID);
 				continue;
 			}
-			if ($row['gid'] == 2) {
+			if ($row['group_id'] == 2) {
+				// REGISTERED
 				ImportHandler::getInstance()->saveNewID('com.woltlab.wcf.user.group', 2, UserGroup::getGroupByType(UserGroup::USERS)->groupID);
+				continue;
+			}
+			if ($row['group_id'] == 6) {
+				// BOTS
 				continue;
 			}
 			
@@ -238,6 +244,104 @@ class PhpBB3xExporter extends AbstractExporter {
 				'showOnTeamPage' => $row['group_legend']
 			));
 		}
+	}
+	
+	/**
+	 * Counts users.
+	 */
+	public function countUsers() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."users
+			WHERE	user_type <> ?";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array(2)); // 2 = USER_IGNORE
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports users.
+	 */
+	public function exportUsers($offset, $limit) {
+		// prepare password update
+		$sql = "UPDATE	wcf".WCF_N."_user
+			SET	password = ?
+			WHERE	userID = ?";
+		$passwordUpdateStatement = WCF::getDB()->prepareStatement($sql);
+	
+		// get users
+		$sql = "SELECT		user_table.*, ban_table.ban_give_reason AS banReason,
+					(
+						SELECT	GROUP_CONCAT(group_id)
+						FROM	".$this->databasePrefix."user_group
+						WHERE	user_id = user_table.user_id
+					) AS groupIDs
+			FROM		".$this->databasePrefix."users user_table
+			LEFT JOIN	".$this->databasePrefix."banlist ban_table
+			ON			user_table.user_id = ban_table.ban_userid
+					AND	ban_table.ban_end = ?
+			WHERE		user_type <> ?
+			ORDER BY	user_id ASC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute(array(2));
+	
+		WCF::getDB()->beginTransaction();
+		while ($row = $statement->fetchArray()) {
+			$data = array(
+				'username' => $row['username'],
+				'password' => '',
+				'email' => $row['user_email'],
+				'registrationDate' => $row['user_regdate'],
+				'banned' => $row['banReason'] === null ? 0 : 1,
+				'banReason' => $row['banReason'],
+				'registrationIpAddress' => $row['user_ip'],
+				'signature' => self::fixBBCodes($row['user_sig'], $row['user_sig_bbcode_uid']),
+				'signatureEnableBBCodes' => ($row['user_sig_bbcode_uid'] ? StringUtil::indexOf($row['user_sig'], $row['user_sig_bbcode_uid']) : 1),
+				'signatureEnableHtml' => 0,
+				'signatureEnableSmilies' => preg_match('/<!-- s.*? -->/', $row['user_sig']),
+				'lastActivityTime' => $row['user_lastvisit']
+			);
+			$additionalData = array(
+				'groupIDs' => explode(',', $row['groupIDs']),
+				'options' => array()
+			);
+			
+			// import user
+			$newUserID = ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user')->import($row['user_id'], $data, $additionalData);
+			
+			// update password hash
+			if ($newUserID) {
+				$passwordUpdateStatement->execute(array('phpbb3:'.$row['user_password'].':', $newUserID));
+			}
+		}
+		WCF::getDB()->commitTransaction();
+	}
+	
+	protected static function fixBBCodes($text, $uid) {
+		// fix closing list tags
+		$text = preg_replace('~\[/list:(u|o)~i', '[/list', $text);
+		// fix closing list element tags
+		$text = preg_replace('~\[/\*:m:'.$uid.'\]~i', '', $text);
+		
+		// remove uid
+		$text = preg_replace('~\[(/?[^:\]]+):'.$uid.'~', '[$1', $text);
+		$text = preg_replace('~:'.$uid.'\]~', ']', $text);
+		
+		// fix size bbcode
+		$text = preg_replace_callback('~(?<=\[size=)\d+(?=\])~', function ($matches) {
+			$wbbSize = 24;
+			if ($matches[0] <= 50) $wbbSize = 8;
+			else if ($matches[0] <= 85) $wbbSize = 10;
+			else if ($matches[0] <= 150) $wbbSize = 14;
+			else if ($matches[0] <= 200) $wbbSize = 18;
+			
+			return $wbbSize;
+		}, $text);
+		
+		// convert smileys
+		$text = preg_replace('~<!-- s(.+?) -->.+?<!-- s(?:.+?) -->~', '\\1', $text);
+		
+		return $text;
 	}
 }
 	
