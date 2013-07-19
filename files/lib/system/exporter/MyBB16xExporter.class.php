@@ -101,7 +101,7 @@ class MyBB16xExporter extends AbstractExporter {
 			'com.woltlab.wcf.conversation' => array(
 				'com.woltlab.wcf.conversation.label'
 			),
-			/*'com.woltlab.wcf.smiley' => array()*/
+			'com.woltlab.wcf.smiley' => array()
 		);
 	}
 	
@@ -126,7 +126,7 @@ class MyBB16xExporter extends AbstractExporter {
 	 * @see wcf\system\exporter\IExporter::validateFileAccess()
 	 */
 	public function validateFileAccess() {
-		if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData) || in_array('com.woltlab.wbb.attachment', $this->selectedData) || in_array('com.woltlab.wcf.conversation.attachment', $this->selectedData)) {
+		if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData) || in_array('com.woltlab.wbb.attachment', $this->selectedData) || in_array('com.woltlab.wcf.smiley', $this->selectedData)) {
 			if (empty($this->fileSystemPath) || !@file_exists($this->fileSystemPath . 'inc/mybb_group.php')) return false;
 		}
 		
@@ -169,6 +169,7 @@ class MyBB16xExporter extends AbstractExporter {
 			$queue[] = 'com.woltlab.wbb.thread';
 			$queue[] = 'com.woltlab.wbb.post';
 			
+			/*if (in_array('com.woltlab.wbb.acl', $this->selectedData)) $queue[] = 'com.woltlab.wbb.acl';*/
 			if (in_array('com.woltlab.wbb.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wbb.attachment';
 			if (in_array('com.woltlab.wbb.watchedThread', $this->selectedData)) $queue[] = 'com.woltlab.wbb.watchedThread';
 			if (in_array('com.woltlab.wbb.poll', $this->selectedData)) {
@@ -180,7 +181,7 @@ class MyBB16xExporter extends AbstractExporter {
 		}
 		
 		// smiley
-		/*if (in_array('com.woltlab.wcf.smiley', $this->selectedData)) $queue[] = 'com.woltlab.wcf.smiley';*/
+		if (in_array('com.woltlab.wcf.smiley', $this->selectedData)) $queue[] = 'com.woltlab.wcf.smiley';
 		
 		return $queue;
 	}
@@ -1027,7 +1028,39 @@ class MyBB16xExporter extends AbstractExporter {
 			}
 		}
 	}
-
+	
+	/**
+	 * Counts smilies.
+	 */
+	public function countSmilies() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."smilies";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports smilies.
+	 */
+	public function exportSmilies($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."smilies
+			ORDER BY	sid";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute(array());
+		while ($row = $statement->fetchArray()) {
+			$fileLocation = $this->fileSystemPath . $row['image'];
+				
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.smiley')->import($row['sid'], array(
+				'smileyTitle' => $row['name'],
+				'smileyCode' => $row['find'],
+				'showOrder' => $row['disporder']
+			), array('fileLocation' => $fileLocation));
+		}
+	}
+	
 	private static function fixBBCodes($message) {
 		static $videoRegex = null;
 		static $quoteRegex = null;
