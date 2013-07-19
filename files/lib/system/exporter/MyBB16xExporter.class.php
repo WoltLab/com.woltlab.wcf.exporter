@@ -91,7 +91,7 @@ class MyBB16xExporter extends AbstractExporter {
 				'com.woltlab.wcf.user.rank'
 			),
 			'com.woltlab.wbb.board' => array(
-				/*'com.woltlab.wbb.acl',*/
+				'com.woltlab.wbb.acl',
 				'com.woltlab.wbb.attachment',
 				'com.woltlab.wbb.poll',
 				'com.woltlab.wbb.watchedThread',
@@ -169,7 +169,7 @@ class MyBB16xExporter extends AbstractExporter {
 			$queue[] = 'com.woltlab.wbb.thread';
 			$queue[] = 'com.woltlab.wbb.post';
 			
-			/*if (in_array('com.woltlab.wbb.acl', $this->selectedData)) $queue[] = 'com.woltlab.wbb.acl';*/
+			if (in_array('com.woltlab.wbb.acl', $this->selectedData)) $queue[] = 'com.woltlab.wbb.acl';
 			if (in_array('com.woltlab.wbb.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wbb.attachment';
 			if (in_array('com.woltlab.wbb.watchedThread', $this->selectedData)) $queue[] = 'com.woltlab.wbb.watchedThread';
 			if (in_array('com.woltlab.wbb.poll', $this->selectedData)) {
@@ -198,10 +198,9 @@ class MyBB16xExporter extends AbstractExporter {
 	 */
 	public function countUserGroups() {
 		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."usergroups
-			WHERE	gid > ?";
+			FROM	".$this->databasePrefix."usergroups";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array(2));
+		$statement->execute();
 		$row = $statement->fetchArray();
 		return $row['count'];
 	}
@@ -212,11 +211,19 @@ class MyBB16xExporter extends AbstractExporter {
 	public function exportUserGroups($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."usergroups
-			WHERE		gid > ?
 			ORDER BY	gid";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute(array(2));
+		$statement->execute();
 		while ($row = $statement->fetchArray()) {
+			if ($row['gid'] == 1) {
+				ImportHandler::getInstance()->saveNewID('com.woltlab.wcf.user.group', 1, UserGroup::getGroupByType(UserGroup::GUESTS)->groupID);
+				continue;
+			}
+			if ($row['gid'] == 2) {
+				ImportHandler::getInstance()->saveNewID('com.woltlab.wcf.user.group', 2, UserGroup::getGroupByType(UserGroup::USERS)->groupID);
+				continue;
+			}
+			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.group')->import($row['gid'], array(
 				'groupName' => $row['title'],
 				'groupType' => UserGroup::OTHER,
@@ -1024,6 +1031,149 @@ class MyBB16xExporter extends AbstractExporter {
 						'groupID' => $forumID,
 						'label' => $prefix
 					));
+				}
+			}
+		}
+	}
+	
+	/**
+	 * Counts ACLs.
+	 */
+	public function countACLs() {
+		$sql = "SELECT	(SELECT COUNT(*) FROM ".$this->databasePrefix."moderators WHERE isgroup = ?)
+				+ (SELECT COUNT(*) FROM ".$this->databasePrefix."forumpermissions) AS count";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array(0));
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports ACLs.
+	 */
+	public function exportACLs($offset, $limit) {
+		// get ids
+		$mod = $user = $group = array();
+		$sql = "(
+				SELECT	mid AS id, 'mod' AS type
+				FROM	".$this->databasePrefix."moderators
+				WHERE	isgroup = ?
+			)
+			UNION
+			(
+				SELECT	pid AS id, 'group' AS type
+				FROM ".$this->databasePrefix."forumpermissions
+			)
+			ORDER BY	type, id";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute(array(0));
+		while ($row = $statement->fetchArray()) {
+			${$row['type']}[] = $row['id'];
+		}
+		
+		// mods
+		if (!empty($mod)) {
+			$modPermissionMap = array(
+				'caneditposts' => array('canEditPost'),
+				'candeleteposts' => array(
+					'canDeleteThread',
+					'canReadDeletedThread',
+					'canRestoreThread',
+					'canDeleteThreadCompletely',
+					
+					'canDeletePost',
+					'canReadDeletedPost',
+					'canRestorePost',
+					'canDeletePostCompletely'
+				),
+				'canviewips' => array(),
+				'canopenclosethreads' => array(
+					'canCloseThread',
+					'canReplyClosedThread',
+					'canPinThread',
+					
+					'canClosePost'
+				),
+				'canmanagethreads' => array(
+					'canEnableThread',
+					'canMoveThread',
+					'canMergeThread',
+					
+					'canEnablePost',
+					'canMovePost',
+					'canMergePost'
+				)
+			);
+			
+			$conditionBuilder = new PreparedStatementConditionBuilder();
+			$conditionBuilder->add('mid IN (?)', array($mod));
+			
+			$sql = "SELECT	*
+				FROM	".$this->databasePrefix."moderators
+				".$conditionBuilder;
+			$statement = $this->database->prepareStatement($sql);
+			$statement->execute($conditionBuilder->getParameters());
+			while ($row = $statement->fetchArray()) {
+				foreach ($modPermissionMap as $mybbPermission => $permissions) {
+					foreach ($permissions as $permission) {
+						ImportHandler::getInstance()->getImporter('com.woltlab.wbb.acl')->import(0, array(
+							'objectID' => $row['fid'],
+							'userID' => $row['id'],
+							'optionValue' => $row[$mybbPermission]
+						), array(
+							'optionName' => $permission
+						));
+					}
+				}
+			}
+		}
+		
+		// groups
+		if (!empty($group)) {
+			$groupPermissionMap = array(
+				'canview' => array(
+					'canViewBoard',
+					'canEnterBoard'
+				),
+				'canviewthreads' => array('canReadThread'),
+				'canonlyviewownthreads' => array(),
+				'candlattachments' => array(
+					'canDownloadAttachment',
+					'canViewAttachmentPreview'
+				),
+				'canpostthreads' => array('canStartThread'),
+				'canpostreplys' => array('canReplyThread'),
+				'canpostattachments' => array('canUploadAttachment'),
+				'canratethreads' => array(),
+				'caneditposts' => array('canEditOwnPost'),
+				'candeleteposts' => array('canDeleteOwnPost'),
+				'candeletethreads' => array(),
+				'caneditattachments' => array(),
+				'canpostpolls' => array('canStartPoll'),
+				'canvotepolls' => array('canVotePoll'),
+				'cansearch' => array()
+			);
+			
+			$conditionBuilder = new PreparedStatementConditionBuilder();
+			$conditionBuilder->add('pid IN (?)', array($group));
+			
+			$sql = "SELECT	*
+				FROM	".$this->databasePrefix."forumpermissions
+				".$conditionBuilder;
+			$statement = $this->database->prepareStatement($sql);
+			$statement->execute($conditionBuilder->getParameters());
+			
+			while ($row = $statement->fetchArray()) {
+				foreach ($groupPermissionMap as $mybbPermission => $permissions) {
+					foreach ($permissions as $permission) {
+						ImportHandler::getInstance()->getImporter('com.woltlab.wbb.acl')->import(0, array(
+							'objectID' => $row['fid'],
+							'groupID' => $row['gid'],
+							'optionValue' => $row[$mybbPermission]
+						), array(
+							'optionName' => $permission
+						));
+					}
 				}
 			}
 		}
