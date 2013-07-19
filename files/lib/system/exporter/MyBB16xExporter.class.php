@@ -703,8 +703,7 @@ class MyBB16xExporter extends AbstractExporter {
 			);
 			
 			$additionalData = array();
-			// TODO: Labels don't work fully yet
-			if ($row['prefix']) $additionalData['labels'] = array($row['fid'].'-'.$row['prefix']);
+			if ($row['prefix']) $additionalData['labels'] = array(ImportHandler::getInstance()->getNewID('com.woltlab.wbb.board', $row['fid']).'-'.$row['prefix']);
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.thread')->import($row['tid'], $data, $additionalData);
 		}
@@ -1006,6 +1005,12 @@ class MyBB16xExporter extends AbstractExporter {
 		$statement->execute(array(0));
 		while ($row = $statement->fetchArray()) {
 			$forums = array_unique(ArrayUtil::toIntegerArray(explode(',', $row['forums'])));
+			foreach ($forums as $key => $forum) {
+				if ($forum == -1) continue;
+				
+				$forums[$key] = ImportHandler::getInstance()->getNewID('com.woltlab.wbb.board', $forum);
+			}
+			
 			// -1 = global
 			if (in_array('-1', $forums)) $forums = $boardIDs;
 			
