@@ -218,10 +218,9 @@ class WBB3xExporter extends AbstractExporter {
 	 */
 	public function countUserGroups() {
 		$sql = "SELECT	COUNT(*) AS count
-			FROM	wcf".$this->dbNo."_group
-			WHERE	groupType > ?";
+			FROM	wcf".$this->dbNo."_group";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array(3));
+		$statement->execute();
 		$row = $statement->fetchArray();
 		return $row['count'];
 	}
@@ -232,10 +231,9 @@ class WBB3xExporter extends AbstractExporter {
 	public function exportUserGroups($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		wcf".$this->dbNo."_group
-			WHERE		groupType > ?
 			ORDER BY	groupID";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute(array(3));
+		$statement->execute();
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.group')->import($row['groupID'], array(
 				'groupName' => $row['groupName'],
@@ -671,7 +669,7 @@ class WBB3xExporter extends AbstractExporter {
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.label')->import($row['folderID'], array(
 				'userID' => $row['userID'],
-				'label' => $row['folderName'],
+				'label' => StringUtil::substring($row['folderName'], 0, 80),
 				'cssClassName' => $cssClassName
 			));
 		}
@@ -1395,7 +1393,7 @@ class WBB3xExporter extends AbstractExporter {
 				foreach ($labels as $label) {
 					ImportHandler::getInstance()->getImporter('com.woltlab.wcf.label')->import($key.'-'.$label, array(
 						'groupID' => $key,
-						'label' => $label
+						'label' => StringUtil::substring($label, 0, 80)
 					));
 				}
 				
@@ -1408,7 +1406,7 @@ class WBB3xExporter extends AbstractExporter {
 	 * Counts ACLs.
 	 */
 	public function countACLs() {
-		$sql = "SELECT	(SELECT COUNT(*) FROM wbb".$this->dbNo."_".$this->instanceNo."_board_moderator)
+		$sql = "SELECT	(SELECT COUNT(*) FROM wbb".$this->dbNo."_".$this->instanceNo."_board_moderator WHERE userID <> 0)
 				+ (SELECT COUNT(*) FROM wbb".$this->dbNo."_".$this->instanceNo."_board_to_group)
 				+ (SELECT COUNT(*) FROM wbb".$this->dbNo."_".$this->instanceNo."_board_to_user) AS count";
 		$statement = $this->database->prepareStatement($sql);
@@ -1424,8 +1422,9 @@ class WBB3xExporter extends AbstractExporter {
 		// get ids
 		$mod = $user = $group = array();
 		$sql = "(
-				SELECT	boardID, userID, groupID, 'mod' AS type
+				SELECT	boardID, userID, 0, 'mod' AS type
 				FROM	wbb".$this->dbNo."_".$this->instanceNo."_board_moderator
+				WHERE	userID <> 0		
 			)
 			UNION
 			(
