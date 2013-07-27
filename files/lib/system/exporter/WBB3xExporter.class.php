@@ -92,6 +92,13 @@ class WBB3xExporter extends AbstractExporter {
 			$this->dbNo = $match[1];
 			$this->instanceNo = $match[2];
 		}
+		
+		// fix file system path
+		if (!empty($this->fileSystemPath)) {
+			if (!@file_exists($this->fileSystemPath . 'lib/core.functions.php') && @file_exists($this->fileSystemPath . 'wcf/lib/core.functions.php')) {
+				$this->fileSystemPath = $this->fileSystemPath . 'wcf/';
+			}
+		}
 	}
 	
 	/**
@@ -139,7 +146,7 @@ class WBB3xExporter extends AbstractExporter {
 	 */
 	public function validateFileAccess() {
 		if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData) || in_array('com.woltlab.wbb.attachment', $this->selectedData) || in_array('com.woltlab.wcf.conversation.attachment', $this->selectedData) || in_array('com.woltlab.wcf.smiley', $this->selectedData)) {
-			if (empty($this->fileSystemPath) || !@file_exists($this->fileSystemPath . 'lib/core.functions.php')) return false;
+			if (empty($this->fileSystemPath) || (!@file_exists($this->fileSystemPath . 'lib/core.functions.php') && !@file_exists($this->fileSystemPath . 'wcf/lib/core.functions.php'))) return false;
 		}
 		
 		return true;
