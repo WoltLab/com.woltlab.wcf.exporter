@@ -12,9 +12,9 @@ use wcf\util\StringUtil;
 
 /**
  * Exporter for Burning Board 3.x
- *
+ * 
  * @author	Marcel Werk
- * @copyright	2001-2012 WoltLab GmbH
+ * @copyright	2001-2013 WoltLab GmbH
  * @license	WoltLab Burning Board License <http://www.woltlab.com/products/burning_board/license.php>
  * @package	com.woltlab.wcf.exporter
  * @subpackage	system.exporter
@@ -23,24 +23,24 @@ use wcf\util\StringUtil;
 class WBB3xExporter extends AbstractExporter {
 	/**
 	 * wcf installation number
-	 * @var integer
+	 * @var	integer
 	 */
 	protected $dbNo = 0;
 	
 	/**
 	 * wbb installation number
-	 * @var integer
+	 * @var	integer
 	 */
 	protected $instanceNo = 0;
 	
 	/**
 	 * board cache
-	 * @var array
+	 * @var	array
 	 */
 	protected $boardCache = array();
 	
 	/**
-	 * @see wcf\system\exporter\AbstractExporter::$methods
+	 * @see	wcf\system\exporter\AbstractExporter::$methods
 	 */
 	protected $methods = array(
 		'com.woltlab.wcf.user' => 'Users',
@@ -71,7 +71,7 @@ class WBB3xExporter extends AbstractExporter {
 	);
 	
 	/**
-	 * @see wcf\system\exporter\AbstractExporter::$limits
+	 * @see	wcf\system\exporter\AbstractExporter::$limits
 	 */
 	protected $limits = array(
 		'com.woltlab.wcf.user' => 200,
@@ -83,7 +83,7 @@ class WBB3xExporter extends AbstractExporter {
 	);
 	
 	/**
-	 * @see wcf\system\exporter\IExporter::init()
+	 * @see	wcf\system\exporter\IExporter::init()
 	 */
 	public function init() {
 		parent::init();
@@ -95,7 +95,7 @@ class WBB3xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see wcf\system\exporter\IExporter::getSupportedData()
+	 * @see	wcf\system\exporter\IExporter::getSupportedData()
 	 */
 	public function getSupportedData() {
 		return array(
@@ -124,7 +124,7 @@ class WBB3xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see wcf\system\exporter\IExporter::validateDatabaseAccess()
+	 * @see	wcf\system\exporter\IExporter::validateDatabaseAccess()
 	 */
 	public function validateDatabaseAccess() {
 		parent::validateDatabaseAccess();
@@ -135,7 +135,7 @@ class WBB3xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see wcf\system\exporter\IExporter::validateFileAccess()
+	 * @see	wcf\system\exporter\IExporter::validateFileAccess()
 	 */
 	public function validateFileAccess() {
 		if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData) || in_array('com.woltlab.wbb.attachment', $this->selectedData) || in_array('com.woltlab.wcf.conversation.attachment', $this->selectedData) || in_array('com.woltlab.wcf.smiley', $this->selectedData)) {
@@ -146,7 +146,7 @@ class WBB3xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see wcf\system\exporter\IExporter::getQueue()
+	 * @see	wcf\system\exporter\IExporter::getQueue()
 	 */
 	public function getQueue() {
 		$queue = array();
@@ -207,7 +207,7 @@ class WBB3xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see wcf\system\exporter\IExporter::getDefaultDatabasePrefix()
+	 * @see	wcf\system\exporter\IExporter::getDefaultDatabasePrefix()
 	 */
 	public function getDefaultDatabasePrefix() {
 		return 'wbb1_1_';
@@ -1422,9 +1422,9 @@ class WBB3xExporter extends AbstractExporter {
 		// get ids
 		$mod = $user = $group = array();
 		$sql = "(
-				SELECT	boardID, userID, 0, 'mod' AS type
+				SELECT	boardID, userID, 0 AS groupID, 'mod' AS type
 				FROM	wbb".$this->dbNo."_".$this->instanceNo."_board_moderator
-				WHERE	userID <> 0		
+				WHERE	userID <> 0
 			)
 			UNION
 			(
