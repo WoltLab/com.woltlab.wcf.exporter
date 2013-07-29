@@ -20,6 +20,7 @@ use wcf\util\ArrayUtil;
 use wcf\util\FileUtil;
 use wcf\util\StringUtil;
 use wcf\util\UserRegistrationUtil;
+use wcf\util\UserUtil;
 
 /**
  * Exporter for MyBB 1.6.x
@@ -281,7 +282,7 @@ class MyBB16xExporter extends AbstractExporter {
 				($row['activationType'] == 'e' ? 're' : '').'activationCode' => $row['activationCode'] ? UserRegistrationUtil::getActivationCode() : 0, // mybb's codes are strings
 				'newEmail' => $row['newEmail'] ?: '',
 				'oldUsername' => '',
-				'registrationIpAddress' => $row['regip'],
+				'registrationIpAddress' => UserUtil::convertIPv4To6($row['regip']),
 				'signature' => $row['signature'],
 				'signatureEnableBBCodes' => 1,
 				'signatureEnableHtml' => 0,
@@ -751,7 +752,7 @@ class MyBB16xExporter extends AbstractExporter {
 				'editCount' => $row['editor'] ? 1 : 0,
 				'enableSmilies' => $row['smilieoff'] ? 0 : 1,
 				'showSignature' => $row['includesig'],
-				'ipAddress' => $row['ipaddress']
+				'ipAddress' => UserUtil::convertIPv4To6($row['ipaddress'])
 			));
 		}
 	}

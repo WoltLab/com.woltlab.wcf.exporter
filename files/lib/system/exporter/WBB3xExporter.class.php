@@ -9,6 +9,7 @@ use wcf\system\exception\SystemException;
 use wcf\system\importer\ImportHandler;
 use wcf\system\WCF;
 use wcf\util\StringUtil;
+use wcf\util\UserUtil;
 
 /**
  * Exporter for Burning Board 3.x
@@ -319,7 +320,7 @@ class WBB3xExporter extends AbstractExporter {
 				'banReason' => $row['banReason'],
 				'activationCode' => $row['activationCode'],
 				'oldUsername' => $row['oldUsername'],
-				'registrationIpAddress' => $row['registrationIpAddress'],
+				'registrationIpAddress' => UserUtil::convertIPv4To6($row['registrationIpAddress']),
 				'disableAvatar' => $row['disableAvatar'],
 				'disableAvatarReason' => $row['disableAvatarReason'],
 				'enableGravatar' => ($row['gravatar'] == $row['email'] ? 1 : 0),
@@ -1081,7 +1082,7 @@ class WBB3xExporter extends AbstractExporter {
 				'enableHtml' => $row['enableHtml'],
 				'enableBBCodes' => $row['enableBBCodes'],
 				'showSignature' => $row['showSignature'],
-				'ipAddress' => $row['ipAddress'],
+				'ipAddress' => UserUtil::convertIPv4To6($row['ipAddress']),
 				'deleteTime' => $row['deleteTime']
 			));
 		}
