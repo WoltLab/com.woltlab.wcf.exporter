@@ -301,7 +301,14 @@ class WBB3xExporter extends AbstractExporter {
 						SELECT	GROUP_CONCAT(groupID)
 						FROM 	wcf".$this->dbNo."_user_to_groups
 						WHERE 	userID = user_table.userID
-					) AS groupIDs
+					) AS groupIDs,
+					(
+						SELECT		GROUP_CONCAT(language.languageCode)
+						FROM 		wcf".$this->dbNo."_user_to_languages user_to_languages
+						LEFT JOIN	wcf".$this->dbNo."_language language
+						ON		(language.languageID = user_to_languages.languageID)
+						WHERE 		user_to_languages.userID = user_table.userID			
+					) AS languageCodes
 			FROM		wcf".$this->dbNo."_user user_table
 			LEFT JOIN	wcf".$this->dbNo."_user_option_value user_option_value
 			ON		(user_option_value.userID = user_table.userID)
@@ -337,6 +344,7 @@ class WBB3xExporter extends AbstractExporter {
 			);
 			$additionalData = array(
 				'groupIDs' => explode(',', $row['groupIDs']),
+				'languages' => explode(',', $row['languageCodes']),
 				'options' => array()
 			);
 			
