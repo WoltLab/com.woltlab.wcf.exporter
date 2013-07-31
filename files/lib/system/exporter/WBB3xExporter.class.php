@@ -1380,11 +1380,21 @@ class WBB3xExporter extends AbstractExporter {
 	 * Counts labels.
 	 */
 	public function countLabels() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	wbb".$this->dbNo."_".$this->instanceNo."_board
-			WHERE	prefixMode > ?";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array(0));
+		if (substr($this->getPackageVersion('com.woltlab.wcf'), 0, 3) == '1.1') {
+			$sql = "SELECT	COUNT(*) AS count
+				FROM	wbb".$this->dbNo."_".$this->instanceNo."_board
+				WHERE	prefixMode > ?";
+			$statement = $this->database->prepareStatement($sql);
+			$statement->execute(array(0));
+		}
+		else {
+			$sql = "SELECT	COUNT(*) AS count
+				FROM	wbb".$this->dbNo."_".$this->instanceNo."_board
+				WHERE	prefixes <> ?";
+			$statement = $this->database->prepareStatement($sql);
+			$statement->execute(array(''));
+		}
+		
 		$row = $statement->fetchArray();
 		return ($row['count'] ? 1 : 0);
 	}
