@@ -169,7 +169,7 @@ class WBB3xExporter extends AbstractExporter {
 			$queue[] = 'com.woltlab.wcf.user';
 			if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.avatar';
 			
-			if ($this->searchPlugin('com.woltlab.wcf.user.guestbook')) {
+			if ($this->getPackageVersion('com.woltlab.wcf.user.guestbook')) {
 				if (in_array('com.woltlab.wcf.user.comment', $this->selectedData)) {
 					$queue[] = 'com.woltlab.wcf.user.comment';
 					$queue[] = 'com.woltlab.wcf.user.comment.response';
@@ -246,8 +246,8 @@ class WBB3xExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.group')->import($row['groupID'], array(
 				'groupName' => $row['groupName'],
 				'groupType' => $row['groupType'],
-				'userOnlineMarking' => $row['userOnlineMarking'],
-				'showOnTeamPage' => $row['showOnTeamPage']
+				'userOnlineMarking' => (!empty($row['userOnlineMarking']) ? $row['userOnlineMarking'] : ''),
+				'showOnTeamPage' => (!empty($row['showOnTeamPage']) ? $row['showOnTeamPage'] : 0)
 			));
 		}
 	}
@@ -329,8 +329,8 @@ class WBB3xExporter extends AbstractExporter {
 				'oldUsername' => $row['oldUsername'],
 				'registrationIpAddress' => UserUtil::convertIPv4To6($row['registrationIpAddress']),
 				'disableAvatar' => $row['disableAvatar'],
-				'disableAvatarReason' => $row['disableAvatarReason'],
-				'enableGravatar' => ($row['gravatar'] == $row['email'] ? 1 : 0),
+				'disableAvatarReason' => (!empty($row['disableAvatarReason']) ? $row['disableAvatarReason'] : ''),
+				'enableGravatar' => ((!empty($row['gravatar']) && $row['gravatar'] == $row['email']) ? 1 : 0),
 				'signature' => $row['signature'],
 				'signatureEnableBBCodes' => $row['enableSignatureBBCodes'],
 				'signatureEnableHtml' => $row['enableSignatureHtml'],
@@ -426,7 +426,7 @@ class WBB3xExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.follower')->import(0, array(
 				'userID' => $row['userID'],
 				'followUserID' => $row['whiteUserID'],
-				'time' => $row['time']
+				'time' => (!empty($row['time']) ? $row['time'] : 0)
 			));
 		}
 	}
@@ -642,11 +642,12 @@ class WBB3xExporter extends AbstractExporter {
 				'validationPattern' => $row['validationPattern'],
 				'selectOptions' => $row['selectOptions'],
 				'required' => $row['required'],
-				'askDuringRegistration' => $row['askDuringRegistration'],
+				'askDuringRegistration' => (!empty($row['askDuringRegistration']) ? 1 : 0),
 				'searchable' => $row['searchable'],
 				'isDisabled' => $row['disabled'],
 				'editable' => $editable,
-				'visible' => $visible
+				'visible' => $visible,
+				'showOrder' => $row['showOrder']
 			), array('name' => ($row['name'] ?: $row['optionName'])));
 		}
 	}
@@ -674,13 +675,15 @@ class WBB3xExporter extends AbstractExporter {
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
 			$cssClassName = '';
-			switch ($row['color']) {
-				case 'yellow':
-				case 'red':
-				case 'blue':
-				case 'green':
-					$cssClassName = $row['color'];
-					break;
+			if (!empty($row['color'])) {
+				switch ($row['color']) {
+					case 'yellow':
+					case 'red':
+					case 'blue':
+					case 'green':
+						$cssClassName = $row['color'];
+						break;
+				}
 			}
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.label')->import($row['folderID'], array(
@@ -805,6 +808,7 @@ class WBB3xExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.user')->import(0, array(
 				'conversationID' => ($row['parentPmID'] ?: $row['pmID']),
 				'participantID' => $row['recipientID'],
+				'username' => $row['recipient'],
 				'hideConversation' => $row['isDeleted'],
 				'isInvisible' => $row['isBlindCopy'],
 				'lastVisitTime' => $row['isViewed']
@@ -816,10 +820,18 @@ class WBB3xExporter extends AbstractExporter {
 	 * Counts conversation attachments.
 	 */
 	public function countConversationAttachments() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	wcf".$this->dbNo."_attachment
-			WHERE	containerType = ?
-				AND containerID > ?";
+		if (substr($this->getPackageVersion('com.woltlab.wcf'), 0, 3) == '1.1') {
+			$sql = "SELECT	COUNT(*) AS count
+				FROM	wcf".$this->dbNo."_attachment
+				WHERE	containerType = ?
+					AND containerID > ?";
+		}
+		else {
+			$sql = "SELECT	COUNT(*) AS count
+				FROM	wcf".$this->dbNo."_attachment
+				WHERE	messageType = ?
+					AND messageID > ?";
+		}
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute(array('pm', 0));
 		$row = $statement->fetchArray();
@@ -830,29 +842,37 @@ class WBB3xExporter extends AbstractExporter {
 	 * Exports conversation attachments.
 	 */
 	public function exportConversationAttachments($offset, $limit) {
-		$sql = "SELECT		*
-			FROM		wcf".$this->dbNo."_attachment
-			WHERE		containerType = ?
-					AND containerID > ?
-			ORDER BY	attachmentID DESC";
+		if (substr($this->getPackageVersion('com.woltlab.wcf'), 0, 3) == '1.1') {
+			$sql = "SELECT		*
+				FROM		wcf".$this->dbNo."_attachment
+				WHERE		containerType = ?
+						AND containerID > ?
+				ORDER BY	attachmentID DESC";
+		}
+		else {
+			$sql = "SELECT		*
+				FROM		wcf".$this->dbNo."_attachment
+				WHERE		messageType = ?
+						AND messageID > ?
+				ORDER BY	attachmentID DESC";
+		}
+			
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array('pm', 0));
 		while ($row = $statement->fetchArray()) {
 			$fileLocation = $this->fileSystemPath.'attachments/attachment-'.$row['attachmentID'];
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.attachment')->import($row['attachmentID'], array(
-				'objectID' => $row['containerID'],
+				'objectID' => (!empty($row['containerID']) ? $row['containerID'] : $row['messageID']),
 				'userID' => ($row['userID'] ?: null),
 				'filename' => $row['attachmentName'],
 				'filesize' => $row['attachmentSize'],
 				'fileType' => $row['fileType'],
 				'isImage' => $row['isImage'],
-				'width' => $row['width'],
-				'height' => $row['height'],
 				'downloads' => $row['downloads'],
 				'lastDownloadTime' => $row['lastDownloadTime'],
 				'uploadTime' => $row['uploadTime'],
-				'showOrder' => $row['showOrder']
+				'showOrder' => (!empty($row['showOrder']) ? $row['showOrder'] : 0)
 			), array('fileLocation' => $fileLocation));
 		}
 	}
@@ -905,18 +925,18 @@ class WBB3xExporter extends AbstractExporter {
 				'time' => $board['time'],
 				'countUserPosts' => $board['countUserPosts'],
 				'daysPrune' => $board['daysPrune'],
-				'enableMarkingAsDone' => $board['enableMarkingAsDone'],
-				'ignorable' => $board['ignorable'],
+				'enableMarkingAsDone' => (!empty($board['enableMarkingAsDone']) ? $board['enableMarkingAsDone'] : 0),
+				'ignorable' => (!empty($board['ignorable']) ? $board['ignorable'] : 0),
 				'isClosed' => $board['isClosed'],
 				'isInvisible' => $board['isInvisible'],
-				'postSortOrder' => $board['postSortOrder'],
-				'postsPerPage' => $board['postsPerPage'],
-				'searchable' => $board['searchable'],
-				'searchableForSimilarThreads' => $board['searchableForSimilarThreads'],
+				'postSortOrder' => (!empty($board['postSortOrder']) ? $board['postSortOrder'] : ''),
+				'postsPerPage' => (!empty($board['postsPerPage']) ? $board['postsPerPage'] : 0),
+				'searchable' => (!empty($board['searchable']) ? $board['searchable'] : 0),
+				'searchableForSimilarThreads' => (!empty($board['searchableForSimilarThreads']) ? $board['searchableForSimilarThreads'] : 0),
 				'showSubBoards' => $board['showSubBoards'],
 				'sortField' => $board['sortField'],
 				'sortOrder' => $board['sortOrder'],
-				'threadsPerPage' => $board['threadsPerPage'],
+				'threadsPerPage' => (!empty($board['threadsPerPage']) ? $board['threadsPerPage'] : 0),
 				'clicks' => $board['clicks'],
 				'posts' => $board['posts'],
 				'threads' => $board['threads']
@@ -954,11 +974,22 @@ class WBB3xExporter extends AbstractExporter {
 		
 		// get boards
 		$boardPrefixes = array();
-		$sql = "SELECT		boardID, prefixes, prefixMode
-			FROM		wbb".$this->dbNo."_".$this->instanceNo."_board
-			WHERE		prefixMode > ?";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array(0));
+		
+		if (substr($this->getPackageVersion('com.woltlab.wcf'), 0, 3) == '1.1') {
+			$sql = "SELECT		boardID, prefixes, prefixMode
+				FROM		wbb".$this->dbNo."_".$this->instanceNo."_board
+				WHERE		prefixMode > ?";
+			$statement = $this->database->prepareStatement($sql);
+			$statement->execute(array(0));
+		}
+		else {
+			$sql = "SELECT		boardID, prefixes, 2 AS prefixMode
+				FROM		wbb".$this->dbNo."_".$this->instanceNo."_board
+				WHERE		prefixes <> ?";
+			$statement = $this->database->prepareStatement($sql);
+			$statement->execute(array(''));
+		}
+		
 		while ($row = $statement->fetchArray()) {
 			$prefixes = '';
 				
@@ -973,7 +1004,7 @@ class WBB3xExporter extends AbstractExporter {
 					$prefixes = $globalPrefixes . "\n" . $row['prefixes'];
 					break;
 			}
-				
+			
 			$prefixes = StringUtil::trim(StringUtil::unifyNewlines($prefixes));
 			if ($prefixes) {
 				$key = StringUtil::getHash($prefixes);
@@ -1035,8 +1066,8 @@ class WBB3xExporter extends AbstractExporter {
 				'isClosed' => $row['isClosed'],
 				'isDeleted' => $row['isDeleted'],
 				'movedThreadID' => ($row['movedThreadID'] ?: null),
-				'movedTime' => $row['movedTime'],
-				'isDone' => $row['isDone'],
+				'movedTime' => (!empty($row['movedTime']) ? $row['movedTime'] : 0),
+				'isDone' => (!empty($row['isDone']) ? $row['isDone'] : 0),
 				'deleteTime' => $row['deleteTime']
 			);
 			$additionalData = array();
@@ -1084,7 +1115,7 @@ class WBB3xExporter extends AbstractExporter {
 				'editor' => $row['editor'],
 				'lastEditTime' => $row['lastEditTime'],
 				'editCount' => $row['editCount'],
-				'editReason' => $row['editReason'],
+				'editReason' => (!empty($row['editReason']) ? $row['editReason'] : ''),
 				'attachments' => $row['attachments'],
 				'enableSmilies' => $row['enableSmilies'],
 				'enableHtml' => $row['enableHtml'],
@@ -1100,10 +1131,19 @@ class WBB3xExporter extends AbstractExporter {
 	 * Counts post attachments.
 	 */
 	public function countPostAttachments() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	wcf".$this->dbNo."_attachment
-			WHERE	containerType = ?
-				AND containerID > ?";
+		if (substr($this->getPackageVersion('com.woltlab.wcf'), 0, 3) == '1.1') {
+			$sql = "SELECT	COUNT(*) AS count
+				FROM	wcf".$this->dbNo."_attachment
+				WHERE	containerType = ?
+					AND containerID > ?";
+		}
+		else {
+			$sql = "SELECT	COUNT(*) AS count
+				FROM	wcf".$this->dbNo."_attachment
+				WHERE	messageType = ?
+					AND messageID > ?";
+		}
+		
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute(array('post', 0));
 		$row = $statement->fetchArray();
@@ -1114,29 +1154,37 @@ class WBB3xExporter extends AbstractExporter {
 	 * Exports post attachments.
 	 */
 	public function exportPostAttachments($offset, $limit) {
-		$sql = "SELECT		*
-			FROM		wcf".$this->dbNo."_attachment
-			WHERE		containerType = ?
-					AND containerID > ?
-			ORDER BY	attachmentID DESC";
+		if (substr($this->getPackageVersion('com.woltlab.wcf'), 0, 3) == '1.1') {
+			$sql = "SELECT		*
+				FROM		wcf".$this->dbNo."_attachment
+				WHERE		containerType = ?
+						AND containerID > ?
+				ORDER BY	attachmentID DESC";
+		}
+		else {
+			$sql = "SELECT		*
+				FROM		wcf".$this->dbNo."_attachment
+				WHERE		messageType = ?
+						AND messageID > ?
+				ORDER BY	attachmentID DESC";
+		}
+		
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array('post', 0));
 		while ($row = $statement->fetchArray()) {
 			$fileLocation = $this->fileSystemPath.'attachments/attachment-'.$row['attachmentID'];
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.attachment')->import($row['attachmentID'], array(
-				'objectID' => $row['containerID'],
+				'objectID' => (!empty($row['containerID']) ? $row['containerID'] : $row['messageID']),
 				'userID' => ($row['userID'] ?: null),
 				'filename' => $row['attachmentName'],
 				'filesize' => $row['attachmentSize'],
 				'fileType' => $row['fileType'],
 				'isImage' => $row['isImage'],
-				'width' => $row['width'],
-				'height' => $row['height'],
 				'downloads' => $row['downloads'],
 				'lastDownloadTime' => $row['lastDownloadTime'],
 				'uploadTime' => $row['uploadTime'],
-				'showOrder' => $row['showOrder']
+				'showOrder' => (!empty($row['showOrder']) ? $row['showOrder'] : 0)
 			), array('fileLocation' => $fileLocation));
 		}
 	}
@@ -1200,7 +1248,7 @@ class WBB3xExporter extends AbstractExporter {
 				'time' => $row['time'],
 				'endTime' => $row['endTime'],
 				'isChangeable' => ($row['votesNotChangeable'] ? 0 : 1),
-				'isPublic' => $row['isPublic'],
+				'isPublic' => (!empty($row['isPublic']) ? $row['isPublic'] : 0),
 				'sortByVotes' => $row['sortByResult'],
 				'maxVotes' => $row['choiceCount'],
 				'votes' => $row['votes']
@@ -1358,11 +1406,21 @@ class WBB3xExporter extends AbstractExporter {
 		if ($row !== false) $globalPrefixes = $row['optionValue'];
 		
 		// get boards
-		$sql = "SELECT	boardID, prefixes, prefixMode
-			FROM	wbb".$this->dbNo."_".$this->instanceNo."_board
-			WHERE	prefixMode > ?";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array(0));
+		if (substr($this->getPackageVersion('com.woltlab.wcf'), 0, 3) == '1.1') {
+			$sql = "SELECT		boardID, prefixes, prefixMode
+				FROM		wbb".$this->dbNo."_".$this->instanceNo."_board
+				WHERE		prefixMode > ?";
+			$statement = $this->database->prepareStatement($sql);
+			$statement->execute(array(0));
+		}
+		else {
+			$sql = "SELECT		boardID, prefixes, 2 AS prefixMode
+				FROM		wbb".$this->dbNo."_".$this->instanceNo."_board
+				WHERE		prefixes <> ?";
+			$statement = $this->database->prepareStatement($sql);
+			$statement->execute(array(''));
+		}
+		
 		while ($row = $statement->fetchArray()) {
 			$prefixes = '';
 			
@@ -1590,14 +1648,15 @@ class WBB3xExporter extends AbstractExporter {
 		return $optionsNames;
 	}
 	
-	private function searchPlugin($name) {
-		$sql = "SELECT	COUNT(*) AS count
+	private function getPackageVersion($name) {
+		$sql = "SELECT	packageVersion
 			FROM	wcf".$this->dbNo."_package
 			WHERE	package = ?";
-		$statement = $this->database->prepareStatement($sql);
+		$statement = $this->database->prepareStatement($sql, 1);
 		$statement->execute(array($name));
 		$row = $statement->fetchArray();
-		if ($row['count']) return true;
+		if ($row !== false) return $row['packageVersion'];
+		
 		return false;
 	}
 	
