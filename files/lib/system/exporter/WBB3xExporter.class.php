@@ -68,7 +68,13 @@ class WBB3xExporter extends AbstractExporter {
 		'com.woltlab.wbb.like' => 'Likes',
 		'com.woltlab.wcf.label' => 'Labels',
 		'com.woltlab.wbb.acl' => 'ACLs',
-		'com.woltlab.wcf.smiley' => 'Smilies'
+		'com.woltlab.wcf.smiley' => 'Smilies',
+				
+		'com.woltlab.blog.category' => 'BlogCategories',
+		'com.woltlab.blog.entry' => 'BlogEntries',
+		'com.woltlab.blog.entry.attachment' => 'BlogAttachments',
+		'com.woltlab.blog.entry.comment' => 'BlogComments',
+		'com.woltlab.blog.entry.like' => 'BlogEntryLikes'
 	);
 	
 	/**
@@ -126,6 +132,12 @@ class WBB3xExporter extends AbstractExporter {
 			'com.woltlab.wcf.conversation' => array(
 				'com.woltlab.wcf.conversation.attachment',
 				'com.woltlab.wcf.conversation.label'
+			),
+			'com.woltlab.blog.entry' => array(
+				'com.woltlab.blog.category',
+				'com.woltlab.blog.entry.attachment',
+				'com.woltlab.blog.entry.comment',
+				'com.woltlab.blog.entry.like'
 			),
 			'com.woltlab.wcf.smiley' => array()
 		);
@@ -210,6 +222,17 @@ class WBB3xExporter extends AbstractExporter {
 		
 		// smiley
 		if (in_array('com.woltlab.wcf.smiley', $this->selectedData)) $queue[] = 'com.woltlab.wcf.smiley';
+		
+		// blog
+		if ($this->getPackageVersion('com.woltlab.wcf.user.blog')) {
+			if (in_array('com.woltlab.blog.entry', $this->selectedData)) {
+				if (in_array('com.woltlab.blog.category', $this->selectedData)) $queue[] = 'com.woltlab.blog.category';
+				$queue[] = 'com.woltlab.blog.entry';
+				if (in_array('com.woltlab.blog.entry.attachment', $this->selectedData)) $queue[] = 'com.woltlab.blog.entry.attachment';
+				if (in_array('com.woltlab.blog.entry.comment', $this->selectedData)) $queue[] = 'com.woltlab.blog.entry.comment';
+				if (in_array('com.woltlab.blog.entry.like', $this->selectedData)) $queue[] = 'com.woltlab.blog.entry.like';
+			}
+		}
 		
 		return $queue;
 	}
@@ -820,61 +843,14 @@ class WBB3xExporter extends AbstractExporter {
 	 * Counts conversation attachments.
 	 */
 	public function countConversationAttachments() {
-		if (substr($this->getPackageVersion('com.woltlab.wcf'), 0, 3) == '1.1') {
-			$sql = "SELECT	COUNT(*) AS count
-				FROM	wcf".$this->dbNo."_attachment
-				WHERE	containerType = ?
-					AND containerID > ?";
-		}
-		else {
-			$sql = "SELECT	COUNT(*) AS count
-				FROM	wcf".$this->dbNo."_attachment
-				WHERE	messageType = ?
-					AND messageID > ?";
-		}
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array('pm', 0));
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->countAttachments('pm');
 	}
 	
 	/**
 	 * Exports conversation attachments.
 	 */
 	public function exportConversationAttachments($offset, $limit) {
-		if (substr($this->getPackageVersion('com.woltlab.wcf'), 0, 3) == '1.1') {
-			$sql = "SELECT		*
-				FROM		wcf".$this->dbNo."_attachment
-				WHERE		containerType = ?
-						AND containerID > ?
-				ORDER BY	attachmentID DESC";
-		}
-		else {
-			$sql = "SELECT		*
-				FROM		wcf".$this->dbNo."_attachment
-				WHERE		messageType = ?
-						AND messageID > ?
-				ORDER BY	attachmentID DESC";
-		}
-			
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute(array('pm', 0));
-		while ($row = $statement->fetchArray()) {
-			$fileLocation = $this->fileSystemPath.'attachments/attachment-'.$row['attachmentID'];
-			
-			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.attachment')->import($row['attachmentID'], array(
-				'objectID' => (!empty($row['containerID']) ? $row['containerID'] : $row['messageID']),
-				'userID' => ($row['userID'] ?: null),
-				'filename' => $row['attachmentName'],
-				'filesize' => $row['attachmentSize'],
-				'fileType' => $row['fileType'],
-				'isImage' => $row['isImage'],
-				'downloads' => $row['downloads'],
-				'lastDownloadTime' => $row['lastDownloadTime'],
-				'uploadTime' => $row['uploadTime'],
-				'showOrder' => (!empty($row['showOrder']) ? $row['showOrder'] : 0)
-			), array('fileLocation' => $fileLocation));
-		}
+		$this->exportAttachments('pm', 'com.woltlab.wcf.conversation.attachment', $offset, $limit);
 	}
 	
 	/**
@@ -1042,39 +1018,7 @@ class WBB3xExporter extends AbstractExporter {
 		}
 		
 		// get tags
-		$tags = array();
-		if (substr($this->getPackageVersion('com.woltlab.wcf'), 0, 3) == '1.1') {
-			// get taggable id
-			$sql = "SELECT	taggableID
-				FROM	wcf".$this->dbNo."_tag_taggable
-				WHERE	name = ?
-					AND packageID IN (
-						SELECT	packageID
-						FROM	wcf".$this->dbNo."_package
-						WHERE	package = ?
-							AND instanceNo = ?
-					)";
-			$statement = $this->database->prepareStatement($sql, 1);
-			$statement->execute(array('com.woltlab.wbb.thread', 'com.woltlab.wbb', $this->instanceNo));
-			$taggableID = $statement->fetchColumn();
-			if ($taggableID) {
-				$conditionBuilder = new PreparedStatementConditionBuilder();
-				$conditionBuilder->add('tag_to_object.taggableID = ?', array($taggableID));
-				$conditionBuilder->add('tag_to_object.objectID IN (?)', array($threadIDs));
-				
-				$sql = "SELECT		tag.name, tag_to_object.objectID
-					FROM		wcf".$this->dbNo."_tag_to_object tag_to_object
-					LEFT JOIN	wcf".$this->dbNo."_tag tag
-					ON		(tag.tagID = tag_to_object.tagID)
-					".$conditionBuilder;
-				$statement = $this->database->prepareStatement($sql);
-				$statement->execute($conditionBuilder->getParameters());
-				while ($row = $statement->fetchArray()) {
-					if (!isset($tags[$row['objectID']])) $tags[$row['objectID']] = array();
-					$tags[$row['objectID']][] = $row['name'];
-				}
-			}
-		}
+		$tags = $this->getTags('com.woltlab.wbb.thread', $threadIDs);
 		
 		// get threads
 		$conditionBuilder = new PreparedStatementConditionBuilder();
@@ -1167,62 +1111,14 @@ class WBB3xExporter extends AbstractExporter {
 	 * Counts post attachments.
 	 */
 	public function countPostAttachments() {
-		if (substr($this->getPackageVersion('com.woltlab.wcf'), 0, 3) == '1.1') {
-			$sql = "SELECT	COUNT(*) AS count
-				FROM	wcf".$this->dbNo."_attachment
-				WHERE	containerType = ?
-					AND containerID > ?";
-		}
-		else {
-			$sql = "SELECT	COUNT(*) AS count
-				FROM	wcf".$this->dbNo."_attachment
-				WHERE	messageType = ?
-					AND messageID > ?";
-		}
-		
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array('post', 0));
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->countAttachments('post');
 	}
 	
 	/**
 	 * Exports post attachments.
 	 */
 	public function exportPostAttachments($offset, $limit) {
-		if (substr($this->getPackageVersion('com.woltlab.wcf'), 0, 3) == '1.1') {
-			$sql = "SELECT		*
-				FROM		wcf".$this->dbNo."_attachment
-				WHERE		containerType = ?
-						AND containerID > ?
-				ORDER BY	attachmentID DESC";
-		}
-		else {
-			$sql = "SELECT		*
-				FROM		wcf".$this->dbNo."_attachment
-				WHERE		messageType = ?
-						AND messageID > ?
-				ORDER BY	attachmentID DESC";
-		}
-		
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute(array('post', 0));
-		while ($row = $statement->fetchArray()) {
-			$fileLocation = $this->fileSystemPath.'attachments/attachment-'.$row['attachmentID'];
-			
-			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.attachment')->import($row['attachmentID'], array(
-				'objectID' => (!empty($row['containerID']) ? $row['containerID'] : $row['messageID']),
-				'userID' => ($row['userID'] ?: null),
-				'filename' => $row['attachmentName'],
-				'filesize' => $row['attachmentSize'],
-				'fileType' => $row['fileType'],
-				'isImage' => $row['isImage'],
-				'downloads' => $row['downloads'],
-				'lastDownloadTime' => $row['lastDownloadTime'],
-				'uploadTime' => $row['uploadTime'],
-				'showOrder' => (!empty($row['showOrder']) ? $row['showOrder'] : 0)
-			), array('fileLocation' => $fileLocation));
-		}
+		$this->exportAttachments('post', 'com.woltlab.wbb.attachment', $offset, $limit);
 	}
 	
 	/**
@@ -1663,7 +1559,7 @@ class WBB3xExporter extends AbstractExporter {
 			FROM		wcf".$this->dbNo."_smiley
 			ORDER BY	smileyID";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute(array());
+		$statement->execute();
 		while ($row = $statement->fetchArray()) {
 			$fileLocation = $this->fileSystemPath . $row['smileyPath'];
 			
@@ -1671,6 +1567,259 @@ class WBB3xExporter extends AbstractExporter {
 				'smileyTitle' => $row['smileyTitle'],
 				'smileyCode' => $row['smileyCode'],
 				'showOrder' => $row['showOrder']
+			), array('fileLocation' => $fileLocation));
+		}
+	}
+	
+	/**
+	 * Counts blog categories.
+	 */
+	public function countBlogCategories() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	wcf".$this->dbNo."_user_blog_category
+			WHERE	userID = ?";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array(0));
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports blog categories.
+	 */
+	public function exportBlogCategories($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		wcf".$this->dbNo."_user_blog_category
+			WHERE		userID = ?
+			ORDER BY	categoryID";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute(array(0));
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.blog.category')->import($row['categoryID'], array(
+				'title' => $row['title']
+			));
+		}
+	}
+	
+	/**
+	 * Counts blog entries.
+	 */
+	public function countBlogEntries() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	wcf".$this->dbNo."_user_blog";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports blog entries.
+	 */
+	public function exportBlogEntries($offset, $limit) {
+		// get entry ids
+		$entryIDs = array();
+		$sql = "SELECT		entryID
+			FROM		wcf".$this->dbNo."_user_blog
+			ORDER BY	entryID";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			$entryIDs[] = $row['entryID'];
+		}
+		
+		// get tags
+		$tags = $this->getTags('com.woltlab.wcf.user.blog.entry', $entryIDs);
+		
+		// get categories
+		$categories = array();
+		$conditionBuilder = new PreparedStatementConditionBuilder();
+		$conditionBuilder->add('entry_to_category.entryID IN (?)', array($entryIDs));
+		$conditionBuilder->add('category.userID <> ?', array(0));
+		
+		$sql = "SELECT		entry_to_category.* 
+			FROM		wcf".$this->dbNo."_user_blog_entry_to_category entry_to_category
+			LEFT JOIN	wcf".$this->dbNo."_user_blog_category category
+			ON		(category.categoryID = entry_to_category.categoryID)
+			".$conditionBuilder;
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute($conditionBuilder->getParameters());
+		while ($row = $statement->fetchArray()) {
+			if (!isset($categories[$row['entryID']])) $categories[$row['entryID']] = array();
+			$categories[$row['entryID']][] = $row['categoryID'];
+		}
+		
+		// get entries
+		$conditionBuilder = new PreparedStatementConditionBuilder();
+		$conditionBuilder->add('user_blog.entryID IN (?)', array($entryIDs));
+		
+		$sql = "SELECT		user_blog.*, language.languageCode
+			FROM		wcf".$this->dbNo."_user_blog user_blog
+			LEFT JOIN	wcf".$this->dbNo."_language language
+			ON		(language.languageID = user_blog.languageID)
+			".$conditionBuilder;
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute($conditionBuilder->getParameters());
+		while ($row = $statement->fetchArray()) {
+			$additionalData = array();
+			if ($row['languageCode']) $additionalData['languageCode'] = $row['languageCode'];
+			if (isset($tags[$row['entryID']])) $additionalData['tags'] = $tags[$row['entryID']];
+			if (isset($categories[$row['entryID']])) $additionalData['categories'] = $categories[$row['entryID']];
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry')->import($row['entryID'], array(
+				'userID' => ($row['userID'] ?: null),
+				'username' => $row['username'],
+				'subject' => $row['subject'],
+				'message' => self::fixBBCodes($row['message']),
+				'time' => $row['time'],
+				'attachments' => $row['attachments'],
+				'comments' => $row['comments'],
+				'enableSmilies' => $row['enableSmilies'],
+				'enableHtml' => $row['enableHtml'],
+				'enableBBCodes' => $row['enableBBCodes'],
+				'views' => $row['views'],
+				'isPublished' => $row['isPublished'],
+				'publishingDate' => $row['publishingDate']
+			), $additionalData);
+		}
+	}
+	
+	/**
+	 * Counts blog attachments.
+	 */
+	public function countBlogAttachments() {
+		return $this->countAttachments('userBlogEntry');
+	}
+	
+	/**
+	 * Exports blog attachments.
+	 */
+	public function exportBlogAttachments($offset, $limit) {
+		$this->exportAttachments('userBlogEntry', 'com.woltlab.blog.entry.attachment', $offset, $limit);
+	}
+	
+	/**
+	 * Counts blog comments.
+	 */
+	public function countBlogComments() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	wcf".$this->dbNo."_user_blog_comment";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports blog comments.
+	 */
+	public function exportBlogComments($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		wcf".$this->dbNo."_user_blog_comment
+			ORDER BY	commentID";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry.comment')->import($row['commentID'], array(
+				'objectID' => $row['entryID'],
+				'userID' => $row['userID'],
+				'username' => $row['username'],
+				'message' => $row['comment'],
+				'time' => $row['time']
+			));
+		}
+	}
+	
+	/**
+	 * Counts blog entry likes.
+	 */
+	public function countBlogEntryLikes() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	wcf".$this->dbNo."_rating
+			WHERE	objectName = ?
+				AND userID <> ?
+				AND rating NOT IN (?, ?)";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array('com.woltlab.wcf.user.blog.entry', 0, 0, 3));
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports blog entry likes.
+	 */
+	public function exportBlogEntryLikes($offset, $limit) {
+		$sql = "SELECT		rating.*, blog.userID AS objectUserID
+			FROM		wcf".$this->dbNo."_rating rating
+			LEFT JOIN	wcf".$this->dbNo."_user_blog blog
+			ON		(blog.entryID = rating.objectID)
+			WHERE		rating.objectName = ?
+					AND rating.userID <> ?
+					AND rating.rating NOT IN (?, ?)
+			ORDER BY	rating.objectID, rating.userID";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute(array('com.woltlab.wcf.user.blog.entry', 0, 0, 3));
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry.like')->import(0, array(
+				'objectID' => $row['objectID'],
+				'objectUserID' => ($row['objectUserID'] ?: null),
+				'userID' => $row['userID'],
+				'likeValue' => ($row['rating'] > 3 ? Like::LIKE : Like::DISLIKE)
+			));
+		}
+	}
+	
+	private function countAttachments($type) {
+		if (substr($this->getPackageVersion('com.woltlab.wcf'), 0, 3) == '1.1') {
+			$sql = "SELECT	COUNT(*) AS count
+				FROM	wcf".$this->dbNo."_attachment
+				WHERE	containerType = ?
+					AND containerID > ?";
+		}
+		else {
+			$sql = "SELECT	COUNT(*) AS count
+				FROM	wcf".$this->dbNo."_attachment
+				WHERE	messageType = ?
+					AND messageID > ?";
+		}
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($type, 0));
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	private function exportAttachments($type, $objectType, $offset, $limit) {
+		if (substr($this->getPackageVersion('com.woltlab.wcf'), 0, 3) == '1.1') {
+			$sql = "SELECT		*
+				FROM		wcf".$this->dbNo."_attachment
+				WHERE		containerType = ?
+						AND containerID > ?
+				ORDER BY	attachmentID DESC";
+		}
+		else {
+			$sql = "SELECT		*
+				FROM		wcf".$this->dbNo."_attachment
+				WHERE		messageType = ?
+						AND messageID > ?
+				ORDER BY	attachmentID DESC";
+		}
+			
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute(array($type, 0));
+		while ($row = $statement->fetchArray()) {
+			$fileLocation = $this->fileSystemPath.'attachments/attachment-'.$row['attachmentID'];
+	
+			ImportHandler::getInstance()->getImporter($objectType)->import($row['attachmentID'], array(
+				'objectID' => (!empty($row['containerID']) ? $row['containerID'] : $row['messageID']),
+				'userID' => ($row['userID'] ?: null),
+				'filename' => $row['attachmentName'],
+				'filesize' => $row['attachmentSize'],
+				'fileType' => $row['fileType'],
+				'isImage' => $row['isImage'],
+				'downloads' => $row['downloads'],
+				'lastDownloadTime' => $row['lastDownloadTime'],
+				'uploadTime' => $row['uploadTime'],
+				'showOrder' => (!empty($row['showOrder']) ? $row['showOrder'] : 0)
 			), array('fileLocation' => $fileLocation));
 		}
 	}
@@ -1704,6 +1853,39 @@ class WBB3xExporter extends AbstractExporter {
 		if ($row !== false) return $row['packageVersion'];
 		
 		return false;
+	}
+	
+	private function getTags($name, array $objectIDs) {
+		$tags = array();
+		if (substr($this->getPackageVersion('com.woltlab.wcf'), 0, 3) == '1.1') {
+			// get taggable id
+			$sql = "SELECT		taggableID
+				FROM		wcf".$this->dbNo."_tag_taggable
+				WHERE		name = ?
+				ORDER BY	packageID";
+			$statement = $this->database->prepareStatement($sql, 1);
+			$statement->execute(array($name));
+			$taggableID = $statement->fetchColumn();
+			if ($taggableID) {
+				$conditionBuilder = new PreparedStatementConditionBuilder();
+				$conditionBuilder->add('tag_to_object.taggableID = ?', array($taggableID));
+				$conditionBuilder->add('tag_to_object.objectID IN (?)', array($objectIDs));
+		
+				$sql = "SELECT		tag.name, tag_to_object.objectID
+					FROM		wcf".$this->dbNo."_tag_to_object tag_to_object
+					LEFT JOIN	wcf".$this->dbNo."_tag tag
+					ON		(tag.tagID = tag_to_object.tagID)
+					".$conditionBuilder;
+				$statement = $this->database->prepareStatement($sql);
+				$statement->execute($conditionBuilder->getParameters());
+				while ($row = $statement->fetchArray()) {
+					if (!isset($tags[$row['objectID']])) $tags[$row['objectID']] = array();
+					$tags[$row['objectID']][] = $row['name'];
+				}
+			}
+		}
+		
+		return $tags;
 	}
 	
 	private static function fixBBCodes($message) {
