@@ -1041,6 +1041,41 @@ class WBB3xExporter extends AbstractExporter {
 			}
 		}
 		
+		// get tags
+		$tags = array();
+		if (substr($this->getPackageVersion('com.woltlab.wcf'), 0, 3) == '1.1') {
+			// get taggable id
+			$sql = "SELECT	taggableID
+				FROM	wcf".$this->dbNo."_tag_taggable
+				WHERE	name = ?
+					AND packageID IN (
+						SELECT	packageID
+						FROM	wcf".$this->dbNo."_package
+						WHERE	package = ?
+							AND instanceNo = ?
+					)";
+			$statement = $this->database->prepareStatement($sql, 1);
+			$statement->execute(array('com.woltlab.wbb.thread', 'com.woltlab.wbb', $this->instanceNo));
+			$taggableID = $statement->fetchColumn();
+			if ($taggableID) {
+				$conditionBuilder = new PreparedStatementConditionBuilder();
+				$conditionBuilder->add('tag_to_object.taggableID = ?', array($taggableID));
+				$conditionBuilder->add('tag_to_object.objectID IN (?)', array($threadIDs));
+				
+				$sql = "SELECT		tag.name, tag_to_object.objectID
+					FROM		wcf".$this->dbNo."_tag_to_object tag_to_object
+					LEFT JOIN	wcf".$this->dbNo."_tag tag
+					ON		(tag.tagID = tag_to_object.tagID)
+					".$conditionBuilder;
+				$statement = $this->database->prepareStatement($sql);
+				$statement->execute($conditionBuilder->getParameters());
+				while ($row = $statement->fetchArray()) {
+					if (!isset($tags[$row['objectID']])) $tags[$row['objectID']] = array();
+					$tags[$row['objectID']][] = $row['name'];
+				}
+			}
+		}
+		
 		// get threads
 		$conditionBuilder = new PreparedStatementConditionBuilder();
 		$conditionBuilder->add('threadID IN (?)', array($threadIDs));
@@ -1074,6 +1109,7 @@ class WBB3xExporter extends AbstractExporter {
 			if ($row['languageCode']) $additionalData['languageCode'] = $row['languageCode'];
 			if (!empty($assignedBoards[$row['threadID']])) $additionalData['assignedBoards'] = $assignedBoards[$row['threadID']];
 			if ($row['prefix'] && isset($boardPrefixes[$row['boardID']])) $additionalData['labels'] = array($boardPrefixes[$row['boardID']].'-'.$row['prefix']);
+			if (isset($tags[$row['threadID']])) $additionalData['tags'] = $tags[$row['threadID']];
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.thread')->import($row['threadID'], $data, $additionalData);
 		}
