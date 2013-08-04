@@ -89,9 +89,8 @@ class PhpBB3xExporter extends AbstractExporter {
 		return array(
 			'com.woltlab.wcf.user' => array(
 				'com.woltlab.wcf.user.group',
-				/*'com.woltlab.wcf.user.avatar',
-				'com.woltlab.wcf.user.option',
-				'com.woltlab.wcf.user.comment',*/
+				'com.woltlab.wcf.user.avatar',
+			/*	'com.woltlab.wcf.user.option',*/
 				'com.woltlab.wcf.user.follower',
 				'com.woltlab.wcf.user.rank'
 			),
@@ -147,14 +146,7 @@ class PhpBB3xExporter extends AbstractExporter {
 			}
 			/*if (in_array('com.woltlab.wcf.user.option', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.option';*/
 			$queue[] = 'com.woltlab.wcf.user';
-			/*if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.avatar';
-			
-			if ($this->searchPlugin('com.woltlab.wcf.user.guestbook')) {
-				if (in_array('com.woltlab.wcf.user.comment', $this->selectedData)) {
-					$queue[] = 'com.woltlab.wcf.user.comment';
-					$queue[] = 'com.woltlab.wcf.user.comment.response';
-				}
-			}*/
+			if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.avatar';
 			
 			if (in_array('com.woltlab.wcf.user.follower', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.follower';
 			
@@ -370,7 +362,7 @@ class PhpBB3xExporter extends AbstractExporter {
 	 * Exports followers.
 	 */
 	public function exportFollowers($offset, $limit) {
-		$sql = "SELECT		*
+		$sql = "SELECT	*
 			FROM	".$this->databasePrefix."zebra
 			WHERE		friend = ?
 				AND	foe = ?";
@@ -382,6 +374,59 @@ class PhpBB3xExporter extends AbstractExporter {
 				'followUserID' => $row['zebra_id'],
 				'time' => 0
 			));
+		}
+	}
+	
+	/**
+	 * Counts user avatars.
+	 */
+	public function countUserAvatars() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."users
+			WHERE	user_avatar_type IN (?, ?)";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array(1, 3));
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports user avatars.
+	 */
+	public function exportUserAvatars($offset, $limit) {
+		static $avatar_salt = null, $avatar_path = null, $avatar_gallery_path = null;
+		if ($avatar_salt === null) {
+			$sql = "SELECT	config_name, config_value
+				FROM	".$this->databasePrefix."config
+				WHERE	config_name IN (?, ?, ?)";
+			$statement = $this->database->prepareStatement($sql);
+			$statement->execute(array('avatar_path', 'avatar_salt', 'avatar_gallery_path'));
+			while ($row = $statement->fetchArray()) {
+				$$row['config_name'] = $row['config_value'];
+			}
+		}
+		
+		$sql = "SELECT	user_id, user_avatar, user_avatar_type, user_avatar_width, user_avatar_height
+			FROM	".$this->databasePrefix."users
+			WHERE	user_avatar_type IN (?, ?)";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute(array(1, 3));
+		while ($row = $statement->fetchArray()) {
+			$extension = pathinfo($row['user_avatar'], PATHINFO_EXTENSION);
+			switch ($row['user_avatar_type']) {
+				case 1: // uploaded
+					$location = FileUtil::addTrailingSlash($this->fileSystemPath.$avatar_path).$avatar_salt.'_'.intval($row['user_avatar']).'.'.$extension;
+				break;
+				case 3: // gallery
+					$location = FileUtil::addTrailingSlash($this->fileSystemPath.$avatar_gallery_path).$row['user_avatar'];
+				break;
+			}
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.avatar')->import(0, array(
+				'avatarName' => basename($row['user_avatar']),
+				'avatarExtension' => $extension,
+				'userID' => $row['user_id']
+			), array('fileLocation' => $location));
 		}
 	}
 	
