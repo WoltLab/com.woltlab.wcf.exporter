@@ -154,11 +154,11 @@ class PhpBB3xExporter extends AbstractExporter {
 			if (in_array('com.woltlab.wcf.conversation', $this->selectedData)) {
 				if (in_array('com.woltlab.wcf.conversation.label', $this->selectedData)) $queue[] = 'com.woltlab.wcf.conversation.label';
 				
-				/*$queue[] = 'com.woltlab.wcf.conversation';
+				$queue[] = 'com.woltlab.wcf.conversation';
 				$queue[] = 'com.woltlab.wcf.conversation.message';
 				$queue[] = 'com.woltlab.wcf.conversation.user';
 					
-				if (in_array('com.woltlab.wcf.conversation.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wcf.conversation.attachment';*/
+				/*if (in_array('com.woltlab.wcf.conversation.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wcf.conversation.attachment';*/
 			}
 		}
 		/*
@@ -459,6 +459,132 @@ class PhpBB3xExporter extends AbstractExporter {
 				'userID' => $row['user_id'],
 				'label' => StringUtil::substring($row['folder_name'], 0, 80)
 			));
+		}
+	}
+	
+	/**
+	 * Counts conversations.
+	 */
+	public function countConversations() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."privmsgs
+			WHERE	root_level = ?";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array(0));
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports conversations.
+	 */
+	public function exportConversations($offset, $limit) {
+		$sql = "INSERT IGNORE INTO	wcf".WCF_N."_conversation_to_user
+						(conversationID, participantID, hideConversation, isInvisible, lastVisitTime)
+			VALUES			(?, ?, ?, ?, ?)";
+		$insertStatement = WCF::getDB()->prepareStatement($sql);
+		
+		$sql = "SELECT		msg_table.*, user_table.username
+			FROM		".$this->databasePrefix."privmsgs msg_table
+			LEFT JOIN	".$this->databasePrefix."users user_table
+			ON		msg_table.author_id = user_table.user_id
+			WHERE		root_level = ?
+			ORDER BY	msg_id ASC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute(array(0));
+		while ($row = $statement->fetchArray()) {
+			$conversationID = ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import($row['msg_id'], array(
+				'subject' => StringUtil::decodeHTML($row['message_subject']),
+				'time' => $row['message_time'],
+				'userID' => $row['author_id'],
+				'username' => $row['username'],
+				'isDraft' => 0 // TODO: fetch drafts from phpbb_drafts
+			));
+			
+			// add author
+			$insertStatement->execute(array(
+				$conversationID,
+				ImportHandler::getInstance()->getNewID('com.woltlab.wcf.user', $row['author_id']),
+				0,
+				0,
+				TIME_NOW
+			));
+		}
+	}
+	
+	/**
+	 * Counts conversation messages.
+	 */
+	public function countConversationMessages() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."privmsgs";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports conversation messages.
+	 */
+	public function exportConversationMessages($offset, $limit) {
+		$sql = "SELECT		msg_table.*, user_table.username
+			FROM		".$this->databasePrefix."privmsgs msg_table
+			LEFT JOIN	".$this->databasePrefix."users user_table
+			ON		msg_table.author_id = user_table.user_id
+			ORDER BY	msg_id ASC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.message')->import($row['msg_id'], array(
+				'conversationID' => ($row['root_level'] ?: $row['msg_id']),
+				'userID' => $row['author_id'],
+				'username' => $row['username'],
+				'message' => self::fixBBCodes(StringUtil::decodeHTML($row['message_text']), $row['bbcode_uid']),
+				'time' => $row['message_time'],
+				'attachments' => 0, // TODO
+				'enableSmilies' =>  $row['enable_smilies'],
+				'enableHtml' => 0,
+				'enableBBCodes' => $row['enable_bbcode'],
+				'showSignature' => $row['enable_sig']
+			));
+		}
+	}
+	
+	/**
+	 * Counts conversation recipients.
+	 */
+	public function countConversationUsers() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."privmsgs_to";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports conversation recipients.
+	 */
+	public function exportConversationUsers($offset, $limit) {
+		$sql = "SELECT		to_table.*, msg_table.root_level, user_table.username
+			FROM		".$this->databasePrefix."privmsgs_to to_table
+			LEFT JOIN	".$this->databasePrefix."privmsgs msg_table
+			ON		(msg_table.msg_id = to_table.msg_id)
+			LEFT JOIN	".$this->databasePrefix."users user_table
+			ON		to_table.user_id = user_table.user_id
+			ORDER BY	to_table.msg_id DESC, to_table.user_id ASC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.user')->import(0, array(
+				'conversationID' => ($row['root_level'] ?: $row['msg_id']),
+				'participantID' => $row['user_id'],
+				'username' => $row['username'],
+				'hideConversation' => $row['pm_deleted'],
+				'isInvisible' => 0, // TODO
+				'lastVisitTime' => $row['pm_unread'] ? 0 : 1
+			), array('labelIDs' => ($row['folder_id'] > 0 ? array($row['folder_id']) : array())));
 		}
 	}
 	
