@@ -19,6 +19,7 @@ use wcf\system\WCF;
 use wcf\util\ArrayUtil;
 use wcf\util\FileUtil;
 use wcf\util\StringUtil;
+use wcf\util\UserUtil;
 use wcf\util\UserRegistrationUtil;
 
 /**
@@ -294,7 +295,7 @@ class PhpBB3xExporter extends AbstractExporter {
 				'registrationDate' => $row['user_regdate'],
 				'banned' => $row['banReason'] === null ? 0 : 1,
 				'banReason' => $row['banReason'],
-				'registrationIpAddress' => $row['user_ip'],
+				'registrationIpAddress' => UserUtil::convertIPv4To6($row['user_ip']),
 				'signature' => self::fixBBCodes($row['user_sig'], $row['user_sig_bbcode_uid']),
 				'signatureEnableBBCodes' => ($row['user_sig_bbcode_uid'] ? StringUtil::indexOf($row['user_sig'], $row['user_sig_bbcode_uid']) : 1),
 				'signatureEnableHtml' => 0,
