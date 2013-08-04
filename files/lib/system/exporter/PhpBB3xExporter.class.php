@@ -101,12 +101,12 @@ class PhpBB3xExporter extends AbstractExporter {
 				'com.woltlab.wbb.watchedThread',
 				'com.woltlab.wbb.like',
 				'com.woltlab.wcf.label'
-			),
+			),*/
 			'com.woltlab.wcf.conversation' => array(
-				'com.woltlab.wcf.conversation.attachment',
+				/*'com.woltlab.wcf.conversation.attachment',*/
 				'com.woltlab.wcf.conversation.label'
 			),
-			'com.woltlab.wcf.smiley' => array()*/
+			/*'com.woltlab.wcf.smiley' => array()*/
 		);
 	}
 	
@@ -150,16 +150,16 @@ class PhpBB3xExporter extends AbstractExporter {
 			
 			if (in_array('com.woltlab.wcf.user.follower', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.follower';
 			
-			/*// conversation
+			// conversation
 			if (in_array('com.woltlab.wcf.conversation', $this->selectedData)) {
 				if (in_array('com.woltlab.wcf.conversation.label', $this->selectedData)) $queue[] = 'com.woltlab.wcf.conversation.label';
 				
-				$queue[] = 'com.woltlab.wcf.conversation';
+				/*$queue[] = 'com.woltlab.wcf.conversation';
 				$queue[] = 'com.woltlab.wcf.conversation.message';
 				$queue[] = 'com.woltlab.wcf.conversation.user';
 					
-				if (in_array('com.woltlab.wcf.conversation.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wcf.conversation.attachment';
-			}*/
+				if (in_array('com.woltlab.wcf.conversation.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wcf.conversation.attachment';*/
+			}
 		}
 		/*
 		// board
@@ -327,9 +327,10 @@ class PhpBB3xExporter extends AbstractExporter {
 	 * Exports user ranks.
 	 */
 	public function exportUserRanks($offset, $limit) {
-		$sql = "SELECT	*
-			FROM	".$this->databasePrefix."ranks
-			WHERE	rank_special = ?";
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."ranks
+			WHERE		rank_special = ?
+			ORDER BY	rank_id ASC";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array(0));
 		while ($row = $statement->fetchArray()) {
@@ -362,10 +363,11 @@ class PhpBB3xExporter extends AbstractExporter {
 	 * Exports followers.
 	 */
 	public function exportFollowers($offset, $limit) {
-		$sql = "SELECT	*
-			FROM	".$this->databasePrefix."zebra
-			WHERE		friend = ?
-				AND	foe = ?";
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."zebra
+			WHERE			friend = ?
+					AND	foe = ?
+			ORDER BY	user_id ASC, zebra_id ASC";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array(1, 0));
 		while ($row = $statement->fetchArray()) {
@@ -406,9 +408,10 @@ class PhpBB3xExporter extends AbstractExporter {
 			}
 		}
 		
-		$sql = "SELECT	user_id, user_avatar, user_avatar_type, user_avatar_width, user_avatar_height
-			FROM	".$this->databasePrefix."users
-			WHERE	user_avatar_type IN (?, ?)";
+		$sql = "SELECT		user_id, user_avatar, user_avatar_type, user_avatar_width, user_avatar_height
+			FROM		".$this->databasePrefix."users
+			WHERE		user_avatar_type IN (?, ?)
+			ORDER BY	user_id ASC";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array(1, 3));
 		while ($row = $statement->fetchArray()) {
@@ -427,6 +430,35 @@ class PhpBB3xExporter extends AbstractExporter {
 				'avatarExtension' => $extension,
 				'userID' => $row['user_id']
 			), array('fileLocation' => $location));
+		}
+	}
+	
+	/**
+	 * Counts conversation folders.
+	 */
+	public function countConversationFolders() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."privmsgs_folder";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports conversation folders.
+	 */
+	public function exportConversationFolders($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."privmsgs_folder
+			ORDER BY	folder_id ASC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.label')->import($row['folder_id'], array(
+				'userID' => $row['user_id'],
+				'label' => StringUtil::substring($row['folder_name'], 0, 80)
+			));
 		}
 	}
 	
