@@ -94,14 +94,14 @@ class PhpBB3xExporter extends AbstractExporter {
 				'com.woltlab.wcf.user.follower',
 				'com.woltlab.wcf.user.rank'
 			),
-			/*'com.woltlab.wbb.board' => array(
-				'com.woltlab.wbb.acl',
+			'com.woltlab.wbb.board' => array(
+				/*'com.woltlab.wbb.acl',
 				'com.woltlab.wbb.attachment',
 				'com.woltlab.wbb.poll',
 				'com.woltlab.wbb.watchedThread',
 				'com.woltlab.wbb.like',
-				'com.woltlab.wcf.label'
-			),*/
+				'com.woltlab.wcf.label'*/
+			),
 			'com.woltlab.wcf.conversation' => array(
 				/*'com.woltlab.wcf.conversation.attachment',*/
 				'com.woltlab.wcf.conversation.label'
@@ -161,11 +161,11 @@ class PhpBB3xExporter extends AbstractExporter {
 				/*if (in_array('com.woltlab.wcf.conversation.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wcf.conversation.attachment';*/
 			}
 		}
-		/*
+		
 		// board
 		if (in_array('com.woltlab.wbb.board', $this->selectedData)) {
 			$queue[] = 'com.woltlab.wbb.board';
-			if (in_array('com.woltlab.wcf.label', $this->selectedData)) $queue[] = 'com.woltlab.wcf.label';
+			/*if (in_array('com.woltlab.wcf.label', $this->selectedData)) $queue[] = 'com.woltlab.wcf.label';
 			$queue[] = 'com.woltlab.wbb.thread';
 			$queue[] = 'com.woltlab.wbb.post';
 			
@@ -177,11 +177,11 @@ class PhpBB3xExporter extends AbstractExporter {
 				$queue[] = 'com.woltlab.wbb.poll.option';
 				$queue[] = 'com.woltlab.wbb.poll.option.vote';
 			}
-			if (in_array('com.woltlab.wbb.like', $this->selectedData)) $queue[] = 'com.woltlab.wbb.like';
+			if (in_array('com.woltlab.wbb.like', $this->selectedData)) $queue[] = 'com.woltlab.wbb.like';*/
 		}
 		
 		// smiley
-		if (in_array('com.woltlab.wcf.smiley', $this->selectedData)) $queue[] = 'com.woltlab.wcf.smiley';*/
+		/*if (in_array('com.woltlab.wcf.smiley', $this->selectedData)) $queue[] = 'com.woltlab.wcf.smiley';*/
 		
 		return $queue;
 	}
@@ -585,6 +585,63 @@ class PhpBB3xExporter extends AbstractExporter {
 				'isInvisible' => 0, // TODO
 				'lastVisitTime' => $row['pm_unread'] ? 0 : 1
 			), array('labelIDs' => ($row['folder_id'] > 0 ? array($row['folder_id']) : array())));
+		}
+	}
+	
+	/**
+	 * Counts boards.
+	 */
+	public function countBoards() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."forums";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return ($row['count'] ? 1 : 0);
+	}
+	
+	/**
+	 * Exports boards.
+	 */
+	public function exportBoards($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."forums
+			ORDER BY	parent_id ASC, left_id ASC, forum_id ASC";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			$this->boardCache[$row['parent_id']][] = $row;
+		}
+		
+		$this->exportBoardsRecursively();
+	}
+	
+	/**
+	 * Exports the boards recursively.
+	 */
+	protected function exportBoardsRecursively($parentID = 0) {
+		if (!isset($this->boardCache[$parentID])) return;
+		
+		foreach ($this->boardCache[$parentID] as $board) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import($board['forum_id'], array(
+				'parentID' => ($board['parent_id'] ?: null),
+				'position' => $board['left_id'],
+				'boardType' => ($board['forum_type'] == 2 ? Board::TYPE_LINK : ($board['forum_type'] == 0 ? Board::TYPE_CATEGORY : Board::TYPE_BOARD)),
+				'title' => $board['forum_name'],
+				'description' => $board['forum_desc'],
+				'descriptionUseHtml' => 1, // cannot be disabled
+				'externalURL' => $board['forum_link'],
+				'countUserPosts' => 1, // cannot be disabled
+				'isClosed' => $board['forum_status'] ? 1 : 0,
+				'searchable' => $board['enable_indexing'] ? 1 : 0,
+				'showSubBoards' => $board['display_subforum_list'] ? 1 : 0,
+				'threadsPerPage' => $board['forum_topics_per_page'] ?: 0,
+				'clicks' => $board['forum_posts'],
+				'posts' => $board['forum_posts'],
+				'threads' => $board['forum_topics']
+			));
+			
+			$this->exportBoardsRecursively($board['forum_id']);
 		}
 	}
 	
