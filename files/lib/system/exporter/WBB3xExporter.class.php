@@ -9,12 +9,13 @@ use wcf\system\exception\SystemException;
 use wcf\system\importer\ImportHandler;
 use wcf\system\WCF;
 use wcf\util\StringUtil;
+use wcf\util\UserUtil;
 
 /**
  * Exporter for Burning Board 3.x
- *
+ * 
  * @author	Marcel Werk
- * @copyright	2001-2012 WoltLab GmbH
+ * @copyright	2001-2013 WoltLab GmbH
  * @license	WoltLab Burning Board License <http://www.woltlab.com/products/burning_board/license.php>
  * @package	com.woltlab.wcf.exporter
  * @subpackage	system.exporter
@@ -23,24 +24,24 @@ use wcf\util\StringUtil;
 class WBB3xExporter extends AbstractExporter {
 	/**
 	 * wcf installation number
-	 * @var integer
+	 * @var	integer
 	 */
 	protected $dbNo = 0;
 	
 	/**
 	 * wbb installation number
-	 * @var integer
+	 * @var	integer
 	 */
 	protected $instanceNo = 0;
 	
 	/**
 	 * board cache
-	 * @var array
+	 * @var	array
 	 */
 	protected $boardCache = array();
 	
 	/**
-	 * @see wcf\system\exporter\AbstractExporter::$methods
+	 * @see	wcf\system\exporter\AbstractExporter::$methods
 	 */
 	protected $methods = array(
 		'com.woltlab.wcf.user' => 'Users',
@@ -67,11 +68,17 @@ class WBB3xExporter extends AbstractExporter {
 		'com.woltlab.wbb.like' => 'Likes',
 		'com.woltlab.wcf.label' => 'Labels',
 		'com.woltlab.wbb.acl' => 'ACLs',
-		'com.woltlab.wcf.smiley' => 'Smilies'
+		'com.woltlab.wcf.smiley' => 'Smilies',
+				
+		'com.woltlab.blog.category' => 'BlogCategories',
+		'com.woltlab.blog.entry' => 'BlogEntries',
+		'com.woltlab.blog.entry.attachment' => 'BlogAttachments',
+		'com.woltlab.blog.entry.comment' => 'BlogComments',
+		'com.woltlab.blog.entry.like' => 'BlogEntryLikes'
 	);
 	
 	/**
-	 * @see wcf\system\exporter\AbstractExporter::$limits
+	 * @see	wcf\system\exporter\AbstractExporter::$limits
 	 */
 	protected $limits = array(
 		'com.woltlab.wcf.user' => 200,
@@ -83,7 +90,7 @@ class WBB3xExporter extends AbstractExporter {
 	);
 	
 	/**
-	 * @see wcf\system\exporter\IExporter::init()
+	 * @see	wcf\system\exporter\IExporter::init()
 	 */
 	public function init() {
 		parent::init();
@@ -92,10 +99,17 @@ class WBB3xExporter extends AbstractExporter {
 			$this->dbNo = $match[1];
 			$this->instanceNo = $match[2];
 		}
+		
+		// fix file system path
+		if (!empty($this->fileSystemPath)) {
+			if (!@file_exists($this->fileSystemPath . 'lib/core.functions.php') && @file_exists($this->fileSystemPath . 'wcf/lib/core.functions.php')) {
+				$this->fileSystemPath = $this->fileSystemPath . 'wcf/';
+			}
+		}
 	}
 	
 	/**
-	 * @see wcf\system\exporter\IExporter::getSupportedData()
+	 * @see	wcf\system\exporter\IExporter::getSupportedData()
 	 */
 	public function getSupportedData() {
 		return array(
@@ -119,12 +133,18 @@ class WBB3xExporter extends AbstractExporter {
 				'com.woltlab.wcf.conversation.attachment',
 				'com.woltlab.wcf.conversation.label'
 			),
+			'com.woltlab.blog.entry' => array(
+				'com.woltlab.blog.category',
+				'com.woltlab.blog.entry.attachment',
+				'com.woltlab.blog.entry.comment',
+				'com.woltlab.blog.entry.like'
+			),
 			'com.woltlab.wcf.smiley' => array()
 		);
 	}
 	
 	/**
-	 * @see wcf\system\exporter\IExporter::validateDatabaseAccess()
+	 * @see	wcf\system\exporter\IExporter::validateDatabaseAccess()
 	 */
 	public function validateDatabaseAccess() {
 		parent::validateDatabaseAccess();
@@ -135,18 +155,18 @@ class WBB3xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see wcf\system\exporter\IExporter::validateFileAccess()
+	 * @see	wcf\system\exporter\IExporter::validateFileAccess()
 	 */
 	public function validateFileAccess() {
 		if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData) || in_array('com.woltlab.wbb.attachment', $this->selectedData) || in_array('com.woltlab.wcf.conversation.attachment', $this->selectedData) || in_array('com.woltlab.wcf.smiley', $this->selectedData)) {
-			if (empty($this->fileSystemPath) || !@file_exists($this->fileSystemPath . 'lib/core.functions.php')) return false;
+			if (empty($this->fileSystemPath) || (!@file_exists($this->fileSystemPath . 'lib/core.functions.php') && !@file_exists($this->fileSystemPath . 'wcf/lib/core.functions.php'))) return false;
 		}
 		
 		return true;
 	}
 	
 	/**
-	 * @see wcf\system\exporter\IExporter::getQueue()
+	 * @see	wcf\system\exporter\IExporter::getQueue()
 	 */
 	public function getQueue() {
 		$queue = array();
@@ -161,7 +181,7 @@ class WBB3xExporter extends AbstractExporter {
 			$queue[] = 'com.woltlab.wcf.user';
 			if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.avatar';
 			
-			if ($this->searchPlugin('com.woltlab.wcf.user.guestbook')) {
+			if ($this->getPackageVersion('com.woltlab.wcf.user.guestbook')) {
 				if (in_array('com.woltlab.wcf.user.comment', $this->selectedData)) {
 					$queue[] = 'com.woltlab.wcf.user.comment';
 					$queue[] = 'com.woltlab.wcf.user.comment.response';
@@ -203,11 +223,22 @@ class WBB3xExporter extends AbstractExporter {
 		// smiley
 		if (in_array('com.woltlab.wcf.smiley', $this->selectedData)) $queue[] = 'com.woltlab.wcf.smiley';
 		
+		// blog
+		if ($this->getPackageVersion('com.woltlab.wcf.user.blog')) {
+			if (in_array('com.woltlab.blog.entry', $this->selectedData)) {
+				if (in_array('com.woltlab.blog.category', $this->selectedData)) $queue[] = 'com.woltlab.blog.category';
+				$queue[] = 'com.woltlab.blog.entry';
+				if (in_array('com.woltlab.blog.entry.attachment', $this->selectedData)) $queue[] = 'com.woltlab.blog.entry.attachment';
+				if (in_array('com.woltlab.blog.entry.comment', $this->selectedData)) $queue[] = 'com.woltlab.blog.entry.comment';
+				if (in_array('com.woltlab.blog.entry.like', $this->selectedData)) $queue[] = 'com.woltlab.blog.entry.like';
+			}
+		}
+		
 		return $queue;
 	}
 	
 	/**
-	 * @see wcf\system\exporter\IExporter::getDefaultDatabasePrefix()
+	 * @see	wcf\system\exporter\IExporter::getDefaultDatabasePrefix()
 	 */
 	public function getDefaultDatabasePrefix() {
 		return 'wbb1_1_';
@@ -218,10 +249,9 @@ class WBB3xExporter extends AbstractExporter {
 	 */
 	public function countUserGroups() {
 		$sql = "SELECT	COUNT(*) AS count
-			FROM	wcf".$this->dbNo."_group
-			WHERE	groupType > ?";
+			FROM	wcf".$this->dbNo."_group";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array(3));
+		$statement->execute();
 		$row = $statement->fetchArray();
 		return $row['count'];
 	}
@@ -232,16 +262,15 @@ class WBB3xExporter extends AbstractExporter {
 	public function exportUserGroups($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		wcf".$this->dbNo."_group
-			WHERE		groupType > ?
 			ORDER BY	groupID";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute(array(3));
+		$statement->execute();
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.group')->import($row['groupID'], array(
 				'groupName' => $row['groupName'],
 				'groupType' => $row['groupType'],
-				'userOnlineMarking' => $row['userOnlineMarking'],
-				'showOnTeamPage' => $row['showOnTeamPage']
+				'userOnlineMarking' => (!empty($row['userOnlineMarking']) ? $row['userOnlineMarking'] : ''),
+				'showOnTeamPage' => (!empty($row['showOnTeamPage']) ? $row['showOnTeamPage'] : 0)
 			));
 		}
 	}
@@ -295,7 +324,14 @@ class WBB3xExporter extends AbstractExporter {
 						SELECT	GROUP_CONCAT(groupID)
 						FROM 	wcf".$this->dbNo."_user_to_groups
 						WHERE 	userID = user_table.userID
-					) AS groupIDs
+					) AS groupIDs,
+					(
+						SELECT		GROUP_CONCAT(language.languageCode)
+						FROM 		wcf".$this->dbNo."_user_to_languages user_to_languages
+						LEFT JOIN	wcf".$this->dbNo."_language language
+						ON		(language.languageID = user_to_languages.languageID)
+						WHERE 		user_to_languages.userID = user_table.userID			
+					) AS languageCodes
 			FROM		wcf".$this->dbNo."_user user_table
 			LEFT JOIN	wcf".$this->dbNo."_user_option_value user_option_value
 			ON		(user_option_value.userID = user_table.userID)
@@ -314,10 +350,10 @@ class WBB3xExporter extends AbstractExporter {
 				'banReason' => $row['banReason'],
 				'activationCode' => $row['activationCode'],
 				'oldUsername' => $row['oldUsername'],
-				'registrationIpAddress' => $row['registrationIpAddress'],
+				'registrationIpAddress' => UserUtil::convertIPv4To6($row['registrationIpAddress']),
 				'disableAvatar' => $row['disableAvatar'],
-				'disableAvatarReason' => $row['disableAvatarReason'],
-				'enableGravatar' => ($row['gravatar'] == $row['email'] ? 1 : 0),
+				'disableAvatarReason' => (!empty($row['disableAvatarReason']) ? $row['disableAvatarReason'] : ''),
+				'enableGravatar' => ((!empty($row['gravatar']) && $row['gravatar'] == $row['email']) ? 1 : 0),
 				'signature' => $row['signature'],
 				'signatureEnableBBCodes' => $row['enableSignatureBBCodes'],
 				'signatureEnableHtml' => $row['enableSignatureHtml'],
@@ -331,6 +367,7 @@ class WBB3xExporter extends AbstractExporter {
 			);
 			$additionalData = array(
 				'groupIDs' => explode(',', $row['groupIDs']),
+				'languages' => explode(',', $row['languageCodes']),
 				'options' => array()
 			);
 			
@@ -412,7 +449,7 @@ class WBB3xExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.follower')->import(0, array(
 				'userID' => $row['userID'],
 				'followUserID' => $row['whiteUserID'],
-				'time' => $row['time']
+				'time' => (!empty($row['time']) ? $row['time'] : 0)
 			));
 		}
 	}
@@ -628,11 +665,12 @@ class WBB3xExporter extends AbstractExporter {
 				'validationPattern' => $row['validationPattern'],
 				'selectOptions' => $row['selectOptions'],
 				'required' => $row['required'],
-				'askDuringRegistration' => $row['askDuringRegistration'],
+				'askDuringRegistration' => (!empty($row['askDuringRegistration']) ? 1 : 0),
 				'searchable' => $row['searchable'],
 				'isDisabled' => $row['disabled'],
 				'editable' => $editable,
-				'visible' => $visible
+				'visible' => $visible,
+				'showOrder' => $row['showOrder']
 			), array('name' => ($row['name'] ?: $row['optionName'])));
 		}
 	}
@@ -660,18 +698,20 @@ class WBB3xExporter extends AbstractExporter {
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
 			$cssClassName = '';
-			switch ($row['color']) {
-				case 'yellow':
-				case 'red':
-				case 'blue':
-				case 'green':
-					$cssClassName = $row['color'];
-					break;
+			if (!empty($row['color'])) {
+				switch ($row['color']) {
+					case 'yellow':
+					case 'red':
+					case 'blue':
+					case 'green':
+						$cssClassName = $row['color'];
+						break;
+				}
 			}
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.label')->import($row['folderID'], array(
 				'userID' => $row['userID'],
-				'label' => $row['folderName'],
+				'label' => StringUtil::substring($row['folderName'], 0, 80),
 				'cssClassName' => $cssClassName
 			));
 		}
@@ -791,6 +831,7 @@ class WBB3xExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.user')->import(0, array(
 				'conversationID' => ($row['parentPmID'] ?: $row['pmID']),
 				'participantID' => $row['recipientID'],
+				'username' => $row['recipient'],
 				'hideConversation' => $row['isDeleted'],
 				'isInvisible' => $row['isBlindCopy'],
 				'lastVisitTime' => $row['isViewed']
@@ -802,45 +843,14 @@ class WBB3xExporter extends AbstractExporter {
 	 * Counts conversation attachments.
 	 */
 	public function countConversationAttachments() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	wcf".$this->dbNo."_attachment
-			WHERE	containerType = ?
-				AND containerID > ?";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array('pm', 0));
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->countAttachments('pm');
 	}
 	
 	/**
 	 * Exports conversation attachments.
 	 */
 	public function exportConversationAttachments($offset, $limit) {
-		$sql = "SELECT		*
-			FROM		wcf".$this->dbNo."_attachment
-			WHERE		containerType = ?
-					AND containerID > ?
-			ORDER BY	attachmentID DESC";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute(array('pm', 0));
-		while ($row = $statement->fetchArray()) {
-			$fileLocation = $this->fileSystemPath.'attachments/attachment-'.$row['attachmentID'];
-			
-			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.attachment')->import($row['attachmentID'], array(
-				'objectID' => $row['containerID'],
-				'userID' => ($row['userID'] ?: null),
-				'filename' => $row['attachmentName'],
-				'filesize' => $row['attachmentSize'],
-				'fileType' => $row['fileType'],
-				'isImage' => $row['isImage'],
-				'width' => $row['width'],
-				'height' => $row['height'],
-				'downloads' => $row['downloads'],
-				'lastDownloadTime' => $row['lastDownloadTime'],
-				'uploadTime' => $row['uploadTime'],
-				'showOrder' => $row['showOrder']
-			), array('fileLocation' => $fileLocation));
-		}
+		$this->exportAttachments('pm', 'com.woltlab.wcf.conversation.attachment', $offset, $limit);
 	}
 	
 	/**
@@ -891,18 +901,18 @@ class WBB3xExporter extends AbstractExporter {
 				'time' => $board['time'],
 				'countUserPosts' => $board['countUserPosts'],
 				'daysPrune' => $board['daysPrune'],
-				'enableMarkingAsDone' => $board['enableMarkingAsDone'],
-				'ignorable' => $board['ignorable'],
+				'enableMarkingAsDone' => (!empty($board['enableMarkingAsDone']) ? $board['enableMarkingAsDone'] : 0),
+				'ignorable' => (!empty($board['ignorable']) ? $board['ignorable'] : 0),
 				'isClosed' => $board['isClosed'],
 				'isInvisible' => $board['isInvisible'],
-				'postSortOrder' => $board['postSortOrder'],
-				'postsPerPage' => $board['postsPerPage'],
-				'searchable' => $board['searchable'],
-				'searchableForSimilarThreads' => $board['searchableForSimilarThreads'],
+				'postSortOrder' => (!empty($board['postSortOrder']) ? $board['postSortOrder'] : ''),
+				'postsPerPage' => (!empty($board['postsPerPage']) ? $board['postsPerPage'] : 0),
+				'searchable' => (!empty($board['searchable']) ? $board['searchable'] : 0),
+				'searchableForSimilarThreads' => (!empty($board['searchableForSimilarThreads']) ? $board['searchableForSimilarThreads'] : 0),
 				'showSubBoards' => $board['showSubBoards'],
 				'sortField' => $board['sortField'],
 				'sortOrder' => $board['sortOrder'],
-				'threadsPerPage' => $board['threadsPerPage'],
+				'threadsPerPage' => (!empty($board['threadsPerPage']) ? $board['threadsPerPage'] : 0),
 				'clicks' => $board['clicks'],
 				'posts' => $board['posts'],
 				'threads' => $board['threads']
@@ -940,11 +950,22 @@ class WBB3xExporter extends AbstractExporter {
 		
 		// get boards
 		$boardPrefixes = array();
-		$sql = "SELECT		boardID, prefixes, prefixMode
-			FROM		wbb".$this->dbNo."_".$this->instanceNo."_board
-			WHERE		prefixMode > ?";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array(0));
+		
+		if (substr($this->getPackageVersion('com.woltlab.wcf'), 0, 3) == '1.1') {
+			$sql = "SELECT		boardID, prefixes, prefixMode
+				FROM		wbb".$this->dbNo."_".$this->instanceNo."_board
+				WHERE		prefixMode > ?";
+			$statement = $this->database->prepareStatement($sql);
+			$statement->execute(array(0));
+		}
+		else {
+			$sql = "SELECT		boardID, prefixes, 2 AS prefixMode
+				FROM		wbb".$this->dbNo."_".$this->instanceNo."_board
+				WHERE		prefixes <> ?";
+			$statement = $this->database->prepareStatement($sql);
+			$statement->execute(array(''));
+		}
+		
 		while ($row = $statement->fetchArray()) {
 			$prefixes = '';
 				
@@ -959,7 +980,7 @@ class WBB3xExporter extends AbstractExporter {
 					$prefixes = $globalPrefixes . "\n" . $row['prefixes'];
 					break;
 			}
-				
+			
 			$prefixes = StringUtil::trim(StringUtil::unifyNewlines($prefixes));
 			if ($prefixes) {
 				$key = StringUtil::getHash($prefixes);
@@ -996,6 +1017,9 @@ class WBB3xExporter extends AbstractExporter {
 			}
 		}
 		
+		// get tags
+		$tags = $this->getTags('com.woltlab.wbb.thread', $threadIDs);
+		
 		// get threads
 		$conditionBuilder = new PreparedStatementConditionBuilder();
 		$conditionBuilder->add('threadID IN (?)', array($threadIDs));
@@ -1021,14 +1045,15 @@ class WBB3xExporter extends AbstractExporter {
 				'isClosed' => $row['isClosed'],
 				'isDeleted' => $row['isDeleted'],
 				'movedThreadID' => ($row['movedThreadID'] ?: null),
-				'movedTime' => $row['movedTime'],
-				'isDone' => $row['isDone'],
+				'movedTime' => (!empty($row['movedTime']) ? $row['movedTime'] : 0),
+				'isDone' => (!empty($row['isDone']) ? $row['isDone'] : 0),
 				'deleteTime' => $row['deleteTime']
 			);
 			$additionalData = array();
 			if ($row['languageCode']) $additionalData['languageCode'] = $row['languageCode'];
 			if (!empty($assignedBoards[$row['threadID']])) $additionalData['assignedBoards'] = $assignedBoards[$row['threadID']];
 			if ($row['prefix'] && isset($boardPrefixes[$row['boardID']])) $additionalData['labels'] = array($boardPrefixes[$row['boardID']].'-'.$row['prefix']);
+			if (isset($tags[$row['threadID']])) $additionalData['tags'] = $tags[$row['threadID']];
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.thread')->import($row['threadID'], $data, $additionalData);
 		}
@@ -1070,13 +1095,13 @@ class WBB3xExporter extends AbstractExporter {
 				'editor' => $row['editor'],
 				'lastEditTime' => $row['lastEditTime'],
 				'editCount' => $row['editCount'],
-				'editReason' => $row['editReason'],
+				'editReason' => (!empty($row['editReason']) ? $row['editReason'] : ''),
 				'attachments' => $row['attachments'],
 				'enableSmilies' => $row['enableSmilies'],
 				'enableHtml' => $row['enableHtml'],
 				'enableBBCodes' => $row['enableBBCodes'],
 				'showSignature' => $row['showSignature'],
-				'ipAddress' => $row['ipAddress'],
+				'ipAddress' => UserUtil::convertIPv4To6($row['ipAddress']),
 				'deleteTime' => $row['deleteTime']
 			));
 		}
@@ -1086,45 +1111,14 @@ class WBB3xExporter extends AbstractExporter {
 	 * Counts post attachments.
 	 */
 	public function countPostAttachments() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	wcf".$this->dbNo."_attachment
-			WHERE	containerType = ?
-				AND containerID > ?";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array('post', 0));
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->countAttachments('post');
 	}
 	
 	/**
 	 * Exports post attachments.
 	 */
 	public function exportPostAttachments($offset, $limit) {
-		$sql = "SELECT		*
-			FROM		wcf".$this->dbNo."_attachment
-			WHERE		containerType = ?
-					AND containerID > ?
-			ORDER BY	attachmentID DESC";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute(array('post', 0));
-		while ($row = $statement->fetchArray()) {
-			$fileLocation = $this->fileSystemPath.'attachments/attachment-'.$row['attachmentID'];
-			
-			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.attachment')->import($row['attachmentID'], array(
-				'objectID' => $row['containerID'],
-				'userID' => ($row['userID'] ?: null),
-				'filename' => $row['attachmentName'],
-				'filesize' => $row['attachmentSize'],
-				'fileType' => $row['fileType'],
-				'isImage' => $row['isImage'],
-				'width' => $row['width'],
-				'height' => $row['height'],
-				'downloads' => $row['downloads'],
-				'lastDownloadTime' => $row['lastDownloadTime'],
-				'uploadTime' => $row['uploadTime'],
-				'showOrder' => $row['showOrder']
-			), array('fileLocation' => $fileLocation));
-		}
+		$this->exportAttachments('post', 'com.woltlab.wbb.attachment', $offset, $limit);
 	}
 	
 	/**
@@ -1186,7 +1180,7 @@ class WBB3xExporter extends AbstractExporter {
 				'time' => $row['time'],
 				'endTime' => $row['endTime'],
 				'isChangeable' => ($row['votesNotChangeable'] ? 0 : 1),
-				'isPublic' => $row['isPublic'],
+				'isPublic' => (!empty($row['isPublic']) ? $row['isPublic'] : 0),
 				'sortByVotes' => $row['sortByResult'],
 				'maxVotes' => $row['choiceCount'],
 				'votes' => $row['votes']
@@ -1318,11 +1312,21 @@ class WBB3xExporter extends AbstractExporter {
 	 * Counts labels.
 	 */
 	public function countLabels() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	wbb".$this->dbNo."_".$this->instanceNo."_board
-			WHERE	prefixMode > ?";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array(0));
+		if (substr($this->getPackageVersion('com.woltlab.wcf'), 0, 3) == '1.1') {
+			$sql = "SELECT	COUNT(*) AS count
+				FROM	wbb".$this->dbNo."_".$this->instanceNo."_board
+				WHERE	prefixMode > ?";
+			$statement = $this->database->prepareStatement($sql);
+			$statement->execute(array(0));
+		}
+		else {
+			$sql = "SELECT	COUNT(*) AS count
+				FROM	wbb".$this->dbNo."_".$this->instanceNo."_board
+				WHERE	prefixes <> ?";
+			$statement = $this->database->prepareStatement($sql);
+			$statement->execute(array(''));
+		}
+		
 		$row = $statement->fetchArray();
 		return ($row['count'] ? 1 : 0);
 	}
@@ -1344,11 +1348,21 @@ class WBB3xExporter extends AbstractExporter {
 		if ($row !== false) $globalPrefixes = $row['optionValue'];
 		
 		// get boards
-		$sql = "SELECT	boardID, prefixes, prefixMode
-			FROM	wbb".$this->dbNo."_".$this->instanceNo."_board
-			WHERE	prefixMode > ?";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array(0));
+		if (substr($this->getPackageVersion('com.woltlab.wcf'), 0, 3) == '1.1') {
+			$sql = "SELECT		boardID, prefixes, prefixMode
+				FROM		wbb".$this->dbNo."_".$this->instanceNo."_board
+				WHERE		prefixMode > ?";
+			$statement = $this->database->prepareStatement($sql);
+			$statement->execute(array(0));
+		}
+		else {
+			$sql = "SELECT		boardID, prefixes, 2 AS prefixMode
+				FROM		wbb".$this->dbNo."_".$this->instanceNo."_board
+				WHERE		prefixes <> ?";
+			$statement = $this->database->prepareStatement($sql);
+			$statement->execute(array(''));
+		}
+		
 		while ($row = $statement->fetchArray()) {
 			$prefixes = '';
 			
@@ -1395,7 +1409,7 @@ class WBB3xExporter extends AbstractExporter {
 				foreach ($labels as $label) {
 					ImportHandler::getInstance()->getImporter('com.woltlab.wcf.label')->import($key.'-'.$label, array(
 						'groupID' => $key,
-						'label' => $label
+						'label' => StringUtil::substring($label, 0, 80)
 					));
 				}
 				
@@ -1408,7 +1422,7 @@ class WBB3xExporter extends AbstractExporter {
 	 * Counts ACLs.
 	 */
 	public function countACLs() {
-		$sql = "SELECT	(SELECT COUNT(*) FROM wbb".$this->dbNo."_".$this->instanceNo."_board_moderator)
+		$sql = "SELECT	(SELECT COUNT(*) FROM wbb".$this->dbNo."_".$this->instanceNo."_board_moderator WHERE userID <> 0)
 				+ (SELECT COUNT(*) FROM wbb".$this->dbNo."_".$this->instanceNo."_board_to_group)
 				+ (SELECT COUNT(*) FROM wbb".$this->dbNo."_".$this->instanceNo."_board_to_user) AS count";
 		$statement = $this->database->prepareStatement($sql);
@@ -1424,8 +1438,9 @@ class WBB3xExporter extends AbstractExporter {
 		// get ids
 		$mod = $user = $group = array();
 		$sql = "(
-				SELECT	boardID, userID, groupID, 'mod' AS type
+				SELECT	boardID, userID, 0 AS groupID, 'mod' AS type
 				FROM	wbb".$this->dbNo."_".$this->instanceNo."_board_moderator
+				WHERE	userID <> 0
 			)
 			UNION
 			(
@@ -1544,7 +1559,7 @@ class WBB3xExporter extends AbstractExporter {
 			FROM		wcf".$this->dbNo."_smiley
 			ORDER BY	smileyID";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute(array());
+		$statement->execute();
 		while ($row = $statement->fetchArray()) {
 			$fileLocation = $this->fileSystemPath . $row['smileyPath'];
 			
@@ -1552,6 +1567,259 @@ class WBB3xExporter extends AbstractExporter {
 				'smileyTitle' => $row['smileyTitle'],
 				'smileyCode' => $row['smileyCode'],
 				'showOrder' => $row['showOrder']
+			), array('fileLocation' => $fileLocation));
+		}
+	}
+	
+	/**
+	 * Counts blog categories.
+	 */
+	public function countBlogCategories() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	wcf".$this->dbNo."_user_blog_category
+			WHERE	userID = ?";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array(0));
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports blog categories.
+	 */
+	public function exportBlogCategories($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		wcf".$this->dbNo."_user_blog_category
+			WHERE		userID = ?
+			ORDER BY	categoryID";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute(array(0));
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.blog.category')->import($row['categoryID'], array(
+				'title' => $row['title']
+			));
+		}
+	}
+	
+	/**
+	 * Counts blog entries.
+	 */
+	public function countBlogEntries() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	wcf".$this->dbNo."_user_blog";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports blog entries.
+	 */
+	public function exportBlogEntries($offset, $limit) {
+		// get entry ids
+		$entryIDs = array();
+		$sql = "SELECT		entryID
+			FROM		wcf".$this->dbNo."_user_blog
+			ORDER BY	entryID";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			$entryIDs[] = $row['entryID'];
+		}
+		
+		// get tags
+		$tags = $this->getTags('com.woltlab.wcf.user.blog.entry', $entryIDs);
+		
+		// get categories
+		$categories = array();
+		$conditionBuilder = new PreparedStatementConditionBuilder();
+		$conditionBuilder->add('entry_to_category.entryID IN (?)', array($entryIDs));
+		$conditionBuilder->add('category.userID <> ?', array(0));
+		
+		$sql = "SELECT		entry_to_category.* 
+			FROM		wcf".$this->dbNo."_user_blog_entry_to_category entry_to_category
+			LEFT JOIN	wcf".$this->dbNo."_user_blog_category category
+			ON		(category.categoryID = entry_to_category.categoryID)
+			".$conditionBuilder;
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute($conditionBuilder->getParameters());
+		while ($row = $statement->fetchArray()) {
+			if (!isset($categories[$row['entryID']])) $categories[$row['entryID']] = array();
+			$categories[$row['entryID']][] = $row['categoryID'];
+		}
+		
+		// get entries
+		$conditionBuilder = new PreparedStatementConditionBuilder();
+		$conditionBuilder->add('user_blog.entryID IN (?)', array($entryIDs));
+		
+		$sql = "SELECT		user_blog.*, language.languageCode
+			FROM		wcf".$this->dbNo."_user_blog user_blog
+			LEFT JOIN	wcf".$this->dbNo."_language language
+			ON		(language.languageID = user_blog.languageID)
+			".$conditionBuilder;
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute($conditionBuilder->getParameters());
+		while ($row = $statement->fetchArray()) {
+			$additionalData = array();
+			if ($row['languageCode']) $additionalData['languageCode'] = $row['languageCode'];
+			if (isset($tags[$row['entryID']])) $additionalData['tags'] = $tags[$row['entryID']];
+			if (isset($categories[$row['entryID']])) $additionalData['categories'] = $categories[$row['entryID']];
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry')->import($row['entryID'], array(
+				'userID' => ($row['userID'] ?: null),
+				'username' => $row['username'],
+				'subject' => $row['subject'],
+				'message' => self::fixBBCodes($row['message']),
+				'time' => $row['time'],
+				'attachments' => $row['attachments'],
+				'comments' => $row['comments'],
+				'enableSmilies' => $row['enableSmilies'],
+				'enableHtml' => $row['enableHtml'],
+				'enableBBCodes' => $row['enableBBCodes'],
+				'views' => $row['views'],
+				'isPublished' => $row['isPublished'],
+				'publishingDate' => $row['publishingDate']
+			), $additionalData);
+		}
+	}
+	
+	/**
+	 * Counts blog attachments.
+	 */
+	public function countBlogAttachments() {
+		return $this->countAttachments('userBlogEntry');
+	}
+	
+	/**
+	 * Exports blog attachments.
+	 */
+	public function exportBlogAttachments($offset, $limit) {
+		$this->exportAttachments('userBlogEntry', 'com.woltlab.blog.entry.attachment', $offset, $limit);
+	}
+	
+	/**
+	 * Counts blog comments.
+	 */
+	public function countBlogComments() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	wcf".$this->dbNo."_user_blog_comment";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports blog comments.
+	 */
+	public function exportBlogComments($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		wcf".$this->dbNo."_user_blog_comment
+			ORDER BY	commentID";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry.comment')->import($row['commentID'], array(
+				'objectID' => $row['entryID'],
+				'userID' => $row['userID'],
+				'username' => $row['username'],
+				'message' => $row['comment'],
+				'time' => $row['time']
+			));
+		}
+	}
+	
+	/**
+	 * Counts blog entry likes.
+	 */
+	public function countBlogEntryLikes() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	wcf".$this->dbNo."_rating
+			WHERE	objectName = ?
+				AND userID <> ?
+				AND rating NOT IN (?, ?)";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array('com.woltlab.wcf.user.blog.entry', 0, 0, 3));
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports blog entry likes.
+	 */
+	public function exportBlogEntryLikes($offset, $limit) {
+		$sql = "SELECT		rating.*, blog.userID AS objectUserID
+			FROM		wcf".$this->dbNo."_rating rating
+			LEFT JOIN	wcf".$this->dbNo."_user_blog blog
+			ON		(blog.entryID = rating.objectID)
+			WHERE		rating.objectName = ?
+					AND rating.userID <> ?
+					AND rating.rating NOT IN (?, ?)
+			ORDER BY	rating.objectID, rating.userID";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute(array('com.woltlab.wcf.user.blog.entry', 0, 0, 3));
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry.like')->import(0, array(
+				'objectID' => $row['objectID'],
+				'objectUserID' => ($row['objectUserID'] ?: null),
+				'userID' => $row['userID'],
+				'likeValue' => ($row['rating'] > 3 ? Like::LIKE : Like::DISLIKE)
+			));
+		}
+	}
+	
+	private function countAttachments($type) {
+		if (substr($this->getPackageVersion('com.woltlab.wcf'), 0, 3) == '1.1') {
+			$sql = "SELECT	COUNT(*) AS count
+				FROM	wcf".$this->dbNo."_attachment
+				WHERE	containerType = ?
+					AND containerID > ?";
+		}
+		else {
+			$sql = "SELECT	COUNT(*) AS count
+				FROM	wcf".$this->dbNo."_attachment
+				WHERE	messageType = ?
+					AND messageID > ?";
+		}
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($type, 0));
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	private function exportAttachments($type, $objectType, $offset, $limit) {
+		if (substr($this->getPackageVersion('com.woltlab.wcf'), 0, 3) == '1.1') {
+			$sql = "SELECT		*
+				FROM		wcf".$this->dbNo."_attachment
+				WHERE		containerType = ?
+						AND containerID > ?
+				ORDER BY	attachmentID DESC";
+		}
+		else {
+			$sql = "SELECT		*
+				FROM		wcf".$this->dbNo."_attachment
+				WHERE		messageType = ?
+						AND messageID > ?
+				ORDER BY	attachmentID DESC";
+		}
+			
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute(array($type, 0));
+		while ($row = $statement->fetchArray()) {
+			$fileLocation = $this->fileSystemPath.'attachments/attachment-'.$row['attachmentID'];
+	
+			ImportHandler::getInstance()->getImporter($objectType)->import($row['attachmentID'], array(
+				'objectID' => (!empty($row['containerID']) ? $row['containerID'] : $row['messageID']),
+				'userID' => ($row['userID'] ?: null),
+				'filename' => $row['attachmentName'],
+				'filesize' => $row['attachmentSize'],
+				'fileType' => $row['fileType'],
+				'isImage' => $row['isImage'],
+				'downloads' => $row['downloads'],
+				'lastDownloadTime' => $row['lastDownloadTime'],
+				'uploadTime' => $row['uploadTime'],
+				'showOrder' => (!empty($row['showOrder']) ? $row['showOrder'] : 0)
 			), array('fileLocation' => $fileLocation));
 		}
 	}
@@ -1575,15 +1843,49 @@ class WBB3xExporter extends AbstractExporter {
 		return $optionsNames;
 	}
 	
-	private function searchPlugin($name) {
-		$sql = "SELECT	COUNT(*) AS count
+	private function getPackageVersion($name) {
+		$sql = "SELECT	packageVersion
 			FROM	wcf".$this->dbNo."_package
 			WHERE	package = ?";
-		$statement = $this->database->prepareStatement($sql);
+		$statement = $this->database->prepareStatement($sql, 1);
 		$statement->execute(array($name));
 		$row = $statement->fetchArray();
-		if ($row['count']) return true;
+		if ($row !== false) return $row['packageVersion'];
+		
 		return false;
+	}
+	
+	private function getTags($name, array $objectIDs) {
+		$tags = array();
+		if (substr($this->getPackageVersion('com.woltlab.wcf'), 0, 3) == '1.1') {
+			// get taggable id
+			$sql = "SELECT		taggableID
+				FROM		wcf".$this->dbNo."_tag_taggable
+				WHERE		name = ?
+				ORDER BY	packageID";
+			$statement = $this->database->prepareStatement($sql, 1);
+			$statement->execute(array($name));
+			$taggableID = $statement->fetchColumn();
+			if ($taggableID) {
+				$conditionBuilder = new PreparedStatementConditionBuilder();
+				$conditionBuilder->add('tag_to_object.taggableID = ?', array($taggableID));
+				$conditionBuilder->add('tag_to_object.objectID IN (?)', array($objectIDs));
+		
+				$sql = "SELECT		tag.name, tag_to_object.objectID
+					FROM		wcf".$this->dbNo."_tag_to_object tag_to_object
+					LEFT JOIN	wcf".$this->dbNo."_tag tag
+					ON		(tag.tagID = tag_to_object.tagID)
+					".$conditionBuilder;
+				$statement = $this->database->prepareStatement($sql);
+				$statement->execute($conditionBuilder->getParameters());
+				while ($row = $statement->fetchArray()) {
+					if (!isset($tags[$row['objectID']])) $tags[$row['objectID']] = array();
+					$tags[$row['objectID']][] = $row['name'];
+				}
+			}
+		}
+		
+		return $tags;
 	}
 	
 	private static function fixBBCodes($message) {
