@@ -92,8 +92,8 @@ class PhpBB3xExporter extends AbstractExporter {
 				/*'com.woltlab.wcf.user.avatar',
 				'com.woltlab.wcf.user.option',
 				'com.woltlab.wcf.user.comment',
-				'com.woltlab.wcf.user.follower',
-				'com.woltlab.wcf.user.rank'*/
+				'com.woltlab.wcf.user.follower',*/
+				'com.woltlab.wcf.user.rank'
 			),
 			/*'com.woltlab.wbb.board' => array(
 				'com.woltlab.wbb.acl',
@@ -143,7 +143,7 @@ class PhpBB3xExporter extends AbstractExporter {
 		if (in_array('com.woltlab.wcf.user', $this->selectedData)) {
 			if (in_array('com.woltlab.wcf.user.group', $this->selectedData)) {
 				$queue[] = 'com.woltlab.wcf.user.group';
-				/*if (in_array('com.woltlab.wcf.user.rank', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.rank';*/
+				if (in_array('com.woltlab.wcf.user.rank', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.rank';
 			}
 			/*if (in_array('com.woltlab.wcf.user.option', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.option';*/
 			$queue[] = 'com.woltlab.wcf.user';
@@ -284,7 +284,7 @@ class PhpBB3xExporter extends AbstractExporter {
 			WHERE		user_type <> ?
 			ORDER BY	user_id ASC";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute(array(2));
+		$statement->execute(array(0, 2));
 	
 		WCF::getDB()->beginTransaction();
 		while ($row = $statement->fetchArray()) {
@@ -316,6 +316,40 @@ class PhpBB3xExporter extends AbstractExporter {
 			}
 		}
 		WCF::getDB()->commitTransaction();
+	}
+	
+	/**
+	 * Counts user ranks.
+	 */
+	public function countUserRanks() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."ranks
+			WHERE	rank_special = ?";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array(0));
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports user ranks.
+	 */
+	public function exportUserRanks($offset, $limit) {
+		$sql = "SELECT	*
+			FROM	".$this->databasePrefix."ranks
+			WHERE	rank_special = ?";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute(array(0));
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.rank')->import($row['rank_id'], array(
+				'groupID' => 2, // 2 = registered users
+				'requiredPoints' => $row['rank_min'],
+				'rankTitle' => $row['rank_title'],
+				'rankImage' => $row['rank_image'],
+				'repeatImage' => 0,
+				'requiredGender' => 0 // neutral
+			));
+		}
 	}
 	
 	protected static function fixBBCodes($text, $uid) {
