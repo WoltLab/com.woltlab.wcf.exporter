@@ -91,8 +91,8 @@ class PhpBB3xExporter extends AbstractExporter {
 				'com.woltlab.wcf.user.group',
 				/*'com.woltlab.wcf.user.avatar',
 				'com.woltlab.wcf.user.option',
-				'com.woltlab.wcf.user.comment',
-				'com.woltlab.wcf.user.follower',*/
+				'com.woltlab.wcf.user.comment',*/
+				'com.woltlab.wcf.user.follower',
 				'com.woltlab.wcf.user.rank'
 			),
 			/*'com.woltlab.wbb.board' => array(
@@ -154,11 +154,11 @@ class PhpBB3xExporter extends AbstractExporter {
 					$queue[] = 'com.woltlab.wcf.user.comment';
 					$queue[] = 'com.woltlab.wcf.user.comment.response';
 				}
-			}
+			}*/
 			
 			if (in_array('com.woltlab.wcf.user.follower', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.follower';
 			
-			// conversation
+			/*// conversation
 			if (in_array('com.woltlab.wcf.conversation', $this->selectedData)) {
 				if (in_array('com.woltlab.wcf.conversation.label', $this->selectedData)) $queue[] = 'com.woltlab.wcf.conversation.label';
 				
@@ -348,6 +348,39 @@ class PhpBB3xExporter extends AbstractExporter {
 				'rankImage' => $row['rank_image'],
 				'repeatImage' => 0,
 				'requiredGender' => 0 // neutral
+			));
+		}
+	}
+	
+	/**
+	 * Counts followers.
+	 */
+	public function countFollowers() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."zebra
+			WHERE		friend = ?
+				AND	foe = ?";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array(1, 0));
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports followers.
+	 */
+	public function exportFollowers($offset, $limit) {
+		$sql = "SELECT		*
+			FROM	".$this->databasePrefix."zebra
+			WHERE		friend = ?
+				AND	foe = ?";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute(array(1, 0));
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.follower')->import(0, array(
+				'userID' => $row['user_id'],
+				'followUserID' => $row['zebra_id'],
+				'time' => 0
 			));
 		}
 	}
