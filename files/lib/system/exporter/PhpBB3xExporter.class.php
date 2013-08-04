@@ -99,8 +99,7 @@ class PhpBB3xExporter extends AbstractExporter {
 				'com.woltlab.wbb.attachment',
 				'com.woltlab.wbb.poll',
 				'com.woltlab.wbb.watchedThread',
-				'com.woltlab.wbb.like',
-				'com.woltlab.wcf.label'*/
+				'com.woltlab.wbb.like',*/
 			),
 			'com.woltlab.wcf.conversation' => array(
 				/*'com.woltlab.wcf.conversation.attachment',*/
@@ -165,9 +164,8 @@ class PhpBB3xExporter extends AbstractExporter {
 		// board
 		if (in_array('com.woltlab.wbb.board', $this->selectedData)) {
 			$queue[] = 'com.woltlab.wbb.board';
-			/*if (in_array('com.woltlab.wcf.label', $this->selectedData)) $queue[] = 'com.woltlab.wcf.label';
 			$queue[] = 'com.woltlab.wbb.thread';
-			$queue[] = 'com.woltlab.wbb.post';
+			/*$queue[] = 'com.woltlab.wbb.post';
 			
 			if (in_array('com.woltlab.wbb.acl', $this->selectedData)) $queue[] = 'com.woltlab.wbb.acl';
 			if (in_array('com.woltlab.wbb.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wbb.attachment';
@@ -642,6 +640,54 @@ class PhpBB3xExporter extends AbstractExporter {
 			));
 			
 			$this->exportBoardsRecursively($board['forum_id']);
+		}
+	}
+	
+	/**
+	 * Counts threads.
+	 */
+	public function countThreads() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."topics";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports threads.
+	 */
+	public function exportThreads($offset, $limit) {
+		$boardIDs = array_keys(BoardCache::getInstance()->getBoards());
+		
+		$sql = "SELECT		topic_table.*, user_table.username
+			FROM		".$this->databasePrefix."topics topic_table
+			LEFT JOIN	".$this->databasePrefix."users user_table
+			ON		topic_table.topic_poster = user_table.user_id
+			ORDER BY	topic_id ASC";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			$data = array(
+				'boardID' => $row['forum_id'],
+				'topic' => StringUtil::decodeHTML($row['topic_title']),
+				'time' => $row['topic_time'],
+				'userID' => $row['topic_poster'],
+				'username' => $row['username'],
+				'views' => $row['topic_views'],
+				'isAnnouncement' => ($row['topic_type'] == 2 || $row['topic_type'] == 3) ? 1 : 0,
+				'isSticky' => $row['topic_type'] == 1 ? 1 : 0,
+				'isDisabled' => 0,
+				'isClosed' => $row['topic_status'] ? 1 : 0,
+				'movedThreadID' => null, // TODO
+				'movedTime' => 0, // TODO
+			);
+			$additionalData = array();
+			if ($row['topic_type'] == 3) $additionalData['assignedBoards'] = $boardIDs; // global annoucement
+			if ($row['topic_type'] == 2) $additionalData['assignedBoards'] = array($row['forum_id']); // annoucement
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.thread')->import($row['topic_id'], $data, $additionalData);
 		}
 	}
 	
