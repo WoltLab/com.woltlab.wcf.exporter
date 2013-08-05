@@ -1047,7 +1047,8 @@ class WBB3xExporter extends AbstractExporter {
 				'movedThreadID' => ($row['movedThreadID'] ?: null),
 				'movedTime' => (!empty($row['movedTime']) ? $row['movedTime'] : 0),
 				'isDone' => (!empty($row['isDone']) ? $row['isDone'] : 0),
-				'deleteTime' => $row['deleteTime']
+				'deleteTime' => $row['deleteTime'],
+				'lastPostTime' => $row['lastPostTime']
 			);
 			$additionalData = array();
 			if ($row['languageCode']) $additionalData['languageCode'] = $row['languageCode'];
