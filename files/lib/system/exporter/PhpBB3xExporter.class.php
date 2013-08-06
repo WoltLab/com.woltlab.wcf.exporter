@@ -725,6 +725,7 @@ class PhpBB3xExporter extends AbstractExporter {
 				'message' => self::fixBBCodes(StringUtil::decodeHTML($row['post_text']), $row['bbcode_uid']),
 				'time' => $row['post_time'],
 				'isDisabled' => $row['post_approved'] ? 0 : 1,
+				'isClosed' => $row['post_edit_locked'] ? 1 : 0,
 				'editorID' => ($row['post_edit_user'] ?: null),
 				'editor' => $row['editorName'] ?: '',
 				'lastEditTime' => $row['post_edit_time'],
