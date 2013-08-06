@@ -165,9 +165,9 @@ class PhpBB3xExporter extends AbstractExporter {
 		if (in_array('com.woltlab.wbb.board', $this->selectedData)) {
 			$queue[] = 'com.woltlab.wbb.board';
 			$queue[] = 'com.woltlab.wbb.thread';
-			/*$queue[] = 'com.woltlab.wbb.post';
+			$queue[] = 'com.woltlab.wbb.post';
 			
-			if (in_array('com.woltlab.wbb.acl', $this->selectedData)) $queue[] = 'com.woltlab.wbb.acl';
+			/*if (in_array('com.woltlab.wbb.acl', $this->selectedData)) $queue[] = 'com.woltlab.wbb.acl';
 			if (in_array('com.woltlab.wbb.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wbb.attachment';
 			if (in_array('com.woltlab.wbb.watchedThread', $this->selectedData)) $queue[] = 'com.woltlab.wbb.watchedThread';
 			if (in_array('com.woltlab.wbb.poll', $this->selectedData)) {
@@ -286,8 +286,8 @@ class PhpBB3xExporter extends AbstractExporter {
 				'banned' => $row['banReason'] === null ? 0 : 1,
 				'banReason' => $row['banReason'],
 				'registrationIpAddress' => UserUtil::convertIPv4To6($row['user_ip']),
-				'signature' => self::fixBBCodes($row['user_sig'], $row['user_sig_bbcode_uid']),
-				'signatureEnableBBCodes' => ($row['user_sig_bbcode_uid'] ? StringUtil::indexOf($row['user_sig'], $row['user_sig_bbcode_uid']) : 1),
+				'signature' => self::fixBBCodes(StringUtil::decodeHTML($row['user_sig']), $row['user_sig_bbcode_uid']),
+				'signatureEnableBBCodes' => ($row['user_sig_bbcode_uid'] ? (StringUtil::indexOf($row['user_sig'], $row['user_sig_bbcode_uid']) !== false ? 1 : 0) : 1),
 				'signatureEnableHtml' => 0,
 				'signatureEnableSmilies' => preg_match('/<!-- s.*? -->/', $row['user_sig']),
 				'lastActivityTime' => $row['user_lastvisit']
@@ -670,7 +670,7 @@ class PhpBB3xExporter extends AbstractExporter {
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
 			$data = array(
-				'boardID' => $row['forum_id'],
+				'boardID' => $row['forum_id'] ?: $boardIDs[0], // map global annoucements to a random board
 				'topic' => StringUtil::decodeHTML($row['topic_title']),
 				'time' => $row['topic_time'],
 				'userID' => $row['topic_poster'],
@@ -688,6 +688,55 @@ class PhpBB3xExporter extends AbstractExporter {
 			if ($row['topic_type'] == 2) $additionalData['assignedBoards'] = array($row['forum_id']); // annoucement
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.thread')->import($row['topic_id'], $data, $additionalData);
+		}
+	}
+
+	/**
+	 * Counts posts.
+	 */
+	public function countPosts() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."posts";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports posts.
+	 */
+	public function exportPosts($offset, $limit) {
+		$sql = "SELECT		post_table.*, user_table.username, editor.username AS editorName
+			FROM		".$this->databasePrefix."posts post_table
+			LEFT JOIN	".$this->databasePrefix."users user_table
+			ON		post_table.poster_id = user_table.user_id
+			LEFT JOIN	".$this->databasePrefix."users editor
+			ON		post_table.post_edit_user = editor.user_id
+			ORDER BY	post_id ASC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.post')->import($row['post_id'], array(
+				'threadID' => $row['topic_id'],
+				'userID' => $row['poster_id'],
+				'username' => $row['username'],
+				'subject' => StringUtil::decodeHTML($row['post_subject']),
+				'message' => self::fixBBCodes(StringUtil::decodeHTML($row['post_text']), $row['bbcode_uid']),
+				'time' => $row['post_time'],
+				'isDisabled' => $row['post_approved'] ? 0 : 1,
+				'editorID' => ($row['post_edit_user'] ?: null),
+				'editor' => $row['editorName'] ?: '',
+				'lastEditTime' => $row['post_edit_time'],
+				'editCount' => $row['post_edit_count'],
+				'editReason' => (!empty($row['post_edit_reason']) ? $row['post_edit_reason'] : ''),
+				'attachments' => 0, // TODO 
+				'enableSmilies' => $row['enable_smilies'],
+				'enableHtml' => 0,
+				'enableBBCodes' => $row['enable_bbcode'],
+				'showSignature' => $row['enable_sig'],
+				'ipAddress' => UserUtil::convertIPv4To6($row['poster_ip'])
+			));
 		}
 	}
 	
