@@ -679,9 +679,9 @@ class PhpBB3xExporter extends AbstractExporter {
 				'isAnnouncement' => ($row['topic_type'] == 2 || $row['topic_type'] == 3) ? 1 : 0,
 				'isSticky' => $row['topic_type'] == 1 ? 1 : 0,
 				'isDisabled' => 0,
-				'isClosed' => $row['topic_status'] ? 1 : 0,
-				'movedThreadID' => null, // TODO
-				'movedTime' => 0, // TODO
+				'isClosed' => $row['topic_status'] == 1 ? 1 : 0, // 1 = closed
+				'movedThreadID' => ($row['topic_status'] == 2 && $row['topic_moved_id']) ? $row['topic_moved_id'] : null,
+				'movedTime' => TIME_NOW, // TODO
 			);
 			$additionalData = array();
 			if ($row['topic_type'] == 3) $additionalData['assignedBoards'] = $boardIDs; // global annoucement
