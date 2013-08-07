@@ -33,6 +33,26 @@ use wcf\util\UserRegistrationUtil;
  * @category	Community Framework (commercial)
  */
 class PhpBB3xExporter extends AbstractExporter {
+	const TOPIC_TYPE_GLOBAL = 3;
+	const TOPIC_TYPE_ANNOUCEMENT = 2;
+	const TOPIC_TYPE_STICKY = 1;
+	const TOPIC_TYPE_DEFAULT = 0;
+	
+	const TOPIC_STATUS_LINK = 2;
+	const TOPIC_STATUS_CLOSED = 1;
+	const TOPIC_STATUS_DEFAULT = 0;
+	
+	const USER_TYPE_USER_IGNORE = 2;
+	
+	const AVATAR_TYPE_GALLERY = 3;
+	const AVATAR_TYPE_REMOTE = 2;
+	const AVATAR_TYPE_UPLOADED = 1;
+	const AVATAR_TYPE_NO_AVATAR = 0;
+	
+	const BOARD_TYPE_LINK = 2;
+	const BOARD_TYPE_BOARD = 1;
+	const BOARD_TYPE_CATEGORY = 0;
+	
 	/**
 	 * board cache
 	 * @var array
@@ -98,8 +118,7 @@ class PhpBB3xExporter extends AbstractExporter {
 				/*'com.woltlab.wbb.acl',
 				'com.woltlab.wbb.attachment',
 				'com.woltlab.wbb.poll',
-				'com.woltlab.wbb.watchedThread',
-				'com.woltlab.wbb.like',*/
+				'com.woltlab.wbb.watchedThread',*/
 			),
 			'com.woltlab.wcf.conversation' => array(
 				/*'com.woltlab.wcf.conversation.attachment',*/
@@ -174,8 +193,7 @@ class PhpBB3xExporter extends AbstractExporter {
 				$queue[] = 'com.woltlab.wbb.poll';
 				$queue[] = 'com.woltlab.wbb.poll.option';
 				$queue[] = 'com.woltlab.wbb.poll.option.vote';
-			}
-			if (in_array('com.woltlab.wbb.like', $this->selectedData)) $queue[] = 'com.woltlab.wbb.like';*/
+			}*/
 		}
 		
 		// smiley
@@ -245,7 +263,7 @@ class PhpBB3xExporter extends AbstractExporter {
 			FROM	".$this->databasePrefix."users
 			WHERE	user_type <> ?";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array(2)); // 2 = USER_IGNORE
+		$statement->execute(array(self::USER_TYPE_USER_IGNORE));
 		$row = $statement->fetchArray();
 		return $row['count'];
 	}
@@ -385,7 +403,7 @@ class PhpBB3xExporter extends AbstractExporter {
 			FROM	".$this->databasePrefix."users
 			WHERE	user_avatar_type IN (?, ?)";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array(1, 3));
+		$statement->execute(array(self::AVATAR_TYPE_GALLERY, self::AVATAR_TYPE_UPLOADED));
 		$row = $statement->fetchArray();
 		return $row['count'];
 	}
@@ -411,14 +429,14 @@ class PhpBB3xExporter extends AbstractExporter {
 			WHERE		user_avatar_type IN (?, ?)
 			ORDER BY	user_id ASC";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute(array(1, 3));
+		$statement->execute(array(self::AVATAR_TYPE_GALLERY, self::AVATAR_TYPE_UPLOADED));
 		while ($row = $statement->fetchArray()) {
 			$extension = pathinfo($row['user_avatar'], PATHINFO_EXTENSION);
 			switch ($row['user_avatar_type']) {
-				case 1: // uploaded
+				case self::AVATAR_TYPE_UPLOADED:
 					$location = FileUtil::addTrailingSlash($this->fileSystemPath.$avatar_path).$avatar_salt.'_'.intval($row['user_avatar']).'.'.$extension;
 				break;
-				case 3: // gallery
+				case self::AVATAR_TYPE_GALLERY:
 					$location = FileUtil::addTrailingSlash($this->fileSystemPath.$avatar_gallery_path).$row['user_avatar'];
 				break;
 			}
@@ -624,7 +642,7 @@ class PhpBB3xExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import($board['forum_id'], array(
 				'parentID' => ($board['parent_id'] ?: null),
 				'position' => $board['left_id'],
-				'boardType' => ($board['forum_type'] == 2 ? Board::TYPE_LINK : ($board['forum_type'] == 0 ? Board::TYPE_CATEGORY : Board::TYPE_BOARD)),
+				'boardType' => ($board['forum_type'] == self::BOARD_TYPE_LINK ? Board::TYPE_LINK : ($board['forum_type'] == self::BOARD_TYPE_CATEGORY ? Board::TYPE_CATEGORY : Board::TYPE_BOARD)),
 				'title' => $board['forum_name'],
 				'description' => $board['forum_desc'],
 				'descriptionUseHtml' => 1, // cannot be disabled
@@ -676,16 +694,16 @@ class PhpBB3xExporter extends AbstractExporter {
 				'userID' => $row['topic_poster'],
 				'username' => $row['username'],
 				'views' => $row['topic_views'],
-				'isAnnouncement' => ($row['topic_type'] == 2 || $row['topic_type'] == 3) ? 1 : 0,
-				'isSticky' => $row['topic_type'] == 1 ? 1 : 0,
+				'isAnnouncement' => ($row['topic_type'] == self::TOPIC_TYPE_ANNOUCEMENT || $row['topic_type'] == self::TOPIC_TYPE_GLOBAL) ? 1 : 0,
+				'isSticky' => $row['topic_type'] == self::TOPIC_TYPE_STICKY ? 1 : 0,
 				'isDisabled' => 0,
-				'isClosed' => $row['topic_status'] == 1 ? 1 : 0, // 1 = closed
-				'movedThreadID' => ($row['topic_status'] == 2 && $row['topic_moved_id']) ? $row['topic_moved_id'] : null,
+				'isClosed' => $row['topic_status'] == self::TOPIC_STATUS_CLOSED ? 1 : 0,
+				'movedThreadID' => ($row['topic_status'] == self::TOPIC_STATUS_LINK && $row['topic_moved_id']) ? $row['topic_moved_id'] : null,
 				'movedTime' => TIME_NOW, // TODO
 			);
 			$additionalData = array();
-			if ($row['topic_type'] == 3) $additionalData['assignedBoards'] = $boardIDs; // global annoucement
-			if ($row['topic_type'] == 2) $additionalData['assignedBoards'] = array($row['forum_id']); // annoucement
+			if ($row['topic_type'] == self::TOPIC_TYPE_GLOBAL) $additionalData['assignedBoards'] = $boardIDs;
+			if ($row['topic_type'] == self::TOPIC_TYPE_ANNOUCEMENT) $additionalData['assignedBoards'] = array($row['forum_id']);
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.thread')->import($row['topic_id'], $data, $additionalData);
 		}
