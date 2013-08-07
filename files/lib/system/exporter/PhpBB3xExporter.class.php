@@ -116,9 +116,9 @@ class PhpBB3xExporter extends AbstractExporter {
 			),
 			'com.woltlab.wbb.board' => array(
 				/*'com.woltlab.wbb.acl',
-				'com.woltlab.wbb.attachment',
+				'com.woltlab.wbb.attachment',*/
 				'com.woltlab.wbb.poll',
-				'com.woltlab.wbb.watchedThread',*/
+				/*'com.woltlab.wbb.watchedThread',*/
 			),
 			'com.woltlab.wcf.conversation' => array(
 				/*'com.woltlab.wcf.conversation.attachment',*/
@@ -188,12 +188,12 @@ class PhpBB3xExporter extends AbstractExporter {
 			
 			/*if (in_array('com.woltlab.wbb.acl', $this->selectedData)) $queue[] = 'com.woltlab.wbb.acl';
 			if (in_array('com.woltlab.wbb.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wbb.attachment';
-			if (in_array('com.woltlab.wbb.watchedThread', $this->selectedData)) $queue[] = 'com.woltlab.wbb.watchedThread';
+			if (in_array('com.woltlab.wbb.watchedThread', $this->selectedData)) $queue[] = 'com.woltlab.wbb.watchedThread';*/
 			if (in_array('com.woltlab.wbb.poll', $this->selectedData)) {
 				$queue[] = 'com.woltlab.wbb.poll';
 				$queue[] = 'com.woltlab.wbb.poll.option';
 				$queue[] = 'com.woltlab.wbb.poll.option.vote';
-			}*/
+			}
 		}
 		
 		// smiley
@@ -755,6 +755,106 @@ class PhpBB3xExporter extends AbstractExporter {
 				'enableBBCodes' => $row['enable_bbcode'],
 				'showSignature' => $row['enable_sig'],
 				'ipAddress' => UserUtil::convertIPv4To6($row['poster_ip'])
+			));
+		}
+	}
+	
+	/**
+	 * Counts polls.
+	 */
+	public function countPolls() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."topics
+			WHERE	poll_start <> ?";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array(0));
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports polls.
+	 */
+	public function exportPolls($offset, $limit) {
+		$sql = "SELECT		topic_id, topic_first_post_id, poll_title, poll_start, poll_length, poll_max_options, poll_vote_change,
+					(SELECT COUNT(DISTINCT vote_user_id) FROM ".$this->databasePrefix."poll_votes votes WHERE votes.topic_id = topic.topic_id) AS poll_votes
+			FROM		".$this->databasePrefix."topics topic
+			WHERE		poll_start <> ?
+			ORDER BY	topic_id ASC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute(array('post'));
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll')->import($row['topic_id'], array(
+				'objectID' => $row['topic_first_post_id'],
+				'question' => $row['poll_title'],
+				'time' => $row['poll_start'],
+				'endTime' => $row['poll_length'] ? $row['poll_start'] + $row['poll_length'] : 0,
+				'isChangeable' => ($row['poll_vote_change'] ? 1 : 0),
+				'isPublic' => 0,
+				'maxVotes' => $row['poll_max_options'],
+				'votes' => $row['poll_votes']
+			));
+		}
+	}
+	
+	/**
+	 * Counts poll options.
+	 */
+	public function countPollOptions() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."poll_options";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array());
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports poll options.
+	 */
+	public function exportPollOptions($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."poll_options
+			ORDER BY	poll_option_id ASC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute(array('post'));
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll.option')->import($row['topic_id'].'-'.$row['poll_option_id'], array(
+				'pollID' => $row['topic_id'],
+				'optionValue' => $row['poll_option_text'],
+				'votes' => $row['poll_option_total']
+			));
+		}
+	}
+	
+	/**
+	 * Counts poll option votes.
+	 */
+	public function countPollOptionVotes() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."poll_votes
+			WHERE	vote_user_id <> ?";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array(0));
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports poll option votes.
+	 */
+	public function exportPollOptionVotes($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."poll_votes
+			WHERE		vote_user_id <> ?
+			ORDER BY	poll_option_id ASC, vote_user_id ASC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute(array(0));
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll.option.vote')->import(0, array(
+				'pollID' => $row['topic_id'],
+				'optionID' => $row['topic_id'].'-'.$row['poll_option_id'],
+				'userID' => $row['vote_user_id']
 			));
 		}
 	}
