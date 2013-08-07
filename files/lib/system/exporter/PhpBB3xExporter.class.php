@@ -822,6 +822,7 @@ class PhpBB3xExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll.option')->import($row['topic_id'].'-'.$row['poll_option_id'], array(
 				'pollID' => $row['topic_id'],
 				'optionValue' => $row['poll_option_text'],
+				'showOrder' => $row['poll_option_id'],
 				'votes' => $row['poll_option_total']
 			));
 		}
