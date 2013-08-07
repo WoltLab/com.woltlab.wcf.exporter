@@ -564,7 +564,7 @@ class WBB3xExporter extends AbstractExporter {
 		$optionsNames = $this->getExistingUserOptions();
 		
 		$conditionBuilder = new PreparedStatementConditionBuilder();
-		$conditionBuilder->add('categoryName LIKE ?', array('profile%'));
+		$conditionBuilder->add('categoryName IN (SELECT categoryName FROM wcf'.$this->dbNo.'_user_option_category WHERE parentCategoryName = ?)', array('profile'));
 		if (!empty($optionsNames)) $conditionBuilder->add('optionName NOT IN (?)', array($optionsNames));
 		
 		$sql = "SELECT	COUNT(*) AS count
@@ -584,7 +584,7 @@ class WBB3xExporter extends AbstractExporter {
 		$optionsNames = $this->getExistingUserOptions();
 		
 		$conditionBuilder = new PreparedStatementConditionBuilder();
-		$conditionBuilder->add('categoryName LIKE ?', array('profile%'));
+		$conditionBuilder->add('categoryName IN (SELECT categoryName FROM wcf'.$this->dbNo.'_user_option_category WHERE parentCategoryName = ?)', array('profile'));
 		if (!empty($optionsNames)) $conditionBuilder->add('optionName NOT IN (?)', array($optionsNames));
 		
 		$sql = "SELECT 	user_option.*, (
