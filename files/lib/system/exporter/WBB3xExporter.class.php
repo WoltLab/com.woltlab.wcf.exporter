@@ -1597,7 +1597,9 @@ class WBB3xExporter extends AbstractExporter {
 		$statement->execute(array(0));
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.blog.category')->import($row['categoryID'], array(
-				'title' => $row['title']
+				'title' => $row['title'],
+				'parentCategoryID' => 0,
+				'showOrder' => 0
 			));
 		}
 	}
@@ -1636,7 +1638,7 @@ class WBB3xExporter extends AbstractExporter {
 		$categories = array();
 		$conditionBuilder = new PreparedStatementConditionBuilder();
 		$conditionBuilder->add('entry_to_category.entryID IN (?)', array($entryIDs));
-		$conditionBuilder->add('category.userID <> ?', array(0));
+		$conditionBuilder->add('category.userID = ?', array(0));
 		
 		$sql = "SELECT		entry_to_category.* 
 			FROM		wcf".$this->dbNo."_user_blog_entry_to_category entry_to_category
@@ -1680,7 +1682,7 @@ class WBB3xExporter extends AbstractExporter {
 				'enableBBCodes' => $row['enableBBCodes'],
 				'views' => $row['views'],
 				'isPublished' => $row['isPublished'],
-				'publishingDate' => $row['publishingDate']
+				'publicationDate' => $row['publishingDate']
 			), $additionalData);
 		}
 	}
