@@ -124,7 +124,7 @@ class PhpBB3xExporter extends AbstractExporter {
 				/*'com.woltlab.wcf.conversation.attachment',*/
 				'com.woltlab.wcf.conversation.label'
 			),
-			/*'com.woltlab.wcf.smiley' => array()*/
+			'com.woltlab.wcf.smiley' => array()
 		);
 	}
 	
@@ -197,7 +197,7 @@ class PhpBB3xExporter extends AbstractExporter {
 		}
 		
 		// smiley
-		/*if (in_array('com.woltlab.wcf.smiley', $this->selectedData)) $queue[] = 'com.woltlab.wcf.smiley';*/
+		if (in_array('com.woltlab.wcf.smiley', $this->selectedData)) $queue[] = 'com.woltlab.wcf.smiley';
 		
 		return $queue;
 	}
@@ -857,6 +857,48 @@ class PhpBB3xExporter extends AbstractExporter {
 				'optionID' => $row['topic_id'].'-'.$row['poll_option_id'],
 				'userID' => $row['vote_user_id']
 			));
+		}
+	}
+	
+	/**
+	 * Counts smilies.
+	 */
+	public function countSmilies() {
+		$sql = "SELECT	COUNT(DISTINCT smiley_url) AS count
+			FROM	".$this->databasePrefix."smilies";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports smilies.
+	 */
+	public function exportSmilies($offset, $limit) {
+		$sql = "SELECT		MIN(smiley_id) AS smiley_id,
+					GROUP_CONCAT(code SEPARATOR '\n') AS aliases,
+					smiley_url,
+					MIN(smiley_order) AS smiley_order,
+					GROUP_CONCAT(emotion SEPARATOR '\n') AS emotion
+			FROM		".$this->databasePrefix."smilies
+			GROUP BY	smiley_url
+			ORDER BY	smiley_id ASC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute(array());
+		while ($row = $statement->fetchArray()) {
+			$fileLocation = $this->fileSystemPath.'images/smilies/'.$row['smiley_url'];
+			
+			$aliases = explode("\n", $row['aliases']);
+			$code = array_shift($aliases);
+			$emotion = StringUtil::substring($row['emotion'], 0, StringUtil::indexOf($row['emotion'], "\n") ?: StringUtil::length($row['emotion'])); // we had to GROUP_CONCAT it because of SQL strict mode
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.smiley')->import($row['smiley_id'], array(
+				'smileyTitle' => $emotion,
+				'smileyCode' => $code,
+				'showOrder' => $row['smiley_order'],
+				'aliases' => implode("\n", $aliases)
+			), array('fileLocation' => $fileLocation));
 		}
 	}
 	
