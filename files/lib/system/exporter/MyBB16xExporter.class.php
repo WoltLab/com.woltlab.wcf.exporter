@@ -380,7 +380,8 @@ class MyBB16xExporter extends AbstractExporter {
 			foreach ($buddylist as $buddy) {
 				ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.follower')->import(0, array(
 					'userID' => $row['uid'],
-					'followUserID' => $buddy
+					'followUserID' => $buddy,
+					'time' => 0
 				));
 			}
 		}
