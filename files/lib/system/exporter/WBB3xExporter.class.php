@@ -339,7 +339,6 @@ class WBB3xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		
-		WCF::getDB()->beginTransaction();
 		while ($row = $statement->fetchArray()) {
 			$data = array(
 				'username' => $row['username'],
@@ -388,7 +387,6 @@ class WBB3xExporter extends AbstractExporter {
 				$passwordUpdateStatement->execute(array('wcf1:'.$row['password'].':'.$row['salt'], $newUserID));
 			}
 		}
-		WCF::getDB()->commitTransaction();
 	}
 	
 	/**

@@ -270,7 +270,6 @@ class MyBB16xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array(0));
 		
-		WCF::getDB()->beginTransaction();
 		while ($row = $statement->fetchArray()) {
 			$data = array(
 				'username' => $row['username'],
@@ -305,7 +304,6 @@ class MyBB16xExporter extends AbstractExporter {
 				$passwordUpdateStatement->execute(array('mybb1:'.$row['password'].':'.$row['salt'], $newUserID));
 			}
 		}
-		WCF::getDB()->commitTransaction();
 	}
 	
 	/**
