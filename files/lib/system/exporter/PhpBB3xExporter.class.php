@@ -115,8 +115,8 @@ class PhpBB3xExporter extends AbstractExporter {
 				'com.woltlab.wcf.user.rank'
 			),
 			'com.woltlab.wbb.board' => array(
-				/*'com.woltlab.wbb.acl',
-				'com.woltlab.wbb.attachment',*/
+				/*'com.woltlab.wbb.acl',*/
+				'com.woltlab.wbb.attachment',
 				'com.woltlab.wbb.poll',
 				'com.woltlab.wbb.watchedThread',
 			),
@@ -186,8 +186,8 @@ class PhpBB3xExporter extends AbstractExporter {
 			$queue[] = 'com.woltlab.wbb.thread';
 			$queue[] = 'com.woltlab.wbb.post';
 			
-			/*if (in_array('com.woltlab.wbb.acl', $this->selectedData)) $queue[] = 'com.woltlab.wbb.acl';
-			if (in_array('com.woltlab.wbb.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wbb.attachment';*/
+			/*if (in_array('com.woltlab.wbb.acl', $this->selectedData)) $queue[] = 'com.woltlab.wbb.acl';*/
+			if (in_array('com.woltlab.wbb.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wbb.attachment';
 			if (in_array('com.woltlab.wbb.watchedThread', $this->selectedData)) $queue[] = 'com.woltlab.wbb.watchedThread';
 			if (in_array('com.woltlab.wbb.poll', $this->selectedData)) {
 				$queue[] = 'com.woltlab.wbb.poll';
@@ -758,6 +758,55 @@ class PhpBB3xExporter extends AbstractExporter {
 	}
 	
 	/**
+	 * Counts post attachments.
+	 */
+	public function countPostAttachments() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."attachments";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array());
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports post attachments.
+	 */
+	public function exportPostAttachments($offset, $limit) {
+		static $upload_path = null;
+		if ($upload_path === null) {
+			$sql = "SELECT	config_name, config_value
+				FROM	".$this->databasePrefix."config
+				WHERE	config_name IN (?)";
+			$statement = $this->database->prepareStatement($sql);
+			$statement->execute(array('upload_path'));
+			while ($row = $statement->fetchArray()) {
+				$$row['config_name'] = $row['config_value'];
+			}
+		}
+		
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."attachments
+			ORDER BY	attach_id DESC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			$fileLocation = FileUtil::addTrailingSlash($this->fileSystemPath.$upload_path).$row['physical_filename'];
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.attachment')->import(0, array( // TODO: support inline attachments
+				'objectID' => $row['post_msg_id'],
+				'userID' => ($row['poster_id'] ?: null),
+				'filename' => $row['real_filename'],
+				'filesize' => $row['filesize'],
+				'fileType' => $row['mimetype'],
+				'isImage' => StringUtil::startsWith($row['mimetype'], 'image/') ? 1 : 0,
+				'downloads' => $row['download_count'],
+				'uploadTime' => $row['filetime']
+			), array('fileLocation' => $fileLocation));
+		}
+	}
+	
+	/**
 	 * Counts watched threads.
 	 */
 	public function countWatchedThreads() {
@@ -955,6 +1004,9 @@ class PhpBB3xExporter extends AbstractExporter {
 		
 		// convert smileys
 		$text = preg_replace('~<!-- s(.+?) -->.+?<!-- s(?:.+?) -->~', '\\1', $text);
+		
+		// convert attachments
+		$text = preg_replace('~\[attachment=(\d+)\]<!-- ia\\1 -->.*?<!-- ia\\1 -->\[/attachment\]~', '', $text); // TODO: not supported right now
 		
 		return $text;
 	}
