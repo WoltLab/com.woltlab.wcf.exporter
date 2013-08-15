@@ -294,7 +294,6 @@ class PhpBB3xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array(0, 2));
 	
-		WCF::getDB()->beginTransaction();
 		while ($row = $statement->fetchArray()) {
 			$data = array(
 				'username' => $row['username'],
@@ -323,7 +322,6 @@ class PhpBB3xExporter extends AbstractExporter {
 				$passwordUpdateStatement->execute(array('phpbb3:'.$row['user_password'].':', $newUserID));
 			}
 		}
-		WCF::getDB()->commitTransaction();
 	}
 	
 	/**
