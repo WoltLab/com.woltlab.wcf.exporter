@@ -118,7 +118,7 @@ class PhpBB3xExporter extends AbstractExporter {
 				/*'com.woltlab.wbb.acl',
 				'com.woltlab.wbb.attachment',*/
 				'com.woltlab.wbb.poll',
-				/*'com.woltlab.wbb.watchedThread',*/
+				'com.woltlab.wbb.watchedThread',
 			),
 			'com.woltlab.wcf.conversation' => array(
 				/*'com.woltlab.wcf.conversation.attachment',*/
@@ -187,8 +187,8 @@ class PhpBB3xExporter extends AbstractExporter {
 			$queue[] = 'com.woltlab.wbb.post';
 			
 			/*if (in_array('com.woltlab.wbb.acl', $this->selectedData)) $queue[] = 'com.woltlab.wbb.acl';
-			if (in_array('com.woltlab.wbb.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wbb.attachment';
-			if (in_array('com.woltlab.wbb.watchedThread', $this->selectedData)) $queue[] = 'com.woltlab.wbb.watchedThread';*/
+			if (in_array('com.woltlab.wbb.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wbb.attachment';*/
+			if (in_array('com.woltlab.wbb.watchedThread', $this->selectedData)) $queue[] = 'com.woltlab.wbb.watchedThread';
 			if (in_array('com.woltlab.wbb.poll', $this->selectedData)) {
 				$queue[] = 'com.woltlab.wbb.poll';
 				$queue[] = 'com.woltlab.wbb.poll.option';
@@ -753,6 +753,38 @@ class PhpBB3xExporter extends AbstractExporter {
 				'enableBBCodes' => $row['enable_bbcode'],
 				'showSignature' => $row['enable_sig'],
 				'ipAddress' => UserUtil::convertIPv4To6($row['poster_ip'])
+			));
+		}
+	}
+	
+	/**
+	 * Counts watched threads.
+	 */
+	public function countWatchedThreads() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."topics_watch";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports watched threads.
+	 */
+	public function exportWatchedThreads($offset, $limit) {
+		// TODO: This is untested. I cannot find the button to watch a topic…
+		// TODO: Import bookmarks as watched threads as well?
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."topics_watch
+			ORDER BY	topic_id ASC, user_id ASC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.watchedThread')->import(0, array(
+				'objectID' => $row['topic_id'],
+				'userID' => $row['user_id'],
+				'notification' => $row['notify_status']
 			));
 		}
 	}
