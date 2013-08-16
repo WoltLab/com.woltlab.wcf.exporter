@@ -1480,6 +1480,8 @@ class WBB3xExporter extends AbstractExporter {
 				unset($row['boardID'], $row['userID'], $row['groupID']);
 				
 				foreach ($row as $permission => $value) {
+					if ($value == -1) continue;
+					
 					ImportHandler::getInstance()->getImporter('com.woltlab.wbb.acl')->import(0, array_merge($data, array('optionValue' => $value)), array('optionName' => $permission));
 				}
 			}

@@ -8,6 +8,12 @@
 		</type>
 		
 		<type>
+			<name>com.woltlab.wcf.exporter.wbb2x</name>
+			<definitionname>com.woltlab.wcf.exporter</definitionname>
+			<classname>wcf\system\exporter\WBB2xExporter</classname>
+		</type>
+		
+		<type>
 			<name>com.woltlab.wcf.exporter.mybb16x</name>
 			<definitionname>com.woltlab.wcf.exporter</definitionname>
 			<classname>wcf\system\exporter\MyBB16xExporter</classname>
