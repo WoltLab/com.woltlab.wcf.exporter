@@ -1128,8 +1128,8 @@ class WBB2xExporter extends AbstractExporter {
 	}
 	
 	private static function fixBBCodes($text) {
-		$text = str_ireplace('[center]', '[align=center]', $text);
-		$text = str_ireplace('[/center]', '[/align]', $text);
+		$text = StringUtil::replaceIgnoreCase('[center]', '[align=center]', $text);
+		$text = StringUtil::replaceIgnoreCase('[/center]', '[/align]', $text);
 		return $text;
 	}
 	
