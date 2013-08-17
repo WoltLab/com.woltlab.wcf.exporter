@@ -81,7 +81,7 @@ class WBB3xExporter extends AbstractExporter {
 	 * @see	wcf\system\exporter\AbstractExporter::$limits
 	 */
 	protected $limits = array(
-		'com.woltlab.wcf.user' => 200,
+		'com.woltlab.wcf.user' => 100,
 		'com.woltlab.wcf.user.avatar' => 100,
 		'com.woltlab.wcf.conversation.attachment' => 100,
 		'com.woltlab.wbb.thread' => 200,
