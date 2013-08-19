@@ -121,7 +121,7 @@ class PhpBB3xExporter extends AbstractExporter {
 				'com.woltlab.wbb.watchedThread',
 			),
 			'com.woltlab.wcf.conversation' => array(
-				/*'com.woltlab.wcf.conversation.attachment',*/
+				'com.woltlab.wcf.conversation.attachment',
 				'com.woltlab.wcf.conversation.label'
 			),
 			'com.woltlab.wcf.smiley' => array()
@@ -176,7 +176,7 @@ class PhpBB3xExporter extends AbstractExporter {
 				$queue[] = 'com.woltlab.wcf.conversation.message';
 				$queue[] = 'com.woltlab.wcf.conversation.user';
 					
-				/*if (in_array('com.woltlab.wcf.conversation.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wcf.conversation.attachment';*/
+				if (in_array('com.woltlab.wcf.conversation.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wcf.conversation.attachment';
 			}
 		}
 		
@@ -542,13 +542,14 @@ class PhpBB3xExporter extends AbstractExporter {
 	 * Exports conversation messages.
 	 */
 	public function exportConversationMessages($offset, $limit) {
-		$sql = "SELECT		msg_table.*, user_table.username
+		$sql = "SELECT		msg_table.*, user_table.username,
+					(SELECT COUNT(*) FROM ".$this->databasePrefix."attachments attachment_table WHERE attachment_table.post_msg_id = msg_table.msg_id AND in_message = ?) AS attachments
 			FROM		".$this->databasePrefix."privmsgs msg_table
 			LEFT JOIN	".$this->databasePrefix."users user_table
 			ON		msg_table.author_id = user_table.user_id
 			ORDER BY	msg_id ASC";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement->execute(array(1));
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.message')->import($row['msg_id'], array(
 				'conversationID' => ($row['root_level'] ?: $row['msg_id']),
@@ -556,7 +557,7 @@ class PhpBB3xExporter extends AbstractExporter {
 				'username' => $row['username'],
 				'message' => self::fixBBCodes(StringUtil::decodeHTML($row['message_text']), $row['bbcode_uid']),
 				'time' => $row['message_time'],
-				'attachments' => 0, // TODO
+				'attachments' => $row['attachments'],
 				'enableSmilies' =>  $row['enable_smilies'],
 				'enableHtml' => 0,
 				'enableBBCodes' => $row['enable_bbcode'],
@@ -600,6 +601,20 @@ class PhpBB3xExporter extends AbstractExporter {
 				'lastVisitTime' => $row['pm_unread'] ? 0 : 1
 			), array('labelIDs' => ($row['folder_id'] > 0 ? array($row['folder_id']) : array())));
 		}
+	}
+	
+	/**
+	 * Counts conversation attachments.
+	 */
+	public function countConversationAttachments() {
+		return $this->countAttachments(1);
+	}
+	
+	/**
+	 * Exports conversation attachments.
+	 */
+	public function exportConversationAttachments($offset, $limit) {
+		return $this->exportAttachments(1, $offset, $limit);
 	}
 	
 	/**
@@ -723,7 +738,8 @@ class PhpBB3xExporter extends AbstractExporter {
 	 * Exports posts.
 	 */
 	public function exportPosts($offset, $limit) {
-		$sql = "SELECT		post_table.*, user_table.username, editor.username AS editorName
+		$sql = "SELECT		post_table.*, user_table.username, editor.username AS editorName,
+					(SELECT COUNT(*) FROM ".$this->databasePrefix."attachments attachment_table WHERE attachment_table.post_msg_id = post_table.post_id AND in_message = ?) AS attachments
 			FROM		".$this->databasePrefix."posts post_table
 			LEFT JOIN	".$this->databasePrefix."users user_table
 			ON		post_table.poster_id = user_table.user_id
@@ -731,7 +747,7 @@ class PhpBB3xExporter extends AbstractExporter {
 			ON		post_table.post_edit_user = editor.user_id
 			ORDER BY	post_id ASC";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement->execute(array(0));
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.post')->import($row['post_id'], array(
 				'threadID' => $row['topic_id'],
@@ -747,7 +763,7 @@ class PhpBB3xExporter extends AbstractExporter {
 				'lastEditTime' => $row['post_edit_time'],
 				'editCount' => $row['post_edit_count'],
 				'editReason' => (!empty($row['post_edit_reason']) ? $row['post_edit_reason'] : ''),
-				'attachments' => 0, // TODO 
+				'attachments' => $row['attachments'],
 				'enableSmilies' => $row['enable_smilies'],
 				'enableHtml' => 0,
 				'enableBBCodes' => $row['enable_bbcode'],
@@ -761,49 +777,14 @@ class PhpBB3xExporter extends AbstractExporter {
 	 * Counts post attachments.
 	 */
 	public function countPostAttachments() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."attachments";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array());
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->countAttachments(0);
 	}
 	
 	/**
 	 * Exports post attachments.
 	 */
 	public function exportPostAttachments($offset, $limit) {
-		static $upload_path = null;
-		if ($upload_path === null) {
-			$sql = "SELECT	config_name, config_value
-				FROM	".$this->databasePrefix."config
-				WHERE	config_name IN (?)";
-			$statement = $this->database->prepareStatement($sql);
-			$statement->execute(array('upload_path'));
-			while ($row = $statement->fetchArray()) {
-				$$row['config_name'] = $row['config_value'];
-			}
-		}
-		
-		$sql = "SELECT		*
-			FROM		".$this->databasePrefix."attachments
-			ORDER BY	attach_id DESC";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
-		while ($row = $statement->fetchArray()) {
-			$fileLocation = FileUtil::addTrailingSlash($this->fileSystemPath.$upload_path).$row['physical_filename'];
-			
-			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.attachment')->import(0, array( // TODO: support inline attachments
-				'objectID' => $row['post_msg_id'],
-				'userID' => ($row['poster_id'] ?: null),
-				'filename' => $row['real_filename'],
-				'filesize' => $row['filesize'],
-				'fileType' => $row['mimetype'],
-				'isImage' => StringUtil::startsWith($row['mimetype'], 'image/') ? 1 : 0,
-				'downloads' => $row['download_count'],
-				'uploadTime' => $row['filetime']
-			), array('fileLocation' => $fileLocation));
-		}
+		return $this->exportAttachments(0, $offset, $limit);
 	}
 	
 	/**
@@ -977,6 +958,54 @@ class PhpBB3xExporter extends AbstractExporter {
 				'smileyCode' => $code,
 				'showOrder' => $row['smiley_order'],
 				'aliases' => implode("\n", $aliases)
+			), array('fileLocation' => $fileLocation));
+		}
+	}
+	
+	protected function countAttachments($conversation) {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."attachments
+			WHERE	in_message = ?";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($conversation ? 1 : 0));
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	protected function exportAttachments($conversation, $offset, $limit) {
+		static $upload_path = null;
+		if ($upload_path === null) {
+			$sql = "SELECT	config_name, config_value
+				FROM	".$this->databasePrefix."config
+				WHERE	config_name IN (?)";
+			$statement = $this->database->prepareStatement($sql);
+			$statement->execute(array('upload_path'));
+			while ($row = $statement->fetchArray()) {
+				$$row['config_name'] = $row['config_value'];
+			}
+		}
+		
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."attachments
+			WHERE		in_message = ?
+			ORDER BY	attach_id DESC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute(array($conversation ? 1 : 0));
+		while ($row = $statement->fetchArray()) {
+			$fileLocation = FileUtil::addTrailingSlash($this->fileSystemPath.$upload_path).$row['physical_filename'];
+			
+			$isImage = 0;
+			if ($row['mimetype'] == 'image/jpeg' || $row['mimetype'] == 'image/png' || $row['mimetype'] == 'image/gif') $isImage = 1;
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.'.($conversation ? 'wcf.conversation' : 'wbb').'.attachment')->import(0, array( // TODO: support inline attachments
+				'objectID' => $row['post_msg_id'],
+				'userID' => ($row['poster_id'] ?: null),
+				'filename' => $row['real_filename'],
+				'filesize' => $row['filesize'],
+				'fileType' => $row['mimetype'],
+				'isImage' => $isImage,
+				'downloads' => $row['download_count'],
+				'uploadTime' => $row['filetime']
 			), array('fileLocation' => $fileLocation));
 		}
 	}
