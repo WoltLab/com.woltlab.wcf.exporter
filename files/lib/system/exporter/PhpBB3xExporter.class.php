@@ -99,7 +99,7 @@ class PhpBB3xExporter extends AbstractExporter {
 		'com.woltlab.wcf.conversation.attachment' => 100,
 		'com.woltlab.wbb.thread' => 200,
 		'com.woltlab.wbb.attachment' => 100,
-		'com.woltlab.wbb.acl' => 50
+		'com.woltlab.wbb.acl' => 1
 	);
 	
 	/**
@@ -115,7 +115,7 @@ class PhpBB3xExporter extends AbstractExporter {
 				'com.woltlab.wcf.user.rank'
 			),
 			'com.woltlab.wbb.board' => array(
-				/*'com.woltlab.wbb.acl',*/
+				'com.woltlab.wbb.acl',
 				'com.woltlab.wbb.attachment',
 				'com.woltlab.wbb.poll',
 				'com.woltlab.wbb.watchedThread',
@@ -186,7 +186,7 @@ class PhpBB3xExporter extends AbstractExporter {
 			$queue[] = 'com.woltlab.wbb.thread';
 			$queue[] = 'com.woltlab.wbb.post';
 			
-			/*if (in_array('com.woltlab.wbb.acl', $this->selectedData)) $queue[] = 'com.woltlab.wbb.acl';*/
+			if (in_array('com.woltlab.wbb.acl', $this->selectedData)) $queue[] = 'com.woltlab.wbb.acl';
 			if (in_array('com.woltlab.wbb.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wbb.attachment';
 			if (in_array('com.woltlab.wbb.watchedThread', $this->selectedData)) $queue[] = 'com.woltlab.wbb.watchedThread';
 			if (in_array('com.woltlab.wbb.poll', $this->selectedData)) {
@@ -967,6 +967,115 @@ class PhpBB3xExporter extends AbstractExporter {
 			));
 		}
 	}
+	
+	/**
+	 * Counts ACLs.
+	 */
+	public function countACLs() {
+		$sql = "SELECT	(SELECT COUNT(*) FROM ".$this->databasePrefix."acl_users WHERE forum_id <> ?)
+				+ (SELECT COUNT(*) FROM ".$this->databasePrefix."acl_groups WHERE forum_id <> ?) AS count";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array(0, 0));
+		$row = $statement->fetchArray();
+		return $row['count'] ? 2 : 0;
+	}
+	
+	/**
+	 * Exports ACLs.
+	 */
+	public function exportACLs($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."acl_options
+			WHER		is_local = ?";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array(1));
+		$options = array();
+		while ($row = $statement->fetchArray()) {
+			$options[$row['auth_option_id']] = $row;
+		}
+		
+		$condition = new PreparedStatementConditionBuilder();
+		$condition->add('auth_option_id IN (?)', array(array_keys($options)));
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."acl_roles_data
+			".$condition;
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute($condition->getParameters());
+		$roles = array();
+		while ($row = $statement->fetchArray()) {
+			$roles[$row['role_id']][$row['auth_option_id']] = $row['auth_setting'];
+		}
+		
+		$data = array();
+		if ($offset == 0) {
+			// groups
+			$sql = "SELECT		*
+				FROM		".$this->databasePrefix."acl_groups
+				WHERE		forum_id <> ?
+				ORDER BY	auth_role_id DESC";
+			$statement = $this->database->prepareStatement($sql);
+			$statement->execute(array(0));
+			$key = 'group';
+		}
+		else if ($offset == 1) {
+			// users
+			$sql = "SELECT		*
+				FROM		".$this->databasePrefix."acl_users
+				WHERE		forum_id <> ?
+				ORDER BY	auth_role_id DESC";
+			$statement = $this->database->prepareStatement($sql);
+			$statement->execute(array(0));
+			$key = 'user';
+		}
+		
+		while ($row = $statement->fetchArray()) {
+			if ($row['auth_role_id'] != 0) {
+				if (!isset($roles[$row['auth_role_id']])) continue;
+					
+				foreach ($roles[$row['auth_role_id']] as $optionID => $setting) {
+					if (!isset($options[$optionID])) continue;
+					
+					$current = 1;
+					if (isset($groups[$row[$key.'_id']][$row['forum_id']][$optionID])) {
+						$current = $data[$row[$key.'_id']][$row['forum_id']][$optionID];
+					}
+					$data[$row[$key.'_id']][$row['forum_id']][$optionID] = min($current, $setting); // a setting of zero means never -> use minimum
+				}
+			}
+			else {
+				if (!isset($options[$row['auth_option_id']])) continue;
+				
+				$current = 1;
+				if (isset($groups[$row[$key.'_id']][$row['forum_id']][$row['auth_option_id']])) {
+					$current = $data[$row[$key.'_id']][$row['forum_id']][$row['auth_option_id']];
+				}
+				
+				$data[$row[$key.'_id']][$row['forum_id']][$row['auth_option_id']] = min($current, $row['auth_setting']); // a setting of zero means never -> use minimum
+			}
+		}
+		
+		static $optionMapping = array(
+			// TODO: create mapping
+		);
+		
+		foreach ($data as $id => $forumData) {
+			foreach ($forumData as $forumID => $settingData) {
+				foreach ($settingData as $optionID => $value) {
+					if (!isset($optionMapping[$options[$optionID]['auth_option']])) continue;
+					foreach ($optionMapping[$options[$optionID]['auth_option']] as $optionName) {
+						ImportHandler::getInstance()->getImporter('com.woltlab.wbb.acl')->import(0, array(
+							'objectID' => $forumID,
+							$key.'ID' => $id,
+							'optionValue' => $value
+						), array(
+							'optionName' => $optionName
+						));
+					}
+				}
+			}
+		}
+	}
+	
 	
 	/**
 	 * Counts smilies.
