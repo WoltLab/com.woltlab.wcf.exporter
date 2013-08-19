@@ -387,8 +387,7 @@ class PhpBB3xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.follower')->import(0, array(
 				'userID' => $row['user_id'],
-				'followUserID' => $row['zebra_id'],
-				'time' => 0
+				'followUserID' => $row['zebra_id']
 			));
 		}
 	}
@@ -498,21 +497,41 @@ class PhpBB3xExporter extends AbstractExporter {
 			VALUES			(?, ?, ?, ?, ?)";
 		$insertStatement = WCF::getDB()->prepareStatement($sql);
 		
-		$sql = "SELECT		msg_table.*, user_table.username
-			FROM		".$this->databasePrefix."privmsgs msg_table
-			LEFT JOIN	".$this->databasePrefix."users user_table
-			ON		msg_table.author_id = user_table.user_id
-			WHERE		root_level = ?
-			ORDER BY	msg_id ASC";
+		$sql = "(
+				SELECT		msg_table.msg_id,
+						msg_table.message_subject,
+						msg_table.message_time,
+						msg_table.author_id,
+						0 AS isDraft,
+						user_table.username
+				FROM		".$this->databasePrefix."privmsgs msg_table
+				LEFT JOIN	".$this->databasePrefix."users user_table
+				ON		msg_table.author_id = user_table.user_id
+				WHERE		root_level = ?
+			)
+			UNION
+			(
+				SELECT		draft_table.draft_id AS msg_id,
+						draft_table.draft_subject AS message_subject,
+						draft_table.save_time AS message_time,
+						draft_table.user_id AS author_id,
+						1 AS isDraft,
+						user_table.username
+				FROM		".$this->databasePrefix."drafts draft_table
+				LEFT JOIN	".$this->databasePrefix."users user_table
+				ON		draft_table.user_id = user_table.user_id
+				WHERE		forum_id = ?
+			)
+			ORDER BY	isDraft ASC, msg_id ASC";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute(array(0));
+		$statement->execute(array(0, 0));
 		while ($row = $statement->fetchArray()) {
-			$conversationID = ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import($row['msg_id'], array(
+			$conversationID = ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import(($row['isDraft'] ? 'draft-' : '').$row['msg_id'], array(
 				'subject' => StringUtil::decodeHTML($row['message_subject']),
 				'time' => $row['message_time'],
 				'userID' => $row['author_id'],
 				'username' => $row['username'],
-				'isDraft' => 0 // TODO: fetch drafts from phpbb_drafts
+				'isDraft' => $row['isDraft']
 			));
 			
 			// add author
@@ -542,14 +561,43 @@ class PhpBB3xExporter extends AbstractExporter {
 	 * Exports conversation messages.
 	 */
 	public function exportConversationMessages($offset, $limit) {
-		$sql = "SELECT		msg_table.*, user_table.username,
-					(SELECT COUNT(*) FROM ".$this->databasePrefix."attachments attachment_table WHERE attachment_table.post_msg_id = msg_table.msg_id AND in_message = ?) AS attachments
-			FROM		".$this->databasePrefix."privmsgs msg_table
-			LEFT JOIN	".$this->databasePrefix."users user_table
-			ON		msg_table.author_id = user_table.user_id
+		$sql = "(
+				SELECT		msg_table.root_level,
+						msg_table.msg_id,
+						msg_table.author_id,
+						user_table.username,
+						msg_table.message_text,
+						msg_table.bbcode_uid,
+						msg_table.message_time,
+						msg_table.enable_smilies,
+						msg_table.enable_bbcode,
+						msg_table.enable_sig,
+						(SELECT COUNT(*) FROM ".$this->databasePrefix."attachments attachment_table WHERE attachment_table.post_msg_id = msg_table.msg_id AND in_message = ?) AS attachments
+				FROM		".$this->databasePrefix."privmsgs msg_table
+				LEFT JOIN	".$this->databasePrefix."users user_table
+				ON		msg_table.author_id = user_table.user_id
+			)
+			UNION
+			(
+				SELECT		0 AS root_level,
+						('draft-' || draft_table.draft_id) AS msg_id,
+						draft_table.user_id AS author_id,
+						user_table.username,
+						draft_table.draft_message AS message_text,
+						'' AS bbcode_uid,
+						draft_table.save_time AS message_time,
+						1 AS enable_smilies,
+						1 AS enable_bbcode,
+						1 AS enable_sig,
+						0 AS attachments
+				FROM		".$this->databasePrefix."drafts draft_table
+				LEFT JOIN	".$this->databasePrefix."users user_table
+				ON		draft_table.user_id = user_table.user_id
+				WHERE		forum_id = ?
+			)
 			ORDER BY	msg_id ASC";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute(array(1));
+		$statement->execute(array(1, 0));
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.message')->import($row['msg_id'], array(
 				'conversationID' => ($row['root_level'] ?: $row['msg_id']),
