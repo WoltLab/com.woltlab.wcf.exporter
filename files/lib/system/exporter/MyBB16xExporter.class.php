@@ -47,8 +47,6 @@ class MyBB16xExporter extends AbstractExporter {
 		'com.woltlab.wcf.user.group' => 'UserGroups',
 		'com.woltlab.wcf.user.rank' => 'UserRanks',
 		'com.woltlab.wcf.user.follower' => 'Followers',
-		'com.woltlab.wcf.user.comment' => 'GuestbookEntries',
-		'com.woltlab.wcf.user.comment.response' => 'GuestbookResponses',
 		'com.woltlab.wcf.user.avatar' => 'UserAvatars',
 		'com.woltlab.wcf.user.option' => 'UserOptions',
 		'com.woltlab.wcf.conversation.label' => 'ConversationFolders',
@@ -377,8 +375,7 @@ class MyBB16xExporter extends AbstractExporter {
 			foreach ($buddylist as $buddy) {
 				ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.follower')->import(0, array(
 					'userID' => $row['uid'],
-					'followUserID' => $buddy,
-					'time' => 0
+					'followUserID' => $buddy
 				));
 			}
 		}
