@@ -81,7 +81,7 @@ class WBB3xExporter extends AbstractExporter {
 	 * @see	wcf\system\exporter\AbstractExporter::$limits
 	 */
 	protected $limits = array(
-		'com.woltlab.wcf.user' => 200,
+		'com.woltlab.wcf.user' => 100,
 		'com.woltlab.wcf.user.avatar' => 100,
 		'com.woltlab.wcf.conversation.attachment' => 100,
 		'com.woltlab.wbb.thread' => 200,
@@ -339,7 +339,6 @@ class WBB3xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		
-		WCF::getDB()->beginTransaction();
 		while ($row = $statement->fetchArray()) {
 			$data = array(
 				'username' => $row['username'],
@@ -388,7 +387,6 @@ class WBB3xExporter extends AbstractExporter {
 				$passwordUpdateStatement->execute(array('wcf1:'.$row['password'].':'.$row['salt'], $newUserID));
 			}
 		}
-		WCF::getDB()->commitTransaction();
 	}
 	
 	/**
@@ -564,7 +562,7 @@ class WBB3xExporter extends AbstractExporter {
 		$optionsNames = $this->getExistingUserOptions();
 		
 		$conditionBuilder = new PreparedStatementConditionBuilder();
-		$conditionBuilder->add('categoryName LIKE ?', array('profile%'));
+		$conditionBuilder->add('categoryName IN (SELECT categoryName FROM wcf'.$this->dbNo.'_user_option_category WHERE parentCategoryName = ?)', array('profile'));
 		if (!empty($optionsNames)) $conditionBuilder->add('optionName NOT IN (?)', array($optionsNames));
 		
 		$sql = "SELECT	COUNT(*) AS count
@@ -584,7 +582,7 @@ class WBB3xExporter extends AbstractExporter {
 		$optionsNames = $this->getExistingUserOptions();
 		
 		$conditionBuilder = new PreparedStatementConditionBuilder();
-		$conditionBuilder->add('categoryName LIKE ?', array('profile%'));
+		$conditionBuilder->add('categoryName IN (SELECT categoryName FROM wcf'.$this->dbNo.'_user_option_category WHERE parentCategoryName = ?)', array('profile'));
 		if (!empty($optionsNames)) $conditionBuilder->add('optionName NOT IN (?)', array($optionsNames));
 		
 		$sql = "SELECT 	user_option.*, (
@@ -1047,7 +1045,8 @@ class WBB3xExporter extends AbstractExporter {
 				'movedThreadID' => ($row['movedThreadID'] ?: null),
 				'movedTime' => (!empty($row['movedTime']) ? $row['movedTime'] : 0),
 				'isDone' => (!empty($row['isDone']) ? $row['isDone'] : 0),
-				'deleteTime' => $row['deleteTime']
+				'deleteTime' => $row['deleteTime'],
+				'lastPostTime' => $row['lastPostTime']
 			);
 			$additionalData = array();
 			if ($row['languageCode']) $additionalData['languageCode'] = $row['languageCode'];
@@ -1481,6 +1480,8 @@ class WBB3xExporter extends AbstractExporter {
 				unset($row['boardID'], $row['userID'], $row['groupID']);
 				
 				foreach ($row as $permission => $value) {
+					if ($value == -1) continue;
+					
 					ImportHandler::getInstance()->getImporter('com.woltlab.wbb.acl')->import(0, array_merge($data, array('optionValue' => $value)), array('optionName' => $permission));
 				}
 			}
@@ -1596,7 +1597,9 @@ class WBB3xExporter extends AbstractExporter {
 		$statement->execute(array(0));
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.blog.category')->import($row['categoryID'], array(
-				'title' => $row['title']
+				'title' => $row['title'],
+				'parentCategoryID' => 0,
+				'showOrder' => 0
 			));
 		}
 	}
@@ -1635,7 +1638,7 @@ class WBB3xExporter extends AbstractExporter {
 		$categories = array();
 		$conditionBuilder = new PreparedStatementConditionBuilder();
 		$conditionBuilder->add('entry_to_category.entryID IN (?)', array($entryIDs));
-		$conditionBuilder->add('category.userID <> ?', array(0));
+		$conditionBuilder->add('category.userID = ?', array(0));
 		
 		$sql = "SELECT		entry_to_category.* 
 			FROM		wcf".$this->dbNo."_user_blog_entry_to_category entry_to_category
@@ -1679,7 +1682,7 @@ class WBB3xExporter extends AbstractExporter {
 				'enableBBCodes' => $row['enableBBCodes'],
 				'views' => $row['views'],
 				'isPublished' => $row['isPublished'],
-				'publishingDate' => $row['publishingDate']
+				'publicationDate' => $row['publishingDate']
 			), $additionalData);
 		}
 	}
