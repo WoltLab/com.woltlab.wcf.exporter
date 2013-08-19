@@ -350,7 +350,7 @@ class PhpBB3xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.rank')->import($row['rank_id'], array(
 				'groupID' => 2, // 2 = registered users
-				'requiredPoints' => $row['rank_min'],
+				'requiredPoints' => $row['rank_min'] * 5,
 				'rankTitle' => $row['rank_title'],
 				'rankImage' => $row['rank_image'],
 				'repeatImage' => 0,
