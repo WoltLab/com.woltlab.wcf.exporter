@@ -501,7 +501,7 @@ class WBB2xExporter extends AbstractExporter {
 				'subject' => $row['subject'],
 				'time' => $row['sendtime'],
 				'userID' => $row['senderid'],
-				'username' => $row['username']
+				'username' => ($row['username'] ?: '')
 			));
 				
 			// add author
@@ -520,7 +520,7 @@ class WBB2xExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.message')->import($row['privatemessageid'], array(
 				'conversationID' => $row['privatemessageid'],
 				'userID' => $row['senderid'],
-				'username' => $row['username'],
+				'username' => ($row['username'] ?: ''),
 				'message' => self::fixBBCodes($row['message']),
 				'time' => $row['sendtime'],
 				'attachments' => $row['attachments'],
