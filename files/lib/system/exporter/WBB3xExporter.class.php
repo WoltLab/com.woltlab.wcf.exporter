@@ -95,7 +95,7 @@ class WBB3xExporter extends AbstractExporter {
 	public function init() {
 		parent::init();
 		
-		if (preg_match('/^wbb(\d)_(\d)_$/', $this->databasePrefix, $match)) {
+		if (preg_match('/^wbb(\d+)_(\d+)_$/', $this->databasePrefix, $match)) {
 			$this->dbNo = $match[1];
 			$this->instanceNo = $match[2];
 		}
