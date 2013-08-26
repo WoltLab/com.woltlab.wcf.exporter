@@ -463,7 +463,7 @@ class WBB2xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.label')->import($row['folderid'], array(
 				'userID' => $row['userid'],
-				'label' => StringUtil::substring($row['title'], 0, 80)
+				'label' => mb_substr($row['title'], 0, 80)
 			));
 		}
 	}
@@ -1004,7 +1004,7 @@ class WBB2xExporter extends AbstractExporter {
 				foreach ($labels as $label) {
 					ImportHandler::getInstance()->getImporter('com.woltlab.wcf.label')->import($key.'-'.$label, array(
 						'groupID' => $key,
-						'label' => StringUtil::substring($label, 0, 80)
+						'label' => mb_substr($label, 0, 80)
 					));
 				}
 	
