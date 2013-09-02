@@ -984,6 +984,7 @@ class PhpBB3xExporter extends AbstractExporter {
 	 * Exports ACLs.
 	 */
 	public function exportACLs($offset, $limit) {
+		// TODO: ACLs are untested
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."acl_options
 			WHER		is_local = ?";
@@ -1055,7 +1056,48 @@ class PhpBB3xExporter extends AbstractExporter {
 		}
 		
 		static $optionMapping = array(
-			// TODO: create mapping
+			'f_announce' => array('canStartAnnouncement'),
+			'f_attach' => array('canUploadAttachment'),
+			'f_bbcode' => array(),
+			'f_bump' => array(),
+			'f_delete' => array('canDeleteOwnPost'),
+			'f_download' => array('canDownloadAttachment', 'canViewAttachmentPreview'),
+			'f_edit' => array('canEditOwnPost'),
+			'f_email' => array(),
+			'f_flash' => array(),
+			'f_icons' => array(),
+			'f_ignoreflood' => array(),
+			'f_img' => array(),
+			'f_list' => array('canViewBoard'),
+			'f_noapprove' => array('canStartThreadWithoutModeration', 'canReplyThreadWithoutModeration'),
+			'f_poll' => array('canStartPoll'),
+			'f_post' => array('canStartThread'),
+			'f_postcount' => array(),
+			'f_print' => array(),
+			'f_read' => array('canEnterBoard'),
+			'f_reply' => array('canReplyThread'),
+			'f_report' => array(),
+			'f_search' => array(),
+			'f_sigs' => array(),
+			'f_smilies' => array(),
+			'f_sticky' => array('canPinThread'),
+			'f_subscribe' => array(),
+			'f_user_lock' => array(),
+			'f_vote' => array('canVotePoll'),
+			'f_votechg' => array(),
+			'm_approve' => array('canEnableThread'),
+			'm_chgposter' => array(),
+			'm_delete' => array(
+				'canDeleteThread', 'canReadDeletedThread', 'canRestoreThread', 'canDeleteThreadCompletely',
+				'canDeletePost', 'canReadDeletedPost', 'canRestorePost', 'canDeletePostCompletely'
+			),
+			'm_edit' => array('canEditPost'),
+			'm_info' => array(),
+			'm_lock' => array('canCloseThread', 'canReplyClosedThread'),
+			'm_merge' => array('canMergeThread', 'canMergePost'),
+			'm_move' => array('canMoveThread', 'canMovePost'),
+			'm_report' => array(),
+			'm_split' => array()
 		);
 		
 		foreach ($data as $id => $forumData) {
