@@ -984,10 +984,9 @@ class PhpBB3xExporter extends AbstractExporter {
 	 * Exports ACLs.
 	 */
 	public function exportACLs($offset, $limit) {
-		// TODO: ACLs are untested
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."acl_options
-			WHER		is_local = ?";
+			WHERE		is_local = ?";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute(array(1));
 		$options = array();
