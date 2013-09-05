@@ -82,14 +82,14 @@ class SMF2xExporter extends AbstractExporter {
 	 */
 	public function getSupportedData() {
 		return array(
-			/*'com.woltlab.wcf.user' => array(
+			'com.woltlab.wcf.user' => array(
 				'com.woltlab.wcf.user.group',
-				'com.woltlab.wcf.user.avatar',
+			/*	'com.woltlab.wcf.user.avatar',
 				'com.woltlab.wcf.user.option',
 				'com.woltlab.wcf.user.follower',
-				'com.woltlab.wcf.user.rank'
+				'com.woltlab.wcf.user.rank'*/
 			),
-			'com.woltlab.wbb.board' => array(
+			/*'com.woltlab.wbb.board' => array(
 				'com.woltlab.wbb.acl',
 				'com.woltlab.wbb.attachment',
 				'com.woltlab.wbb.poll',
@@ -112,12 +112,12 @@ class SMF2xExporter extends AbstractExporter {
 		
 		$sql = "SELECT	value
 			FROM	".$this->databasePrefix."settings
-			WHERE	Variable = ?";
+			WHERE	variable = ?";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute(array('smfVersion'));
 		$row = $statement->fetchArray();
 		
-		if (version_compare('2.0.0', $row['value'], '<=')) throw new DatabaseException('Cannot import less than SMF 2.x', $this->database);
+		if (version_compare($row['value'], '2.0.0', '<=')) throw new DatabaseException('Cannot import less than SMF 2.x', $this->database);
 	}
 	
 	/**
@@ -136,14 +136,14 @@ class SMF2xExporter extends AbstractExporter {
 	 */
 	public function getQueue() {
 		$queue = array();
-		/*
+		
 		// user
 		if (in_array('com.woltlab.wcf.user', $this->selectedData)) {
 			if (in_array('com.woltlab.wcf.user.group', $this->selectedData)) {
 				$queue[] = 'com.woltlab.wcf.user.group';
-				if (in_array('com.woltlab.wcf.user.rank', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.rank';
+			/*	if (in_array('com.woltlab.wcf.user.rank', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.rank';*/
 			}
-			
+			/*
 			if (in_array('com.woltlab.wcf.user.option', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.option';
 			$queue[] = 'com.woltlab.wcf.user';
 			if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.avatar';
@@ -156,9 +156,9 @@ class SMF2xExporter extends AbstractExporter {
 				
 				$queue[] = 'com.woltlab.wcf.conversation';
 				$queue[] = 'com.woltlab.wcf.conversation.user';
-			}
+			}*/
 		}
-		
+		/*
 		// board
 		if (in_array('com.woltlab.wbb.board', $this->selectedData)) {
 			$queue[] = 'com.woltlab.wbb.board';
@@ -189,4 +189,35 @@ class SMF2xExporter extends AbstractExporter {
 	public function getDefaultDatabasePrefix() {
 		return 'smf_';
 	}
+	
+	/**
+	 * Counts user groups.
+	 */
+	public function countUserGroups() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."membergroups";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports user groups.
+	 */
+	public function exportUserGroups($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."membergroups
+			ORDER BY	id_group ASC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.group')->import($row['id_group'], array(
+				'groupName' => $row['group_name'],
+				'groupType' => UserGroup::OTHER,
+				'userOnlineMarking' => '<span style="color: '.$row['online_color'].';">%s</span>',
+			));
+		}
+	}
+	
 }
