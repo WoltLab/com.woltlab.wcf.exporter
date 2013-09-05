@@ -304,7 +304,7 @@ class PhpBB3xExporter extends AbstractExporter {
 				'banReason' => $row['banReason'],
 				'registrationIpAddress' => UserUtil::convertIPv4To6($row['user_ip']),
 				'signature' => self::fixBBCodes(StringUtil::decodeHTML($row['user_sig']), $row['user_sig_bbcode_uid']),
-				'signatureEnableBBCodes' => ($row['user_sig_bbcode_uid'] ? (StringUtil::indexOf($row['user_sig'], $row['user_sig_bbcode_uid']) !== false ? 1 : 0) : 1),
+				'signatureEnableBBCodes' => ($row['user_sig_bbcode_uid'] ? (mb_strpos($row['user_sig'], $row['user_sig_bbcode_uid']) !== false ? 1 : 0) : 1),
 				'signatureEnableHtml' => 0,
 				'signatureEnableSmilies' => preg_match('/<!-- s.*? -->/', $row['user_sig']),
 				'lastActivityTime' => $row['user_lastvisit']
@@ -470,7 +470,7 @@ class PhpBB3xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.label')->import($row['folder_id'], array(
 				'userID' => $row['user_id'],
-				'label' => StringUtil::substring($row['folder_name'], 0, 80)
+				'label' => mb_substr($row['folder_name'], 0, 80)
 			));
 		}
 	}
@@ -1149,7 +1149,7 @@ class PhpBB3xExporter extends AbstractExporter {
 			
 			$aliases = explode("\n", $row['aliases']);
 			$code = array_shift($aliases);
-			$emotion = StringUtil::substring($row['emotion'], 0, StringUtil::indexOf($row['emotion'], "\n") ?: StringUtil::length($row['emotion'])); // we had to GROUP_CONCAT it because of SQL strict mode
+			$emotion = mb_substr($row['emotion'], 0, mb_strpos($row['emotion'], "\n") ?: mb_strlen($row['emotion'])); // we had to GROUP_CONCAT it because of SQL strict mode
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.smiley')->import($row['smiley_id'], array(
 				'smileyTitle' => $emotion,
