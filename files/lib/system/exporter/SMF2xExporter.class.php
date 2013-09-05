@@ -143,10 +143,10 @@ class SMF2xExporter extends AbstractExporter {
 				$queue[] = 'com.woltlab.wcf.user.group';
 			/*	if (in_array('com.woltlab.wcf.user.rank', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.rank';*/
 			}
-			/*
-			if (in_array('com.woltlab.wcf.user.option', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.option';
+			
+			/*if (in_array('com.woltlab.wcf.user.option', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.option';*/
 			$queue[] = 'com.woltlab.wcf.user';
-			if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.avatar';
+			/*if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.avatar';
 			
 			if (in_array('com.woltlab.wcf.user.follower', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.follower';
 			
@@ -220,4 +220,64 @@ class SMF2xExporter extends AbstractExporter {
 		}
 	}
 	
+	/**
+	 * Counts users.
+	 */
+	public function countUsers() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."members";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports users.
+	 */
+	public function exportUsers($offset, $limit) {
+		// prepare password update
+		$sql = "UPDATE	wcf".WCF_N."_user
+			SET	password = ?
+			WHERE	userID = ?";
+		$passwordUpdateStatement = WCF::getDB()->prepareStatement($sql);
+		
+		// get users
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."members
+			ORDER BY	id_member ASC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		
+		while ($row = $statement->fetchArray()) {
+			$data = array(
+				'username' => $row['member_name'],
+				'password' => '',
+				'email' => $row['email_address'],
+				'registrationDate' => $row['date_registered'],
+				'banned' => 0, // TODO: banned
+				'banReason' => '',
+				'activationCode' => $row['validation_code'] ? UserRegistrationUtil::getActivationCode() : 0, // smf's codes are strings
+				'registrationIpAddress' => '', // TODO: Find out whether and where this is saved
+				'signature' => $row['signature'],
+				'signatureEnableBBCodes' => 1,
+				'signatureEnableHtml' => 0,
+				'signatureEnableSmilies' => 1,
+				'userTitle' => $row['usertitle'],
+				'lastActivityTime' => $row['last_login']
+			);
+			$additionalData = array(
+				'groupIDs' => explode(',', $row['additional_groups'].','.$row['id_group']),
+				'options' => array()
+			);
+			
+			// import user
+			$newUserID = ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user')->import($row['id_member'], $data, $additionalData);
+			
+			// update password hash
+			if ($newUserID) {
+				$passwordUpdateStatement->execute(array('smf2:'.$row['passwd'].':'.$row['password_salt'], $newUserID));
+			}
+		}
+	}
 }
