@@ -1177,7 +1177,7 @@ class WBB3xExporter extends AbstractExporter {
 				'objectID' => $row['messageID'],
 				'question' => $row['question'],
 				'time' => $row['time'],
-				'endTime' => $row['endTime'],
+				'endTime' => ($row['endTime'] > 2147483647 ? 2147483647 : $row['endTime']),
 				'isChangeable' => ($row['votesNotChangeable'] ? 0 : 1),
 				'isPublic' => (!empty($row['isPublic']) ? $row['isPublic'] : 0),
 				'sortByVotes' => $row['sortByResult'],
