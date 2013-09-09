@@ -709,7 +709,7 @@ class WBB3xExporter extends AbstractExporter {
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.label')->import($row['folderID'], array(
 				'userID' => $row['userID'],
-				'label' => StringUtil::substring($row['folderName'], 0, 80),
+				'label' => mb_substr($row['folderName'], 0, 80),
 				'cssClassName' => $cssClassName
 			));
 		}
@@ -1408,7 +1408,7 @@ class WBB3xExporter extends AbstractExporter {
 				foreach ($labels as $label) {
 					ImportHandler::getInstance()->getImporter('com.woltlab.wcf.label')->import($key.'-'.$label, array(
 						'groupID' => $key,
-						'label' => StringUtil::substring($label, 0, 80)
+						'label' => mb_substr($label, 0, 80)
 					));
 				}
 				

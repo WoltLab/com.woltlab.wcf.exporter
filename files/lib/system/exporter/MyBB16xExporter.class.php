@@ -225,7 +225,7 @@ class MyBB16xExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.group')->import($row['gid'], array(
 				'groupName' => $row['title'],
 				'groupType' => UserGroup::OTHER,
-				'userOnlineMarking' => StringUtil::replace('{username}', '%s', $row['namestyle']),
+				'userOnlineMarking' => str_replace('{username}', '%s', $row['namestyle']),
 				'showOnTeamPage' => $row['showforumteam'],
 				'priority' => $row['disporder'] ? pow(2, 10 - $row['disporder']) : 0 // TODO: Do we what this?
 			));
@@ -1165,7 +1165,7 @@ class MyBB16xExporter extends AbstractExporter {
 			$videoRegex = new Regex('\[video=[a-z]+\]');
 			$quoteRegex = new Regex('\[quote=\'(.*?)\' pid=\'(\d+)\' dateline=\'\d+\'\]');
 			$quoteCallback = new Callback(function ($matches) {
-				$username = StringUtil::replace(array("\\", "'"), array("\\\\", "\'"), $matches[1]);
+				$username = str_replace(array("\\", "'"), array("\\\\", "\'"), $matches[1]);
 				$postID = $matches[2];
 				
 				$postLink = LinkHandler::getInstance()->getLink('Thread', array(
@@ -1173,18 +1173,18 @@ class MyBB16xExporter extends AbstractExporter {
 					'postID' => $postID,
 					'forceFrontend' => true
 				)).'#post'.$postID;
-				$postLink = StringUtil::replace(array("\\", "'"), array("\\\\", "\'"), $postLink);
+				$postLink = str_replace(array("\\", "'"), array("\\\\", "\'"), $postLink);
 				
 				return "[quote='".$username."','".$postLink."']";
 			});
 		}
 		
 		// code bbcodes
-		$message = StringUtil::replace('[php]', '[code=php]', $message);
+		$message = str_replace('[php]', '[code=php]', $message);
 		
 		// media bbcodes
 		$message = $videoRegex->replace($message, '[media]\\1');
-		$message = StringUtil::replace('[/video]', '[/media]', $message);
+		$message = str_replace('[/video]', '[/media]', $message);
 		
 		// quotes
 		$message = $quoteRegex->replace($message, $quoteCallback);
