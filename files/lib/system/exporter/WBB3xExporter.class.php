@@ -822,7 +822,7 @@ class WBB3xExporter extends AbstractExporter {
 			FROM		wcf".$this->dbNo."_pm_to_user pm_to_user
 			LEFT JOIN	wcf".$this->dbNo."_pm pm
 			ON		(pm.pmID = pm_to_user.pmID)
-			ORDER BY	pm_to_user.pmID DESC, pm_to_user.recipientID";
+			ORDER BY	pm_to_user.pmID DESC, pm_to_user.recipientID DESC";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
