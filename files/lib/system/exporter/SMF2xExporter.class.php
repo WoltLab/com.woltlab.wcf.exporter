@@ -84,8 +84,8 @@ class SMF2xExporter extends AbstractExporter {
 		return array(
 			'com.woltlab.wcf.user' => array(
 				'com.woltlab.wcf.user.group',
-			/*	'com.woltlab.wcf.user.avatar',
-				'com.woltlab.wcf.user.option',*/
+				'com.woltlab.wcf.user.avatar',
+			/*	'com.woltlab.wcf.user.option',*/
 				'com.woltlab.wcf.user.follower',
 				'com.woltlab.wcf.user.rank'
 			),
@@ -146,7 +146,7 @@ class SMF2xExporter extends AbstractExporter {
 			
 			/*if (in_array('com.woltlab.wcf.user.option', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.option';*/
 			$queue[] = 'com.woltlab.wcf.user';
-			/*if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.avatar';*/
+			if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.avatar';
 			
 			if (in_array('com.woltlab.wcf.user.follower', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.follower';
 			/*
@@ -348,6 +348,55 @@ class SMF2xExporter extends AbstractExporter {
 					'followUserID' => $buddy
 				));
 			}
+		}
+	}
+
+	/**
+	 * Counts user avatars.
+	 */
+	public function countUserAvatars() {
+		$sql = "SELECT	(SELECT COUNT(*) AS count FROM ".$this->databasePrefix."attachments WHERE id_member <> ?)
+				+ (SELECT	COUNT(*) AS count FROM ".$this->databasePrefix."members WHERE avatar <> ?) AS count";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array('', 0));
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports user avatars.
+	 */
+	public function exportUserAvatars($offset, $limit) {
+		$sql = "(
+				SELECT		id_member, 'attachment' AS type, filename AS avatarName, (id_attach || '_' || file_hash) AS filename
+				FROM		".$this->databasePrefix."attachments
+				WHERE		id_member <> ?
+			)
+			UNION
+			(
+				SELECT		id_member, 'user' AS type, avatar AS avatarName, avatar AS filename
+				FROM		".$this->databasePrefix."members
+				WHERE		avatar <> ?
+			)";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute(array('', 0));
+	
+		while ($row = $statement->fetchArray()) {
+			switch ($row['type']) {
+				case 'attachment':
+					$fileLocation = $this->fileSystemPath.'attachments/'.$row['filename'];
+				break;
+				case 'user':
+					if (FileUtil::isURL($row['filename'])) return;
+					$fileLocation = $this->fileSystemPath.'avatars/'.$row['filename'];
+				break;
+			}
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.avatar')->import(0, array(
+				'avatarName' => basename($row['avatarName']),
+				'avatarExtension' => pathinfo($row['avatarName'], PATHINFO_EXTENSION),
+				'userID' => $row['id_member']
+			), array('fileLocation' => $fileLocation));
 		}
 	}
 }
