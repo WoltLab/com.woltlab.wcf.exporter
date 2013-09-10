@@ -1860,7 +1860,7 @@ class WBB3xExporter extends AbstractExporter {
 	
 	private function getTags($name, array $objectIDs) {
 		$tags = array();
-		if (substr($this->getPackageVersion('com.woltlab.wcf'), 0, 3) == '1.1') {
+		if (substr($this->getPackageVersion('com.woltlab.wcf'), 0, 3) == '1.1' && $this->getPackageVersion('com.woltlab.wcf.tagging')) {
 			// get taggable id
 			$sql = "SELECT		taggableID
 				FROM		wcf".$this->dbNo."_tag_taggable
