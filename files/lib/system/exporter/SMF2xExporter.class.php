@@ -86,8 +86,8 @@ class SMF2xExporter extends AbstractExporter {
 				'com.woltlab.wcf.user.group',
 			/*	'com.woltlab.wcf.user.avatar',
 				'com.woltlab.wcf.user.option',
-				'com.woltlab.wcf.user.follower',
-				'com.woltlab.wcf.user.rank'*/
+				'com.woltlab.wcf.user.follower',*/
+				'com.woltlab.wcf.user.rank'
 			),
 			/*'com.woltlab.wbb.board' => array(
 				'com.woltlab.wbb.acl',
@@ -141,7 +141,7 @@ class SMF2xExporter extends AbstractExporter {
 		if (in_array('com.woltlab.wcf.user', $this->selectedData)) {
 			if (in_array('com.woltlab.wcf.user.group', $this->selectedData)) {
 				$queue[] = 'com.woltlab.wcf.user.group';
-			/*	if (in_array('com.woltlab.wcf.user.rank', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.rank';*/
+				if (in_array('com.woltlab.wcf.user.rank', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.rank';
 			}
 			
 			/*if (in_array('com.woltlab.wcf.user.option', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.option';*/
@@ -278,6 +278,41 @@ class SMF2xExporter extends AbstractExporter {
 			if ($newUserID) {
 				$passwordUpdateStatement->execute(array('smf2:'.$row['passwd'].':'.$row['password_salt'], $newUserID));
 			}
+		}
+	}
+
+	/**
+	 * Counts user ranks.
+	 */
+	public function countUserRanks() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."membergroups
+			WHERE	min_posts <> ?";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array(-1));
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports user ranks.
+	 */
+	public function exportUserRanks($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."membergroups
+			WHERE		min_posts <> ?
+			ORDER BY	id_group";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute(array(-1));
+		while ($row = $statement->fetchArray()) {
+			list($repeatImage, $rankImage) = explode('#', $row['stars'], 2);
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.rank')->import($row['id_group'], array(
+				'groupID' => $row['id_group'],
+				'requiredPoints' => $row['min_posts'] * 5,
+				'rankTitle' => $row['group_name'],
+				'rankImage' => $rankImage,
+				'repeatImage' => $repeatImage
+			));
 		}
 	}
 }
