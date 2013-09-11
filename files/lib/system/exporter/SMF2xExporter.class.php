@@ -660,7 +660,7 @@ class SMF2xExporter extends AbstractExporter {
 				'boardID' => $row['id_board'],
 				'topic' => $row['subject'],
 				'time' => $row['time'],
-				'userID' => $row['id_member_started'] ?: null,
+				'userID' => $row['id_member_started'],
 				'username' => $row['username'],
 				'views' => $row['num_views'],
 				'isAnnouncement' => 0,
