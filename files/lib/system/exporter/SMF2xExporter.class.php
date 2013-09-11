@@ -89,14 +89,14 @@ class SMF2xExporter extends AbstractExporter {
 				'com.woltlab.wcf.user.follower',
 				'com.woltlab.wcf.user.rank'
 			),
-			/*'com.woltlab.wbb.board' => array(
-				'com.woltlab.wbb.acl',
+			'com.woltlab.wbb.board' => array(
+				/*'com.woltlab.wbb.acl',
 				'com.woltlab.wbb.attachment',
 				'com.woltlab.wbb.poll',
 				'com.woltlab.wbb.watchedThread',
 				'com.woltlab.wbb.like',
-				'com.woltlab.wcf.label'
-			),*/
+				'com.woltlab.wcf.label'*/
+			),
 			'com.woltlab.wcf.conversation' => array(
 				'com.woltlab.wcf.conversation.label'
 			),
@@ -159,11 +159,11 @@ class SMF2xExporter extends AbstractExporter {
 				$queue[] = 'com.woltlab.wcf.conversation.user';
 			}
 		}
-		/*
+		
 		// board
 		if (in_array('com.woltlab.wbb.board', $this->selectedData)) {
 			$queue[] = 'com.woltlab.wbb.board';
-			if (in_array('com.woltlab.wcf.label', $this->selectedData)) $queue[] = 'com.woltlab.wcf.label';
+			/*if (in_array('com.woltlab.wcf.label', $this->selectedData)) $queue[] = 'com.woltlab.wcf.label';
 			$queue[] = 'com.woltlab.wbb.thread';
 			$queue[] = 'com.woltlab.wbb.post';
 			
@@ -175,10 +175,10 @@ class SMF2xExporter extends AbstractExporter {
 				$queue[] = 'com.woltlab.wbb.poll.option';
 				$queue[] = 'com.woltlab.wbb.poll.option.vote';
 			}
-			if (in_array('com.woltlab.wbb.like', $this->selectedData)) $queue[] = 'com.woltlab.wbb.like';
+			if (in_array('com.woltlab.wbb.like', $this->selectedData)) $queue[] = 'com.woltlab.wbb.like';*/
 		}
 		
-		// smiley
+		/*// smiley
 		if (in_array('com.woltlab.wcf.smiley', $this->selectedData)) $queue[] = 'com.woltlab.wcf.smiley';
 		*/
 		return $queue;
@@ -563,6 +563,73 @@ class SMF2xExporter extends AbstractExporter {
 				'isInvisible' => $row['bcc'] ? 1 : 0,
 				'lastVisitTime' => $row['is_new'] ? 0 : 1
 			), array('labelIDs' => $labels));
+		}
+	}
+	
+	/**
+	 * Counts boards.
+	 */
+	public function countBoards() {
+		$sql = "SELECT	(SELECT COUNT(*) FROM ".$this->databasePrefix."boards)
+				+ (SELECT COUNT(*) FROM ".$this->databasePrefix."categories) AS count";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return ($row['count'] ? 1 : 0);
+	}
+	
+	/**
+	 * Exports boards.
+	 */
+	public function exportBoards($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."categories
+			ORDER BY	id_cat ASC";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import('cat-'.$row['id_cat'], array(
+				'parentID' => null,
+				'position' => $row['cat_order'],
+				'boardType' => Board::TYPE_CATEGORY,
+				'title' => $row['name']
+			));
+		}
+		
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."boards
+			ORDER BY	id_board ASC";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			$this->boardCache[$row['id_parent']][] = $row;
+		}
+		
+		$this->exportBoardsRecursively();
+	}
+
+	/**
+	 * Exports the boards recursively.
+	 */
+	protected function exportBoardsRecursively($parentID = 0) {
+		if (!isset($this->boardCache[$parentID])) return;
+		
+		foreach ($this->boardCache[$parentID] as $board) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import($board['id_board'], array(
+				'parentID' => ($board['id_parent'] ?: 'cat-'.$board['id_cat']),
+				'position' => $board['board_order'],
+				'boardType' => $board['redirect'] ? Board::TYPE_LINK : Board::TYPE_BOARD,
+				'title' => $board['name'],
+				'description' => $board['description'],
+				'descriptionUseHtml' => 1,
+				'externalURL' => $board['redirect'],
+				'countUserPosts' => $board['count_posts'] ? 0 : 1, // this column name is SLIGHTLY misleading
+				'clicks' => $board['num_posts'],
+				'posts' => $board['num_posts'],
+				'threads' => $board['num_topics']
+			));
+	
+			$this->exportBoardsRecursively($board['id_board']);
 		}
 	}
 	
