@@ -154,8 +154,9 @@ class SMF2xExporter extends AbstractExporter {
 			if (in_array('com.woltlab.wcf.conversation', $this->selectedData)) {
 				if (in_array('com.woltlab.wcf.conversation.label', $this->selectedData)) $queue[] = 'com.woltlab.wcf.conversation.label';
 				
-				/*$queue[] = 'com.woltlab.wcf.conversation';
-				$queue[] = 'com.woltlab.wcf.conversation.user';*/
+				$queue[] = 'com.woltlab.wcf.conversation';
+				$queue[] = 'com.woltlab.wcf.conversation.message';
+				/*$queue[] = 'com.woltlab.wcf.conversation.user';*/
 			}
 		}
 		/*
@@ -434,5 +435,95 @@ class SMF2xExporter extends AbstractExporter {
 				));
 			}
 		}
+	}
+	
+	/**
+	 * Counts conversations.
+	 */
+	public function countConversations() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."personal_messages
+			WHERE	id_pm = id_pm_head";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports conversations.
+	 */
+	public function exportConversations($offset, $limit) {
+		$sql = "INSERT IGNORE INTO	wcf".WCF_N."_conversation_to_user
+						(conversationID, participantID, hideConversation, isInvisible, lastVisitTime)
+			VALUES			(?, ?, ?, ?, ?)";
+		$insertStatement = WCF::getDB()->prepareStatement($sql);
+		
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."personal_messages
+			WHERE		id_pm = id_pm_head
+			ORDER BY	id_pm";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute(array(0));
+		while ($row = $statement->fetchArray()) {
+			$conversationID = ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import($row['id_pm'], array(
+				'subject' => $row['subject'],
+				'time' => $row['msgtime'],
+				'userID' => $row['id_member_from'],
+				'username' => $row['from_name'],
+				'isDraft' => 0 // TODO: isDraft
+			));
+			
+			// add author
+			$insertStatement->execute(array(
+				$conversationID,
+				ImportHandler::getInstance()->getNewID('com.woltlab.wcf.user', $row['id_member_from']),
+				0,
+				0,
+				TIME_NOW
+			));
+		}
+	}
+	
+	/**
+	 * Counts conversation messages.
+	 */
+	public function countConversationMessages() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."personal_messages";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports conversation messages.
+	 */
+	public function exportConversationMessages($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."personal_messages
+			ORDER BY	id_pm";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.message')->import($row['id_pm'], array(
+				'conversationID' => $row['id_pm_head'],
+				'userID' => $row['id_member_from'],
+				'username' => $row['from_name'],
+				'message' => self::fixBBCodes($row['body']),
+				'time' => $row['msgtime'],
+				'attachments' => 0, // not supported
+				'enableSmilies' => 1,
+				'enableHtml' => 0,
+				'enableBBCodes' => 1,
+				'showSignature' => 1
+			));
+		}
+	}
+	
+	private static function fixBBCodes($message) {
+		// TODO: This is a identity function right now...
+		return $message;
 	}
 }
