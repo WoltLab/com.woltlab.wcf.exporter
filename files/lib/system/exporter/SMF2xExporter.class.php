@@ -96,11 +96,11 @@ class SMF2xExporter extends AbstractExporter {
 				'com.woltlab.wbb.watchedThread',
 				'com.woltlab.wbb.like',
 				'com.woltlab.wcf.label'
-			),
+			),*/
 			'com.woltlab.wcf.conversation' => array(
 				'com.woltlab.wcf.conversation.label'
 			),
-			'com.woltlab.wcf.smiley' => array()*/
+			/*'com.woltlab.wcf.smiley' => array()*/
 		);
 	}
 	
@@ -149,14 +149,14 @@ class SMF2xExporter extends AbstractExporter {
 			if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.avatar';
 			
 			if (in_array('com.woltlab.wcf.user.follower', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.follower';
-			/*
+			
 			// conversation
 			if (in_array('com.woltlab.wcf.conversation', $this->selectedData)) {
 				if (in_array('com.woltlab.wcf.conversation.label', $this->selectedData)) $queue[] = 'com.woltlab.wcf.conversation.label';
 				
-				$queue[] = 'com.woltlab.wcf.conversation';
-				$queue[] = 'com.woltlab.wcf.conversation.user';
-			}*/
+				/*$queue[] = 'com.woltlab.wcf.conversation';
+				$queue[] = 'com.woltlab.wcf.conversation.user';*/
+			}
 		}
 		/*
 		// board
@@ -356,7 +356,7 @@ class SMF2xExporter extends AbstractExporter {
 	 */
 	public function countUserAvatars() {
 		$sql = "SELECT	(SELECT COUNT(*) AS count FROM ".$this->databasePrefix."attachments WHERE id_member <> ?)
-				+ (SELECT	COUNT(*) AS count FROM ".$this->databasePrefix."members WHERE avatar <> ?) AS count";
+				+ (SELECT COUNT(*) AS count FROM ".$this->databasePrefix."members WHERE avatar <> ?) AS count";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute(array('', 0));
 		$row = $statement->fetchArray();
@@ -380,7 +380,7 @@ class SMF2xExporter extends AbstractExporter {
 			)";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array('', 0));
-	
+		
 		while ($row = $statement->fetchArray()) {
 			switch ($row['type']) {
 				case 'attachment':
@@ -397,6 +397,42 @@ class SMF2xExporter extends AbstractExporter {
 				'avatarExtension' => pathinfo($row['avatarName'], PATHINFO_EXTENSION),
 				'userID' => $row['id_member']
 			), array('fileLocation' => $fileLocation));
+		}
+	}
+	
+	/**
+	 * Counts conversation folders.
+	 */
+	public function countConversationFolders() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."members
+			WHERE	message_labels <> ?";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array(''));
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports conversation folders.
+	 */
+	public function exportConversationFolders($offset, $limit) {
+		$sql = "SELECT		id_member, message_labels
+			FROM		".$this->databasePrefix."members
+			WHERE		message_labels <> ?
+			ORDER BY	id_member";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute(array(''));
+		while ($row = $statement->fetchArray()) {
+			$labels = ArrayUtil::trim(explode(',', $row['message_labels']), false);
+			
+			$i = 0;
+			foreach ($labels as $label) {
+				ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.label')->import($row['id_member'].'-'.$i++, array(
+					'userID' => $row['id_member'],
+					'label' => mb_substr($label, 0, 80)
+				));
+			}
 		}
 	}
 }
