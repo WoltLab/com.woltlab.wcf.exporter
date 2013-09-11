@@ -156,7 +156,7 @@ class SMF2xExporter extends AbstractExporter {
 				
 				$queue[] = 'com.woltlab.wcf.conversation';
 				$queue[] = 'com.woltlab.wcf.conversation.message';
-				/*$queue[] = 'com.woltlab.wcf.conversation.user';*/
+				$queue[] = 'com.woltlab.wcf.conversation.user';
 			}
 		}
 		/*
@@ -519,6 +519,50 @@ class SMF2xExporter extends AbstractExporter {
 				'enableBBCodes' => 1,
 				'showSignature' => 1
 			));
+		}
+	}
+	
+	/**
+	 * Counts conversation recipients.
+	 */
+	public function countConversationUsers() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."pm_recipients";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports conversation recipients.
+	 */
+	public function exportConversationUsers($offset, $limit) {
+		$sql = "SELECT		recipients.*, pm.id_pm_head, members.member_name
+			FROM		".$this->databasePrefix."pm_recipients recipients
+			LEFT JOIN	".$this->databasePrefix."personal_messages pm
+			ON		(pm.id_pm = recipients.id_pm)
+			LEFT JOIN	".$this->databasePrefix."members members
+			ON		(recipients.id_member = members.id_member)
+			ORDER BY	recipients.id_pm ASC, recipients.id_member ASC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			$labels = array_map(function ($item) use ($row) {
+				return $row['id_member'].'-'.$item;
+			}, array_unique(ArrayUtil::toIntegerArray(explode(',', $row['labels']))));
+			$labels = array_filter($labels, function ($item) {
+				return $item != '-1';
+			});
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.user')->import(0, array(
+				'conversationID' => $row['id_pm_head'],
+				'participantID' => $row['id_member'],
+				'username' => $row['member_name'],
+				'hideConversation' => $row['deleted'] ? 1 : 0,
+				'isInvisible' => $row['bcc'] ? 1 : 0,
+				'lastVisitTime' => $row['is_new'] ? 0 : 1
+			), array('labelIDs' => $labels));
 		}
 	}
 	
