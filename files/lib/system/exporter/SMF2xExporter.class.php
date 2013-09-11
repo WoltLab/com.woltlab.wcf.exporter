@@ -94,8 +94,7 @@ class SMF2xExporter extends AbstractExporter {
 				'com.woltlab.wbb.attachment',
 				'com.woltlab.wbb.poll',
 				'com.woltlab.wbb.watchedThread',
-				'com.woltlab.wbb.like',
-				'com.woltlab.wcf.label'*/
+				'com.woltlab.wbb.like'*/
 			),
 			'com.woltlab.wcf.conversation' => array(
 				'com.woltlab.wcf.conversation.label'
@@ -163,9 +162,8 @@ class SMF2xExporter extends AbstractExporter {
 		// board
 		if (in_array('com.woltlab.wbb.board', $this->selectedData)) {
 			$queue[] = 'com.woltlab.wbb.board';
-			/*if (in_array('com.woltlab.wcf.label', $this->selectedData)) $queue[] = 'com.woltlab.wcf.label';
 			$queue[] = 'com.woltlab.wbb.thread';
-			$queue[] = 'com.woltlab.wbb.post';
+			/*$queue[] = 'com.woltlab.wbb.post';
 			
 			if (in_array('com.woltlab.wbb.acl', $this->selectedData)) $queue[] = 'com.woltlab.wbb.acl';
 			if (in_array('com.woltlab.wbb.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wbb.attachment';
@@ -628,8 +626,50 @@ class SMF2xExporter extends AbstractExporter {
 				'posts' => $board['num_posts'],
 				'threads' => $board['num_topics']
 			));
-	
+			
 			$this->exportBoardsRecursively($board['id_board']);
+		}
+	}
+	
+	/**
+	 * Counts threads.
+	 */
+	public function countThreads() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."topics";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports threads.
+	 */
+	public function exportThreads($offset, $limit) {
+		// get threads
+		$sql = "SELECT		topic.*, post.subject, post.poster_time AS time, post.poster_name AS username
+			FROM		".$this->databasePrefix."topics topic
+			LEFT JOIN	".$this->databasePrefix."messages post
+			ON		(post.id_msg = topic.id_first_msg)
+			ORDER BY	id_topic ASC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.thread')->import($row['id_topic'], array(
+				'boardID' => $row['id_board'],
+				'topic' => $row['subject'],
+				'time' => $row['time'],
+				'userID' => $row['id_member_started'] ?: null,
+				'username' => $row['username'],
+				'views' => $row['num_views'],
+				'isAnnouncement' => 0,
+				'isSticky' => $row['is_sticky'] ? 1 : 0,
+				'isDisabled' => $row['approved'] ? 0 : 1,
+				'isClosed' => $row['locked'] ? 1 : 0,
+				'movedThreadID' => null, // TODO: Maybe regex this out of the body?
+				'movedTime' => 0
+			));
 		}
 	}
 	
