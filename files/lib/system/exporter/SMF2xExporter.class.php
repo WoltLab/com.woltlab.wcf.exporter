@@ -163,9 +163,9 @@ class SMF2xExporter extends AbstractExporter {
 		if (in_array('com.woltlab.wbb.board', $this->selectedData)) {
 			$queue[] = 'com.woltlab.wbb.board';
 			$queue[] = 'com.woltlab.wbb.thread';
-			/*$queue[] = 'com.woltlab.wbb.post';
+			$queue[] = 'com.woltlab.wbb.post';
 			
-			if (in_array('com.woltlab.wbb.acl', $this->selectedData)) $queue[] = 'com.woltlab.wbb.acl';
+			/*if (in_array('com.woltlab.wbb.acl', $this->selectedData)) $queue[] = 'com.woltlab.wbb.acl';
 			if (in_array('com.woltlab.wbb.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wbb.attachment';
 			if (in_array('com.woltlab.wbb.watchedThread', $this->selectedData)) $queue[] = 'com.woltlab.wbb.watchedThread';
 			if (in_array('com.woltlab.wbb.poll', $this->selectedData)) {
@@ -672,9 +672,64 @@ class SMF2xExporter extends AbstractExporter {
 			));
 		}
 	}
+
+	/**
+	 * Counts posts.
+	 */
+	public function countPosts() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."messages";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports posts.
+	 */
+	public function exportPosts($offset, $limit) {
+		$sql = "SELECT		message.*, member.id_member AS editorID
+			FROM		".$this->databasePrefix."messages message
+			LEFT JOIN	".$this->databasePrefix."members member
+			ON		(message.modified_name = member.real_name)
+			ORDER BY	id_msg";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.post')->import($row['id_msg'], array(
+				'threadID' => $row['id_topic'],
+				'userID' => $row['id_member'],
+				'username' => $row['poster_name'],
+				'subject' => $row['subject'],
+				'message' => self::fixBBCodes($row['body']),
+				'time' => $row['poster_time'],
+				'isDisabled' => $row['approved'] ? 0 : 1,
+				'editorID' => ($row['editorID'] ?: null),
+				'editor' => $row['modified_name'],
+				'lastEditTime' => $row['modified_time'],
+				'editCount' => $row['modified_time'] ? 1 : 0,
+				'editReason' => (!empty($row['editReason']) ? $row['editReason'] : ''),
+				'enableSmilies' => $row['smileys_enabled'],
+				'enableHtml' => 0,
+				'enableBBCodes' => 1,
+				'showSignature' => 1,
+				'ipAddress' => UserUtil::convertIPv4To6($row['poster_ip'])
+			));
+		}
+	}
 	
 	private static function fixBBCodes($message) {
-		// TODO: This is a identity function right now...
+		$message = str_replace(array(
+			'<br />',
+			'[iurl]',
+			'[/iurl]'
+		), array(
+			"\n",
+			'[url]',
+			'[/url]'
+		), $message);
+		// TODO: what's missing?
 		return $message;
 	}
 }
