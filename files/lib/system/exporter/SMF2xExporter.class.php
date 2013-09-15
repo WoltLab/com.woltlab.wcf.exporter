@@ -248,7 +248,7 @@ class SMF2xExporter extends AbstractExporter {
 				'banned' => 0, // TODO: banned
 				'banReason' => '',
 				'activationCode' => $row['validation_code'] ? UserRegistrationUtil::getActivationCode() : 0, // smf's codes are strings
-				'registrationIpAddress' => '', // TODO: Find out whether and where this is saved
+				'registrationIpAddress' => $row['member_ip'], // member_ip2 is HTTP_X_FORWARDED_FOR
 				'signature' => $row['signature'],
 				'signatureEnableBBCodes' => 1,
 				'signatureEnableHtml' => 0,
