@@ -98,7 +98,7 @@ class SMF2xExporter extends AbstractExporter {
 			'com.woltlab.wcf.conversation' => array(
 				'com.woltlab.wcf.conversation.label'
 			),
-			/*'com.woltlab.wcf.smiley' => array()*/
+			'com.woltlab.wcf.smiley' => array()
 		);
 	}
 	
@@ -174,9 +174,9 @@ class SMF2xExporter extends AbstractExporter {
 			}
 		}
 		
-		/*// smiley
+		// smiley
 		if (in_array('com.woltlab.wcf.smiley', $this->selectedData)) $queue[] = 'com.woltlab.wcf.smiley';
-		*/
+		
 		return $queue;
 	}
 	
@@ -381,6 +381,7 @@ class SMF2xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			switch ($row['type']) {
 				case 'attachment':
+					// TODO: read option attachmentUploadDir
 					$fileLocation = $this->fileSystemPath.'attachments/'.$row['filename'];
 				break;
 				case 'user':
@@ -745,6 +746,7 @@ class SMF2xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array(0, 0));
 		while ($row = $statement->fetchArray()) {
+			// TODO: read option attachmentUploadDir
 			$fileLocation = $this->fileSystemPath.'attachments/'.$row['id_attach'].'_'.$row['file_hash'];
 			
 			if ($imageSize = getimagesize($fileLocation)) {
@@ -901,6 +903,49 @@ class SMF2xExporter extends AbstractExporter {
 				'optionID' => $row['id_poll'].'-'.$row['id_choice'],
 				'userID' => $row['id_member']
 			));
+		}
+	}
+	
+	/**
+	 * Counts smilies.
+	 */
+	public function countSmilies() {
+		$sql = "SELECT	COUNT(DISTINCT filename) AS count
+			FROM	".$this->databasePrefix."smileys";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports smilies.
+	 */
+	public function exportSmilies($offset, $limit) {
+		$sql = "SELECT		MIN(id_smiley) AS id_smiley,
+					GROUP_CONCAT(code SEPARATOR '\n') AS aliases,
+					filename,
+					MIN(smiley_order) AS smiley_order,
+					GROUP_CONCAT(description SEPARATOR '\n') AS description
+			FROM		".$this->databasePrefix."smileys
+			GROUP BY	filename
+			ORDER BY	id_smiley ASC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute(array());
+		while ($row = $statement->fetchArray()) {
+			// TODO: read options: smileys_dir, smiley_sets_default
+			$fileLocation = $this->fileSystemPath.'Smileys/default/'.$row['filename'];
+			
+			$aliases = explode("\n", $row['aliases']);
+			$code = array_shift($aliases);
+			$description = mb_substr($row['description'], 0, mb_strpos($row['description'], "\n") ?: mb_strlen($row['description'])); // we had to GROUP_CONCAT it because of SQL strict mode
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.smiley')->import($row['id_smiley'], array(
+				'smileyTitle' => $description,
+				'smileyCode' => $code,
+				'showOrder' => $row['smiley_order'],
+				'aliases' => implode("\n", $aliases)
+			), array('fileLocation' => $fileLocation));
 		}
 	}
 	
