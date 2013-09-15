@@ -108,14 +108,7 @@ class SMF2xExporter extends AbstractExporter {
 	public function validateDatabaseAccess() {
 		parent::validateDatabaseAccess();
 		
-		$sql = "SELECT	value
-			FROM	".$this->databasePrefix."settings
-			WHERE	variable = ?";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array('smfVersion'));
-		$row = $statement->fetchArray();
-		
-		if (version_compare($row['value'], '2.0.0', '<=')) throw new DatabaseException('Cannot import less than SMF 2.x', $this->database);
+		if (version_compare($this->readOption('smfVersion'), '2.0.0', '<=')) throw new DatabaseException('Cannot import less than SMF 2.x', $this->database);
 	}
 	
 	/**
@@ -381,12 +374,11 @@ class SMF2xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			switch ($row['type']) {
 				case 'attachment':
-					// TODO: read option attachmentUploadDir
-					$fileLocation = $this->fileSystemPath.'attachments/'.$row['filename'];
+					$fileLocation = $this->readOption('attachmentUploadDir').'/'.$row['filename'];
 				break;
 				case 'user':
 					if (FileUtil::isURL($row['filename'])) return;
-					$fileLocation = $this->fileSystemPath.'avatars/'.$row['filename'];
+					$fileLocation = $this->readOption('avatar_directory').'/'.$row['filename'];
 				break;
 			}
 			
@@ -747,7 +739,7 @@ class SMF2xExporter extends AbstractExporter {
 		$statement->execute(array(0, 0));
 		while ($row = $statement->fetchArray()) {
 			// TODO: read option attachmentUploadDir
-			$fileLocation = $this->fileSystemPath.'attachments/'.$row['id_attach'].'_'.$row['file_hash'];
+			$fileLocation = $this->readOption('attachmentUploadDir').'/'.$row['id_attach'].'_'.$row['file_hash'];
 			
 			if ($imageSize = getimagesize($fileLocation)) {
 				$row['isImage'] = 1;
@@ -933,8 +925,7 @@ class SMF2xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array());
 		while ($row = $statement->fetchArray()) {
-			// TODO: read options: smileys_dir, smiley_sets_default
-			$fileLocation = $this->fileSystemPath.'Smileys/default/'.$row['filename'];
+			$fileLocation = $this->readOption('smiley_dir').'/'.$this->readOption('smiley_sets_default').'/'.$row['filename'];
 			
 			$aliases = explode("\n", $row['aliases']);
 			$code = array_shift($aliases);
@@ -947,6 +938,23 @@ class SMF2xExporter extends AbstractExporter {
 				'aliases' => implode("\n", $aliases)
 			), array('fileLocation' => $fileLocation));
 		}
+	}
+	
+	private function readOption($optionName) {
+		static $optionCache = array();
+		
+		if (!isset($optionCache[$optionName])) {
+			$sql = "SELECT	value
+				FROM	".$this->databasePrefix."settings
+				WHERE	variable = ?";
+			$statement = $this->database->prepareStatement($sql);
+			$statement->execute(array($optionName));
+			$row = $statement->fetchArray();
+			
+			$optionCache[$optionName] = $row['value'];
+		}
+		
+		return $optionCache[$optionName];
 	}
 	
 	private static function fixBBCodes($message) {
