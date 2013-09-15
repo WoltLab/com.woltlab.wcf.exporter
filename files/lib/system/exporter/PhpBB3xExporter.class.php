@@ -231,24 +231,25 @@ class PhpBB3xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
-			if ($row['group_id'] == 1) {
-				// GUESTS
-				ImportHandler::getInstance()->saveNewID('com.woltlab.wcf.user.group', 1, UserGroup::getGroupByType(UserGroup::GUESTS)->groupID);
-				continue;
-			}
-			if ($row['group_id'] == 2) {
-				// REGISTERED
-				ImportHandler::getInstance()->saveNewID('com.woltlab.wcf.user.group', 2, UserGroup::getGroupByType(UserGroup::USERS)->groupID);
-				continue;
-			}
-			if ($row['group_id'] == 6) {
-				// BOTS
-				continue;
+			switch ($row['group_id']) {
+				case 1:
+					$groupType = UserGroup::GUESTS;
+				break;
+				case 2:
+					$groupType = UserGroup::USERS;
+				break;
+				case 6:
+					// BOTS
+					continue;
+				break;
+				default:
+					$groupType = UserGroup::OTHER;
+				break;
 			}
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.group')->import($row['group_id'], array(
 				'groupName' => $row['group_name'],
-				'groupType' => UserGroup::OTHER,
+				'groupType' => $groupType,
 				'userOnlineMarking' => ($row['group_colour'] ? '<span style="color: #'.$row['group_colour'].'">%s</span>' : '%s'),
 				'showOnTeamPage' => $row['group_legend']
 			));
