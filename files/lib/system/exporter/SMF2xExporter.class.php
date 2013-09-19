@@ -961,16 +961,26 @@ class SMF2xExporter extends AbstractExporter {
 	}
 	
 	private static function fixBBCodes($message) {
-		$message = str_replace(array(
-			'<br />',
-			'[iurl]',
-			'[/iurl]'
-		), array(
-			"\n",
-			'[url]',
-			'[/url]'
-		), $message);
-		// TODO: what's missing?
+		$message = strtr($message, array(
+			'<br />' => "\n",
+			'[iurl]' => '[url]',
+			'[/iurl]' => '[/url]',
+			'[left]' => '[align=left]',
+			'[/left]' => '[/align]',
+			'[right]' => '[align=right]',
+			'[/right]' => '[/align]',
+			'[center]' => '[align=center]',
+			'[/center]' => '[/align]',
+			'[ftp]' => '[url]',
+			'[/ftp]' => '[/url]',
+			'[php]' => '[code=php]',
+			'[/php]' => '[/code]'
+		));
+		
+		$message = Regex::compile('\[size=(8|10|12|14|18|24|34)pt\]')->replace($message, '[size=\\1]');
+		
+		$message = StringUtil::decodeHTML($message);
+		
 		return $message;
 	}
 }
