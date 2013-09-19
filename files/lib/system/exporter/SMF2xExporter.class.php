@@ -464,7 +464,7 @@ class SMF2xExporter extends AbstractExporter {
 				'time' => $row['msgtime'],
 				'userID' => $row['id_member_from'],
 				'username' => $row['from_name'],
-				'isDraft' => 0 // TODO: isDraft
+				'isDraft' => 0
 			));
 			
 			// add author
