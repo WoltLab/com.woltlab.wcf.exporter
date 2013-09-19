@@ -233,9 +233,13 @@ class SMF2xExporter extends AbstractExporter {
 		$passwordUpdateStatement = WCF::getDB()->prepareStatement($sql);
 		
 		// get users
-		$sql = "SELECT		*
-			FROM		".$this->databasePrefix."members
-			ORDER BY	id_member ASC";
+		$sql = "SELECT		member.*, ban_group.ban_time, ban_group.expire_time AS banExpire, ban_group.reason AS banReason
+			FROM		".$this->databasePrefix."members member
+			LEFT JOIN	".$this->databasePrefix."ban_items ban_item
+			ON		(member.id_member = ban_item.id_member)
+			LEFT JOIN	".$this->databasePrefix."ban_groups ban_group
+			ON		(ban_item.id_ban_group = ban_group.id_ban_group)
+			ORDER BY	member.id_member ASC";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		
@@ -245,8 +249,8 @@ class SMF2xExporter extends AbstractExporter {
 				'password' => '',
 				'email' => $row['email_address'],
 				'registrationDate' => $row['date_registered'],
-				'banned' => 0, // TODO: banned
-				'banReason' => '',
+				'banned' => ($row['ban_time'] && $row['banExpire'] === null ? 1 : 0), // only permabans are imported
+				'banReason' => $row['banReason'],
 				'activationCode' => $row['validation_code'] ? UserRegistrationUtil::getActivationCode() : 0, // smf's codes are strings
 				'registrationIpAddress' => $row['member_ip'], // member_ip2 is HTTP_X_FORWARDED_FOR
 				'signature' => $row['signature'],
@@ -738,7 +742,6 @@ class SMF2xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array(0, 0));
 		while ($row = $statement->fetchArray()) {
-			// TODO: read option attachmentUploadDir
 			$fileLocation = $this->readOption('attachmentUploadDir').'/'.$row['id_attach'].'_'.$row['file_hash'];
 			
 			if ($imageSize = getimagesize($fileLocation)) {
