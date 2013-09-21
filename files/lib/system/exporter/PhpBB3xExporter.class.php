@@ -603,7 +603,7 @@ class PhpBB3xExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.message')->import($row['msg_id'], array(
 				'conversationID' => ($row['root_level'] ?: $row['msg_id']),
 				'userID' => $row['author_id'],
-				'username' => $row['username'],
+				'username' => $row['username'] ?: '',
 				'message' => self::fixBBCodes(StringUtil::decodeHTML($row['message_text']), $row['bbcode_uid']),
 				'time' => $row['message_time'],
 				'attachments' => $row['attachments'],
@@ -741,10 +741,8 @@ class PhpBB3xExporter extends AbstractExporter {
 	public function exportThreads($offset, $limit) {
 		$boardIDs = array_keys(BoardCache::getInstance()->getBoards());
 		
-		$sql = "SELECT		topic_table.*, user_table.username
+		$sql = "SELECT		topic_table.*
 			FROM		".$this->databasePrefix."topics topic_table
-			LEFT JOIN	".$this->databasePrefix."users user_table
-			ON		topic_table.topic_poster = user_table.user_id
 			ORDER BY	topic_id ASC";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute();
@@ -754,7 +752,7 @@ class PhpBB3xExporter extends AbstractExporter {
 				'topic' => StringUtil::decodeHTML($row['topic_title']),
 				'time' => $row['topic_time'],
 				'userID' => $row['topic_poster'],
-				'username' => $row['username'],
+				'username' => $row['topic_first_poster_name'],
 				'views' => $row['topic_views'],
 				'isAnnouncement' => ($row['topic_type'] == self::TOPIC_TYPE_ANNOUCEMENT || $row['topic_type'] == self::TOPIC_TYPE_GLOBAL) ? 1 : 0,
 				'isSticky' => $row['topic_type'] == self::TOPIC_TYPE_STICKY ? 1 : 0,
@@ -801,7 +799,7 @@ class PhpBB3xExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.post')->import($row['post_id'], array(
 				'threadID' => $row['topic_id'],
 				'userID' => $row['poster_id'],
-				'username' => $row['username'],
+				'username' => ($row['post_username'] ?: ($row['username'] ?: '')),
 				'subject' => StringUtil::decodeHTML($row['post_subject']),
 				'message' => self::fixBBCodes(StringUtil::decodeHTML($row['post_text']), $row['bbcode_uid']),
 				'time' => $row['post_time'],
