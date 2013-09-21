@@ -531,7 +531,7 @@ class PhpBB3xExporter extends AbstractExporter {
 				'subject' => StringUtil::decodeHTML($row['message_subject']),
 				'time' => $row['message_time'],
 				'userID' => $row['author_id'],
-				'username' => $row['username'],
+				'username' => $row['username'] ?: null,
 				'isDraft' => $row['isDraft']
 			));
 			
@@ -631,7 +631,7 @@ class PhpBB3xExporter extends AbstractExporter {
 	 * Exports conversation recipients.
 	 */
 	public function exportConversationUsers($offset, $limit) {
-		$sql = "SELECT		to_table.*, msg_table.root_level, user_table.username
+		$sql = "SELECT		to_table.*, msg_table.root_level, msg_table.bcc_address, user_table.username
 			FROM		".$this->databasePrefix."privmsgs_to to_table
 			LEFT JOIN	".$this->databasePrefix."privmsgs msg_table
 			ON		(msg_table.msg_id = to_table.msg_id)
@@ -641,12 +641,13 @@ class PhpBB3xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
+			$bcc = explode(':', $row['bcc_address']);
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.user')->import(0, array(
 				'conversationID' => ($row['root_level'] ?: $row['msg_id']),
 				'participantID' => $row['user_id'],
-				'username' => $row['username'],
+				'username' => $row['username'] ?: null,
 				'hideConversation' => $row['pm_deleted'],
-				'isInvisible' => 0, // TODO
+				'isInvisible' => in_array('u_'.$row['user_id'], $bcc),
 				'lastVisitTime' => $row['pm_unread'] ? 0 : 1
 			), array('labelIDs' => ($row['folder_id'] > 0 ? array($row['folder_id']) : array())));
 		}
