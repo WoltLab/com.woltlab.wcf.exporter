@@ -822,7 +822,7 @@ class WBB3xExporter extends AbstractExporter {
 			FROM		wcf".$this->dbNo."_pm_to_user pm_to_user
 			LEFT JOIN	wcf".$this->dbNo."_pm pm
 			ON		(pm.pmID = pm_to_user.pmID)
-			ORDER BY	pm_to_user.pmID DESC, pm_to_user.recipientID";
+			ORDER BY	pm_to_user.pmID DESC, pm_to_user.recipientID DESC";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
@@ -1177,7 +1177,7 @@ class WBB3xExporter extends AbstractExporter {
 				'objectID' => $row['messageID'],
 				'question' => $row['question'],
 				'time' => $row['time'],
-				'endTime' => $row['endTime'],
+				'endTime' => ($row['endTime'] > 2147483647 ? 2147483647 : $row['endTime']),
 				'isChangeable' => ($row['votesNotChangeable'] ? 0 : 1),
 				'isPublic' => (!empty($row['isPublic']) ? $row['isPublic'] : 0),
 				'sortByVotes' => $row['sortByResult'],
@@ -1860,7 +1860,7 @@ class WBB3xExporter extends AbstractExporter {
 	
 	private function getTags($name, array $objectIDs) {
 		$tags = array();
-		if (substr($this->getPackageVersion('com.woltlab.wcf'), 0, 3) == '1.1') {
+		if (substr($this->getPackageVersion('com.woltlab.wcf'), 0, 3) == '1.1' && $this->getPackageVersion('com.woltlab.wcf.tagging')) {
 			// get taggable id
 			$sql = "SELECT		taggableID
 				FROM		wcf".$this->dbNo."_tag_taggable
