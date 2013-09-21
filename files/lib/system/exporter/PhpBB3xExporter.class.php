@@ -647,7 +647,7 @@ class PhpBB3xExporter extends AbstractExporter {
 				'participantID' => $row['user_id'],
 				'username' => $row['username'] ?: null,
 				'hideConversation' => $row['pm_deleted'],
-				'isInvisible' => in_array('u_'.$row['user_id'], $bcc),
+				'isInvisible' => in_array('u_'.$row['user_id'], $bcc) ? 1 : 0,
 				'lastVisitTime' => $row['pm_unread'] ? 0 : 1
 			), array('labelIDs' => ($row['folder_id'] > 0 ? array($row['folder_id']) : array())));
 		}
