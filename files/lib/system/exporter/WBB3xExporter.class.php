@@ -1421,7 +1421,7 @@ class WBB3xExporter extends AbstractExporter {
 	 * Counts ACLs.
 	 */
 	public function countACLs() {
-		$sql = "SELECT	(SELECT COUNT(*) FROM wbb".$this->dbNo."_".$this->instanceNo."_board_moderator WHERE userID <> 0)
+		$sql = "SELECT	(SELECT COUNT(*) FROM wbb".$this->dbNo."_".$this->instanceNo."_board_moderator)
 				+ (SELECT COUNT(*) FROM wbb".$this->dbNo."_".$this->instanceNo."_board_to_group)
 				+ (SELECT COUNT(*) FROM wbb".$this->dbNo."_".$this->instanceNo."_board_to_user) AS count";
 		$statement = $this->database->prepareStatement($sql);
@@ -1437,7 +1437,7 @@ class WBB3xExporter extends AbstractExporter {
 		// get ids
 		$mod = $user = $group = array();
 		$sql = "(
-				SELECT	boardID, userID, 0 AS groupID, 'mod' AS type
+				SELECT	boardID, userID, groupID, 'mod' AS type
 				FROM	wbb".$this->dbNo."_".$this->instanceNo."_board_moderator
 				WHERE	userID <> 0
 			)
