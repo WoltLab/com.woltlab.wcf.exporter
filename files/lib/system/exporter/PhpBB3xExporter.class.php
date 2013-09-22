@@ -231,24 +231,25 @@ class PhpBB3xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
-			if ($row['group_id'] == 1) {
-				// GUESTS
-				ImportHandler::getInstance()->saveNewID('com.woltlab.wcf.user.group', 1, UserGroup::getGroupByType(UserGroup::GUESTS)->groupID);
-				continue;
-			}
-			if ($row['group_id'] == 2) {
-				// REGISTERED
-				ImportHandler::getInstance()->saveNewID('com.woltlab.wcf.user.group', 2, UserGroup::getGroupByType(UserGroup::USERS)->groupID);
-				continue;
-			}
-			if ($row['group_id'] == 6) {
-				// BOTS
-				continue;
+			switch ($row['group_id']) {
+				case 1:
+					$groupType = UserGroup::GUESTS;
+				break;
+				case 2:
+					$groupType = UserGroup::USERS;
+				break;
+				case 6:
+					// BOTS
+					continue;
+				break;
+				default:
+					$groupType = UserGroup::OTHER;
+				break;
 			}
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.group')->import($row['group_id'], array(
 				'groupName' => $row['group_name'],
-				'groupType' => UserGroup::OTHER,
+				'groupType' => $groupType,
 				'userOnlineMarking' => ($row['group_colour'] ? '<span style="color: #'.$row['group_colour'].'">%s</span>' : '%s'),
 				'showOnTeamPage' => $row['group_legend']
 			));
@@ -530,7 +531,7 @@ class PhpBB3xExporter extends AbstractExporter {
 				'subject' => StringUtil::decodeHTML($row['message_subject']),
 				'time' => $row['message_time'],
 				'userID' => $row['author_id'],
-				'username' => $row['username'],
+				'username' => $row['username'] ?: null,
 				'isDraft' => $row['isDraft']
 			));
 			
@@ -602,7 +603,7 @@ class PhpBB3xExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.message')->import($row['msg_id'], array(
 				'conversationID' => ($row['root_level'] ?: $row['msg_id']),
 				'userID' => $row['author_id'],
-				'username' => $row['username'],
+				'username' => $row['username'] ?: '',
 				'message' => self::fixBBCodes(StringUtil::decodeHTML($row['message_text']), $row['bbcode_uid']),
 				'time' => $row['message_time'],
 				'attachments' => $row['attachments'],
@@ -630,7 +631,7 @@ class PhpBB3xExporter extends AbstractExporter {
 	 * Exports conversation recipients.
 	 */
 	public function exportConversationUsers($offset, $limit) {
-		$sql = "SELECT		to_table.*, msg_table.root_level, user_table.username
+		$sql = "SELECT		to_table.*, msg_table.root_level, msg_table.bcc_address, user_table.username
 			FROM		".$this->databasePrefix."privmsgs_to to_table
 			LEFT JOIN	".$this->databasePrefix."privmsgs msg_table
 			ON		(msg_table.msg_id = to_table.msg_id)
@@ -640,12 +641,13 @@ class PhpBB3xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
+			$bcc = explode(':', $row['bcc_address']);
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.user')->import(0, array(
 				'conversationID' => ($row['root_level'] ?: $row['msg_id']),
 				'participantID' => $row['user_id'],
-				'username' => $row['username'],
+				'username' => $row['username'] ?: null,
 				'hideConversation' => $row['pm_deleted'],
-				'isInvisible' => 0, // TODO
+				'isInvisible' => in_array('u_'.$row['user_id'], $bcc) ? 1 : 0,
 				'lastVisitTime' => $row['pm_unread'] ? 0 : 1
 			), array('labelIDs' => ($row['folder_id'] > 0 ? array($row['folder_id']) : array())));
 		}
@@ -740,10 +742,8 @@ class PhpBB3xExporter extends AbstractExporter {
 	public function exportThreads($offset, $limit) {
 		$boardIDs = array_keys(BoardCache::getInstance()->getBoards());
 		
-		$sql = "SELECT		topic_table.*, user_table.username
+		$sql = "SELECT		topic_table.*
 			FROM		".$this->databasePrefix."topics topic_table
-			LEFT JOIN	".$this->databasePrefix."users user_table
-			ON		topic_table.topic_poster = user_table.user_id
 			ORDER BY	topic_id ASC";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute();
@@ -753,7 +753,7 @@ class PhpBB3xExporter extends AbstractExporter {
 				'topic' => StringUtil::decodeHTML($row['topic_title']),
 				'time' => $row['topic_time'],
 				'userID' => $row['topic_poster'],
-				'username' => $row['username'],
+				'username' => $row['topic_first_poster_name'],
 				'views' => $row['topic_views'],
 				'isAnnouncement' => ($row['topic_type'] == self::TOPIC_TYPE_ANNOUCEMENT || $row['topic_type'] == self::TOPIC_TYPE_GLOBAL) ? 1 : 0,
 				'isSticky' => $row['topic_type'] == self::TOPIC_TYPE_STICKY ? 1 : 0,
@@ -800,7 +800,7 @@ class PhpBB3xExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.post')->import($row['post_id'], array(
 				'threadID' => $row['topic_id'],
 				'userID' => $row['poster_id'],
-				'username' => $row['username'],
+				'username' => ($row['post_username'] ?: ($row['username'] ?: '')),
 				'subject' => StringUtil::decodeHTML($row['post_subject']),
 				'message' => self::fixBBCodes(StringUtil::decodeHTML($row['post_text']), $row['bbcode_uid']),
 				'time' => $row['post_time'],

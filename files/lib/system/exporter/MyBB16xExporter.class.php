@@ -213,21 +213,24 @@ class MyBB16xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
-			if ($row['gid'] == 1) {
-				ImportHandler::getInstance()->saveNewID('com.woltlab.wcf.user.group', 1, UserGroup::getGroupByType(UserGroup::GUESTS)->groupID);
-				continue;
-			}
-			if ($row['gid'] == 2) {
-				ImportHandler::getInstance()->saveNewID('com.woltlab.wcf.user.group', 2, UserGroup::getGroupByType(UserGroup::USERS)->groupID);
-				continue;
+			switch ($row['gid']) {
+				case 1:
+					$groupType = UserGroup::GUESTS;
+				break;
+				case 2:
+					$groupType = UserGroup::USERS;
+				break;
+				default:
+					$groupType = UserGroup::OTHER;
+				break;
 			}
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.group')->import($row['gid'], array(
 				'groupName' => $row['title'],
-				'groupType' => UserGroup::OTHER,
+				'groupType' => $groupType,
 				'userOnlineMarking' => str_replace('{username}', '%s', $row['namestyle']),
 				'showOnTeamPage' => $row['showforumteam'],
-				'priority' => $row['disporder'] ? pow(2, 10 - $row['disporder']) : 0 // TODO: Do we what this?
+				'priority' => $row['disporder'] ? pow(2, 10 - $row['disporder']) : 0
 			));
 		}
 	}
@@ -541,11 +544,12 @@ class MyBB16xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
+			$recipients = unserialize($row['recipients']);
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.user')->import(0, array(
 				'conversationID' => $row['fromid'].'-'.$row['dateline'],
 				'participantID' => $row['uid'],
 				'hideConversation' => $row['deletetime'] ? 1 : 0,
-				'isInvisible' => 0, // TODO: Check this out
+				'isInvisible' => (isset($recipients['bcc']) && in_array($row['uid'], $recipients['bcc'])) ? 1 : 0,
 				'lastVisitTime' => $row['readtime']
 			), array('labelIDs' => ($row['folder'] > 4 ? array($row['folder']) : array())));
 		}
@@ -699,7 +703,7 @@ class MyBB16xExporter extends AbstractExporter {
 		$sql = "SELECT	COUNT(*) AS count
 			FROM	".$this->databasePrefix."attachments";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array());
+		$statement->execute();
 		$row = $statement->fetchArray();
 		return $row['count'];
 	}
@@ -723,7 +727,7 @@ class MyBB16xExporter extends AbstractExporter {
 			FROM		".$this->databasePrefix."attachments
 			ORDER BY	aid ASC";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute(array('post', 0));
+		$statement->execute();
 		while ($row = $statement->fetchArray()) {
 			$fileLocation = FileUtil::addTrailingSlash($uploadsPath).$row['attachname'];
 			
