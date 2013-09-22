@@ -902,6 +902,73 @@ class SMF2xExporter extends AbstractExporter {
 	}
 	
 	/**
+	 * Counts ACLs.
+	 */
+	public function countACLs() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."forum_permissions";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports ACLs.
+	 */
+	public function exportACLs($offset, $limit) {
+		static $permissionMap = array(
+			'approve_posts' => array(
+				'canEnableThread',
+				'canEnablePost'
+			),
+			'delete_any' => array(
+				'canDeletePost',
+				'canReadDeletedPost',
+				'canRestorePost',
+				'canDeletePostCompletely'
+			),
+			'delete_own' => array('canDeleteOwnPost'),
+			'lock_any' => array('canCloseThread', 'canClosePost'),
+			'lock_own' => array(),
+			'make_sticky' => array('canPinThread'),
+			'mark_any_modify' => array(),
+			'mark_modify' => array(),
+			'merge_any' => array('canMergeThread'),
+			'moderate_board' => array('canReplyClosedThread'),
+			'modify_any' => array('canEditPost'),
+			'modify_own' => array('canEditOwnPost'),
+			'poll_add_any' => array(),
+			'poll_add_own' => array(),
+			'poll_edit_any' => array(),
+			'poll_edit_own' => array(),
+			'poll_lock_any' => array(),
+			'poll_lock_own' => array(),
+			'poll_post' => array('canStartPoll'),
+			'poll_remove_any' => array(),
+			'poll_view' => array(),
+			'poll_vote' => array('canVotePoll'),
+			'post_attachment' => array('canUploadAttachment'),
+			'post_reply_any' => array('canReplyThread'),
+			'post_reply_own' => array('canReplyOwnThread'),
+			'post_unapproved_replies_any' => array('canReplyThreadWithoutModeration'),
+			'post_unapproved_replies_own' => array(),
+			'post_unapproved_topics' => array('canStartThreadWithoutModeration'),
+			'remove_any' => array(
+				'canDeleteThread',
+				'canReadDeletedThread',
+				'canRestoreThread',
+				'canDeleteThreadCompletely'
+			),
+			'remove_own' => array(),
+			'report_any' => array(),
+			'send_topic' => array(),
+			'split_any' => array(),
+			'view_attachments' => array('canDownloadAttachment', 'canViewAttachmentPreview')
+		);
+	}
+	
+	/**
 	 * Counts smilies.
 	 */
 	public function countSmilies() {
