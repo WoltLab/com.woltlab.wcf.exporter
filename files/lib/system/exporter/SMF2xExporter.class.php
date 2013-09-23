@@ -33,6 +33,13 @@ use wcf\util\UserUtil;
  * @category	Community Framework (commercial)
  */
 class SMF2xExporter extends AbstractExporter {
+	const GROUP_EVERYONE = -2;
+	const GROUP_GUEST = -1;
+	// TODO: GROUP_USER is not properly being imported, due to the value being falsy
+	const GROUP_USER = 0;
+	const GROUP_ADMIN = 1;
+	const GROUP_MODERATORS = 3;
+	
 	/**
 	 * board cache
 	 * @var array
@@ -90,7 +97,7 @@ class SMF2xExporter extends AbstractExporter {
 				'com.woltlab.wcf.user.rank'
 			),
 			'com.woltlab.wbb.board' => array(
-				/*'com.woltlab.wbb.acl',*/
+				'com.woltlab.wbb.acl',
 				'com.woltlab.wbb.attachment',
 				'com.woltlab.wbb.poll',
 				'com.woltlab.wbb.watchedThread'
@@ -157,7 +164,7 @@ class SMF2xExporter extends AbstractExporter {
 			$queue[] = 'com.woltlab.wbb.thread';
 			$queue[] = 'com.woltlab.wbb.post';
 			
-			/*if (in_array('com.woltlab.wbb.acl', $this->selectedData)) $queue[] = 'com.woltlab.wbb.acl';*/
+			if (in_array('com.woltlab.wbb.acl', $this->selectedData)) $queue[] = 'com.woltlab.wbb.acl';
 			if (in_array('com.woltlab.wbb.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wbb.attachment';
 			if (in_array('com.woltlab.wbb.watchedThread', $this->selectedData)) $queue[] = 'com.woltlab.wbb.watchedThread';
 			if (in_array('com.woltlab.wbb.poll', $this->selectedData)) {
@@ -196,6 +203,20 @@ class SMF2xExporter extends AbstractExporter {
 	 * Exports user groups.
 	 */
 	public function exportUserGroups($offset, $limit) {
+		// import everyone, guests and users pseudogroups
+		ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.group')->import(self::GROUP_EVERYONE, array(
+			'groupName' => 'Everyone',
+			'groupType' => UserGroup::EVERYONE
+		));
+		ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.group')->import(self::GROUP_GUEST, array(
+			'groupName' => 'Guests',
+			'groupType' => UserGroup::GUESTS
+		));
+		ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.group')->import(self::GROUP_USER, array(
+			'groupName' => 'Users',
+			'groupType' => UserGroup::USERS
+		));
+		
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."membergroups
 			ORDER BY	id_group ASC";
@@ -261,6 +282,7 @@ class SMF2xExporter extends AbstractExporter {
 				'lastActivityTime' => $row['last_login']
 			);
 			$additionalData = array(
+				// TODO: ToDo: Add users that moderate at least one board to GROUP_MODERATORS
 				'groupIDs' => explode(',', $row['additional_groups'].','.$row['id_group']),
 				'options' => array()
 			);
@@ -905,18 +927,66 @@ class SMF2xExporter extends AbstractExporter {
 	 * Counts ACLs.
 	 */
 	public function countACLs() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."forum_permissions";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return 1;
 	}
 	
 	/**
 	 * Exports ACLs.
 	 */
 	public function exportACLs($offset, $limit) {
+		$profileToBoard = array();
+		$boardToGroup = array();
+		
+		$sql = "SELECT		id_board, id_profile, member_groups
+			FROM		".$this->databasePrefix."boards
+			ORDER BY	id_board ASC";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			if (!isset($profileToBoard[$row['id_profile']])) $profileToBoard[$row['id_profile']] = array();
+			$profileToBoard[$row['id_profile']][] = $row['id_board'];
+			
+			$boardToGroup[$row['id_board']] = array_unique(ArrayUtil::toIntegerArray(explode(',', $row['member_groups'])));
+		}
+		
+		foreach ($boardToGroup as $boardID => $groups) {
+			// deny for everyone first
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.acl')->import(0, array(
+				'objectID' => $boardID,
+				'groupID' => self::GROUP_EVERYONE,
+				'optionValue' => 0
+			), array(
+				'optionName' => 'canViewBoard'
+			));
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.acl')->import(0, array(
+				'objectID' => $boardID,
+				'groupID' => self::GROUP_EVERYONE,
+				'optionValue' => 0
+			), array(
+				'optionName' => 'canEnterBoard'
+			));
+			
+			// admins may do everything
+			$groups[] = self::GROUP_ADMIN;
+			foreach ($groups as $groupID) {
+				// allow specified groups
+				ImportHandler::getInstance()->getImporter('com.woltlab.wbb.acl')->import(0, array(
+					'objectID' => $boardID,
+					'groupID' => $groupID,
+					'optionValue' => 1
+				), array(
+					'optionName' => 'canViewBoard'
+				));
+				ImportHandler::getInstance()->getImporter('com.woltlab.wbb.acl')->import(0, array(
+					'objectID' => $boardID,
+					'groupID' => $groupID,
+					'optionValue' => 1
+				), array(
+					'optionName' => 'canEnterBoard'
+				));
+			}
+		}
+		
 		static $permissionMap = array(
 			'approve_posts' => array(
 				'canEnableThread',
@@ -966,6 +1036,46 @@ class SMF2xExporter extends AbstractExporter {
 			'split_any' => array(),
 			'view_attachments' => array('canDownloadAttachment', 'canViewAttachmentPreview')
 		);
+		
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."board_permissions
+			ORDER BY	id_group ASC, id_profile ASC, permission ASC";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			if (!isset($profileToBoard[$row['id_profile']])) continue;
+			if (!isset($permissionMap[$row['permission']])) continue;
+			
+			foreach ($profileToBoard[$row['id_profile']] as $boardID) {
+				foreach ($permissionMap[$row['permission']] as $permission) {
+					ImportHandler::getInstance()->getImporter('com.woltlab.wbb.acl')->import(0, array(
+						'objectID' => $boardID,
+						'groupID' => $row['id_group'],
+						'optionValue' => $row['add_deny']
+					), array(
+						'optionName' => $permission
+					));
+				}
+			}
+		}
+		
+		// admins may do everything
+		$boardIDs = array_keys($boardToGroup);
+		foreach ($boardIDs as $boardID) {
+			foreach ($permissionMap as $permissions) {
+				foreach ($permissions as $permission) {
+					ImportHandler::getInstance()->getImporter('com.woltlab.wbb.acl')->import(0, array(
+						'objectID' => $boardID,
+						'groupID' => self::GROUP_ADMIN,
+						'optionValue' => 1
+					), array(
+						'optionName' => $permission
+					));
+				}
+			}
+		}
+		
+		// TODO: Import moderators
 	}
 	
 	/**
