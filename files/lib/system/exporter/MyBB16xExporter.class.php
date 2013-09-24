@@ -989,10 +989,10 @@ class MyBB16xExporter extends AbstractExporter {
 	 * Counts ACLs.
 	 */
 	public function countACLs() {
-		$sql = "SELECT	(SELECT COUNT(*) FROM ".$this->databasePrefix."moderators WHERE isgroup = ?)
+		$sql = "SELECT	(SELECT COUNT(*) FROM ".$this->databasePrefix."moderators)
 				+ (SELECT COUNT(*) FROM ".$this->databasePrefix."forumpermissions) AS count";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array(0));
+		$statement->execute();
 		$row = $statement->fetchArray();
 		return $row['count'];
 	}
@@ -1006,7 +1006,6 @@ class MyBB16xExporter extends AbstractExporter {
 		$sql = "(
 				SELECT	mid AS id, 'mod' AS type
 				FROM	".$this->databasePrefix."moderators
-				WHERE	isgroup = ?
 			)
 			UNION
 			(
@@ -1015,7 +1014,7 @@ class MyBB16xExporter extends AbstractExporter {
 			)
 			ORDER BY	type ASC, id ASC";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute(array(0));
+		$statement->execute();
 		while ($row = $statement->fetchArray()) {
 			${$row['type']}[] = $row['id'];
 		}
@@ -1067,7 +1066,7 @@ class MyBB16xExporter extends AbstractExporter {
 					foreach ($permissions as $permission) {
 						ImportHandler::getInstance()->getImporter('com.woltlab.wbb.acl')->import(0, array(
 							'objectID' => $row['fid'],
-							'userID' => $row['id'],
+							($row['isgroup'] ? 'groupID' : 'userID') => $row['id'],
 							'optionValue' => $row[$mybbPermission]
 						), array(
 							'optionName' => $permission

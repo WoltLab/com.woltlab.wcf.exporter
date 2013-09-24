@@ -318,6 +318,30 @@ class WBB3xExporter extends AbstractExporter {
 			WHERE	userID = ?";
 		$passwordUpdateStatement = WCF::getDB()->prepareStatement($sql);
 		
+		// get password encryption
+		$encryption = 'wcf1';
+		$sql = "SELECT	optionName, optionValue
+			FROM	wcf".$this->dbNo."_option
+			WHERE	optionName IN ('encryption_enable_salting', 'encryption_encrypt_before_salting', 'encryption_method', 'encryption_salt_position')";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$encryptionData = array();
+		while ($row = $statement->fetchArray()) {
+			$encryptionData[$row['optionName']] = $row['optionValue'];
+		}
+		
+		if (isset($encryptionData['encryption_method']) && in_array($encryptionData['encryption_method'], array('crc32', 'md5', 'sha1'))) {
+			if ($encryptionData['encryption_enable_salting'] && $encryptionData['encryption_encrypt_before_salting'] && $encryptionData['encryption_method'] == 'sha1' && $encryptionData['encryption_salt_position'] == 'before') {
+				$encryption = 'wcf1';
+			}
+			else {
+				$encryption = 'wcf1e'.substr($encryptionData['encryption_method'], 0, 1);
+				$encryption .= $encryptionData['encryption_enable_salting'];
+				$encryption .= ($encryptionData['encryption_salt_position'] == 'after' ? 'a' : 'b');
+				$encryption .= $encryptionData['encryption_encrypt_before_salting'];
+			}
+		}
+		
 		// get users
 		$sql = "SELECT		user_option_value.*, user_table.*,
 					(
@@ -384,7 +408,7 @@ class WBB3xExporter extends AbstractExporter {
 			
 			// update password hash
 			if ($newUserID) {
-				$passwordUpdateStatement->execute(array('wcf1:'.$row['password'].':'.$row['salt'], $newUserID));
+				$passwordUpdateStatement->execute(array($encryption.':'.$row['password'].':'.$row['salt'], $newUserID));
 			}
 		}
 	}
