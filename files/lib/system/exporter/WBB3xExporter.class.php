@@ -734,8 +734,8 @@ class WBB3xExporter extends AbstractExporter {
 	 */
 	public function exportConversations($offset, $limit) {
 		$sql = "INSERT IGNORE INTO	wcf".WCF_N."_conversation_to_user
-						(conversationID, participantID, hideConversation, isInvisible, lastVisitTime)
-			VALUES			(?, ?, ?, ?, ?)";
+						(conversationID, participantID, username, hideConversation, isInvisible, lastVisitTime)
+			VALUES			(?, ?, ?, ?, ?, ?)";
 		$insertStatement = WCF::getDB()->prepareStatement($sql);
 		
 		$sql = "SELECT		*
@@ -755,13 +755,16 @@ class WBB3xExporter extends AbstractExporter {
 			));
 			
 			// add author
-			$insertStatement->execute(array(
-				$conversationID,
-				ImportHandler::getInstance()->getNewID('com.woltlab.wcf.user', $row['userID']),
-				0,
-				0,
-				TIME_NOW
-			));
+			if (!$row['isDraft']) {
+				$insertStatement->execute(array(
+					$conversationID,
+					ImportHandler::getInstance()->getNewID('com.woltlab.wcf.user', $row['userID']),
+					$row['username'],
+					0,
+					0,
+					TIME_NOW
+				));
+			}
 		}
 	}
 	
@@ -818,7 +821,7 @@ class WBB3xExporter extends AbstractExporter {
 	 * Exports conversation recipients.
 	 */
 	public function exportConversationUsers($offset, $limit) {
-		$sql = "SELECT		pm_to_user.*, pm.parentPmID
+		$sql = "SELECT		pm_to_user.*, pm.parentPmID, pm.isDraft
 			FROM		wcf".$this->dbNo."_pm_to_user pm_to_user
 			LEFT JOIN	wcf".$this->dbNo."_pm pm
 			ON		(pm.pmID = pm_to_user.pmID)
@@ -826,6 +829,8 @@ class WBB3xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
+			if ($row['isDraft']) continue;
+			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.user')->import(0, array(
 				'conversationID' => ($row['parentPmID'] ?: $row['pmID']),
 				'participantID' => $row['recipientID'],
