@@ -19,8 +19,8 @@ use wcf\system\WCF;
 use wcf\util\ArrayUtil;
 use wcf\util\FileUtil;
 use wcf\util\StringUtil;
-use wcf\util\UserUtil;
 use wcf\util\UserRegistrationUtil;
+use wcf\util\UserUtil;
 
 /**
  * Exporter for phpBB 3x.x
@@ -1237,4 +1237,3 @@ class PhpBB3xExporter extends AbstractExporter {
 		return $text;
 	}
 }
-	
