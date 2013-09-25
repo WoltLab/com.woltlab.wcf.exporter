@@ -20,6 +20,12 @@
 		</type>
 		
 		<type>
+			<name>com.woltlab.wcf.exporter.smf2x</name>
+			<definitionname>com.woltlab.wcf.exporter</definitionname>
+			<classname>wcf\system\exporter\SMF2xExporter</classname>
+		</type>
+		
+		<type>
 			<name>com.woltlab.wcf.exporter.phpbb3x</name>
 			<definitionname>com.woltlab.wcf.exporter</definitionname>
 			<classname>wcf\system\exporter\PhpBB3xExporter</classname>

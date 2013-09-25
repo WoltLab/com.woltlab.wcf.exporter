@@ -4,6 +4,7 @@
 		<item name="wcf.acp.dataImport.exporter.com.woltlab.wcf.exporter.wbb2x"><![CDATA[Burning Board 2.3.x]]></item>
 		<item name="wcf.acp.dataImport.exporter.com.woltlab.wcf.exporter.wbb3x"><![CDATA[Burning Board 3.0.x, 3.1.x, Lite 2.1.x]]></item>
 		<item name="wcf.acp.dataImport.exporter.com.woltlab.wcf.exporter.mybb16x"><![CDATA[MyBB 1.6.x]]></item>
+		<item name="wcf.acp.dataImport.exporter.com.woltlab.wcf.exporter.smf2x"><![CDATA[Simple Machines Forum 2.x]]></item>
 		<item name="wcf.acp.dataImport.exporter.com.woltlab.wcf.exporter.phpbb3x"><![CDATA[phpBB 3.x]]></item>
 	</category>
 </language>
