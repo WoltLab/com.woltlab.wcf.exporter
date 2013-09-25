@@ -255,7 +255,8 @@ class SMF2xExporter extends AbstractExporter {
 		$passwordUpdateStatement = WCF::getDB()->prepareStatement($sql);
 		
 		// get users
-		$sql = "SELECT		member.*, ban_group.ban_time, ban_group.expire_time AS banExpire, ban_group.reason AS banReason
+		$sql = "SELECT		member.*, ban_group.ban_time, ban_group.expire_time AS banExpire, ban_group.reason AS banReason,
+					(SELECT COUNT(*) FROM ".$this->databasePrefix."moderators moderator WHERE member.id_member = moderator.id_member) AS isMod
 			FROM		".$this->databasePrefix."members member
 			LEFT JOIN	".$this->databasePrefix."ban_items ban_item
 			ON		(member.id_member = ban_item.id_member)
@@ -283,10 +284,12 @@ class SMF2xExporter extends AbstractExporter {
 				'lastActivityTime' => $row['last_login']
 			);
 			$additionalData = array(
-				// TODO: ToDo: Add users that moderate at least one board to GROUP_MODERATORS
 				'groupIDs' => explode(',', $row['additional_groups'].','.$row['id_group']),
 				'options' => array()
 			);
+			if ($row['isMod']) {
+				$additionalData['groupIDs'][] = self::GROUP_MODERATORS;
+			}
 			
 			// import user
 			$newUserID = ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user')->import($row['id_member'], $data, $additionalData);
@@ -685,7 +688,7 @@ class SMF2xExporter extends AbstractExporter {
 				'isSticky' => $row['is_sticky'] ? 1 : 0,
 				'isDisabled' => $row['approved'] ? 0 : 1,
 				'isClosed' => $row['locked'] ? 1 : 0,
-				'movedThreadID' => null, // TODO: Maybe regex this out of the body?
+				'movedThreadID' => null,
 				'movedTime' => 0
 			));
 		}
@@ -935,6 +938,7 @@ class SMF2xExporter extends AbstractExporter {
 	 * Exports ACLs.
 	 */
 	public function exportACLs($offset, $limit) {
+		// TODO: try to split this into several requests
 		$profileToBoard = array();
 		$boardToGroup = array();
 		$boardToMod = array();
