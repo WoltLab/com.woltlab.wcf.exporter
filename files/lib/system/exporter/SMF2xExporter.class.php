@@ -35,8 +35,9 @@ use wcf\util\UserUtil;
 class SMF2xExporter extends AbstractExporter {
 	const GROUP_EVERYONE = -2;
 	const GROUP_GUEST = -1;
-	// TODO: GROUP_USER is not properly being imported, due to the value being falsy
+	// GROUP_USER needs a fake group id, due to 0 being falsy
 	const GROUP_USER = 0;
+	const GROUP_USER_FAKE = -3;
 	const GROUP_ADMIN = 1;
 	const GROUP_MODERATORS = 3;
 	
@@ -212,7 +213,7 @@ class SMF2xExporter extends AbstractExporter {
 			'groupName' => 'Guests',
 			'groupType' => UserGroup::GUESTS
 		));
-		ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.group')->import(self::GROUP_USER, array(
+		ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.group')->import(self::GROUP_USER_FAKE, array(
 			'groupName' => 'Users',
 			'groupType' => UserGroup::USERS
 		));
@@ -322,8 +323,8 @@ class SMF2xExporter extends AbstractExporter {
 		$statement->execute(array(-1));
 		while ($row = $statement->fetchArray()) {
 			list($repeatImage, $rankImage) = explode('#', $row['stars'], 2);
-			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.rank')->import($row['id_group'], array(
-				'groupID' => $row['id_group'],
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.rank')->import($row['id_group'] == self::GROUP_USER ? self::GROUP_USER_FAKE : $row['id_group'], array(
+				'groupID' => $row['id_group'] == self::GROUP_USER ? self::GROUP_USER_FAKE : $row['id_group'],
 				'requiredPoints' => $row['min_posts'] * 5,
 				'rankTitle' => $row['group_name'],
 				'rankImage' => $rankImage,
@@ -936,9 +937,11 @@ class SMF2xExporter extends AbstractExporter {
 	public function exportACLs($offset, $limit) {
 		$profileToBoard = array();
 		$boardToGroup = array();
+		$boardToMod = array();
 		
-		$sql = "SELECT		id_board, id_profile, member_groups
-			FROM		".$this->databasePrefix."boards
+		$sql = "SELECT		id_board, id_profile, member_groups,
+					(SELECT GROUP_CONCAT(id_member) FROM ".$this->databasePrefix."moderators moderator WHERE moderator.id_board = board.id_board) AS moderators
+			FROM		".$this->databasePrefix."boards board
 			ORDER BY	id_board ASC";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute();
@@ -947,6 +950,7 @@ class SMF2xExporter extends AbstractExporter {
 			$profileToBoard[$row['id_profile']][] = $row['id_board'];
 			
 			$boardToGroup[$row['id_board']] = array_unique(ArrayUtil::toIntegerArray(explode(',', $row['member_groups'])));
+			if ($row['moderators'] !== null) $boardToMod[$row['id_board']] = array_unique(ArrayUtil::toIntegerArray(explode(',', $row['moderators'])));
 		}
 		
 		foreach ($boardToGroup as $boardID => $groups) {
@@ -969,6 +973,8 @@ class SMF2xExporter extends AbstractExporter {
 			// admins may do everything
 			$groups[] = self::GROUP_ADMIN;
 			foreach ($groups as $groupID) {
+				$groupID = $groupID == self::GROUP_USER ? self::GROUP_USER_FAKE : $groupID;
+				
 				// allow specified groups
 				ImportHandler::getInstance()->getImporter('com.woltlab.wbb.acl')->import(0, array(
 					'objectID' => $boardID,
@@ -1048,13 +1054,29 @@ class SMF2xExporter extends AbstractExporter {
 			
 			foreach ($profileToBoard[$row['id_profile']] as $boardID) {
 				foreach ($permissionMap[$row['permission']] as $permission) {
-					ImportHandler::getInstance()->getImporter('com.woltlab.wbb.acl')->import(0, array(
-						'objectID' => $boardID,
-						'groupID' => $row['id_group'],
-						'optionValue' => $row['add_deny']
-					), array(
-						'optionName' => $permission
-					));
+					if ($row['id_group'] == self::GROUP_MODERATORS) {
+						// import individual mods, instead of group
+						
+						if (!isset($boardToMod[$boardID])) continue;
+						foreach ($boardToMod[$boardID] as $moderator) {
+							ImportHandler::getInstance()->getImporter('com.woltlab.wbb.acl')->import(0, array(
+								'objectID' => $boardID,
+								'userID' => $moderator,
+								'optionValue' => $row['add_deny']
+							), array(
+								'optionName' => $permission
+							));
+						}
+					}
+					else {
+						ImportHandler::getInstance()->getImporter('com.woltlab.wbb.acl')->import(0, array(
+							'objectID' => $boardID,
+							'groupID' => $row['id_group'] == self::GROUP_USER ? self::GROUP_USER_FAKE : $row['id_group'],
+							'optionValue' => $row['add_deny']
+						), array(
+							'optionName' => $permission
+						));
+					}
 				}
 			}
 		}
@@ -1074,8 +1096,6 @@ class SMF2xExporter extends AbstractExporter {
 				}
 			}
 		}
-		
-		// TODO: Import moderators
 	}
 	
 	/**
