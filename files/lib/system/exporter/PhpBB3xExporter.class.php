@@ -24,7 +24,7 @@ use wcf\util\UserRegistrationUtil;
 
 /**
  * Exporter for phpBB 3x.x
- *
+ * 
  * @author	Tim Duesterhus
  * @copyright	2001-2013 WoltLab GmbH
  * @license	WoltLab Burning Board License <http://www.woltlab.com/products/burning_board/license.php>
@@ -55,12 +55,12 @@ class PhpBB3xExporter extends AbstractExporter {
 	
 	/**
 	 * board cache
-	 * @var array
+	 * @var	array
 	 */
 	protected $boardCache = array();
 	
 	/**
-	 * @see wcf\system\exporter\AbstractExporter::$methods
+	 * @see	wcf\system\exporter\AbstractExporter::$methods
 	 */
 	protected $methods = array(
 		'com.woltlab.wcf.user' => 'Users',
@@ -91,7 +91,7 @@ class PhpBB3xExporter extends AbstractExporter {
 	);
 	
 	/**
-	 * @see wcf\system\exporter\AbstractExporter::$limits
+	 * @see	wcf\system\exporter\AbstractExporter::$limits
 	 */
 	protected $limits = array(
 		'com.woltlab.wcf.user' => 200,
@@ -103,7 +103,7 @@ class PhpBB3xExporter extends AbstractExporter {
 	);
 	
 	/**
-	 * @see wcf\system\exporter\IExporter::getSupportedData()
+	 * @see	wcf\system\exporter\IExporter::getSupportedData()
 	 */
 	public function getSupportedData() {
 		return array(
@@ -129,7 +129,7 @@ class PhpBB3xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see wcf\system\exporter\IExporter::validateDatabaseAccess()
+	 * @see	wcf\system\exporter\IExporter::validateDatabaseAccess()
 	 */
 	public function validateDatabaseAccess() {
 		parent::validateDatabaseAccess();
@@ -140,7 +140,7 @@ class PhpBB3xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see wcf\system\exporter\IExporter::validateFileAccess()
+	 * @see	wcf\system\exporter\IExporter::validateFileAccess()
 	 */
 	public function validateFileAccess() {
 		if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData) || in_array('com.woltlab.wbb.attachment', $this->selectedData) || in_array('com.woltlab.wcf.smiley', $this->selectedData)) {
@@ -151,7 +151,7 @@ class PhpBB3xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see wcf\system\exporter\IExporter::getQueue()
+	 * @see	wcf\system\exporter\IExporter::getQueue()
 	 */
 	public function getQueue() {
 		$queue = array();
@@ -203,7 +203,7 @@ class PhpBB3xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see wcf\system\exporter\IExporter::getDefaultDatabasePrefix()
+	 * @see	wcf\system\exporter\IExporter::getDefaultDatabasePrefix()
 	 */
 	public function getDefaultDatabasePrefix() {
 		return 'phpbb_';
@@ -769,7 +769,7 @@ class PhpBB3xExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.thread')->import($row['topic_id'], $data, $additionalData);
 		}
 	}
-
+	
 	/**
 	 * Counts posts.
 	 */
@@ -851,7 +851,7 @@ class PhpBB3xExporter extends AbstractExporter {
 	 * Exports watched threads.
 	 */
 	public function exportWatchedThreads($offset, $limit) {
-		// TODO: This is untested. I cannot find the button to watch a topic…
+		// TODO: This is untested. I cannot find the button to watch a topic.
 		// TODO: Import bookmarks as watched threads as well?
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."topics_watch
@@ -1116,7 +1116,6 @@ class PhpBB3xExporter extends AbstractExporter {
 			}
 		}
 	}
-	
 	
 	/**
 	 * Counts smilies.

@@ -133,7 +133,7 @@ class WBB2xExporter extends AbstractExporter {
 	 */
 	public function getQueue() {
 		$queue = array();
-	
+		
 		// user
 		if (in_array('com.woltlab.wcf.user', $this->selectedData)) {
 			if (in_array('com.woltlab.wcf.user.group', $this->selectedData)) {
@@ -143,25 +143,25 @@ class WBB2xExporter extends AbstractExporter {
 			if (in_array('com.woltlab.wcf.user.option', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.option';
 			$queue[] = 'com.woltlab.wcf.user';
 			if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.avatar';
-				
+			
 			// conversation
 			if (in_array('com.woltlab.wcf.conversation', $this->selectedData)) {
 				if (in_array('com.woltlab.wcf.conversation.label', $this->selectedData)) $queue[] = 'com.woltlab.wcf.conversation.label';
-	
+				
 				$queue[] = 'com.woltlab.wcf.conversation';
 				$queue[] = 'com.woltlab.wcf.conversation.user';
-					
+				
 				if (in_array('com.woltlab.wcf.conversation.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wcf.conversation.attachment';
 			}
 		}
-	
+		
 		// board
 		if (in_array('com.woltlab.wbb.board', $this->selectedData)) {
 			$queue[] = 'com.woltlab.wbb.board';
 			if (in_array('com.woltlab.wcf.label', $this->selectedData)) $queue[] = 'com.woltlab.wcf.label';
 			$queue[] = 'com.woltlab.wbb.thread';
 			$queue[] = 'com.woltlab.wbb.post';
-				
+			
 			if (in_array('com.woltlab.wbb.acl', $this->selectedData)) $queue[] = 'com.woltlab.wbb.acl';
 			if (in_array('com.woltlab.wbb.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wbb.attachment';
 			if (in_array('com.woltlab.wbb.watchedThread', $this->selectedData)) $queue[] = 'com.woltlab.wbb.watchedThread';
@@ -170,10 +170,10 @@ class WBB2xExporter extends AbstractExporter {
 				$queue[] = 'com.woltlab.wbb.poll.option';
 			}
 		}
-	
+		
 		// smiley
 		if (in_array('com.woltlab.wcf.smiley', $this->selectedData)) $queue[] = 'com.woltlab.wcf.smiley';
-	
+		
 		return $queue;
 	}
 	
@@ -260,7 +260,7 @@ class WBB2xExporter extends AbstractExporter {
 			SET	password = ?
 			WHERE	userID = ?";
 		$passwordUpdateStatement = WCF::getDB()->prepareStatement($sql);
-	
+		
 		// get users
 		$sql = "SELECT		userfields.*, user.*,
 					(
@@ -488,7 +488,7 @@ class WBB2xExporter extends AbstractExporter {
 						(conversationID, participantID, username, hideConversation, isInvisible, lastVisitTime)
 			VALUES			(?, ?, ?, ?, ?)";
 		$insertStatement = WCF::getDB()->prepareStatement($sql);
-	
+		
 		$sql = "SELECT		pm.*, user_table.username
 			FROM		".$this->databasePrefix."privatemessage pm
 			LEFT JOIN	".$this->databasePrefix."users user_table
@@ -503,7 +503,7 @@ class WBB2xExporter extends AbstractExporter {
 				'userID' => $row['senderid'],
 				'username' => ($row['username'] ?: '')
 			));
-				
+			
 			// add author
 			$authorID = ImportHandler::getInstance()->getNewID('com.woltlab.wcf.user', $row['senderid']);
 			if ($authorID) {
@@ -613,7 +613,7 @@ class WBB2xExporter extends AbstractExporter {
 	 */
 	protected function exportBoardsRecursively($parentID = 0) {
 		if (!isset($this->boardCache[$parentID])) return;
-	
+		
 		foreach ($this->boardCache[$parentID] as $board) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import($board['boardid'], array(
 				'parentID' => ($board['parentid'] ?: null),
@@ -626,7 +626,7 @@ class WBB2xExporter extends AbstractExporter {
 				'isClosed' => $board['closed'],
 				'isInvisible' => intval($board['invisible'] == 2)
 			));
-	
+			
 			$this->exportBoardsRecursively($board['boardid']);
 		}
 	}
@@ -656,10 +656,10 @@ class WBB2xExporter extends AbstractExporter {
 		$statement->execute(array('default_prefix'));
 		$row = $statement->fetchArray();
 		if ($row !== false) $globalPrefixes = $row['value'];
-	
+		
 		// get boards
 		$boardPrefixes = array();
-	
+		
 		$sql = "SELECT	boardid, prefix, prefixuse
 			FROM	".$this->databasePrefix."boards
 			WHERE	prefixuse > ?";
@@ -667,7 +667,7 @@ class WBB2xExporter extends AbstractExporter {
 		$statement->execute(array(0));
 		while ($row = $statement->fetchArray()) {
 			$prefixes = '';
-	
+			
 			switch ($row['prefixuse']) {
 				case 1:
 					$prefixes = $globalPrefixes;
@@ -686,7 +686,7 @@ class WBB2xExporter extends AbstractExporter {
 				$boardPrefixes[$row['boardid']] = $key;
 			}
 		}
-	
+		
 		// get thread ids
 		$threadIDs = $announcementIDs = array();
 		$sql = "SELECT		threadid, important
@@ -698,7 +698,7 @@ class WBB2xExporter extends AbstractExporter {
 			$threadIDs[] = $row['threadid'];
 			if ($row['important'] == 2) $announcementIDs[] = $row['threadid'];
 		}
-	
+		
 		// get assigned boards (for announcements)
 		$assignedBoards = array();
 		if (!empty($announcementIDs)) {
@@ -715,11 +715,11 @@ class WBB2xExporter extends AbstractExporter {
 				$assignedBoards[$row['threadid']][] = $row['boardid'];
 			}
 		}
-	
+		
 		// get threads
 		$conditionBuilder = new PreparedStatementConditionBuilder();
 		$conditionBuilder->add('threadid IN (?)', array($threadIDs));
-	
+		
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."threads
 			".$conditionBuilder;
@@ -942,7 +942,7 @@ class WBB2xExporter extends AbstractExporter {
 	 */
 	public function exportLabels($offset, $limit) {
 		$prefixMap = array();
-	
+		
 		// get global prefixes
 		$globalPrefixes = '';
 		$sql = "SELECT	value
@@ -952,7 +952,7 @@ class WBB2xExporter extends AbstractExporter {
 		$statement->execute(array('default_prefix'));
 		$row = $statement->fetchArray();
 		if ($row !== false) $globalPrefixes = $row['value'];
-	
+		
 		// get boards
 		$sql = "SELECT	boardid, prefix, prefixuse
 			FROM	".$this->databasePrefix."boards
@@ -983,12 +983,12 @@ class WBB2xExporter extends AbstractExporter {
 						'boardIDs' => array()
 					);
 				}
-	
+				
 				$boardID = ImportHandler::getInstance()->getNewID('com.woltlab.wbb.board', $row['boardid']);
 				if ($boardID) $prefixMap[$key]['boardIDs'][] = $boardID;
 			}
 		}
-	
+		
 		// save prefixes
 		if (!empty($prefixMap)) {
 			$i = 1;
@@ -999,7 +999,7 @@ class WBB2xExporter extends AbstractExporter {
 				ImportHandler::getInstance()->getImporter('com.woltlab.wcf.label.group')->import($key, array(
 					'groupName' => 'labelgroup'.$i
 				), array('objects' => array($objectType->objectTypeID => $data['boardIDs'])));
-	
+				
 				// import labels
 				$labels = explode("\n", $data['prefixes']);
 				foreach ($labels as $label) {
@@ -1008,7 +1008,7 @@ class WBB2xExporter extends AbstractExporter {
 						'label' => mb_substr($label, 0, 80)
 					));
 				}
-	
+				
 				$i++;
 			}
 		}
@@ -1041,7 +1041,7 @@ class WBB2xExporter extends AbstractExporter {
 				'groupID' => $row['groupid']
 			);
 			unset($row['boardid'], $row['groupid']);
-
+			
 			foreach ($row as $permission => $value) {
 				if ($value == -1) continue;
 				if (!isset($this->permissionMap[$permission])) continue;
@@ -1075,12 +1075,12 @@ class WBB2xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			// replace imagefolder
 			$row['smiliepath'] = str_replace('{imagefolder}', 'images', $row['smiliepath']);
-				
+			
 			// insert source path
 			if (!FileUtil::isURL($row['smiliepath'])) {
 				$row['smiliepath'] = $this->fileSystemPath.$row['smiliepath'];
 			}
-				
+			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.smiley')->import($row['smilieid'], array(
 				'smileyTitle' => $row['smilietitle'],
 				'smileyCode' => $row['smiliecode'],

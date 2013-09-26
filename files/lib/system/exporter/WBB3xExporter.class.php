@@ -69,7 +69,7 @@ class WBB3xExporter extends AbstractExporter {
 		'com.woltlab.wcf.label' => 'Labels',
 		'com.woltlab.wbb.acl' => 'ACLs',
 		'com.woltlab.wcf.smiley' => 'Smilies',
-				
+		
 		'com.woltlab.blog.category' => 'BlogCategories',
 		'com.woltlab.blog.entry' => 'BlogEntries',
 		'com.woltlab.blog.entry.attachment' => 'BlogAttachments',
@@ -386,7 +386,6 @@ class WBB3xExporter extends AbstractExporter {
 				'profileHits' => $row['profileHits'],
 				'userTitle' => $row['userTitle'],
 				'lastActivityTime' => $row['lastActivityTime']
-				
 			);
 			$additionalData = array(
 				'groupIDs' => explode(',', $row['groupIDs']),
@@ -915,7 +914,7 @@ class WBB3xExporter extends AbstractExporter {
 	 */
 	protected function exportBoardsRecursively($parentID = 0) {
 		if (!isset($this->boardCache[$parentID])) return;
-	
+		
 		foreach ($this->boardCache[$parentID] as $board) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import($board['boardID'], array(
 				'parentID' => ($board['parentID'] ?: null),
@@ -944,7 +943,7 @@ class WBB3xExporter extends AbstractExporter {
 				'posts' => $board['posts'],
 				'threads' => $board['threads']
 			));
-				
+			
 			$this->exportBoardsRecursively($board['boardID']);
 		}
 	}
@@ -995,7 +994,7 @@ class WBB3xExporter extends AbstractExporter {
 		
 		while ($row = $statement->fetchArray()) {
 			$prefixes = '';
-				
+			
 			switch ($row['prefixMode']) {
 				case 1:
 					$prefixes = $globalPrefixes;
@@ -1522,7 +1521,7 @@ class WBB3xExporter extends AbstractExporter {
 			foreach ($group as $row) {
 				$conditionBuilder->add('(boardID = ? AND groupID = ?)', array($row['boardID'], $row['groupID']));
 			}
-				
+			
 			$sql = "SELECT	*
 				FROM	wbb".$this->dbNo."_".$this->instanceNo."_board_to_group
 				".$conditionBuilder;
@@ -1835,12 +1834,12 @@ class WBB3xExporter extends AbstractExporter {
 						AND messageID > ?
 				ORDER BY	attachmentID DESC";
 		}
-			
+		
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array($type, 0));
 		while ($row = $statement->fetchArray()) {
 			$fileLocation = $this->fileSystemPath.'attachments/attachment-'.$row['attachmentID'];
-	
+			
 			ImportHandler::getInstance()->getImporter($objectType)->import($row['attachmentID'], array(
 				'objectID' => (!empty($row['containerID']) ? $row['containerID'] : $row['messageID']),
 				'userID' => ($row['userID'] ?: null),
@@ -1857,9 +1856,9 @@ class WBB3xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * Gets existing WCF2.0 user options.
-	 *
-	 * @return array
+	 * Returns all existing WCF 2.0 user options.
+	 * 
+	 * @return	array
 	 */
 	private function getExistingUserOptions() {
 		$optionsNames = array();
@@ -1902,7 +1901,7 @@ class WBB3xExporter extends AbstractExporter {
 				$conditionBuilder = new PreparedStatementConditionBuilder();
 				$conditionBuilder->add('tag_to_object.taggableID = ?', array($taggableID));
 				$conditionBuilder->add('tag_to_object.objectID IN (?)', array($objectIDs));
-		
+				
 				$sql = "SELECT		tag.name, tag_to_object.objectID
 					FROM		wcf".$this->dbNo."_tag_to_object tag_to_object
 					LEFT JOIN	wcf".$this->dbNo."_tag tag
