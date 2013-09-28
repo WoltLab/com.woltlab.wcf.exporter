@@ -846,6 +846,7 @@ class WBB3xExporter extends AbstractExporter {
 	public function exportConversationUsers($offset, $limit) {
 		$sql = "SELECT		pm_to_user.*, pm.parentPmID, pm.isDraft
 			FROM		wcf".$this->dbNo."_pm_to_user pm_to_user
+			FORCE INDEX(PRIMARY)
 			LEFT JOIN	wcf".$this->dbNo."_pm pm
 			ON		(pm.pmID = pm_to_user.pmID)
 			ORDER BY	pm_to_user.pmID DESC, pm_to_user.recipientID DESC";
