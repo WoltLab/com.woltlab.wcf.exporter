@@ -30,5 +30,11 @@
 			<definitionname>com.woltlab.wcf.exporter</definitionname>
 			<classname>wcf\system\exporter\PhpBB3xExporter</classname>
 		</type>
+		
+		<type>
+			<name>com.woltlab.wcf.exporter.vb38x</name>
+			<definitionname>com.woltlab.wcf.exporter</definitionname>
+			<classname>wcf\system\exporter\VB38xExporter</classname>
+		</type>
 	</import>
 </data>
