@@ -117,7 +117,7 @@ class SMF2xExporter extends AbstractExporter {
 	public function validateDatabaseAccess() {
 		parent::validateDatabaseAccess();
 		
-		if (version_compare($this->readOption('smfVersion'), '2.0.0', '<=')) throw new DatabaseException('Cannot import less than SMF 2.x', $this->database);
+		if (version_compare($this->readOption('smfVersion'), '2.0.0', '<')) throw new DatabaseException('Cannot import less than SMF 2.x', $this->database);
 	}
 	
 	/**
