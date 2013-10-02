@@ -18,6 +18,7 @@ use wcf\system\Regex;
 use wcf\system\WCF;
 use wcf\util\ArrayUtil;
 use wcf\util\FileUtil;
+use wcf\util\MessageUtil;
 use wcf\util\StringUtil;
 use wcf\util\UserRegistrationUtil;
 use wcf\util\UserUtil;
@@ -1233,6 +1234,9 @@ class PhpBB3xExporter extends AbstractExporter {
 		
 		// convert attachments
 		$text = preg_replace('~\[attachment=(\d+)\]<!-- ia\\1 -->.*?<!-- ia\\1 -->\[/attachment\]~', '', $text); // TODO: not supported right now
+		
+		// remove crap
+		$message = MessageUtil::stripCrap($message);
 		
 		return $text;
 	}

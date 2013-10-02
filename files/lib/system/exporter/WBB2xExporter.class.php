@@ -7,6 +7,7 @@ use wcf\system\database\util\PreparedStatementConditionBuilder;
 use wcf\system\importer\ImportHandler;
 use wcf\system\WCF;
 use wcf\util\FileUtil;
+use wcf\util\MessageUtil;
 use wcf\util\StringUtil;
 use wcf\util\UserUtil;
 
@@ -1131,6 +1132,10 @@ class WBB2xExporter extends AbstractExporter {
 	private static function fixBBCodes($text) {
 		$text = str_ireplace('[center]', '[align=center]', $text);
 		$text = str_ireplace('[/center]', '[/align]', $text);
+		
+		// remove crap
+		$message = MessageUtil::stripCrap($message);
+		
 		return $text;
 	}
 }

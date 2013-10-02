@@ -8,6 +8,7 @@ use wcf\system\database\DatabaseException;
 use wcf\system\exception\SystemException;
 use wcf\system\importer\ImportHandler;
 use wcf\system\WCF;
+use wcf\util\MessageUtil;
 use wcf\util\StringUtil;
 use wcf\util\UserUtil;
 
@@ -1931,6 +1932,9 @@ class WBB3xExporter extends AbstractExporter {
 		// media bbcodes
 		$message = preg_replace("~\[(?:youtube|myvideo|myspace|googlevideo|clipfish|sevenload)(?:='?([^'\],]+)'?)?(?:,[^\]]+)?\]~", '[media]\\1', $message);
 		$message = preg_replace('~\[/(?:youtube|myvideo|myspace|googlevideo|clipfish|sevenload)\]~', '[/media]', $message);
+		
+		// remove crap
+		$message = MessageUtil::stripCrap($message);
 		
 		return $message;
 	}

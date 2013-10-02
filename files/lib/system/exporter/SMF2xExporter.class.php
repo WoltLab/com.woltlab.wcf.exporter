@@ -18,6 +18,7 @@ use wcf\system\Regex;
 use wcf\system\WCF;
 use wcf\util\ArrayUtil;
 use wcf\util\FileUtil;
+use wcf\util\MessageUtil;
 use wcf\util\StringUtil;
 use wcf\util\UserRegistrationUtil;
 use wcf\util\UserUtil;
@@ -1162,6 +1163,7 @@ class SMF2xExporter extends AbstractExporter {
 	}
 	
 	private static function fixBBCodes($message) {
+		// use proper WCF 2 bbcode
 		$message = strtr($message, array(
 			'<br />' => "\n",
 			'[iurl]' => '[url]',
@@ -1178,8 +1180,13 @@ class SMF2xExporter extends AbstractExporter {
 			'[/php]' => '[/code]'
 		));
 		
+		// fix size bbcode
 		$message = Regex::compile('\[size=(8|10|12|14|18|24|34)pt\]')->replace($message, '[size=\\1]');
 		
+		// remove crap
+		$message = MessageUtil::stripCrap($message);
+		
+		// convert html entities in text
 		$message = StringUtil::decodeHTML($message);
 		
 		return $message;

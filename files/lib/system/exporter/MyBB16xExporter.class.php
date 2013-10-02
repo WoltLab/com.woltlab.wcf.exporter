@@ -18,6 +18,7 @@ use wcf\system\Regex;
 use wcf\system\WCF;
 use wcf\util\ArrayUtil;
 use wcf\util\FileUtil;
+use wcf\util\MessageUtil;
 use wcf\util\StringUtil;
 use wcf\util\UserRegistrationUtil;
 use wcf\util\UserUtil;
@@ -1191,7 +1192,10 @@ class MyBB16xExporter extends AbstractExporter {
 		
 		// quotes
 		$message = $quoteRegex->replace($message, $quoteCallback);
-	
+		
+		// remove crap
+		$message = MessageUtil::stripCrap($message);
+		
 		return $message;
 	}
 }
