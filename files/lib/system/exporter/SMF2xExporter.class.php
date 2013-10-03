@@ -1183,11 +1183,11 @@ class SMF2xExporter extends AbstractExporter {
 		// fix size bbcode
 		$message = Regex::compile('\[size=(8|10|12|14|18|24|34)pt\]')->replace($message, '[size=\\1]');
 		
-		// remove crap
-		$message = MessageUtil::stripCrap($message);
-		
 		// convert html entities in text
 		$message = StringUtil::decodeHTML($message);
+		
+		// remove crap
+		$message = MessageUtil::stripCrap($message);
 		
 		return $message;
 	}
