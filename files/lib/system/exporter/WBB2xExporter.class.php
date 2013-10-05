@@ -487,7 +487,7 @@ class WBB2xExporter extends AbstractExporter {
 	public function exportConversations($offset, $limit) {
 		$sql = "INSERT IGNORE INTO	wcf".WCF_N."_conversation_to_user
 						(conversationID, participantID, username, hideConversation, isInvisible, lastVisitTime)
-			VALUES			(?, ?, ?, ?, ?)";
+			VALUES			(?, ?, ?, ?, ?, ?)";
 		$insertStatement = WCF::getDB()->prepareStatement($sql);
 		
 		$sql = "SELECT		pm.*, user_table.username
