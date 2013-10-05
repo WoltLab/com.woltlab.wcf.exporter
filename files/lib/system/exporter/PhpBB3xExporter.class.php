@@ -1236,7 +1236,7 @@ class PhpBB3xExporter extends AbstractExporter {
 		$text = preg_replace('~\[attachment=(\d+)\]<!-- ia\\1 -->.*?<!-- ia\\1 -->\[/attachment\]~', '', $text); // TODO: not supported right now
 		
 		// remove crap
-		$message = MessageUtil::stripCrap($message);
+		$text = MessageUtil::stripCrap($text);
 		
 		return $text;
 	}

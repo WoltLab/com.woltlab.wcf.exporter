@@ -1134,7 +1134,7 @@ class WBB2xExporter extends AbstractExporter {
 		$text = str_ireplace('[/center]', '[/align]', $text);
 		
 		// remove crap
-		$message = MessageUtil::stripCrap($message);
+		$text = MessageUtil::stripCrap($text);
 		
 		return $text;
 	}
