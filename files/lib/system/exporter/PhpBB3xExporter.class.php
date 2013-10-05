@@ -746,7 +746,7 @@ class PhpBB3xExporter extends AbstractExporter {
 		$sql = "SELECT		topic_table.*
 			FROM		".$this->databasePrefix."topics topic_table
 			ORDER BY	topic_id ASC";
-		$statement = $this->database->prepareStatement($sql);
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
 			$data = array(
