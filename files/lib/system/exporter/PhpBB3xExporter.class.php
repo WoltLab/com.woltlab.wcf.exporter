@@ -1235,6 +1235,13 @@ class PhpBB3xExporter extends AbstractExporter {
 		// convert attachments
 		$text = preg_replace('~\[attachment=(\d+)\]<!-- ia\\1 -->.*?<!-- ia\\1 -->\[/attachment\]~', '', $text); // TODO: not supported right now
 		
+		// convert email links
+		$text = preg_replace('~<!-- e --><a href="mailto:([^"]+@[^"]+\.[^"]+)">\\1</a><!-- e -->~', '[email]\\1[/email]', $text);
+		
+		// convert links
+		$text = preg_replace('~<!-- m --><a class="postlink" href="([^"]+)">[^"]+</a><!-- m -->~', '[url]\\1[/url]', $text);
+		$text = preg_replace('~<!-- l --><a class="postlink-local" href="([^"]+)">[^"]+</a><!-- l -->~', '[url]\\1[/url]', $text);
+		
 		// remove crap
 		$text = MessageUtil::stripCrap($text);
 		
