@@ -532,7 +532,7 @@ class PhpBB3xExporter extends AbstractExporter {
 				'subject' => StringUtil::decodeHTML($row['message_subject']),
 				'time' => $row['message_time'],
 				'userID' => $row['author_id'],
-				'username' => $row['username'] ?: null,
+				'username' => $row['username'] ?: '',
 				'isDraft' => $row['isDraft']
 			));
 			
@@ -646,7 +646,7 @@ class PhpBB3xExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.user')->import(0, array(
 				'conversationID' => ($row['root_level'] ?: $row['msg_id']),
 				'participantID' => $row['user_id'],
-				'username' => $row['username'] ?: null,
+				'username' => $row['username'] ?: '',
 				'hideConversation' => $row['pm_deleted'],
 				'isInvisible' => in_array('u_'.$row['user_id'], $bcc) ? 1 : 0,
 				'lastVisitTime' => $row['pm_unread'] ? 0 : 1
