@@ -1229,18 +1229,29 @@ class PhpBB3xExporter extends AbstractExporter {
 			return $wbbSize;
 		}, $text);
 		
-		// convert smileys
-		$text = preg_replace('~<!-- s(.+?) -->.+?<!-- s(?:.+?) -->~', '\\1', $text);
+		// see: https://github.com/phpbb/phpbb3/blob/179f41475b555d0a3314d779d0d7423f66f0fb95/phpBB/includes/functions.php#L3767
+		$text = preg_replace('#<!\-\- s(.*?) \-\-><img src=".*? \/><!\-\- s\1 \-\->#', '\\1', $text);
+		$text = preg_replace('#<!\-\- e \-\-><a href="mailto:(.*?)">.*?</a><!\-\- e \-\->#', '[email]\\1[/email]', $text);
+		$text = preg_replace('#<!\-\- ([mw]) \-\-><a (?:class="[\w-]+" )?href="(.*?)">.*?</a><!\-\- \1 \-\->#', '[url]\\2[/url]', $text);
+		$text = preg_replace('#<!\-\- l \-\-><a (?:class="[\w-]+" )?href="(.*?)(?:(&amp;|\?)sid=[0-9a-f]{32})?">.*?</a><!\-\- l \-\->#', '[url]\\1[/url]', $text);
+		
+		// fix code php bbcode...
+		$text = preg_replace_callback('#\[code=php\](.*)\[/code\]#s', function ($matches) {
+			$content = $matches[2];
+			$content = str_replace(array(
+				'<br />',
+				'&nbsp;&nbsp;&nbsp;&nbsp;'
+			), array(
+				"\n",
+				"\t"
+			), $content);
+			$content = preg_replace('#(?:<span class="syntax[^"]*">|</span>)#', '', $content);
+			
+			return '[code'.$matches[1].']'.$content.'[/code]';
+		}, $text);
 		
 		// convert attachments
 		$text = preg_replace('~\[attachment=(\d+)\]<!-- ia\\1 -->.*?<!-- ia\\1 -->\[/attachment\]~', '', $text); // TODO: not supported right now
-		
-		// convert email links
-		$text = preg_replace('~<!-- e --><a href="mailto:([^"]+@[^"]+\.[^"]+)">\\1</a><!-- e -->~', '[email]\\1[/email]', $text);
-		
-		// convert links
-		$text = preg_replace('~<!-- m --><a class="postlink" href="([^"]+)">[^"]+</a><!-- m -->~', '[url]\\1[/url]', $text);
-		$text = preg_replace('~<!-- l --><a class="postlink-local" href="([^"]+)">[^"]+</a><!-- l -->~', '[url]\\1[/url]', $text);
 		
 		// remove crap
 		$text = MessageUtil::stripCrap($text);
