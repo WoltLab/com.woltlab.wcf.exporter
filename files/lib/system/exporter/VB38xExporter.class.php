@@ -2,6 +2,7 @@
 namespace wcf\system\exporter;
 use wcf\data\like\Like;
 use wcf\data\object\type\ObjectTypeCache;
+use wcf\data\user\group\UserGroup;
 use wcf\data\user\option\UserOption;
 use wcf\system\database\util\PreparedStatementConditionBuilder;
 use wcf\system\database\DatabaseException;
@@ -85,13 +86,13 @@ class VB38xExporter extends AbstractExporter {
 		return array(
 			'com.woltlab.wcf.user' => array(
 				'com.woltlab.wcf.user.group',
-				'com.woltlab.wcf.user.avatar',
+			/*	'com.woltlab.wcf.user.avatar',
 				'com.woltlab.wcf.user.option',
 				'com.woltlab.wcf.user.comment',
 				'com.woltlab.wcf.user.follower',
-				'com.woltlab.wcf.user.rank'
+				'com.woltlab.wcf.user.rank'*/
 			),
-			'com.woltlab.wbb.board' => array(
+			/*'com.woltlab.wbb.board' => array(
 				'com.woltlab.wbb.acl',
 				'com.woltlab.wbb.attachment',
 				'com.woltlab.wbb.poll',
@@ -109,7 +110,7 @@ class VB38xExporter extends AbstractExporter {
 				'com.woltlab.blog.entry.comment',
 				'com.woltlab.blog.entry.like'
 			),
-			'com.woltlab.wcf.smiley' => array()
+			'com.woltlab.wcf.smiley' => array()*/
 		);
 	}
 	
@@ -146,14 +147,14 @@ class VB38xExporter extends AbstractExporter {
 	public function getQueue() {
 		$queue = array();
 		
-		/*
+		
 		// user
 		if (in_array('com.woltlab.wcf.user', $this->selectedData)) {
 			if (in_array('com.woltlab.wcf.user.group', $this->selectedData)) {
 				$queue[] = 'com.woltlab.wcf.user.group';
-				if (in_array('com.woltlab.wcf.user.rank', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.rank';
+			/*	if (in_array('com.woltlab.wcf.user.rank', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.rank'; */
 			}
-			if (in_array('com.woltlab.wcf.user.option', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.option';
+		/*	if (in_array('com.woltlab.wcf.user.option', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.option';
 			$queue[] = 'com.woltlab.wcf.user';
 			if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.avatar';
 			
@@ -175,9 +176,9 @@ class VB38xExporter extends AbstractExporter {
 				$queue[] = 'com.woltlab.wcf.conversation.user';
 					
 				if (in_array('com.woltlab.wcf.conversation.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wcf.conversation.attachment';
-			}
+			}*/
 		}
-		
+		/*
 		// board
 		if (in_array('com.woltlab.wbb.board', $this->selectedData)) {
 			$queue[] = 'com.woltlab.wbb.board';
@@ -211,5 +212,48 @@ class VB38xExporter extends AbstractExporter {
 		}*/
 		
 		return $queue;
+	}
+	
+	/**
+	 * Counts user groups.
+	 */
+	public function countUserGroups() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."usergroup";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports user groups.
+	 */
+	public function exportUserGroups($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."usergroup
+			ORDER BY	usergroupid ASC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			switch ($row['usergroupid']) {
+				case 1:
+					$groupType = UserGroup::GUESTS;
+					break;
+				case 2:
+					$groupType = UserGroup::USERS;
+					break;
+				default:
+					$groupType = UserGroup::OTHER;
+					break;
+			}
+				
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.group')->import($row['usergroupid'], array(
+				'groupName' => $row['title'],
+				'groupDescription' => $row['description'],
+				'groupType' => $groupType,
+				'userOnlineMarking' => $row['opentag'].'%s'.$row['closetag']
+			));
+		}
 	}
 }
