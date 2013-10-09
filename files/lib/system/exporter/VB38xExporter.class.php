@@ -154,9 +154,9 @@ class VB38xExporter extends AbstractExporter {
 				$queue[] = 'com.woltlab.wcf.user.group';
 			/*	if (in_array('com.woltlab.wcf.user.rank', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.rank'; */
 			}
-		/*	if (in_array('com.woltlab.wcf.user.option', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.option';
+			if (in_array('com.woltlab.wcf.user.option', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.option';
 			$queue[] = 'com.woltlab.wcf.user';
-			if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.avatar';
+		/*	if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.avatar';
 			
 			if ($this->getPackageVersion('com.woltlab.wcf.user.guestbook')) {
 				if (in_array('com.woltlab.wcf.user.comment', $this->selectedData)) {
@@ -254,6 +254,67 @@ class VB38xExporter extends AbstractExporter {
 				'groupType' => $groupType,
 				'userOnlineMarking' => $row['opentag'].'%s'.$row['closetag']
 			));
+		}
+	}
+	
+	/**
+	 * Counts users.
+	 */
+	public function countUsers() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."user";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports users.
+	 */
+	public function exportUsers($offset, $limit) {
+		// prepare password update
+		$sql = "UPDATE	wcf".WCF_N."_user
+			SET	password = ?
+			WHERE	userID = ?";
+		$passwordUpdateStatement = WCF::getDB()->prepareStatement($sql);
+		
+		// get users
+		$sql = "SELECT		user_table.*, textfield.*
+			FROM		".$this->databasePrefix."user user_table
+			LEFT JOIN	".$this->databasePrefix."usertextfield textfield
+			ON		user_table.userid = textfield.userid
+			ORDER BY	user_table.userid ASC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute(array(0));
+		
+		while ($row = $statement->fetchArray()) {
+			$data = array(
+				'username' => $row['username'],
+				'password' => '',
+				'email' => $row['email'],
+				'registrationDate' => $row['joindate'],
+				'banned' => 0, // TODO: 
+				'banReason' => '', // TODO:
+				'activationCode' => 0, // TODO:
+				'oldUsername' => '',
+				'registrationIpAddress' => UserUtil::convertIPv4To6($row['ipaddress']), // TODO: check whether this is the registration IP
+				'signature' => $row['signature'],
+				'userTitle' => ($row['customtitle'] != 0) ? $row['usertitle'] : '',
+				'lastActivityTime' => $row['lastactivity']
+			);
+			$additionalData = array(
+				'groupIDs' => explode(',', $row['membergroupids'].','.$row['usergroupid']),
+				'options' => array()
+			);
+			
+			// import user
+			$newUserID = ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user')->import($row['userid'], $data, $additionalData);
+			
+			// update password hash
+			if ($newUserID) {
+				$passwordUpdateStatement->execute(array('vb3:'.$row['password'].':'.$row['salt'], $newUserID));
+			}
 		}
 	}
 }
