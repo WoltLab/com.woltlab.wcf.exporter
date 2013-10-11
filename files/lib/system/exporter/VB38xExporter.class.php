@@ -1,7 +1,5 @@
 <?php
 namespace wcf\system\exporter;
-use wcf\util\ArrayUtil;
-
 use wcf\data\like\Like;
 use wcf\data\object\type\ObjectTypeCache;
 use wcf\data\user\group\UserGroup;
@@ -11,6 +9,7 @@ use wcf\system\database\DatabaseException;
 use wcf\system\exception\SystemException;
 use wcf\system\importer\ImportHandler;
 use wcf\system\WCF;
+use wcf\util\ArrayUtil;
 use wcf\util\MessageUtil;
 use wcf\util\StringUtil;
 use wcf\util\UserUtil;
@@ -89,8 +88,8 @@ class VB38xExporter extends AbstractExporter {
 			'com.woltlab.wcf.user' => array(
 				'com.woltlab.wcf.user.group',
 			/*	'com.woltlab.wcf.user.avatar',
-				'com.woltlab.wcf.user.option',
-				'com.woltlab.wcf.user.comment',*/
+				'com.woltlab.wcf.user.option',*/
+				'com.woltlab.wcf.user.comment',
 				'com.woltlab.wcf.user.follower',
 				'com.woltlab.wcf.user.rank'
 			),
@@ -158,14 +157,11 @@ class VB38xExporter extends AbstractExporter {
 			}
 			if (in_array('com.woltlab.wcf.user.option', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.option';
 			$queue[] = 'com.woltlab.wcf.user';
-		/*	if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.avatar';
+		/*	if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.avatar';*/
 			
-			if ($this->getPackageVersion('com.woltlab.wcf.user.guestbook')) {
-				if (in_array('com.woltlab.wcf.user.comment', $this->selectedData)) {
-					$queue[] = 'com.woltlab.wcf.user.comment';
-					$queue[] = 'com.woltlab.wcf.user.comment.response';
-				}
-			}*/
+			if (in_array('com.woltlab.wcf.user.comment', $this->selectedData)) {
+				$queue[] = 'com.woltlab.wcf.user.comment';
+			}
 			
 			if (in_array('com.woltlab.wcf.user.follower', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.follower';
 			
@@ -400,6 +396,38 @@ class VB38xExporter extends AbstractExporter {
 					'followUserID' => $buddy
 				));
 			}
+		}
+	}
+	
+	/**
+	 * Counts guestbook entries.
+	 */
+	public function countGuestbookEntries() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."visitormessage";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports guestbook entries.
+	 */
+	public function exportGuestbookEntries($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."visitormessage
+			ORDER BY	vmid ASC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.comment')->import($row['vmid'], array(
+				'objectID' => $row['userid'],
+				'userID' => $row['postuserid'],
+				'username' => $row['postusername'],
+				'message' => $row['pagetext'],
+				'time' => $row['dateline']
+			));
 		}
 	}
 }
