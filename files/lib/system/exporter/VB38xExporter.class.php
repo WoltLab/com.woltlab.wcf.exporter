@@ -10,6 +10,7 @@ use wcf\system\exception\SystemException;
 use wcf\system\importer\ImportHandler;
 use wcf\system\WCF;
 use wcf\util\ArrayUtil;
+use wcf\util\FileUtil;
 use wcf\util\MessageUtil;
 use wcf\util\StringUtil;
 use wcf\util\UserUtil;
@@ -87,8 +88,8 @@ class VB38xExporter extends AbstractExporter {
 		return array(
 			'com.woltlab.wcf.user' => array(
 				'com.woltlab.wcf.user.group',
-			/*	'com.woltlab.wcf.user.avatar',
-				'com.woltlab.wcf.user.option',*/
+				'com.woltlab.wcf.user.avatar',
+			/*	'com.woltlab.wcf.user.option',*/
 				'com.woltlab.wcf.user.comment',
 				'com.woltlab.wcf.user.follower',
 				'com.woltlab.wcf.user.rank'
@@ -135,7 +136,7 @@ class VB38xExporter extends AbstractExporter {
 	 * @see	wcf\system\exporter\IExporter::validateFileAccess()
 	 */
 	public function validateFileAccess() {
-		if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData) || in_array('com.woltlab.wbb.attachment', $this->selectedData) || in_array('com.woltlab.wcf.conversation.attachment', $this->selectedData) || in_array('com.woltlab.wcf.smiley', $this->selectedData)) {
+		if (in_array('com.woltlab.wbb.attachment', $this->selectedData) || in_array('com.woltlab.wcf.conversation.attachment', $this->selectedData) || in_array('com.woltlab.wcf.smiley', $this->selectedData)) {
 			if (empty($this->fileSystemPath) || !@file_exists($this->fileSystemPath . 'includes/version_vbulletin.php')) return false;
 		}
 		
@@ -157,7 +158,7 @@ class VB38xExporter extends AbstractExporter {
 			}
 			if (in_array('com.woltlab.wcf.user.option', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.option';
 			$queue[] = 'com.woltlab.wcf.user';
-		/*	if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.avatar';*/
+			if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.avatar';
 			
 			if (in_array('com.woltlab.wcf.user.comment', $this->selectedData)) {
 				$queue[] = 'com.woltlab.wcf.user.comment';
@@ -428,6 +429,51 @@ class VB38xExporter extends AbstractExporter {
 				'message' => $row['pagetext'],
 				'time' => $row['dateline']
 			));
+		}
+	}
+	
+	/**
+	 * Counts user avatars.
+	 */
+	public function countUserAvatars() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."customavatar";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports user avatars.
+	 */
+	public function exportUserAvatars($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."customavatar
+			ORDER BY	userid ASC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			$file = null;
+			
+			try {
+				$file = FileUtil::getTemporaryFilename('avatar_');
+				file_put_contents($file, $row['filedata']);
+				
+				ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.avatar')->import($row['userid'], array(
+					'avatarName' => $row['filename'],
+					'avatarExtension' => pathinfo($row['filename'], PATHINFO_EXTENSION),
+					'width' => $row['width'],
+					'height' => $row['height'],
+					'userID' => $row['userid']
+				), array('fileLocation' => $file));
+				unlink($file);
+			}
+			catch (\Exception $e) {
+				if ($file) @unlink($file);
+				
+				throw $e;
+			}
 		}
 	}
 }
