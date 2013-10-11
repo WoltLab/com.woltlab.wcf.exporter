@@ -101,12 +101,12 @@ class VB38xExporter extends AbstractExporter {
 				'com.woltlab.wbb.watchedThread',
 				'com.woltlab.wbb.like',
 				'com.woltlab.wcf.label'
-			),
+			),*/
 			'com.woltlab.wcf.conversation' => array(
-				'com.woltlab.wcf.conversation.attachment',
+				/*'com.woltlab.wcf.conversation.attachment',*/
 				'com.woltlab.wcf.conversation.label'
 			),
-			'com.woltlab.blog.entry' => array(
+			/*'com.woltlab.blog.entry' => array(
 				'com.woltlab.blog.category',
 				'com.woltlab.blog.entry.attachment',
 				'com.woltlab.blog.entry.comment',
@@ -166,16 +166,16 @@ class VB38xExporter extends AbstractExporter {
 			
 			if (in_array('com.woltlab.wcf.user.follower', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.follower';
 			
-		/*	// conversation
+			// conversation
 			if (in_array('com.woltlab.wcf.conversation', $this->selectedData)) {
 				if (in_array('com.woltlab.wcf.conversation.label', $this->selectedData)) $queue[] = 'com.woltlab.wcf.conversation.label';
-				
+			/*	
 				$queue[] = 'com.woltlab.wcf.conversation';
 				$queue[] = 'com.woltlab.wcf.conversation.message';
 				$queue[] = 'com.woltlab.wcf.conversation.user';
 					
-				if (in_array('com.woltlab.wcf.conversation.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wcf.conversation.attachment';
-			}*/
+				if (in_array('com.woltlab.wcf.conversation.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wcf.conversation.attachment';*/
+			}
 		}
 		/*
 		// board
@@ -383,7 +383,7 @@ class VB38xExporter extends AbstractExporter {
 	 * Exports followers.
 	 */
 	public function exportFollowers($offset, $limit) {
-		$sql = "SELECT		*
+		$sql = "SELECT		userid, buddylist
 			FROM		".$this->databasePrefix."usertextfield
 			WHERE		buddylist <> ?
 			ORDER BY	userid ASC";
@@ -473,6 +473,40 @@ class VB38xExporter extends AbstractExporter {
 				if ($file) @unlink($file);
 				
 				throw $e;
+			}
+		}
+	}
+	
+	/**
+	 * Counts conversation folders.
+	 */
+	public function countConversationFolders() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."usertextfield
+			WHERE	pmfolders IS NOT NULL";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports conversation folders.
+	 */
+	public function exportConversationFolders($offset, $limit) {
+		$sql = "SELECT		userid, pmfolders
+			FROM		".$this->databasePrefix."usertextfield
+			WHERE		pmfolders IS NOT NULL
+			ORDER BY	userid ASC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			$pmfolders = unserialize($row['pmfolders']);
+			foreach ($pmfolders as $key => $val) {
+				ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.label')->import($row['userid'].'-'.$key, array(
+					'userID' => $row['userid'],
+					'label' => mb_substr($val, 0, 80)
+				));
 			}
 		}
 	}
