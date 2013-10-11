@@ -1,5 +1,7 @@
 <?php
 namespace wcf\system\exporter;
+use wcf\util\ArrayUtil;
+
 use wcf\data\like\Like;
 use wcf\data\object\type\ObjectTypeCache;
 use wcf\data\user\group\UserGroup;
@@ -88,8 +90,8 @@ class VB38xExporter extends AbstractExporter {
 				'com.woltlab.wcf.user.group',
 			/*	'com.woltlab.wcf.user.avatar',
 				'com.woltlab.wcf.user.option',
-				'com.woltlab.wcf.user.comment',
-				'com.woltlab.wcf.user.follower',*/
+				'com.woltlab.wcf.user.comment',*/
+				'com.woltlab.wcf.user.follower',
 				'com.woltlab.wcf.user.rank'
 			),
 			/*'com.woltlab.wbb.board' => array(
@@ -163,11 +165,11 @@ class VB38xExporter extends AbstractExporter {
 					$queue[] = 'com.woltlab.wcf.user.comment';
 					$queue[] = 'com.woltlab.wcf.user.comment.response';
 				}
-			}
+			}*/
 			
 			if (in_array('com.woltlab.wcf.user.follower', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.follower';
 			
-			// conversation
+		/*	// conversation
 			if (in_array('com.woltlab.wcf.conversation', $this->selectedData)) {
 				if (in_array('com.woltlab.wcf.conversation.label', $this->selectedData)) $queue[] = 'com.woltlab.wcf.conversation.label';
 				
@@ -364,6 +366,40 @@ class VB38xExporter extends AbstractExporter {
 				'requiredPoints' => $row['minposts'] * 5,
 				'rankTitle' => $row['title']
 			));
+		}
+	}
+	
+	/**
+	 * Counts followers.
+	 */
+	public function countFollowers() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."usertextfield
+			WHERE	buddylist <> ?";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array(''));
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports followers.
+	 */
+	public function exportFollowers($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."usertextfield
+			WHERE		buddylist <> ?
+			ORDER BY	userid ASC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute(array(''));
+		while ($row = $statement->fetchArray()) {
+			$buddies = array_unique(ArrayUtil::toIntegerArray(explode(' ', $row['buddylist'])));
+			foreach ($buddies as $buddy) {
+				ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.follower')->import(0, array(
+					'userID' => $row['userid'],
+					'followUserID' => $buddy
+				));
+			}
 		}
 	}
 }
