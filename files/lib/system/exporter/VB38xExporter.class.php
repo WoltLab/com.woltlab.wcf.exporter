@@ -89,8 +89,8 @@ class VB38xExporter extends AbstractExporter {
 			/*	'com.woltlab.wcf.user.avatar',
 				'com.woltlab.wcf.user.option',
 				'com.woltlab.wcf.user.comment',
-				'com.woltlab.wcf.user.follower',
-				'com.woltlab.wcf.user.rank'*/
+				'com.woltlab.wcf.user.follower',*/
+				'com.woltlab.wcf.user.rank'
 			),
 			/*'com.woltlab.wbb.board' => array(
 				'com.woltlab.wbb.acl',
@@ -152,7 +152,7 @@ class VB38xExporter extends AbstractExporter {
 		if (in_array('com.woltlab.wcf.user', $this->selectedData)) {
 			if (in_array('com.woltlab.wcf.user.group', $this->selectedData)) {
 				$queue[] = 'com.woltlab.wcf.user.group';
-			/*	if (in_array('com.woltlab.wcf.user.rank', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.rank'; */
+				if (in_array('com.woltlab.wcf.user.rank', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.rank';
 			}
 			if (in_array('com.woltlab.wcf.user.option', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.option';
 			$queue[] = 'com.woltlab.wcf.user';
@@ -315,6 +315,55 @@ class VB38xExporter extends AbstractExporter {
 			if ($newUserID) {
 				$passwordUpdateStatement->execute(array('vb3:'.$row['password'].':'.$row['salt'], $newUserID));
 			}
+		}
+	}
+	
+	/**
+	 * Counts user ranks.
+	 */
+	public function countUserRanks() {
+		$sql = "SELECT
+			(
+				SELECT	COUNT(*)
+				FROM	".$this->databasePrefix."usertitle
+			)
+			+
+			(
+				SELECT COUNT(*)
+				FROM	".$this->databasePrefix."usergroup
+				WHERE		usergroupid NOT IN(?, ?)
+					AND	usertitle <> ?
+			) AS count";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array(1, 2, ''));
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports user ranks.
+	 */
+	public function exportUserRanks($offset, $limit) {
+		$sql = "(
+				SELECT	usertitleid, 2 AS groupID, minposts, title
+				FROM	".$this->databasePrefix."usertitle
+			)
+			UNION
+			(
+				SELECT	('g-' || usergroupid) AS usertitleid, usergroupid AS groupID, 0 AS minposts, usertitle AS title
+				FROM	".$this->databasePrefix."usergroup
+				WHERE		usergroupid NOT IN(?, ?)
+					AND	usertitle <> ?
+			)
+			ORDER BY	usertitleid ASC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute(array(1, 2, ''));
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.rank')->import($row['usertitleid'], array(
+				'groupID' => $row['groupID'],
+				'requiredPoints' => $row['minposts'] * 5,
+				'rankTitle' => $row['title']
+			));
 		}
 	}
 }
