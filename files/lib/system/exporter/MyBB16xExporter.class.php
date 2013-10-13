@@ -479,7 +479,7 @@ class MyBB16xExporter extends AbstractExporter {
 		$sql = "SELECT		message_table.*, user_table.username
 			FROM		".$this->databasePrefix."privatemessages message_table
 			LEFT JOIN	".$this->databasePrefix."users user_table
-			ON 		user_table.uid = message_table.fromid
+			ON		user_table.uid = message_table.fromid
 			WHERE		pmid IN (
 						SELECT		MIN(pmID)
 						FROM		".$this->databasePrefix."privatemessages

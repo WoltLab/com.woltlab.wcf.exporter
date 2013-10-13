@@ -266,8 +266,8 @@ class WBB2xExporter extends AbstractExporter {
 		$sql = "SELECT		userfields.*, user.*,
 					(
 						SELECT	GROUP_CONCAT(groupid)
-						FROM 	".$this->databasePrefix."user2groups
-						WHERE 	userid = user.userid
+						FROM	".$this->databasePrefix."user2groups
+						WHERE	userid = user.userid
 					) AS groupIDs
 			FROM		".$this->databasePrefix."users user
 			LEFT JOIN	".$this->databasePrefix."userfields userfields
@@ -1020,7 +1020,7 @@ class WBB2xExporter extends AbstractExporter {
 	 */
 	public function countACLs() {
 		$sql = "SELECT	COUNT(*) AS count
-			FROM 	".$this->databasePrefix."permissions";
+			FROM	".$this->databasePrefix."permissions";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute();
 		$row = $statement->fetchArray();

@@ -347,15 +347,15 @@ class WBB3xExporter extends AbstractExporter {
 		$sql = "SELECT		user_option_value.*, user_table.*,
 					(
 						SELECT	GROUP_CONCAT(groupID)
-						FROM 	wcf".$this->dbNo."_user_to_groups
-						WHERE 	userID = user_table.userID
+						FROM	wcf".$this->dbNo."_user_to_groups
+						WHERE	userID = user_table.userID
 					) AS groupIDs,
 					(
 						SELECT		GROUP_CONCAT(language.languageCode)
-						FROM 		wcf".$this->dbNo."_user_to_languages user_to_languages
+						FROM		wcf".$this->dbNo."_user_to_languages user_to_languages
 						LEFT JOIN	wcf".$this->dbNo."_language language
 						ON		(language.languageID = user_to_languages.languageID)
-						WHERE 		user_to_languages.userID = user_table.userID			
+						WHERE		user_to_languages.userID = user_table.userID			
 					) AS languageCodes
 			FROM		wcf".$this->dbNo."_user user_table
 			LEFT JOIN	wcf".$this->dbNo."_user_option_value user_option_value
@@ -528,7 +528,7 @@ class WBB3xExporter extends AbstractExporter {
 		$sql = "SELECT		user_guestbook.*, user_table.username AS ownerName
 			FROM		wcf".$this->dbNo."_user_guestbook user_guestbook
 			LEFT JOIN	wcf".$this->dbNo."_user user_table
-			ON 		(user_table.userID = user_guestbook.ownerID)
+			ON		(user_table.userID = user_guestbook.ownerID)
 			WHERE		user_guestbook.commentTime > ?
 			ORDER BY	user_guestbook.entryID";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
@@ -609,7 +609,7 @@ class WBB3xExporter extends AbstractExporter {
 		$conditionBuilder->add('categoryName IN (SELECT categoryName FROM wcf'.$this->dbNo.'_user_option_category WHERE parentCategoryName = ?)', array('profile'));
 		if (!empty($optionsNames)) $conditionBuilder->add('optionName NOT IN (?)', array($optionsNames));
 		
-		$sql = "SELECT 	user_option.*, (
+		$sql = "SELECT	user_option.*, (
 					SELECT	languageItemValue
 					FROM	wcf".$this->dbNo."_language_item
 					WHERE	languageItem = CONCAT('wcf.user.option.', user_option.optionName)
@@ -1226,7 +1226,7 @@ class WBB3xExporter extends AbstractExporter {
 			WHERE	pollID IN (
 					SELECT	pollID
 					FROM	wcf".$this->dbNo."_poll
-					WHERE 	messageType = ?	
+					WHERE	messageType = ?	
 				)";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute(array('post'));
@@ -1243,7 +1243,7 @@ class WBB3xExporter extends AbstractExporter {
 			WHERE		pollID IN (
 						SELECT	pollID
 						FROM	wcf".$this->dbNo."_poll
-						WHERE 	messageType = ?	
+						WHERE	messageType = ?	
 					)
 			ORDER BY	pollOptionID";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
@@ -1267,7 +1267,7 @@ class WBB3xExporter extends AbstractExporter {
 			WHERE	pollID IN (
 					SELECT	pollID
 					FROM	wcf".$this->dbNo."_poll
-					WHERE 	messageType = ?
+					WHERE	messageType = ?
 				)
 				AND userID <> ?";
 		$statement = $this->database->prepareStatement($sql);
@@ -1285,7 +1285,7 @@ class WBB3xExporter extends AbstractExporter {
 			WHERE		pollID IN (
 						SELECT	pollID
 						FROM	wcf".$this->dbNo."_poll
-						WHERE 	messageType = ?
+						WHERE	messageType = ?
 					)
 					AND userID <> ?
 			ORDER BY	pollOptionID, userID";
