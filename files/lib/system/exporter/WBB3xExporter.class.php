@@ -355,7 +355,7 @@ class WBB3xExporter extends AbstractExporter {
 						FROM		wcf".$this->dbNo."_user_to_languages user_to_languages
 						LEFT JOIN	wcf".$this->dbNo."_language language
 						ON		(language.languageID = user_to_languages.languageID)
-						WHERE		user_to_languages.userID = user_table.userID			
+						WHERE		user_to_languages.userID = user_table.userID
 					) AS languageCodes
 			FROM		wcf".$this->dbNo."_user user_table
 			LEFT JOIN	wcf".$this->dbNo."_user_option_value user_option_value
@@ -1872,7 +1872,7 @@ class WBB3xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			$optionsNames[] = $row['optionName'];
 		}
-	
+		
 		return $optionsNames;
 	}
 	

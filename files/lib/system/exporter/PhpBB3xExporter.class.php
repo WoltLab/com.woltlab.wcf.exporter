@@ -279,7 +279,7 @@ class PhpBB3xExporter extends AbstractExporter {
 			SET	password = ?
 			WHERE	userID = ?";
 		$passwordUpdateStatement = WCF::getDB()->prepareStatement($sql);
-	
+		
 		// get users
 		$sql = "SELECT		user_table.*, ban_table.ban_give_reason AS banReason,
 					(
@@ -295,7 +295,7 @@ class PhpBB3xExporter extends AbstractExporter {
 			ORDER BY	user_id ASC";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array(0, 2));
-	
+		
 		while ($row = $statement->fetchArray()) {
 			$data = array(
 				'username' => $row['username'],

@@ -86,7 +86,7 @@ class WBB2xExporter extends AbstractExporter {
 	 */
 	public function validateDatabaseAccess() {
 		parent::validateDatabaseAccess();
-	
+		
 		$sql = "SELECT COUNT(*) FROM ".$this->databasePrefix."posts";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute();
@@ -99,7 +99,7 @@ class WBB2xExporter extends AbstractExporter {
 		if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData) || in_array('com.woltlab.wbb.attachment', $this->selectedData) || in_array('com.woltlab.wcf.conversation.attachment', $this->selectedData) || in_array('com.woltlab.wcf.smiley', $this->selectedData)) {
 			if (empty($this->fileSystemPath) || !@file_exists($this->fileSystemPath . 'newthread.php')) return false;
 		}
-	
+		
 		return true;
 	}
 	
@@ -605,7 +605,7 @@ class WBB2xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			$this->boardCache[$row['parentid']][] = $row;
 		}
-	
+		
 		$this->exportBoardsRecursively();
 	}
 	
