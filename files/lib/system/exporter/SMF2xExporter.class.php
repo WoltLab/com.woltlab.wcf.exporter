@@ -558,7 +558,7 @@ class SMF2xExporter extends AbstractExporter {
 	 * Exports conversation recipients.
 	 */
 	public function exportConversationUsers($offset, $limit) {
-		$sql = "SELECT		recipients.*, pm.id_pm_head, members.member_name
+		$sql = "SELECT		recipients.*, pm.id_pm_head, members.member_name, pm.msgtime
 			FROM		".$this->databasePrefix."pm_recipients recipients
 			LEFT JOIN	".$this->databasePrefix."personal_messages pm
 			ON		(pm.id_pm = recipients.id_pm)
@@ -581,7 +581,7 @@ class SMF2xExporter extends AbstractExporter {
 				'username' => $row['member_name'],
 				'hideConversation' => $row['deleted'] ? 1 : 0,
 				'isInvisible' => $row['bcc'] ? 1 : 0,
-				'lastVisitTime' => $row['is_new'] ? 0 : 1
+				'lastVisitTime' => $row['is_new'] ? 0 : $row['msgtime']
 			), array('labelIDs' => $labels));
 		}
 	}

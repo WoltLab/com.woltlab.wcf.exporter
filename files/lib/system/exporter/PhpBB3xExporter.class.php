@@ -632,7 +632,7 @@ class PhpBB3xExporter extends AbstractExporter {
 	 * Exports conversation recipients.
 	 */
 	public function exportConversationUsers($offset, $limit) {
-		$sql = "SELECT		to_table.*, msg_table.root_level, msg_table.bcc_address, user_table.username
+		$sql = "SELECT		to_table.*, msg_table.root_level, msg_table.bcc_address, user_table.username, msg_table.message_time
 			FROM		".$this->databasePrefix."privmsgs_to to_table
 			LEFT JOIN	".$this->databasePrefix."privmsgs msg_table
 			ON		(msg_table.msg_id = to_table.msg_id)
@@ -649,7 +649,7 @@ class PhpBB3xExporter extends AbstractExporter {
 				'username' => $row['username'] ?: '',
 				'hideConversation' => $row['pm_deleted'],
 				'isInvisible' => in_array('u_'.$row['user_id'], $bcc) ? 1 : 0,
-				'lastVisitTime' => $row['pm_unread'] ? 0 : 1
+				'lastVisitTime' => $row['pm_new'] ? 0 : $row['message_time']
 			), array('labelIDs' => ($row['folder_id'] > 0 ? array($row['folder_id']) : array())));
 		}
 	}
