@@ -494,11 +494,6 @@ class PhpBB3xExporter extends AbstractExporter {
 	 * Exports conversations.
 	 */
 	public function exportConversations($offset, $limit) {
-		$sql = "INSERT IGNORE INTO	wcf".WCF_N."_conversation_to_user
-						(conversationID, participantID, hideConversation, isInvisible, lastVisitTime)
-			VALUES			(?, ?, ?, ?, ?)";
-		$insertStatement = WCF::getDB()->prepareStatement($sql);
-		
 		$sql = "(
 				SELECT		msg_table.msg_id,
 						msg_table.message_subject,
@@ -528,21 +523,12 @@ class PhpBB3xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array(0, 0));
 		while ($row = $statement->fetchArray()) {
-			$conversationID = ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import(($row['isDraft'] ? 'draft-' : '').$row['msg_id'], array(
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import(($row['isDraft'] ? 'draft-' : '').$row['msg_id'], array(
 				'subject' => StringUtil::decodeHTML($row['message_subject']),
 				'time' => $row['message_time'],
 				'userID' => $row['author_id'],
 				'username' => $row['username'] ?: '',
 				'isDraft' => $row['isDraft']
-			));
-			
-			// add author
-			$insertStatement->execute(array(
-				$conversationID,
-				ImportHandler::getInstance()->getNewID('com.woltlab.wcf.user', $row['author_id']),
-				0,
-				0,
-				TIME_NOW
 			));
 		}
 	}

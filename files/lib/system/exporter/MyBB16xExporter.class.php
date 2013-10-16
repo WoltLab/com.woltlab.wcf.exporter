@@ -471,11 +471,6 @@ class MyBB16xExporter extends AbstractExporter {
 	 * Exports conversations.
 	 */
 	public function exportConversations($offset, $limit) {
-		$sql = "INSERT IGNORE INTO	wcf".WCF_N."_conversation_to_user
-						(conversationID, participantID, hideConversation, isInvisible, lastVisitTime)
-			VALUES			(?, ?, ?, ?, ?)";
-		$insertStatement = WCF::getDB()->prepareStatement($sql);
-		
 		$sql = "SELECT		message_table.*, user_table.username
 			FROM		".$this->databasePrefix."privatemessages message_table
 			LEFT JOIN	".$this->databasePrefix."users user_table
@@ -498,18 +493,6 @@ class MyBB16xExporter extends AbstractExporter {
 				'username' => $row['username'],
 				'isDraft' => $row['isDraft']
 			));
-			
-			$authorID = ImportHandler::getInstance()->getNewID('com.woltlab.wcf.user', $row['fromid']);
-			if ($authorID) {
-				// add author
-				$insertStatement->execute(array(
-					$conversationID,
-					$authorID,
-					0,
-					0,
-					TIME_NOW
-				));
-			}
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.message')->import($row['pmid'], array(
 				'conversationID' => $row['fromid'].'-'.$row['dateline'],

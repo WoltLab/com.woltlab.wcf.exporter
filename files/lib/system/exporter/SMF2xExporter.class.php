@@ -486,21 +486,12 @@ class SMF2xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array(0));
 		while ($row = $statement->fetchArray()) {
-			$conversationID = ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import($row['id_pm'], array(
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import($row['id_pm'], array(
 				'subject' => $row['subject'],
 				'time' => $row['msgtime'],
 				'userID' => $row['id_member_from'],
 				'username' => $row['from_name'],
 				'isDraft' => 0
-			));
-			
-			// add author
-			$insertStatement->execute(array(
-				$conversationID,
-				ImportHandler::getInstance()->getNewID('com.woltlab.wcf.user', $row['id_member_from']),
-				0,
-				0,
-				TIME_NOW
 			));
 		}
 	}
