@@ -172,9 +172,9 @@ class VB38xExporter extends AbstractExporter {
 				
 				$queue[] = 'com.woltlab.wcf.conversation';
 				$queue[] = 'com.woltlab.wcf.conversation.message';
-			/*	$queue[] = 'com.woltlab.wcf.conversation.user';
+				$queue[] = 'com.woltlab.wcf.conversation.user';
 					
-				if (in_array('com.woltlab.wcf.conversation.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wcf.conversation.attachment';*/
+			/*	if (in_array('com.woltlab.wcf.conversation.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wcf.conversation.attachment';*/
 			}
 		}
 		/*
@@ -549,20 +549,18 @@ class VB38xExporter extends AbstractExporter {
 				'time' => $row['dateline'],
 				'userID' => $row['fromuserid'],
 				'username' => $row['fromusername'],
-				'isDraft' => 0 // TODO: drafts
+				'isDraft' => 0
 			));
 			
 			// add author
-			if (true || !$row['isDraft']) { // TODO: drafts
-				$insertStatement->execute(array(
-					$conversationID,
-					ImportHandler::getInstance()->getNewID('com.woltlab.wcf.user', $row['fromuserid']),
-					$row['fromusername'],
-					0,
-					0,
-					TIME_NOW
-				));
-			}
+			$insertStatement->execute(array(
+				$conversationID,
+				ImportHandler::getInstance()->getNewID('com.woltlab.wcf.user', $row['fromuserid']),
+				$row['fromusername'],
+				0,
+				0,
+				TIME_NOW
+			));
 		}
 	}
 	
@@ -603,6 +601,45 @@ class VB38xExporter extends AbstractExporter {
 				'enableBBCodes' => 1,
 				'showSignature' => $row['showsignature']
 			));
+		}
+	}
+	
+	/**
+	 * Counts conversation recipients.
+	 */
+	public function countConversationUsers() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."pm";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports conversation recipients.
+	 */
+	public function exportConversationUsers($offset, $limit) {
+		$sql = "SELECT		pm.*, user.username, pmtext.touserarray, pmtext.dateline
+			FROM		".$this->databasePrefix."pm pm
+			LEFT JOIN	".$this->databasePrefix."user user
+			ON		pm.userid = user.userid
+			LEFT JOIN	".$this->databasePrefix."pmtext pmtext
+			ON		pmtext.pmtextid = pm.pmtextid
+			ORDER BY	pm.pmid ASC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			$recipients = unserialize($row['touserarray']);
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.user')->import(0, array(
+				'conversationID' => ($row['parentpmid'] ?: $row['pmid']),
+				'participantID' => $row['userid'],
+				'username' => $row['username'],
+				'hideConversation' => 0, // there is no trash
+				'isInvisible' => (isset($recipients['bcc']) && isset($recipients['bcc'][$row['userid']])) ? 1 : 0,
+				'lastVisitTime' => $row['messageread'] ? $row['dateline'] : 0
+			), array('labelIDs' => ($row['folderid'] > 0 ? array($row['userid'].'-'.$row['folderid']) : array())));
 		}
 	}
 	
