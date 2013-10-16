@@ -474,11 +474,6 @@ class SMF2xExporter extends AbstractExporter {
 	 * Exports conversations.
 	 */
 	public function exportConversations($offset, $limit) {
-		$sql = "INSERT IGNORE INTO	wcf".WCF_N."_conversation_to_user
-						(conversationID, participantID, hideConversation, isInvisible, lastVisitTime)
-			VALUES			(?, ?, ?, ?, ?)";
-		$insertStatement = WCF::getDB()->prepareStatement($sql);
-		
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."personal_messages
 			WHERE		id_pm = id_pm_head
