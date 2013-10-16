@@ -42,7 +42,7 @@ class WBB3xExporter extends AbstractExporter {
 	protected $boardCache = array();
 	
 	/**
-	 * @see	wcf\system\exporter\AbstractExporter::$methods
+	 * @see	\wcf\system\exporter\AbstractExporter::$methods
 	 */
 	protected $methods = array(
 		'com.woltlab.wcf.user' => 'Users',
@@ -79,7 +79,7 @@ class WBB3xExporter extends AbstractExporter {
 	);
 	
 	/**
-	 * @see	wcf\system\exporter\AbstractExporter::$limits
+	 * @see	\wcf\system\exporter\AbstractExporter::$limits
 	 */
 	protected $limits = array(
 		'com.woltlab.wcf.user' => 100,
@@ -91,7 +91,7 @@ class WBB3xExporter extends AbstractExporter {
 	);
 	
 	/**
-	 * @see	wcf\system\exporter\IExporter::init()
+	 * @see	\wcf\system\exporter\IExporter::init()
 	 */
 	public function init() {
 		parent::init();
@@ -110,7 +110,7 @@ class WBB3xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see	wcf\system\exporter\IExporter::getSupportedData()
+	 * @see	\wcf\system\exporter\IExporter::getSupportedData()
 	 */
 	public function getSupportedData() {
 		return array(
@@ -145,7 +145,7 @@ class WBB3xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see	wcf\system\exporter\IExporter::validateDatabaseAccess()
+	 * @see	\wcf\system\exporter\IExporter::validateDatabaseAccess()
 	 */
 	public function validateDatabaseAccess() {
 		parent::validateDatabaseAccess();
@@ -156,7 +156,7 @@ class WBB3xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see	wcf\system\exporter\IExporter::validateFileAccess()
+	 * @see	\wcf\system\exporter\IExporter::validateFileAccess()
 	 */
 	public function validateFileAccess() {
 		if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData) || in_array('com.woltlab.wbb.attachment', $this->selectedData) || in_array('com.woltlab.wcf.conversation.attachment', $this->selectedData) || in_array('com.woltlab.wcf.smiley', $this->selectedData)) {
@@ -167,7 +167,7 @@ class WBB3xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see	wcf\system\exporter\IExporter::getQueue()
+	 * @see	\wcf\system\exporter\IExporter::getQueue()
 	 */
 	public function getQueue() {
 		$queue = array();
@@ -239,7 +239,7 @@ class WBB3xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see	wcf\system\exporter\IExporter::getDefaultDatabasePrefix()
+	 * @see	\wcf\system\exporter\IExporter::getDefaultDatabasePrefix()
 	 */
 	public function getDefaultDatabasePrefix() {
 		return 'wbb1_1_';

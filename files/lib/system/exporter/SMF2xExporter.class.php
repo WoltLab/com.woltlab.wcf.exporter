@@ -49,7 +49,7 @@ class SMF2xExporter extends AbstractExporter {
 	protected $boardCache = array();
 	
 	/**
-	 * @see	wcf\system\exporter\AbstractExporter::$methods
+	 * @see	\wcf\system\exporter\AbstractExporter::$methods
 	 */
 	protected $methods = array(
 		'com.woltlab.wcf.user' => 'Users',
@@ -78,7 +78,7 @@ class SMF2xExporter extends AbstractExporter {
 	);
 	
 	/**
-	 * @see	wcf\system\exporter\AbstractExporter::$limits
+	 * @see	\wcf\system\exporter\AbstractExporter::$limits
 	 */
 	protected $limits = array(
 		'com.woltlab.wcf.user' => 200,
@@ -87,7 +87,7 @@ class SMF2xExporter extends AbstractExporter {
 	);
 	
 	/**
-	 * @see	wcf\system\exporter\IExporter::getSupportedData()
+	 * @see	\wcf\system\exporter\IExporter::getSupportedData()
 	 */
 	public function getSupportedData() {
 		return array(
@@ -112,7 +112,7 @@ class SMF2xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see	wcf\system\exporter\IExporter::validateDatabaseAccess()
+	 * @see	\wcf\system\exporter\IExporter::validateDatabaseAccess()
 	 */
 	public function validateDatabaseAccess() {
 		parent::validateDatabaseAccess();
@@ -121,7 +121,7 @@ class SMF2xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see	wcf\system\exporter\IExporter::validateFileAccess()
+	 * @see	\wcf\system\exporter\IExporter::validateFileAccess()
 	 */
 	public function validateFileAccess() {
 		if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData) || in_array('com.woltlab.wbb.attachment', $this->selectedData) || in_array('com.woltlab.wcf.smiley', $this->selectedData)) {
@@ -132,7 +132,7 @@ class SMF2xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see	wcf\system\exporter\IExporter::getQueue()
+	 * @see	\wcf\system\exporter\IExporter::getQueue()
 	 */
 	public function getQueue() {
 		$queue = array();
@@ -183,7 +183,7 @@ class SMF2xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see	wcf\system\exporter\IExporter::getDefaultDatabasePrefix()
+	 * @see	\wcf\system\exporter\IExporter::getDefaultDatabasePrefix()
 	 */
 	public function getDefaultDatabasePrefix() {
 		return 'smf_';
