@@ -1,5 +1,7 @@
 <?php
 namespace wcf\system\exporter;
+use wbb\data\board\Board;
+
 use wcf\data\like\Like;
 use wcf\data\object\type\ObjectTypeCache;
 use wcf\data\user\group\UserGroup;
@@ -26,6 +28,25 @@ use wcf\util\UserUtil;
  * @category	Community Framework (commercial)
  */
 class VB38xExporter extends AbstractExporter {
+	const FORUMOPTIONS_ACTIVE = 1;
+	const FORUMOPTIONS_ALLOWPOSTING = 2;
+	const FORUMOPTIONS_CANCONTAINTHREADS = 4;
+	const FORUMOPTIONS_MODERATENEWPOST = 8;
+	const FORUMOPTIONS_MODERATENEWTHREAD = 16;
+	const FORUMOPTIONS_MODERATEATTACH = 32;
+	const FORUMOPTIONS_ALLOWBBCODE = 64;
+	const FORUMOPTIONS_ALLOWIMAGES = 128;
+	const FORUMOPTIONS_ALLOWHTML = 256;
+	const FORUMOPTIONS_ALLOWSMILIES = 512;
+	const FORUMOPTIONS_ALLOWICONS = 1024;
+	const FORUMOPTIONS_ALLOWRATINGS = 2048;
+	const FORUMOPTIONS_COUNTPOSTS = 4096;
+	const FORUMOPTIONS_CANHAVEPASSWORD = 8192;
+	const FORUMOPTIONS_INDEXPOSTS = 16384;
+	const FORUMOPTIONS_STYLEOVERRIDE = 32768;
+	const FORUMOPTIONS_SHOWONFORUMJUMP = 65536;
+	const FORUMOPTIONS_PREFIXREQUIRED = 131072;
+	
 	/**
 	 * board cache
 	 * @var	array
@@ -94,14 +115,14 @@ class VB38xExporter extends AbstractExporter {
 				'com.woltlab.wcf.user.follower',
 				'com.woltlab.wcf.user.rank'
 			),
-			/*'com.woltlab.wbb.board' => array(
-				'com.woltlab.wbb.acl',
+			'com.woltlab.wbb.board' => array(
+			/*	'com.woltlab.wbb.acl',
 				'com.woltlab.wbb.attachment',
 				'com.woltlab.wbb.poll',
 				'com.woltlab.wbb.watchedThread',
 				'com.woltlab.wbb.like',
-				'com.woltlab.wcf.label'
-			),*/
+				'com.woltlab.wcf.label' */
+			),
 			'com.woltlab.wcf.conversation' => array(
 				/*'com.woltlab.wcf.conversation.attachment',*/
 				'com.woltlab.wcf.conversation.label'
@@ -177,11 +198,11 @@ class VB38xExporter extends AbstractExporter {
 			/*	if (in_array('com.woltlab.wcf.conversation.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wcf.conversation.attachment';*/
 			}
 		}
-		/*
+		
 		// board
 		if (in_array('com.woltlab.wbb.board', $this->selectedData)) {
 			$queue[] = 'com.woltlab.wbb.board';
-			if (in_array('com.woltlab.wcf.label', $this->selectedData)) $queue[] = 'com.woltlab.wcf.label';
+	/*		if (in_array('com.woltlab.wcf.label', $this->selectedData)) $queue[] = 'com.woltlab.wcf.label';
 			$queue[] = 'com.woltlab.wbb.thread';
 			$queue[] = 'com.woltlab.wbb.post';
 			
@@ -193,9 +214,9 @@ class VB38xExporter extends AbstractExporter {
 				$queue[] = 'com.woltlab.wbb.poll.option';
 				$queue[] = 'com.woltlab.wbb.poll.option.vote';
 			}
-			if (in_array('com.woltlab.wbb.like', $this->selectedData)) $queue[] = 'com.woltlab.wbb.like';
+			if (in_array('com.woltlab.wbb.like', $this->selectedData)) $queue[] = 'com.woltlab.wbb.like';*/
 		}
-		
+		/*
 		// smiley
 		if (in_array('com.woltlab.wcf.smiley', $this->selectedData)) $queue[] = 'com.woltlab.wcf.smiley';
 		
@@ -625,6 +646,76 @@ class VB38xExporter extends AbstractExporter {
 				'isInvisible' => (isset($recipients['bcc']) && isset($recipients['bcc'][$row['userid']])) ? 1 : 0,
 				'lastVisitTime' => $row['messageread'] ? $row['dateline'] : 0
 			), array('labelIDs' => ($row['folderid'] > 0 ? array($row['userid'].'-'.$row['folderid']) : array())));
+		}
+	}
+	
+	/**
+	 * Counts boards.
+	 */
+	public function countBoards() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."forum";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return ($row['count'] ? 1 : 0);
+	}
+	
+	/**
+	 * Exports boards.
+	 */
+	public function exportBoards($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."forum
+			ORDER BY	forumid";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			$this->boardCache[$row['parentid']][] = $row;
+		}
+	
+		$this->exportBoardsRecursively();
+	}
+	
+	/**
+	 * Exports the boards recursively.
+	 */
+	protected function exportBoardsRecursively($parentID = -1) {
+		if (!isset($this->boardCache[$parentID])) return;
+		$getDaysPrune = function ($value) {
+			if ($value === -1) return 1000;
+			
+			$availableDaysPrune = array(1, 3, 7, 14, 30, 60, 100, 365);
+			
+			foreach ($availableDaysPrune as $daysPrune) {
+				if ($value <= $daysPrune) return $daysPrune;
+			}
+			
+			return 1000;
+		};
+		foreach ($this->boardCache[$parentID] as $board) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import($board['forumid'], array(
+				'parentID' => ($board['parentid'] != -1 ? $board['parentid'] : null),
+				'position' => $board['displayorder'],
+				'boardType' => ($board['link'] ? Board::TYPE_LINK : ($board['options'] & self::FORUMOPTIONS_CANCONTAINTHREADS ? Board::TYPE_BOARD : Board::TYPE_CATEGORY)),
+				'title' => $board['title_clean'],
+				'description' => $board['description_clean'],
+				'descriptionUseHtml' => 0,
+				'externalURL' => $board['link'],
+				'countUserPosts' => $board['options'] & self::FORUMOPTIONS_COUNTPOSTS ? 1 : 0,
+				'daysPrune' => $getDaysPrune($board['daysprune']),
+				'enableMarkingAsDone' => 0,
+				'ignorable' => 1,
+				'isClosed' => $board['options'] & self::FORUMOPTIONS_ALLOWPOSTING ? 1 : 0,
+				'isInvisible' => $board['options'] & self::FORUMOPTIONS_ACTIVE ? 0 : 1,
+				'searchable' => $board['options'] & self::FORUMOPTIONS_INDEXPOSTS ? 1 : 0,
+				'searchableForSimilarThreads' => $board['options'] & self::FORUMOPTIONS_INDEXPOSTS ? 1 : 0,
+				'clicks' => 0,
+				'posts' => $board['replycount'],
+				'threads' => $board['threadcount']
+			));
+			
+			$this->exportBoardsRecursively($board['forumid']);
 		}
 	}
 	
