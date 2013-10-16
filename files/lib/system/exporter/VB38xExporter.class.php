@@ -529,11 +529,6 @@ class VB38xExporter extends AbstractExporter {
 	 * Exports conversations.
 	 */
 	public function exportConversations($offset, $limit) {
-		$sql = "INSERT IGNORE INTO	wcf".WCF_N."_conversation_to_user
-						(conversationID, participantID, username, hideConversation, isInvisible, lastVisitTime)
-			VALUES			(?, ?, ?, ?, ?, ?)";
-		$insertStatement = WCF::getDB()->prepareStatement($sql);
-		
 		$sql = "SELECT		pm.*, text.*
 			FROM		".$this->databasePrefix."pm pm
 			LEFT JOIN	".$this->databasePrefix."pmtext text
@@ -544,22 +539,12 @@ class VB38xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array(0));
 		while ($row = $statement->fetchArray()) {
-			$conversationID = ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import($row['pmid'], array(
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import($row['pmid'], array(
 				'subject' => $row['title'],
 				'time' => $row['dateline'],
 				'userID' => $row['fromuserid'],
 				'username' => $row['fromusername'],
 				'isDraft' => 0
-			));
-			
-			// add author
-			$insertStatement->execute(array(
-				$conversationID,
-				ImportHandler::getInstance()->getNewID('com.woltlab.wcf.user', $row['fromuserid']),
-				$row['fromusername'],
-				0,
-				0,
-				TIME_NOW
 			));
 		}
 	}
