@@ -1,9 +1,7 @@
 <?php
 namespace wcf\system\exporter;
-use wbb\data\board\BoardCache;
-
 use wbb\data\board\Board;
-
+use wbb\data\board\BoardCache;
 use wcf\data\like\Like;
 use wcf\data\object\type\ObjectTypeCache;
 use wcf\data\user\group\UserGroup;
@@ -205,10 +203,10 @@ class VB38xExporter extends AbstractExporter {
 		if (in_array('com.woltlab.wbb.board', $this->selectedData)) {
 			$queue[] = 'com.woltlab.wbb.board';
 			if (in_array('com.woltlab.wcf.label', $this->selectedData)) $queue[] = 'com.woltlab.wcf.label';
-		/*	$queue[] = 'com.woltlab.wbb.thread';
+			$queue[] = 'com.woltlab.wbb.thread';
 			$queue[] = 'com.woltlab.wbb.post';
 			
-			if (in_array('com.woltlab.wbb.acl', $this->selectedData)) $queue[] = 'com.woltlab.wbb.acl';
+		/*	if (in_array('com.woltlab.wbb.acl', $this->selectedData)) $queue[] = 'com.woltlab.wbb.acl';
 			if (in_array('com.woltlab.wbb.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wbb.attachment';
 			if (in_array('com.woltlab.wbb.watchedThread', $this->selectedData)) $queue[] = 'com.woltlab.wbb.watchedThread';
 			if (in_array('com.woltlab.wbb.poll', $this->selectedData)) {
@@ -685,7 +683,7 @@ class VB38xExporter extends AbstractExporter {
 	protected function exportBoardsRecursively($parentID = -1) {
 		if (!isset($this->boardCache[$parentID])) return;
 		$getDaysPrune = function ($value) {
-			if ($value === -1) return 1000;
+			if ($value == -1) return 1000;
 			
 			$availableDaysPrune = array(1, 3, 7, 14, 30, 60, 100, 365);
 			
@@ -718,6 +716,117 @@ class VB38xExporter extends AbstractExporter {
 			));
 			
 			$this->exportBoardsRecursively($board['forumid']);
+		}
+	}
+	
+	/**
+	 * Counts threads.
+	 */
+	public function countThreads() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."thread";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports threads.
+	 */
+	public function exportThreads($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."thread
+			ORDER BY	threadid ASC";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			$data = array(
+				'boardID' => $row['forumid'],
+				'topic' => $row['title'],
+				'time' => $row['dateline'],
+				'userID' => $row['postuserid'],
+				'username' => $row['postusername'],
+				'views' => $row['views'],
+				'isAnnouncement' => 0,
+				'isSticky' => $row['sticky'],
+				'isDisabled' => $row['visible'] == 1 ? 0 : 1, // visible = 2 is deleted
+				'isClosed' => $row['open'] == 1 ? 0 : 1, // open = 10 is redirect
+				'isDeleted' => $row['visible'] == 2 ? 1 : 0,
+				'movedThreadID' => ($row['open'] == 10 && $row['pollid'] ? $row['pollid'] : null), // target thread is saved in pollid...
+				'movedTime' => 0,
+				'isDone' => 0,
+				'deleteTime' => TIME_NOW,
+				'lastPostTime' => $row['lastpost']
+			);
+			$additionalData = array();
+			if ($row['prefixid']) $additionalData['labels'] = array($row['prefixid']);
+			if ($row['taglist'] !== null) {
+				$tags = ArrayUtil::trim(explode(',', $row['taglist']));
+				$additionalData['tags'] = $tags;
+			}
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.thread')->import($row['threadid'], $data, $additionalData);
+		}
+	}
+	
+	/**
+	 * Counts posts.
+	 */
+	public function countPosts() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."post";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports posts.
+	 */
+	public function exportPosts($offset, $limit) {
+		$sql = "SELECT		post.*,
+					postedithistory.dateline AS lastEditTime, postedithistory.username AS editor, postedithistory.userid AS editorID,
+					postedithistory.reason AS editReason,
+					(
+						SELECT	COUNT(*) - 1
+						FROM	".$this->databasePrefix."postedithistory postedithistory3
+						WHERE	postedithistory3.postid = post.postid
+					) AS editCount
+			FROM		".$this->databasePrefix."post post
+			LEFT JOIN	".$this->databasePrefix."postedithistory postedithistory
+			ON		".$this->databasePrefix."postedithistory.postedithistoryid = (
+						SELECT	MAX(postedithistoryid)
+						FROM	".$this->databasePrefix."postedithistory postedithistory2
+						WHERE	postedithistory2.postid = post.postid
+					)
+			ORDER BY	post.postid ASC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.post')->import($row['postid'], array(
+				'threadID' => $row['threadid'],
+				'userID' => $row['userid'],
+				'username' => $row['username'],
+				'subject' => $row['title'],
+				'message' => self::fixBBCodes($row['pagetext']),
+				'time' => $row['dateline'],
+				'isDeleted' => $row['visible'] == 2 ? 1 : 0,
+				'isDisabled' => $row['visible'] == 0 ? 1 : 0,
+				'isClosed' => 0,
+				'editorID' => ($row['editorID'] ?: null),
+				'editor' => $row['editor'] ?: '',
+				'lastEditTime' => $row['lastEditTime'] ?: 0,
+				'editCount' => $row['editCount'] ?: 0,
+				'editReason' => $row['editReason'] ?: '',
+				'attachments' => $row['attach'],
+				'enableSmilies' => $row['allowsmilie'],
+				'enableHtml' => 0,
+				'enableBBCodes' => 1,
+				'showSignature' => $row['showsignature'],
+				'ipAddress' => UserUtil::convertIPv4To6($row['ipaddress'])
+			));
 		}
 	}
 	
