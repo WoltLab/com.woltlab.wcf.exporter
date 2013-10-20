@@ -1,5 +1,7 @@
 <?php
 namespace wcf\system\exporter;
+use wbb\data\board\BoardCache;
+
 use wbb\data\board\Board;
 
 use wcf\data\like\Like;
@@ -120,8 +122,8 @@ class VB38xExporter extends AbstractExporter {
 				'com.woltlab.wbb.attachment',
 				'com.woltlab.wbb.poll',
 				'com.woltlab.wbb.watchedThread',
-				'com.woltlab.wbb.like',
-				'com.woltlab.wcf.label' */
+				'com.woltlab.wbb.like',*/
+				'com.woltlab.wcf.label'
 			),
 			'com.woltlab.wcf.conversation' => array(
 				/*'com.woltlab.wcf.conversation.attachment',*/
@@ -202,8 +204,8 @@ class VB38xExporter extends AbstractExporter {
 		// board
 		if (in_array('com.woltlab.wbb.board', $this->selectedData)) {
 			$queue[] = 'com.woltlab.wbb.board';
-	/*		if (in_array('com.woltlab.wcf.label', $this->selectedData)) $queue[] = 'com.woltlab.wcf.label';
-			$queue[] = 'com.woltlab.wbb.thread';
+			if (in_array('com.woltlab.wcf.label', $this->selectedData)) $queue[] = 'com.woltlab.wcf.label';
+		/*	$queue[] = 'com.woltlab.wbb.thread';
 			$queue[] = 'com.woltlab.wbb.post';
 			
 			if (in_array('com.woltlab.wbb.acl', $this->selectedData)) $queue[] = 'com.woltlab.wbb.acl';
@@ -667,7 +669,7 @@ class VB38xExporter extends AbstractExporter {
 	public function exportBoards($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."forum
-			ORDER BY	forumid";
+			ORDER BY	forumid ASC";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
@@ -716,6 +718,53 @@ class VB38xExporter extends AbstractExporter {
 			));
 			
 			$this->exportBoardsRecursively($board['forumid']);
+		}
+	}
+	
+	/**
+	 * Counts labels.
+	 */
+	public function countLabels() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."prefix";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports labels.
+	 */
+	public function exportLabels($offset, $limit) {
+		if (!$offset) {
+			$boardIDs = array_keys(BoardCache::getInstance()->getBoards());
+			$objectType = ObjectTypeCache::getInstance()->getObjectTypeByName('com.woltlab.wcf.label.objectType', 'com.woltlab.wbb.board');
+			
+			$sql = "SELECT		*
+				FROM		".$this->databasePrefix."prefixset
+				ORDER BY	prefixsetid ASC";
+			$statement = $this->database->prepareStatement($sql);
+			$statement->execute();
+			
+			while ($row = $statement->fetchArray()) {
+				ImportHandler::getInstance()->getImporter('com.woltlab.wcf.label.group')->import($row['prefixsetid'], array(
+					'groupName' => $row['prefixsetid']
+				), array('objects' => array($objectType->objectTypeID => $boardIDs)));
+			}
+		}
+		
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."prefix
+			ORDER BY	prefixid ASC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.label')->import($row['prefixid'], array(
+				'groupID' => $row['prefixsetid'],
+				'label' => mb_substr($row['prefixid'], 0, 80)
+			));
 		}
 	}
 	
