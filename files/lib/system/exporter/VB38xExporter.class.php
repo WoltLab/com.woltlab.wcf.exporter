@@ -118,9 +118,9 @@ class VB38xExporter extends AbstractExporter {
 			'com.woltlab.wbb.board' => array(
 			/*	'com.woltlab.wbb.acl',
 				'com.woltlab.wbb.attachment',
-				'com.woltlab.wbb.poll',
+				'com.woltlab.wbb.poll',*/
 				'com.woltlab.wbb.watchedThread',
-				'com.woltlab.wbb.like',*/
+			/*	'com.woltlab.wbb.like', */
 				'com.woltlab.wcf.label'
 			),
 			'com.woltlab.wcf.conversation' => array(
@@ -207,9 +207,9 @@ class VB38xExporter extends AbstractExporter {
 			$queue[] = 'com.woltlab.wbb.post';
 			
 		/*	if (in_array('com.woltlab.wbb.acl', $this->selectedData)) $queue[] = 'com.woltlab.wbb.acl';
-			if (in_array('com.woltlab.wbb.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wbb.attachment';
+			if (in_array('com.woltlab.wbb.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wbb.attachment';*/
 			if (in_array('com.woltlab.wbb.watchedThread', $this->selectedData)) $queue[] = 'com.woltlab.wbb.watchedThread';
-			if (in_array('com.woltlab.wbb.poll', $this->selectedData)) {
+	/*		if (in_array('com.woltlab.wbb.poll', $this->selectedData)) {
 				$queue[] = 'com.woltlab.wbb.poll';
 				$queue[] = 'com.woltlab.wbb.poll.option';
 				$queue[] = 'com.woltlab.wbb.poll.option.vote';
@@ -826,6 +826,35 @@ class VB38xExporter extends AbstractExporter {
 				'enableBBCodes' => 1,
 				'showSignature' => $row['showsignature'],
 				'ipAddress' => UserUtil::convertIPv4To6($row['ipaddress'])
+			));
+		}
+	}
+	
+	/**
+	 * Counts watched threads.
+	 */
+	public function countWatchedThreads() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."subscribethread";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports watched threads.
+	 */
+	public function exportWatchedThreads($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."subscribethread
+			ORDER BY	subscribethreadid";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.watchedThread')->import($row['subscribethreadid'], array(
+				'objectID' => $row['threadid'],
+				'userID' => $row['userid']
 			));
 		}
 	}
