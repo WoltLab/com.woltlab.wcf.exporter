@@ -117,8 +117,8 @@ class VB38xExporter extends AbstractExporter {
 			),
 			'com.woltlab.wbb.board' => array(
 			/*	'com.woltlab.wbb.acl',
-				'com.woltlab.wbb.attachment',
-				'com.woltlab.wbb.poll',*/
+				'com.woltlab.wbb.attachment',*/
+				'com.woltlab.wbb.poll',
 				'com.woltlab.wbb.watchedThread',
 			/*	'com.woltlab.wbb.like', */
 				'com.woltlab.wcf.label'
@@ -209,12 +209,12 @@ class VB38xExporter extends AbstractExporter {
 		/*	if (in_array('com.woltlab.wbb.acl', $this->selectedData)) $queue[] = 'com.woltlab.wbb.acl';
 			if (in_array('com.woltlab.wbb.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wbb.attachment';*/
 			if (in_array('com.woltlab.wbb.watchedThread', $this->selectedData)) $queue[] = 'com.woltlab.wbb.watchedThread';
-	/*		if (in_array('com.woltlab.wbb.poll', $this->selectedData)) {
+			if (in_array('com.woltlab.wbb.poll', $this->selectedData)) {
 				$queue[] = 'com.woltlab.wbb.poll';
 				$queue[] = 'com.woltlab.wbb.poll.option';
 				$queue[] = 'com.woltlab.wbb.poll.option.vote';
 			}
-			if (in_array('com.woltlab.wbb.like', $this->selectedData)) $queue[] = 'com.woltlab.wbb.like';*/
+		/*	if (in_array('com.woltlab.wbb.like', $this->selectedData)) $queue[] = 'com.woltlab.wbb.like';*/
 		}
 		/*
 		// smiley
@@ -854,6 +854,109 @@ class VB38xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.watchedThread')->import($row['subscribethreadid'], array(
 				'objectID' => $row['threadid'],
+				'userID' => $row['userid']
+			));
+		}
+	}
+	
+	/**
+	 * Counts polls.
+	 */
+	public function countPolls() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."poll";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array('post'));
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports polls.
+	 */
+	public function exportPolls($offset, $limit) {
+		$sql = "SELECT		poll.*, thread.firstpostid
+			FROM		".$this->databasePrefix."poll poll
+			LEFT JOIN	".$this->databasePrefix."thread thread
+			ON			poll.pollid = thread.pollid
+					AND	thread.open <> ?
+			ORDER BY	poll.pollid ASC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute(array(10));
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll')->import($row['pollid'], array(
+				'objectID' => $row['firstpostid'],
+				'question' => $row['question'],
+				'time' => $row['dateline'],
+				'endTime' => $row['dateline'] + $row['timeout'] * 86400,
+				'isChangeable' => 0,
+				'isPublic' => $row['public'] ? 1 : 0,
+				'sortByVotes' => 0,
+				'maxVotes' => $row['multiple'] ? $row['numberoptions'] : 1,
+				'votes' => $row['voters']
+			));
+		}
+	}
+	
+	/**
+	 * Counts poll options.
+	 */
+	public function countPollOptions() {
+		return $this->countPolls();
+	}
+	
+	/**
+	 * Exports poll options.
+	 */
+	public function exportPollOptions($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."poll
+			ORDER BY	pollid ASC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			$options = explode('|||', $row['options']);
+			$votes = explode('|||', $row['votes']);
+			
+			$i = 1;
+			foreach ($options as $key => $option) {
+				ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll.option')->import($row['pollid'].' '.$i, array(
+					'pollID' => $row['pollid'],
+					'optionValue' => $option,
+					'showOrder' => $i,
+					'votes' => $votes[$key]
+				));
+				
+				$i++;
+			}
+		}
+	}
+	
+	/**
+	 * Counts poll option votes.
+	 */
+	public function countPollOptionVotes() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."pollvote";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array('post'));
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports poll option votes.
+	 */
+	public function exportPollOptionVotes($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."pollvote
+			ORDER BY	pollvoteid ASC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll.option.vote')->import(0, array(
+				'pollID' => $row['pollid'],
+				'optionID' => $row['pollid'].'-'.$row['voteoption'],
 				'userID' => $row['userid']
 			));
 		}
