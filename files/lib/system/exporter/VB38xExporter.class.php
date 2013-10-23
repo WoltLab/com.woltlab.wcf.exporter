@@ -120,7 +120,7 @@ class VB38xExporter extends AbstractExporter {
 				'com.woltlab.wbb.attachment',*/
 				'com.woltlab.wbb.poll',
 				'com.woltlab.wbb.watchedThread',
-			/*	'com.woltlab.wbb.like', */
+				'com.woltlab.wbb.like',
 				'com.woltlab.wcf.label'
 			),
 			'com.woltlab.wcf.conversation' => array(
@@ -214,7 +214,7 @@ class VB38xExporter extends AbstractExporter {
 				$queue[] = 'com.woltlab.wbb.poll.option';
 				$queue[] = 'com.woltlab.wbb.poll.option.vote';
 			}
-		/*	if (in_array('com.woltlab.wbb.like', $this->selectedData)) $queue[] = 'com.woltlab.wbb.like';*/
+			if (in_array('com.woltlab.wbb.like', $this->selectedData)) $queue[] = 'com.woltlab.wbb.like';
 		}
 		/*
 		// smiley
@@ -958,6 +958,37 @@ class VB38xExporter extends AbstractExporter {
 				'pollID' => $row['pollid'],
 				'optionID' => $row['pollid'].'-'.$row['voteoption'],
 				'userID' => $row['userid']
+			));
+		}
+	}
+	
+	/**
+	 * Counts likes.
+	 */
+	public function countLikes() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."reputation";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports likes.
+	 */
+	public function exportLikes($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."reputation
+			ORDER BY	reputationid ASC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.like')->import(0, array(
+				'objectID' => $row['postid'],
+				'objectUserID' => ($row['userid'] ?: null),
+				'userID' => $row['whoadded'],
+				'likeValue' => ($row['reputation'] > 0 ? Like::LIKE : Like::DISLIKE)
 			));
 		}
 	}
