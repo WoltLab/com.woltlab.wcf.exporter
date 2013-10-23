@@ -10,6 +10,9 @@ use wcf\system\database\util\PreparedStatementConditionBuilder;
 use wcf\system\database\DatabaseException;
 use wcf\system\exception\SystemException;
 use wcf\system\importer\ImportHandler;
+use wcf\system\request\LinkHandler;
+use wcf\system\Callback;
+use wcf\system\Regex;
 use wcf\system\WCF;
 use wcf\util\ArrayUtil;
 use wcf\util\FileUtil;
@@ -1041,7 +1044,79 @@ class VB38xExporter extends AbstractExporter {
 	}
 	
 	private static function fixBBCodes($message) {
-		// TODO: this is an identity function right now
+		static $quoteRegex = null;
+		static $quoteCallback = null;
+		
+		if ($quoteRegex === null) {
+			$quoteRegex = new Regex('\[quote=(.*?);(\d+)\]', Regex::CASE_INSENSITIVE);
+			$quoteCallback = new Callback(function ($matches) {
+				$username = str_replace(array("\\", "'"), array("\\\\", "\'"), $matches[1]);
+				$postID = $matches[2];
+				
+				$postLink = LinkHandler::getInstance()->getLink('Thread', array(
+						'application' => 'wbb',
+						'postID' => $postID,
+						'forceFrontend' => true
+				)).'#post'.$postID;
+				$postLink = str_replace(array("\\", "'"), array("\\\\", "\'"), $postLink);
+				
+				return "[quote='".$username."','".$postLink."']";
+			});
+		}
+		
+		// use proper WCF 2 bbcode
+		$replacements = array(
+			'[left]' => '[align=left]',
+			'[/left]' => '[/align]',
+			'[right]' => '[align=right]',
+			'[/right]' => '[/align]',
+			'[center]' => '[align=center]',
+			'[/center]' => '[/align]',
+			'[php]' => '[code=php]',
+			'[/php]' => '[/code]',
+			'[html]' => '[code=html]',
+			'[/html]' => '[/code]'
+		);
+		$message = str_ireplace(array_keys($replacements), array_values($replacements), $message);
+		
+		// remove double quotes
+		$message = preg_replace_callback('/\[[^\]]+"[^\]]*\]/', function ($matches) {
+			return str_replace('"', '\'', $matches[0]);
+		}, $message);
+		
+		// fix size bbcodes
+		$message = preg_replace_callback('/\[size=\'?(\d+)\'?\]/i', function ($matches) {
+			$size = 36;
+			
+			switch ($matches[1]) {
+				case 1:
+					$size = 8;
+				break;
+				case 2:
+					$size = 10;
+				break;
+				case 3:
+					$size = 12;
+				break;
+				case 4:
+					$size = 14;
+				break;
+				case 5:
+					$size = 18;
+				break;
+				case 6:
+					$size = 24;
+				break;
+			}
+			
+			return '[size='.$size.']';
+		}, $message);
+		
+		// quotes
+		$message = $quoteRegex->replace($message, $quoteCallback);
+		
+		$message = MessageUtil::stripCrap($message);
+		
 		return $message;
 	}
 }
