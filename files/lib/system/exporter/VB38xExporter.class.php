@@ -300,12 +300,14 @@ class VB38xExporter extends AbstractExporter {
 		$passwordUpdateStatement = WCF::getDB()->prepareStatement($sql);
 		
 		// get users
-		$sql = "SELECT		user_table.*, textfield.*, useractivation.type AS activationType, useractivation.emailchange
+		$sql = "SELECT		user_table.*, textfield.*, useractivation.type AS activationType, useractivation.emailchange, userban.liftdate, userban.reason AS banReason
 			FROM		".$this->databasePrefix."user user_table
 			LEFT JOIN	".$this->databasePrefix."usertextfield textfield
 			ON		user_table.userid = textfield.userid
 			LEFT JOIN	".$this->databasePrefix."useractivation useractivation
 			ON		user_table.userid = useractivation.userid
+			LEFT JOIN	".$this->databasePrefix."userban userban
+			ON		user_table.userid = userban.userid
 			ORDER BY	user_table.userid ASC";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array(0));
@@ -316,8 +318,8 @@ class VB38xExporter extends AbstractExporter {
 				'password' => '',
 				'email' => $row['email'],
 				'registrationDate' => $row['joindate'],
-				'banned' => 0, // TODO: 
-				'banReason' => '', // TODO:
+				'banned' => $row['liftdate'] !== null && $row['liftdate'] == 0 ? 1 : 0,
+				'banReason' => $row['banReason'],
 				'activationCode' => $row['activationType'] !== null && $row['activationType'] == 0 && $row['emailchange'] == 0 ? UserRegistrationUtil::getActivationCode() : 0, // vB's codes are strings
 				'oldUsername' => '',
 				'registrationIpAddress' => UserUtil::convertIPv4To6($row['ipaddress']), // TODO: check whether this is the registration IP
