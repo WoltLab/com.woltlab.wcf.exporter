@@ -18,6 +18,7 @@ use wcf\util\ArrayUtil;
 use wcf\util\FileUtil;
 use wcf\util\MessageUtil;
 use wcf\util\StringUtil;
+use wcf\util\UserRegistrationUtil;
 use wcf\util\UserUtil;
 
 /**
@@ -299,10 +300,12 @@ class VB38xExporter extends AbstractExporter {
 		$passwordUpdateStatement = WCF::getDB()->prepareStatement($sql);
 		
 		// get users
-		$sql = "SELECT		user_table.*, textfield.*
+		$sql = "SELECT		user_table.*, textfield.*, useractivation.type AS activationType, useractivation.emailchange
 			FROM		".$this->databasePrefix."user user_table
 			LEFT JOIN	".$this->databasePrefix."usertextfield textfield
 			ON		user_table.userid = textfield.userid
+			LEFT JOIN	".$this->databasePrefix."useractivation useractivation
+			ON		user_table.userid = useractivation.userid
 			ORDER BY	user_table.userid ASC";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array(0));
@@ -315,7 +318,7 @@ class VB38xExporter extends AbstractExporter {
 				'registrationDate' => $row['joindate'],
 				'banned' => 0, // TODO: 
 				'banReason' => '', // TODO:
-				'activationCode' => 0, // TODO:
+				'activationCode' => $row['activationType'] !== null && $row['activationType'] == 0 && $row['emailchange'] == 0 ? UserRegistrationUtil::getActivationCode() : 0, // vB's codes are strings
 				'oldUsername' => '',
 				'registrationIpAddress' => UserUtil::convertIPv4To6($row['ipaddress']), // TODO: check whether this is the registration IP
 				'signature' => $row['signature'],
