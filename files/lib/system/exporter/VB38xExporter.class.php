@@ -50,6 +50,10 @@ class VB38xExporter extends AbstractExporter {
 	const FORUMOPTIONS_SHOWONFORUMJUMP = 65536;
 	const FORUMOPTIONS_PREFIXREQUIRED = 131072;
 	
+	const ATTACHFILE_DATABASE = 0;
+	const ATTACHFILE_FILESYSTEM = 1;
+	const ATTACHFILE_FILESYSTEM_SUBFOLDER = 2;
+	
 	/**
 	 * board cache
 	 * @var	array
@@ -145,21 +149,17 @@ class VB38xExporter extends AbstractExporter {
 	public function validateDatabaseAccess() {
 		parent::validateDatabaseAccess();
 		
-		$sql = "SELECT	value
-			FROM	".$this->databasePrefix."setting
-			WHERE	varname = ?";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array('templateversion'));
-		$row = $statement->fetchArray();
+		$templateversion = $this->readOption('templateversion');
 		
-		if (version_compare($row['value'], '3.8.0', '<')) throw new DatabaseException('Cannot import less than vB 3.8.x', $this->database);
+		if (version_compare($templateversion, '3.8.0', '<')) throw new DatabaseException('Cannot import less than vB 3.8.x', $this->database);
+		if (version_compare($templateversion, '4.0.0', '>=')) throw new DatabaseException('Cannot import greater than vB 3.x.x', $this->database);
 	}
 	
 	/**
 	 * @see	wcf\system\exporter\IExporter::validateFileAccess()
 	 */
 	public function validateFileAccess() {
-		if (in_array('com.woltlab.wbb.attachment', $this->selectedData) || in_array('com.woltlab.wcf.conversation.attachment', $this->selectedData) || in_array('com.woltlab.wcf.smiley', $this->selectedData)) {
+		if (in_array('com.woltlab.wcf.smiley', $this->selectedData)) {
 			if (empty($this->fileSystemPath) || !@file_exists($this->fileSystemPath . 'includes/version_vbulletin.php')) return false;
 		}
 		
@@ -854,8 +854,20 @@ class VB38xExporter extends AbstractExporter {
 			$file = null;
 			
 			try {
-				$file = FileUtil::getTemporaryFilename('attachment_');
-				file_put_contents($file, $row['filedata']);
+				switch ($this->readOption('attachfile')) {
+					case self::ATTACHFILE_DATABASE:
+						$file = FileUtil::getTemporaryFilename('attachment_');
+						file_put_contents($file, $row['filedata']);
+					break;
+					case self::ATTACHFILE_FILESYSTEM:
+						$file = FileUtil::addTrailingSlash($this->readOption('attachpath'));
+						$file .= $row['userid'].'/'.$row['attachmentid'].'.attach';
+					break;
+					case self::ATTACHFILE_FILESYSTEM_SUBFOLDER:
+						$file = FileUtil::addTrailingSlash($this->readOption('attachpath'));
+						$file .= implode('/', str_split($row['userid'])).'/'.$row['attachmentid'].'.attach';
+					break;
+				}
 				
 				if ($imageSize = getimagesize($file)) {
 					$row['isImage'] = 1;
@@ -878,10 +890,11 @@ class VB38xExporter extends AbstractExporter {
 					'downloads' => $row['counter'],
 					'uploadTime' => $row['dateline']
 				), array('fileLocation' => $file));
-				unlink($file);
+				
+				if ($this->readOption('attachfile') == self::ATTACHFILE_DATABASE) unlink($file);
 			}
 			catch (\Exception $e) {
-				if ($file) @unlink($file);
+				if ($this->readOption('attachfile') == self::ATTACHFILE_DATABASE && $file) @unlink($file);
 			
 				throw $e;
 			}
@@ -1096,6 +1109,23 @@ class VB38xExporter extends AbstractExporter {
 				'label' => mb_substr($row['prefixid'], 0, 80)
 			));
 		}
+	}
+	
+	private function readOption($optionName) {
+		static $optionCache = array();
+	
+		if (!isset($optionCache[$optionName])) {
+			$sql = "SELECT	value
+				FROM	".$this->databasePrefix."setting
+				WHERE	varname = ?";
+			$statement = $this->database->prepareStatement($sql);
+			$statement->execute(array($optionName));
+			$row = $statement->fetchArray();
+			
+			$optionCache[$optionName] = $row['value'];
+		}
+		
+		return $optionCache[$optionName];
 	}
 	
 	private static function fixBBCodes($message) {
