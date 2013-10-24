@@ -119,15 +119,14 @@ class VB38xExporter extends AbstractExporter {
 				'com.woltlab.wcf.user.rank'
 			),
 			'com.woltlab.wbb.board' => array(
-			/*	'com.woltlab.wbb.acl',
-				'com.woltlab.wbb.attachment',*/
+			/*	'com.woltlab.wbb.acl',*/
+				'com.woltlab.wbb.attachment',
 				'com.woltlab.wbb.poll',
 				'com.woltlab.wbb.watchedThread',
 				'com.woltlab.wbb.like',
 				'com.woltlab.wcf.label'
 			),
 			'com.woltlab.wcf.conversation' => array(
-				/*'com.woltlab.wcf.conversation.attachment',*/
 				'com.woltlab.wcf.conversation.label'
 			),
 			/*'com.woltlab.blog.entry' => array(
@@ -197,8 +196,6 @@ class VB38xExporter extends AbstractExporter {
 				$queue[] = 'com.woltlab.wcf.conversation';
 				$queue[] = 'com.woltlab.wcf.conversation.message';
 				$queue[] = 'com.woltlab.wcf.conversation.user';
-					
-			/*	if (in_array('com.woltlab.wcf.conversation.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wcf.conversation.attachment';*/
 			}
 		}
 		
@@ -209,8 +206,8 @@ class VB38xExporter extends AbstractExporter {
 			$queue[] = 'com.woltlab.wbb.thread';
 			$queue[] = 'com.woltlab.wbb.post';
 			
-		/*	if (in_array('com.woltlab.wbb.acl', $this->selectedData)) $queue[] = 'com.woltlab.wbb.acl';
-			if (in_array('com.woltlab.wbb.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wbb.attachment';*/
+		/*	if (in_array('com.woltlab.wbb.acl', $this->selectedData)) $queue[] = 'com.woltlab.wbb.acl';*/
+			if (in_array('com.woltlab.wbb.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wbb.attachment';
 			if (in_array('com.woltlab.wbb.watchedThread', $this->selectedData)) $queue[] = 'com.woltlab.wbb.watchedThread';
 			if (in_array('com.woltlab.wbb.poll', $this->selectedData)) {
 				$queue[] = 'com.woltlab.wbb.poll';
@@ -604,7 +601,6 @@ class VB38xExporter extends AbstractExporter {
 				'username' => $row['fromusername'],
 				'message' => self::fixBBCodes($row['message']),
 				'time' => $row['dateline'],
-				'attachments' => 0, // TODO: attachments
 				'enableSmilies' => $row['allowsmilie'],
 				'enableHtml' => 0,
 				'enableBBCodes' => 1,
@@ -830,6 +826,65 @@ class VB38xExporter extends AbstractExporter {
 				'showSignature' => $row['showsignature'],
 				'ipAddress' => UserUtil::convertIPv4To6($row['ipaddress'])
 			));
+		}
+	}
+	
+	/**
+	 * Counts post attachments.
+	 */
+	public function countPostAttachments() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."attachment";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports post attachments.
+	 */
+	public function exportPostAttachments($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."attachment
+			ORDER BY	attachmentid ASC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			$file = null;
+			
+			try {
+				$file = FileUtil::getTemporaryFilename('attachment_');
+				file_put_contents($file, $row['filedata']);
+				
+				if ($imageSize = getimagesize($file)) {
+					$row['isImage'] = 1;
+					$row['width'] = $imageSize[0];
+					$row['height'] = $imageSize[1];
+				}
+				else {
+					$row['isImage'] = $row['width'] = $row['height'] = 0;
+				}
+				
+				ImportHandler::getInstance()->getImporter('com.woltlab.wbb.attachment')->import($row['attachmentid'], array(
+					'objectID' => $row['postid'],
+					'userID' => ($row['userid'] ?: null),
+					'filename' => $row['filename'],
+					'filesize' => $row['filesize'],
+					'fileType' => FileUtil::getMimeType($file),
+					'isImage' => $row['isImage'],
+					'width' => $row['width'],
+					'height' => $row['height'],
+					'downloads' => $row['counter'],
+					'uploadTime' => $row['dateline']
+				), array('fileLocation' => $file));
+				unlink($file);
+			}
+			catch (\Exception $e) {
+				if ($file) @unlink($file);
+			
+				throw $e;
+			}
 		}
 	}
 	
