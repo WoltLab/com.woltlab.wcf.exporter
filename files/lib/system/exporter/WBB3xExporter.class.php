@@ -4,8 +4,6 @@ use wcf\data\like\Like;
 use wcf\data\object\type\ObjectTypeCache;
 use wcf\data\user\option\UserOption;
 use wcf\system\database\util\PreparedStatementConditionBuilder;
-use wcf\system\database\DatabaseException;
-use wcf\system\exception\SystemException;
 use wcf\system\importer\ImportHandler;
 use wcf\system\WCF;
 use wcf\util\MessageUtil;
