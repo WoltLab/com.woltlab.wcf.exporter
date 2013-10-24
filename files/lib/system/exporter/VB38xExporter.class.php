@@ -469,17 +469,26 @@ class VB38xExporter extends AbstractExporter {
 	 * Exports user avatars.
 	 */
 	public function exportUserAvatars($offset, $limit) {
-		$sql = "SELECT		*
-			FROM		".$this->databasePrefix."customavatar
-			ORDER BY	userid ASC";
+		$sql = "SELECT		customavatar.*, user.avatarrevision
+			FROM		".$this->databasePrefix."customavatar customavatar
+			LEFT JOIN	".$this->databasePrefix."user user
+			ON		user.userid = customavatar.userid
+			ORDER BY	customavatar.userid ASC";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
 			$file = null;
 			
 			try {
-				$file = FileUtil::getTemporaryFilename('avatar_');
-				file_put_contents($file, $row['filedata']);
+				if ($this->readOption('usefileavatar')) {
+					$file = $this->readOption('avatarpath');
+					if (!StringUtil::startsWith($file, '/')) $file = realpath($this->fileSystemPath.$file);
+					$file = FileUtil::addTrailingSlash($file).'avatar'.$row['userid'].'_'.$row['avatarrevision'].'.gif';
+				}
+				else {
+					$file = FileUtil::getTemporaryFilename('avatar_');
+					file_put_contents($file, $row['filedata']);
+				}
 				
 				ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.avatar')->import($row['userid'], array(
 					'avatarName' => $row['filename'],
@@ -488,10 +497,11 @@ class VB38xExporter extends AbstractExporter {
 					'height' => $row['height'],
 					'userID' => $row['userid']
 				), array('fileLocation' => $file));
-				unlink($file);
+				
+				if (!$this->readOption('usefileavatar')) unlink($file);
 			}
 			catch (\Exception $e) {
-				if ($file) @unlink($file);
+				if (!$this->readOption('usefileavatar') && $file) @unlink($file);
 				
 				throw $e;
 			}
