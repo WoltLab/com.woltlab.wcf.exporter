@@ -134,13 +134,7 @@ class VB38xExporter extends AbstractExporter {
 			'com.woltlab.wcf.conversation' => array(
 				'com.woltlab.wcf.conversation.label'
 			),
-			/*'com.woltlab.blog.entry' => array(
-				'com.woltlab.blog.category',
-				'com.woltlab.blog.entry.attachment',
-				'com.woltlab.blog.entry.comment',
-				'com.woltlab.blog.entry.like'
-			),
-			'com.woltlab.wcf.smiley' => array()*/
+			'com.woltlab.wcf.smiley' => array()
 		);
 	}
 	
@@ -216,20 +210,9 @@ class VB38xExporter extends AbstractExporter {
 			}
 			if (in_array('com.woltlab.wbb.like', $this->selectedData)) $queue[] = 'com.woltlab.wbb.like';
 		}
-		/*
+		
 		// smiley
 		if (in_array('com.woltlab.wcf.smiley', $this->selectedData)) $queue[] = 'com.woltlab.wcf.smiley';
-		
-		// blog
-		if ($this->getPackageVersion('com.woltlab.wcf.user.blog')) {
-			if (in_array('com.woltlab.blog.entry', $this->selectedData)) {
-				if (in_array('com.woltlab.blog.category', $this->selectedData)) $queue[] = 'com.woltlab.blog.category';
-				$queue[] = 'com.woltlab.blog.entry';
-				if (in_array('com.woltlab.blog.entry.attachment', $this->selectedData)) $queue[] = 'com.woltlab.blog.entry.attachment';
-				if (in_array('com.woltlab.blog.entry.comment', $this->selectedData)) $queue[] = 'com.woltlab.blog.entry.comment';
-				if (in_array('com.woltlab.blog.entry.like', $this->selectedData)) $queue[] = 'com.woltlab.blog.entry.like';
-			}
-		}*/
 		
 		return $queue;
 	}
@@ -1124,10 +1107,42 @@ class VB38xExporter extends AbstractExporter {
 			));
 		}
 	}
+
+	/**
+	 * Counts smilies.
+	 */
+	public function countSmilies() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."smilie";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports smilies.
+	 */
+	public function exportSmilies($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."smilie
+			ORDER BY	smilieid ASC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute(array());
+		while ($row = $statement->fetchArray()) {
+			$fileLocation = $this->fileSystemPath . $row['smiliepath'];
+	
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.smiley')->import($row['smilieid'], array(
+				'smileyTitle' => $row['title'],
+				'smileyCode' => $row['smilietext'],
+				'showOrder' => $row['displayorder']
+			), array('fileLocation' => $fileLocation));
+		}
+	}
 	
 	private function readOption($optionName) {
 		static $optionCache = array();
-	
+		
 		if (!isset($optionCache[$optionName])) {
 			$sql = "SELECT	value
 				FROM	".$this->databasePrefix."setting
