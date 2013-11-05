@@ -149,7 +149,7 @@ class VB38xExporter extends AbstractExporter {
 				'com.woltlab.wcf.user.rank'
 			),
 			'com.woltlab.wbb.board' => array(
-			/*	'com.woltlab.wbb.acl',*/
+				'com.woltlab.wbb.acl',
 				'com.woltlab.wbb.attachment',
 				'com.woltlab.wbb.poll',
 				'com.woltlab.wbb.watchedThread',
@@ -225,7 +225,7 @@ class VB38xExporter extends AbstractExporter {
 			$queue[] = 'com.woltlab.wbb.thread';
 			$queue[] = 'com.woltlab.wbb.post';
 			
-		/*	if (in_array('com.woltlab.wbb.acl', $this->selectedData)) $queue[] = 'com.woltlab.wbb.acl';*/
+			if (in_array('com.woltlab.wbb.acl', $this->selectedData)) $queue[] = 'com.woltlab.wbb.acl';
 			if (in_array('com.woltlab.wbb.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wbb.attachment';
 			if (in_array('com.woltlab.wbb.watchedThread', $this->selectedData)) $queue[] = 'com.woltlab.wbb.watchedThread';
 			if (in_array('com.woltlab.wbb.poll', $this->selectedData)) {
@@ -1132,7 +1132,58 @@ class VB38xExporter extends AbstractExporter {
 			));
 		}
 	}
-
+	
+	/**
+	 * Counts ACLs.
+	 */
+	public function countACLs() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."forumpermission";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports ACLs.
+	 */
+	public function exportACLs($offset, $limit) {
+		$mapping = array(
+			'canViewBoard' => self::FORUMPERMISSIONS_CANVIEW,
+			'canEnter' => self::FORUMPERMISSIONS_CANVIEWTHREADS,
+			'canReadThread' => self::FORUMPERMISSIONS_CANVIEWOTHERS,
+			'canStartThread' => self::FORUMPERMISSIONS_CANPOSTNEW,
+			'canReplyThread' => self::FORUMPERMISSIONS_CANREPLYOTHERS,
+			'canReplyOwnThread' => self::FORUMPERMISSIONS_CANREPLYOWN,
+			'canEditOwnPost' => self::FORUMPERMISSIONS_CANEDITPOST,
+			'canDeleteOwnPost' => self::FORUMPERMISSIONS_CANDELETEPOST | self::FORUMPERMISSIONS_CANDELETETHREAD,
+			'canDownloadAttachment' => self::FORUMPERMISSIONS_CANGETATTACHMENT,
+			'canViewAttachmentPreview' => self::FORUMPERMISSIONS_CANSEETHUMBNAILS,
+			'canUploadAttachment' => self::FORUMPERMISSIONS_CANPOSTATTACHMENT,
+			'canStartPoll' => self::FORUMPERMISSIONS_CANPOSTPOLL,
+			'canVotePoll' => self::FORUMPERMISSIONS_CANVOTE
+		);
+		
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."forumpermission
+			ORDER BY	forumpermissionid";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		
+		while ($row = $statement->fetchArray()) {
+			foreach ($mapping as $permission => $bits) {
+				ImportHandler::getInstance()->getImporter('com.woltlab.wbb.acl')->import(0, array(
+					'objectID' => $row['forumid'],
+					'groupID' => $row['usergroupid'],
+					'optionValue' => ($row['forumpermissions'] & $bits) ? 1 : 0
+				), array(
+					'optionName' => $permission
+				));
+			}
+		}
+	}
+	
 	/**
 	 * Counts smilies.
 	 */
