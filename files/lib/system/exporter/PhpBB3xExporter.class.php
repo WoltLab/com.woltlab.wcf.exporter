@@ -2,25 +2,13 @@
 namespace wcf\system\exporter;
 use wbb\data\board\Board;
 use wbb\data\board\BoardCache;
-use wcf\data\like\Like;
-use wcf\data\object\type\ObjectTypeCache;
 use wcf\data\user\group\UserGroup;
-use wcf\data\user\option\UserOption;
-use wcf\data\user\rank\UserRank;
-use wcf\data\user\UserProfile;
 use wcf\system\database\util\PreparedStatementConditionBuilder;
-use wcf\system\database\DatabaseException;
-use wcf\system\exception\SystemException;
 use wcf\system\importer\ImportHandler;
-use wcf\system\request\LinkHandler;
-use wcf\system\Callback;
-use wcf\system\Regex;
 use wcf\system\WCF;
-use wcf\util\ArrayUtil;
 use wcf\util\FileUtil;
 use wcf\util\MessageUtil;
 use wcf\util\StringUtil;
-use wcf\util\UserRegistrationUtil;
 use wcf\util\UserUtil;
 
 /**
@@ -61,7 +49,7 @@ class PhpBB3xExporter extends AbstractExporter {
 	protected $boardCache = array();
 	
 	/**
-	 * @see	wcf\system\exporter\AbstractExporter::$methods
+	 * @see	\wcf\system\exporter\AbstractExporter::$methods
 	 */
 	protected $methods = array(
 		'com.woltlab.wcf.user' => 'Users',
@@ -92,7 +80,7 @@ class PhpBB3xExporter extends AbstractExporter {
 	);
 	
 	/**
-	 * @see	wcf\system\exporter\AbstractExporter::$limits
+	 * @see	\wcf\system\exporter\AbstractExporter::$limits
 	 */
 	protected $limits = array(
 		'com.woltlab.wcf.user' => 200,
@@ -104,7 +92,7 @@ class PhpBB3xExporter extends AbstractExporter {
 	);
 	
 	/**
-	 * @see	wcf\system\exporter\IExporter::getSupportedData()
+	 * @see	\wcf\system\exporter\IExporter::getSupportedData()
 	 */
 	public function getSupportedData() {
 		return array(
@@ -130,7 +118,7 @@ class PhpBB3xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see	wcf\system\exporter\IExporter::validateDatabaseAccess()
+	 * @see	\wcf\system\exporter\IExporter::validateDatabaseAccess()
 	 */
 	public function validateDatabaseAccess() {
 		parent::validateDatabaseAccess();
@@ -141,7 +129,7 @@ class PhpBB3xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see	wcf\system\exporter\IExporter::validateFileAccess()
+	 * @see	\wcf\system\exporter\IExporter::validateFileAccess()
 	 */
 	public function validateFileAccess() {
 		if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData) || in_array('com.woltlab.wbb.attachment', $this->selectedData) || in_array('com.woltlab.wcf.smiley', $this->selectedData)) {
@@ -152,7 +140,7 @@ class PhpBB3xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see	wcf\system\exporter\IExporter::getQueue()
+	 * @see	\wcf\system\exporter\IExporter::getQueue()
 	 */
 	public function getQueue() {
 		$queue = array();
@@ -204,7 +192,7 @@ class PhpBB3xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see	wcf\system\exporter\IExporter::getDefaultDatabasePrefix()
+	 * @see	\wcf\system\exporter\IExporter::getDefaultDatabasePrefix()
 	 */
 	public function getDefaultDatabasePrefix() {
 		return 'phpbb_';
@@ -494,11 +482,6 @@ class PhpBB3xExporter extends AbstractExporter {
 	 * Exports conversations.
 	 */
 	public function exportConversations($offset, $limit) {
-		$sql = "INSERT IGNORE INTO	wcf".WCF_N."_conversation_to_user
-						(conversationID, participantID, hideConversation, isInvisible, lastVisitTime)
-			VALUES			(?, ?, ?, ?, ?)";
-		$insertStatement = WCF::getDB()->prepareStatement($sql);
-		
 		$sql = "(
 				SELECT		msg_table.msg_id,
 						msg_table.message_subject,
@@ -528,21 +511,12 @@ class PhpBB3xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array(0, 0));
 		while ($row = $statement->fetchArray()) {
-			$conversationID = ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import(($row['isDraft'] ? 'draft-' : '').$row['msg_id'], array(
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import(($row['isDraft'] ? 'draft-' : '').$row['msg_id'], array(
 				'subject' => StringUtil::decodeHTML($row['message_subject']),
 				'time' => $row['message_time'],
 				'userID' => $row['author_id'],
 				'username' => $row['username'] ?: '',
 				'isDraft' => $row['isDraft']
-			));
-			
-			// add author
-			$insertStatement->execute(array(
-				$conversationID,
-				ImportHandler::getInstance()->getNewID('com.woltlab.wcf.user', $row['author_id']),
-				0,
-				0,
-				TIME_NOW
 			));
 		}
 	}
@@ -632,7 +606,7 @@ class PhpBB3xExporter extends AbstractExporter {
 	 * Exports conversation recipients.
 	 */
 	public function exportConversationUsers($offset, $limit) {
-		$sql = "SELECT		to_table.*, msg_table.root_level, msg_table.bcc_address, user_table.username
+		$sql = "SELECT		to_table.*, msg_table.root_level, msg_table.bcc_address, user_table.username, msg_table.message_time
 			FROM		".$this->databasePrefix."privmsgs_to to_table
 			LEFT JOIN	".$this->databasePrefix."privmsgs msg_table
 			ON		(msg_table.msg_id = to_table.msg_id)
@@ -649,7 +623,7 @@ class PhpBB3xExporter extends AbstractExporter {
 				'username' => $row['username'] ?: '',
 				'hideConversation' => $row['pm_deleted'],
 				'isInvisible' => in_array('u_'.$row['user_id'], $bcc) ? 1 : 0,
-				'lastVisitTime' => $row['pm_unread'] ? 0 : 1
+				'lastVisitTime' => $row['pm_new'] ? 0 : $row['message_time']
 			), array('labelIDs' => ($row['folder_id'] > 0 ? array($row['folder_id']) : array())));
 		}
 	}

@@ -1,19 +1,9 @@
 <?php
 namespace wcf\system\exporter;
 use wbb\data\board\Board;
-use wbb\data\board\BoardCache;
-use wcf\data\like\Like;
-use wcf\data\object\type\ObjectTypeCache;
 use wcf\data\user\group\UserGroup;
-use wcf\data\user\option\UserOption;
-use wcf\data\user\rank\UserRank;
-use wcf\data\user\UserProfile;
-use wcf\system\database\util\PreparedStatementConditionBuilder;
 use wcf\system\database\DatabaseException;
-use wcf\system\exception\SystemException;
 use wcf\system\importer\ImportHandler;
-use wcf\system\request\LinkHandler;
-use wcf\system\Callback;
 use wcf\system\Regex;
 use wcf\system\WCF;
 use wcf\util\ArrayUtil;
@@ -49,7 +39,7 @@ class SMF2xExporter extends AbstractExporter {
 	protected $boardCache = array();
 	
 	/**
-	 * @see	wcf\system\exporter\AbstractExporter::$methods
+	 * @see	\wcf\system\exporter\AbstractExporter::$methods
 	 */
 	protected $methods = array(
 		'com.woltlab.wcf.user' => 'Users',
@@ -78,7 +68,7 @@ class SMF2xExporter extends AbstractExporter {
 	);
 	
 	/**
-	 * @see	wcf\system\exporter\AbstractExporter::$limits
+	 * @see	\wcf\system\exporter\AbstractExporter::$limits
 	 */
 	protected $limits = array(
 		'com.woltlab.wcf.user' => 200,
@@ -87,7 +77,7 @@ class SMF2xExporter extends AbstractExporter {
 	);
 	
 	/**
-	 * @see	wcf\system\exporter\IExporter::getSupportedData()
+	 * @see	\wcf\system\exporter\IExporter::getSupportedData()
 	 */
 	public function getSupportedData() {
 		return array(
@@ -112,7 +102,7 @@ class SMF2xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see	wcf\system\exporter\IExporter::validateDatabaseAccess()
+	 * @see	\wcf\system\exporter\IExporter::validateDatabaseAccess()
 	 */
 	public function validateDatabaseAccess() {
 		parent::validateDatabaseAccess();
@@ -121,7 +111,7 @@ class SMF2xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see	wcf\system\exporter\IExporter::validateFileAccess()
+	 * @see	\wcf\system\exporter\IExporter::validateFileAccess()
 	 */
 	public function validateFileAccess() {
 		if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData) || in_array('com.woltlab.wbb.attachment', $this->selectedData) || in_array('com.woltlab.wcf.smiley', $this->selectedData)) {
@@ -132,7 +122,7 @@ class SMF2xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see	wcf\system\exporter\IExporter::getQueue()
+	 * @see	\wcf\system\exporter\IExporter::getQueue()
 	 */
 	public function getQueue() {
 		$queue = array();
@@ -183,7 +173,7 @@ class SMF2xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see	wcf\system\exporter\IExporter::getDefaultDatabasePrefix()
+	 * @see	\wcf\system\exporter\IExporter::getDefaultDatabasePrefix()
 	 */
 	public function getDefaultDatabasePrefix() {
 		return 'smf_';
@@ -474,11 +464,6 @@ class SMF2xExporter extends AbstractExporter {
 	 * Exports conversations.
 	 */
 	public function exportConversations($offset, $limit) {
-		$sql = "INSERT IGNORE INTO	wcf".WCF_N."_conversation_to_user
-						(conversationID, participantID, hideConversation, isInvisible, lastVisitTime)
-			VALUES			(?, ?, ?, ?, ?)";
-		$insertStatement = WCF::getDB()->prepareStatement($sql);
-		
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."personal_messages
 			WHERE		id_pm = id_pm_head
@@ -486,21 +471,12 @@ class SMF2xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array(0));
 		while ($row = $statement->fetchArray()) {
-			$conversationID = ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import($row['id_pm'], array(
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import($row['id_pm'], array(
 				'subject' => $row['subject'],
 				'time' => $row['msgtime'],
 				'userID' => $row['id_member_from'],
 				'username' => $row['from_name'],
 				'isDraft' => 0
-			));
-			
-			// add author
-			$insertStatement->execute(array(
-				$conversationID,
-				ImportHandler::getInstance()->getNewID('com.woltlab.wcf.user', $row['id_member_from']),
-				0,
-				0,
-				TIME_NOW
 			));
 		}
 	}
@@ -558,7 +534,7 @@ class SMF2xExporter extends AbstractExporter {
 	 * Exports conversation recipients.
 	 */
 	public function exportConversationUsers($offset, $limit) {
-		$sql = "SELECT		recipients.*, pm.id_pm_head, members.member_name
+		$sql = "SELECT		recipients.*, pm.id_pm_head, members.member_name, pm.msgtime
 			FROM		".$this->databasePrefix."pm_recipients recipients
 			LEFT JOIN	".$this->databasePrefix."personal_messages pm
 			ON		(pm.id_pm = recipients.id_pm)
@@ -581,7 +557,7 @@ class SMF2xExporter extends AbstractExporter {
 				'username' => $row['member_name'],
 				'hideConversation' => $row['deleted'] ? 1 : 0,
 				'isInvisible' => $row['bcc'] ? 1 : 0,
-				'lastVisitTime' => $row['is_new'] ? 0 : 1
+				'lastVisitTime' => $row['is_new'] ? 0 : $row['msgtime']
 			), array('labelIDs' => $labels));
 		}
 	}

@@ -4,8 +4,6 @@ use wcf\data\like\Like;
 use wcf\data\object\type\ObjectTypeCache;
 use wcf\data\user\option\UserOption;
 use wcf\system\database\util\PreparedStatementConditionBuilder;
-use wcf\system\database\DatabaseException;
-use wcf\system\exception\SystemException;
 use wcf\system\importer\ImportHandler;
 use wcf\system\WCF;
 use wcf\util\MessageUtil;
@@ -42,7 +40,7 @@ class WBB3xExporter extends AbstractExporter {
 	protected $boardCache = array();
 	
 	/**
-	 * @see	wcf\system\exporter\AbstractExporter::$methods
+	 * @see	\wcf\system\exporter\AbstractExporter::$methods
 	 */
 	protected $methods = array(
 		'com.woltlab.wcf.user' => 'Users',
@@ -79,7 +77,7 @@ class WBB3xExporter extends AbstractExporter {
 	);
 	
 	/**
-	 * @see	wcf\system\exporter\AbstractExporter::$limits
+	 * @see	\wcf\system\exporter\AbstractExporter::$limits
 	 */
 	protected $limits = array(
 		'com.woltlab.wcf.user' => 100,
@@ -91,7 +89,7 @@ class WBB3xExporter extends AbstractExporter {
 	);
 	
 	/**
-	 * @see	wcf\system\exporter\IExporter::init()
+	 * @see	\wcf\system\exporter\IExporter::init()
 	 */
 	public function init() {
 		parent::init();
@@ -110,7 +108,7 @@ class WBB3xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see	wcf\system\exporter\IExporter::getSupportedData()
+	 * @see	\wcf\system\exporter\IExporter::getSupportedData()
 	 */
 	public function getSupportedData() {
 		return array(
@@ -145,7 +143,7 @@ class WBB3xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see	wcf\system\exporter\IExporter::validateDatabaseAccess()
+	 * @see	\wcf\system\exporter\IExporter::validateDatabaseAccess()
 	 */
 	public function validateDatabaseAccess() {
 		parent::validateDatabaseAccess();
@@ -156,7 +154,7 @@ class WBB3xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see	wcf\system\exporter\IExporter::validateFileAccess()
+	 * @see	\wcf\system\exporter\IExporter::validateFileAccess()
 	 */
 	public function validateFileAccess() {
 		if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData) || in_array('com.woltlab.wbb.attachment', $this->selectedData) || in_array('com.woltlab.wcf.conversation.attachment', $this->selectedData) || in_array('com.woltlab.wcf.smiley', $this->selectedData)) {
@@ -167,7 +165,7 @@ class WBB3xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see	wcf\system\exporter\IExporter::getQueue()
+	 * @see	\wcf\system\exporter\IExporter::getQueue()
 	 */
 	public function getQueue() {
 		$queue = array();
@@ -239,7 +237,7 @@ class WBB3xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see	wcf\system\exporter\IExporter::getDefaultDatabasePrefix()
+	 * @see	\wcf\system\exporter\IExporter::getDefaultDatabasePrefix()
 	 */
 	public function getDefaultDatabasePrefix() {
 		return 'wbb1_1_';
@@ -757,11 +755,6 @@ class WBB3xExporter extends AbstractExporter {
 	 * Exports conversations.
 	 */
 	public function exportConversations($offset, $limit) {
-		$sql = "INSERT IGNORE INTO	wcf".WCF_N."_conversation_to_user
-						(conversationID, participantID, username, hideConversation, isInvisible, lastVisitTime)
-			VALUES			(?, ?, ?, ?, ?, ?)";
-		$insertStatement = WCF::getDB()->prepareStatement($sql);
-		
 		$sql = "SELECT		*
 			FROM		wcf".$this->dbNo."_pm
 			WHERE		parentPmID = ?
@@ -770,25 +763,13 @@ class WBB3xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array(0));
 		while ($row = $statement->fetchArray()) {
-			$conversationID = ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import($row['pmID'], array(
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import($row['pmID'], array(
 				'subject' => $row['subject'],
 				'time' => $row['time'],
 				'userID' => $row['userID'],
 				'username' => $row['username'],
 				'isDraft' => $row['isDraft']
 			));
-			
-			// add author
-			if (!$row['isDraft']) {
-				$insertStatement->execute(array(
-					$conversationID,
-					ImportHandler::getInstance()->getNewID('com.woltlab.wcf.user', $row['userID']),
-					$row['username'],
-					0,
-					0,
-					TIME_NOW
-				));
-			}
 		}
 	}
 	
