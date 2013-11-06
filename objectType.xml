@@ -32,9 +32,9 @@
 		</type>
 		
 		<type>
-			<name>com.woltlab.wcf.exporter.vb38x</name>
+			<name>com.woltlab.wcf.exporter.vb3or4x</name>
 			<definitionname>com.woltlab.wcf.exporter</definitionname>
-			<classname>wcf\system\exporter\VB38xExporter</classname>
+			<classname>wcf\system\exporter\VB3or4xExporter</classname>
 		</type>
 	</import>
 </data>

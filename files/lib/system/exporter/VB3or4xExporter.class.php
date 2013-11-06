@@ -22,7 +22,7 @@ use wcf\util\UserRegistrationUtil;
 use wcf\util\UserUtil;
 
 /**
- * Exporter for vBulletin 3.8.x
+ * Exporter for vBulletin 3.8.x - vBulletin 4.2.x
  * 
  * @author	Tim Duesterhus
  * @copyright	2001-2013 WoltLab GmbH
@@ -31,7 +31,7 @@ use wcf\util\UserUtil;
  * @subpackage	system.exporter
  * @category	Community Framework (commercial)
  */
-class VB38xExporter extends AbstractExporter {
+class VB3or4xExporter extends AbstractExporter {
 	const FORUMOPTIONS_ACTIVE = 1;
 	const FORUMOPTIONS_ALLOWPOSTING = 2;
 	const FORUMOPTIONS_CANCONTAINTHREADS = 4;
@@ -172,7 +172,7 @@ class VB38xExporter extends AbstractExporter {
 		$templateversion = $this->readOption('templateversion');
 		
 		if (version_compare($templateversion, '3.8.0', '<')) throw new DatabaseException('Cannot import less than vB 3.8.x', $this->database);
-		if (version_compare($templateversion, '4.0.0', '>=')) throw new DatabaseException('Cannot import greater than vB 3.x.x', $this->database);
+		if (version_compare($templateversion, '4.3.0 alpha 1', '>=')) throw new DatabaseException('Cannot import greater than vB 4.2.x', $this->database);
 	}
 	
 	/**
@@ -191,7 +191,9 @@ class VB38xExporter extends AbstractExporter {
 		
 		if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData)) {
 			if ($this->readOption('usefileavatar')) {
-				if (!is_dir($this->readOption('avatarpath'))) return false;
+				$path = $this->readOption('avatarpath');
+				if (!StringUtil::startsWith($path, '/')) $path = realpath($this->fileSystemPath.$path);
+				if (!is_dir($path)) return false;
 			}
 		}
 		
@@ -739,7 +741,7 @@ class VB38xExporter extends AbstractExporter {
 				'daysPrune' => $getDaysPrune($board['daysprune']),
 				'enableMarkingAsDone' => 0,
 				'ignorable' => 1,
-				'isClosed' => $board['options'] & self::FORUMOPTIONS_ALLOWPOSTING ? 1 : 0,
+				'isClosed' => $board['options'] & self::FORUMOPTIONS_ALLOWPOSTING ? 0 : 1,
 				'isInvisible' => $board['options'] & self::FORUMOPTIONS_ACTIVE ? 0 : 1,
 				'searchable' => $board['options'] & self::FORUMOPTIONS_INDEXPOSTS ? 1 : 0,
 				'searchableForSimilarThreads' => $board['options'] & self::FORUMOPTIONS_INDEXPOSTS ? 1 : 0,
@@ -838,6 +840,10 @@ class VB38xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
+			if (isset($row['htmlState']) && $row['htmlState'] == 'on_nl2br') {
+				$row['pagetext'] = str_replace("\n", '<br />', StringUtil::unifyNewlines($row['pagetext']));
+			}
+			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.post')->import($row['postid'], array(
 				'threadID' => $row['threadid'],
 				'userID' => $row['userid'],
@@ -851,11 +857,11 @@ class VB38xExporter extends AbstractExporter {
 				'editorID' => ($row['editorID'] ?: null),
 				'editor' => $row['editor'] ?: '',
 				'lastEditTime' => $row['lastEditTime'] ?: 0,
-				'editCount' => $row['editCount'] ?: 0,
+				'editCount' => ($row['editCount'] && $row['editCount'] > 0 ? $row['editCount'] : 0),
 				'editReason' => $row['editReason'] ?: '',
 				'attachments' => $row['attach'],
 				'enableSmilies' => $row['allowsmilie'],
-				'enableHtml' => 0,
+				'enableHtml' => (isset($row['htmlState']) && $row['htmlState'] != 'off' ? 1 : 0),
 				'enableBBCodes' => 1,
 				'showSignature' => $row['showsignature'],
 				'ipAddress' => UserUtil::convertIPv4To6($row['ipaddress'])
@@ -867,10 +873,19 @@ class VB38xExporter extends AbstractExporter {
 	 * Counts post attachments.
 	 */
 	public function countPostAttachments() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."attachment";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
+		try {
+			$sql = "SELECT	COUNT(*) AS count
+				FROM	".$this->databasePrefix."attachment
+				WHERE	contenttypeid = (SELECT contenttypeid FROM ".$this->databasePrefix."contenttype WHERE class = 'Post')";
+			$statement = $this->database->prepareStatement($sql);
+			$statement->execute();
+		}
+		catch (DatabaseException $e) {
+			$sql = "SELECT	COUNT(*) AS count
+				FROM	".$this->databasePrefix."attachment";
+			$statement = $this->database->prepareStatement($sql);
+			$statement->execute();
+		}
 		$row = $statement->fetchArray();
 		return $row['count'];
 	}
@@ -879,11 +894,22 @@ class VB38xExporter extends AbstractExporter {
 	 * Exports post attachments.
 	 */
 	public function exportPostAttachments($offset, $limit) {
-		$sql = "SELECT		*
-			FROM		".$this->databasePrefix."attachment
-			ORDER BY	attachmentid ASC";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		try {
+			$sql = "SELECT		*, contentid AS postid
+				FROM		".$this->databasePrefix."attachment
+				WHERE		contenttypeid = (SELECT contenttypeid FROM ".$this->databasePrefix."contenttype WHERE class = 'Post')
+				ORDER BY	attachmentid ASC";
+			$statement = $this->database->prepareStatement($sql, $limit, $offset);
+			$statement->execute();
+		}
+		catch (DatabaseException $e) {
+			$sql = "SELECT		*
+				FROM		".$this->databasePrefix."attachment
+				ORDER BY	attachmentid ASC";
+			$statement = $this->database->prepareStatement($sql, $limit, $offset);
+			$statement->execute();
+		}
+		
 		while ($row = $statement->fetchArray()) {
 			$file = null;
 			
@@ -916,13 +942,14 @@ class VB38xExporter extends AbstractExporter {
 					'objectID' => $row['postid'],
 					'userID' => ($row['userid'] ?: null),
 					'filename' => $row['filename'],
-					'filesize' => $row['filesize'],
+					'filesize' => (isset($row['filesize']) ? $row['filesize'] : filesize($file)),
 					'fileType' => FileUtil::getMimeType($file),
 					'isImage' => $row['isImage'],
 					'width' => $row['width'],
 					'height' => $row['height'],
 					'downloads' => $row['counter'],
-					'uploadTime' => $row['dateline']
+					'uploadTime' => $row['dateline'],
+					'showOrder' => (isset($row['displayOrder']) ? $row['displayOrder'] : 0)
 				), array('fileLocation' => $file));
 				
 				if ($this->readOption('attachfile') == self::ATTACHFILE_DATABASE) unlink($file);
