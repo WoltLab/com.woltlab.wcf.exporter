@@ -183,6 +183,18 @@ class VB38xExporter extends AbstractExporter {
 			if (empty($this->fileSystemPath) || !@file_exists($this->fileSystemPath . 'includes/version_vbulletin.php')) return false;
 		}
 		
+		if (in_array('com.woltlab.wbb.attachment', $this->selectedData)) {
+			if ($this->readOption('attachfile') != self::ATTACHFILE_DATABASE) {
+				if (!is_dir($this->readOption('attachpath'))) return false;
+			}
+		}
+		
+		if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData)) {
+			if ($this->readOption('usefileavatar')) {
+				if (!is_dir($this->readOption('avatarpath'))) return false;
+			}
+		}
+		
 		return true;
 	}
 	
