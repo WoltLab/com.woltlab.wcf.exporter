@@ -289,7 +289,7 @@ class WBB2xExporter extends AbstractExporter {
 				'signatureEnableSmilies' => $row['allowsigsmilies'],
 				'signatureEnableHtml' => $row['allowsightml'],
 				'signatureEnableBBCodes' => $row['allowsigbbcode'],
-				'registrationIpAddress' => $row['reg_ipaddress']
+				'registrationIpAddress' => (!empty($row['reg_ipaddress']) ? $row['reg_ipaddress'] : '')
 			);
 			
 			$options = array(
