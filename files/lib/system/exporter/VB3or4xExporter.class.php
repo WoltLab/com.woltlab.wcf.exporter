@@ -770,9 +770,15 @@ class VB3or4xExporter extends AbstractExporter {
 	 * Exports threads.
 	 */
 	public function exportThreads($offset, $limit) {
-		$sql = "SELECT		*
-			FROM		".$this->databasePrefix."thread
-			ORDER BY	threadid ASC";
+		$sql = "SELECT		thread.*,
+					(
+						SELECT	MAX(dateline)
+						FROM	".$this->databasePrefix."moderatorlog moderatorlog
+						WHERE		thread.threadid = moderatorlog.threadid
+							AND	type = 14
+					) AS deleteTime
+			FROM		".$this->databasePrefix."thread thread
+			ORDER BY	thread.threadid ASC";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
@@ -791,7 +797,7 @@ class VB3or4xExporter extends AbstractExporter {
 				'movedThreadID' => ($row['open'] == 10 && $row['pollid'] ? $row['pollid'] : null), // target thread is saved in pollid...
 				'movedTime' => 0,
 				'isDone' => 0,
-				'deleteTime' => TIME_NOW,
+				'deleteTime' => $row['deleteTime'] ?: 0,
 				'lastPostTime' => $row['lastpost']
 			);
 			$additionalData = array();
@@ -1206,7 +1212,7 @@ class VB3or4xExporter extends AbstractExporter {
 		
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."forumpermission
-			ORDER BY	forumpermissionid";
+			ORDER BY	forumpermissionid ASC";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute();
 		
