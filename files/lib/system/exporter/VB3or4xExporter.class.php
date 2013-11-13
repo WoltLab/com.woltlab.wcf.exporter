@@ -114,13 +114,8 @@ class VB3or4xExporter extends AbstractExporter {
 		'com.woltlab.wbb.like' => 'Likes',
 		'com.woltlab.wcf.label' => 'Labels',
 		'com.woltlab.wbb.acl' => 'ACLs',
+		'com.woltlab.wcf.smiley.category' => 'SmileyCategories',
 		'com.woltlab.wcf.smiley' => 'Smilies',
-		
-		'com.woltlab.blog.category' => 'BlogCategories',
-		'com.woltlab.blog.entry' => 'BlogEntries',
-		'com.woltlab.blog.entry.attachment' => 'BlogAttachments',
-		'com.woltlab.blog.entry.comment' => 'BlogComments',
-		'com.woltlab.blog.entry.like' => 'BlogEntryLikes'
 	);
 	
 	/**
@@ -251,7 +246,10 @@ class VB3or4xExporter extends AbstractExporter {
 		}
 		
 		// smiley
-		if (in_array('com.woltlab.wcf.smiley', $this->selectedData)) $queue[] = 'com.woltlab.wcf.smiley';
+		if (in_array('com.woltlab.wcf.smiley', $this->selectedData)) {
+			$queue[] = 'com.woltlab.wcf.smiley.category';
+			$queue[] = 'com.woltlab.wcf.smiley';
+		}
 		
 		return $queue;
 	}
@@ -775,12 +773,12 @@ class VB3or4xExporter extends AbstractExporter {
 						SELECT	MAX(dateline)
 						FROM	".$this->databasePrefix."moderatorlog moderatorlog
 						WHERE		thread.threadid = moderatorlog.threadid
-							AND	type = 14
+							AND	type = ?
 					) AS deleteTime
 			FROM		".$this->databasePrefix."thread thread
 			ORDER BY	thread.threadid ASC";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
+		$statement->execute(array(14)); // 14 = soft delete
 		while ($row = $statement->fetchArray()) {
 			$data = array(
 				'boardID' => $row['forumid'],
@@ -1252,12 +1250,46 @@ class VB3or4xExporter extends AbstractExporter {
 		$statement->execute(array());
 		while ($row = $statement->fetchArray()) {
 			$fileLocation = $this->fileSystemPath . $row['smiliepath'];
-	
+			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.smiley')->import($row['smilieid'], array(
 				'smileyTitle' => $row['title'],
 				'smileyCode' => $row['smilietext'],
-				'showOrder' => $row['displayorder']
+				'showOrder' => $row['displayorder'],
+				'categoryID' => $row['imagecategoryid']
 			), array('fileLocation' => $fileLocation));
+		}
+	}
+	
+	/**
+	 * Counts smiley categories.
+	 */
+	public function countSmileyCategories() {
+		$sql = "SELECT		COUNT(*) AS count
+			FROM		".$this->databasePrefix."imagecategory
+			WHERE		imagetype = ?
+			ORDER BY	imagecategoryid ASC";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array(3));
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports smiley categories.
+	 */
+	public function exportSmileyCategories($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."imagecategory
+			WHERE		imagetype = ?
+			ORDER BY	imagecategoryid ASC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.smiley.category')->import($row['imagecategoryid'], array(
+				'title' => $row['title'],
+				'parentCategoryID' => 0,
+				'showOrder' => $row['displayorder']
+			));
 		}
 	}
 	
