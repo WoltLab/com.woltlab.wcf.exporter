@@ -67,6 +67,7 @@ class WBB3xExporter extends AbstractExporter {
 		'com.woltlab.wbb.like' => 'Likes',
 		'com.woltlab.wcf.label' => 'Labels',
 		'com.woltlab.wbb.acl' => 'ACLs',
+		'com.woltlab.wcf.smiley.category' => 'SmileyCategories',
 		'com.woltlab.wcf.smiley' => 'Smilies',
 		
 		'com.woltlab.blog.category' => 'BlogCategories',
@@ -220,7 +221,12 @@ class WBB3xExporter extends AbstractExporter {
 		}
 		
 		// smiley
-		if (in_array('com.woltlab.wcf.smiley', $this->selectedData)) $queue[] = 'com.woltlab.wcf.smiley';
+		if (in_array('com.woltlab.wcf.smiley', $this->selectedData)) {
+			if (substr($this->getPackageVersion('com.woltlab.wcf.data.message.bbcode'), 0, 3) == '1.1') {
+				$queue[] = 'com.woltlab.wcf.smiley.category';
+			}
+			$queue[] = 'com.woltlab.wcf.smiley';
+		}
 		
 		// blog
 		if ($this->getPackageVersion('com.woltlab.wcf.user.blog')) {
@@ -1578,8 +1584,39 @@ class WBB3xExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.smiley')->import($row['smileyID'], array(
 				'smileyTitle' => $row['smileyTitle'],
 				'smileyCode' => $row['smileyCode'],
-				'showOrder' => $row['showOrder']
+				'showOrder' => $row['showOrder'],
+				'categoryID' => (!empty($row['smileyCategoryID']) ? $row['smileyCategoryID'] : null)
 			), array('fileLocation' => $fileLocation));
+		}
+	}
+	
+	/**
+	 * Counts smiley categories.
+	 */
+	public function countSmileyCategories() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	wcf".$this->dbNo."_smiley_category";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports smiley categories.
+	 */
+	public function exportSmileyCategories($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		wcf".$this->dbNo."_smiley_category
+			ORDER BY	smileyCategoryID";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.smiley.category')->import($row['smileyCategoryID'], array(
+				'title' => $row['title'],
+				'parentCategoryID' => 0,
+				'showOrder' => $row['showOrder']
+			));
 		}
 	}
 	
