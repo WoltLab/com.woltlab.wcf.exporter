@@ -36,8 +36,7 @@ class IPB3xExporter extends AbstractExporter {
 		'com.woltlab.wcf.user.comment' => 'StatusUpdates',
 		'com.woltlab.wcf.user.comment.response' => 'StatusReplies',
 		'com.woltlab.wcf.user.avatar' => 'UserAvatars',
-		'com.woltlab.wcf.user.option' => 'UserOptions',
-		'com.woltlab.wcf.conversation.label' => 'ConversationFolders',
+		//'com.woltlab.wcf.user.option' => 'UserOptions',
 		'com.woltlab.wcf.conversation' => 'Conversations',
 		'com.woltlab.wcf.conversation.message' => 'ConversationMessages',
 		'com.woltlab.wcf.conversation.user' => 'ConversationUsers',
@@ -48,18 +47,8 @@ class IPB3xExporter extends AbstractExporter {
 		'com.woltlab.wbb.attachment' => 'PostAttachments',
 		'com.woltlab.wbb.watchedThread' => 'WatchedThreads',
 		'com.woltlab.wbb.poll' => 'Polls',
-		'com.woltlab.wbb.poll.option' => 'PollOptions',
 		'com.woltlab.wbb.poll.option.vote' => 'PollOptionVotes',
-		'com.woltlab.wbb.like' => 'Likes',
-		'com.woltlab.wcf.label' => 'Labels',
-		'com.woltlab.wbb.acl' => 'ACLs',
-		'com.woltlab.wcf.smiley' => 'Smilies',
-
-		'com.woltlab.blog.category' => 'BlogCategories',
-		'com.woltlab.blog.entry' => 'BlogEntries',
-		'com.woltlab.blog.entry.attachment' => 'BlogAttachments',
-		'com.woltlab.blog.entry.comment' => 'BlogComments',
-		'com.woltlab.blog.entry.like' => 'BlogEntryLikes'
+		'com.woltlab.wbb.like' => 'Likes'
 	);
 	
 	/**
@@ -70,29 +59,19 @@ class IPB3xExporter extends AbstractExporter {
 			'com.woltlab.wcf.user' => array(
 				'com.woltlab.wcf.user.group',
 				'com.woltlab.wcf.user.avatar',
-				'com.woltlab.wcf.user.option',
+				//'com.woltlab.wcf.user.option',
 				'com.woltlab.wcf.user.comment',
 				'com.woltlab.wcf.user.follower'
 			),
 			'com.woltlab.wbb.board' => array(
-				'com.woltlab.wbb.acl',
 				'com.woltlab.wbb.attachment',
 				'com.woltlab.wbb.poll',
 				'com.woltlab.wbb.watchedThread',
-				'com.woltlab.wbb.like',
-				'com.woltlab.wcf.label'
+				'com.woltlab.wbb.like'
 			),
 			'com.woltlab.wcf.conversation' => array(
-				'com.woltlab.wcf.conversation.attachment',
-				'com.woltlab.wcf.conversation.label'
-			),
-			'com.woltlab.blog.entry' => array(
-				'com.woltlab.blog.category',
-				'com.woltlab.blog.entry.attachment',
-				'com.woltlab.blog.entry.comment',
-				'com.woltlab.blog.entry.like'
-			),
-			'com.woltlab.wcf.smiley' => array()
+				'com.woltlab.wcf.conversation.attachment'
+			)
 		);
 	}
 	
@@ -102,7 +81,7 @@ class IPB3xExporter extends AbstractExporter {
 	public function validateDatabaseAccess() {
 		parent::validateDatabaseAccess();
 	
-		$sql = "SELECT COUNT(*) FROM wbb".$this->dbNo."_".$this->instanceNo."_post";
+		$sql = "SELECT COUNT(*) FROM ".$this->databasePrefix."core_like";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute();
 	}
@@ -111,8 +90,8 @@ class IPB3xExporter extends AbstractExporter {
 	 * @see	\wcf\system\exporter\IExporter::validateFileAccess()
 	 */
 	public function validateFileAccess() {
-		if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData) || in_array('com.woltlab.wbb.attachment', $this->selectedData) || in_array('com.woltlab.wcf.conversation.attachment', $this->selectedData) || in_array('com.woltlab.wcf.smiley', $this->selectedData)) {
-			if (empty($this->fileSystemPath) || (!@file_exists($this->fileSystemPath . 'lib/core.functions.php') && !@file_exists($this->fileSystemPath . 'wcf/lib/core.functions.php'))) return false;
+		if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData) || in_array('com.woltlab.wbb.attachment', $this->selectedData) || in_array('com.woltlab.wcf.conversation.attachment', $this->selectedData)) {
+			if (empty($this->fileSystemPath) || !@file_exists($this->fileSystemPath . 'conf_global.php')) return false;
 		}
 	
 		return true;
@@ -223,7 +202,7 @@ class IPB3xExporter extends AbstractExporter {
 				'enableGravatar' => ((!empty($row['pp_gravatar']) && $row['pp_gravatar'] == $row['email']) ? 1 : 0),
 				'signature' => $row['signature'],
 				'profileHits' => $row['members_profile_views'],
-				'userTitle' => $row['title'],
+				'userTitle' => ($row['title'] ?: ''),
 				'lastActivityTime' => $row['last_activity']
 			);
 			
@@ -254,7 +233,7 @@ class IPB3xExporter extends AbstractExporter {
 			}
 			
 			$additionalData = array(
-				'groupIDs' => explode(',', $row['groupIDs']),
+				'groupIDs' => $groupIDs,
 				'options' => $options
 			);
 				
@@ -299,7 +278,7 @@ class IPB3xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
-			$groupType = 4;
+			$groupType = UserGroup::OTHER;
 			switch ($row['g_id']) {
 				case 2: // guests
 					$groupType = UserGroup::GUESTS;
@@ -339,7 +318,7 @@ class IPB3xExporter extends AbstractExporter {
 			WHERE		avatar_location <> ''
 			ORDER BY	pp_member_id";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute(array(0));
+		$statement->execute();
 		while ($row = $statement->fetchArray()) {
 			$avatarName = basename($row['avatar_location']);
 			$avatarExtension = pathinfo($avatarName, PATHINFO_EXTENSION);
@@ -484,7 +463,7 @@ class IPB3xExporter extends AbstractExporter {
 				'subject' => $row['mt_title'],
 				'time' => $row['mt_date'],
 				'userID' => ($row['mt_starter_id'] ?: null),
-				'username' => ($row['mt_is_system'] ? 'System' : $row['name']),
+				'username' => ($row['mt_is_system'] ? 'System' : ($row['name'] ?: '')),
 				'isDraft' => $row['mt_is_draft']
 			));
 		}
@@ -517,7 +496,7 @@ class IPB3xExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.message')->import($row['msg_id'], array(
 				'conversationID' => $row['msg_topic_id'],
 				'userID' => ($row['msg_author_id'] ?: null),
-				'username' => $row['name'],
+				'username' => ($row['name'] ?: ''),
 				'message' => self::fixMessage($row['msg_post']),
 				'time' => $row['msg_date']
 			));
@@ -553,6 +532,7 @@ class IPB3xExporter extends AbstractExporter {
 				'participantID' => $row['map_user_id'],
 				'username' => $row['name'],
 				'hideConversation' => ($row['map_left_time'] ? 1 : 0),
+				'isInvisible' => 0,
 				'lastVisitTime' => $row['map_read_time']
 			));
 		}
@@ -642,13 +622,13 @@ class IPB3xExporter extends AbstractExporter {
 	public function exportThreads($offset, $limit) {
 		// get thread ids
 		$threadIDs = array();
-		$sql = "SELECT		id
+		$sql = "SELECT		tid
 			FROM		".$this->databasePrefix."topics
-			ORDER BY	id";
+			ORDER BY	tid";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
-			$threadIDs[] = $row['id'];
+			$threadIDs[] = $row['tid'];
 		}
 	
 		// get tags
@@ -656,13 +636,13 @@ class IPB3xExporter extends AbstractExporter {
 	
 		// get threads
 		$conditionBuilder = new PreparedStatementConditionBuilder();
-		$conditionBuilder->add('topics.id IN (?)', array($threadIDs));
+		$conditionBuilder->add('topics.tid IN (?)', array($threadIDs));
 	
 		$sql = "SELECT		topics.*
 			FROM		".$this->databasePrefix."topics topics
 			".$conditionBuilder;
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement->execute($conditionBuilder->getParameters());
 		while ($row = $statement->fetchArray()) {
 			$data = array(
 				'boardID' => $row['forum_id'],
@@ -681,9 +661,9 @@ class IPB3xExporter extends AbstractExporter {
 				'lastPostTime' => $row['last_post']
 			);
 			$additionalData = array();
-			if (isset($tags[$row['id']])) $additionalData['tags'] = $tags[$row['id']];
+			if (isset($tags[$row['tid']])) $additionalData['tags'] = $tags[$row['tid']];
 				
-			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.thread')->import($row['id'], $data, $additionalData);
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.thread')->import($row['tid'], $data, $additionalData);
 		}
 	}
 	
@@ -718,6 +698,7 @@ class IPB3xExporter extends AbstractExporter {
 				'isDeleted' => ($row['queued'] == 3 ? 1 : 0),
 				'isDisabled' => ($row['queued'] == 2 ? 1 : 0),
 				'lastEditTime' => ($row['edit_time'] ?: 0),
+				'editorID' => null,
 				'editReason' => $row['post_edit_reason'],
 				'ipAddress' => UserUtil::convertIPv4To6($row['ip_address']),
 				'deleteTime' => $row['pdelete_time']
@@ -777,7 +758,7 @@ class IPB3xExporter extends AbstractExporter {
 		$sql = "SELECT		polls.*, topics.topic_firstpost
 			FROM		".$this->databasePrefix."polls polls
 			LEFT JOIN	".$this->databasePrefix."topics topics
-			ON		(topics.id = polls.tid)		
+			ON		(topics.tid = polls.tid)		
 			ORDER BY	pid";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
@@ -834,12 +815,13 @@ class IPB3xExporter extends AbstractExporter {
 			$data = @unserialize($row['member_choices']);
 			if (!$data || !isset($data[1])) continue;
 			
-			foreach ($data[1] as $pollOptionKey)
-			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll.option.vote')->import(0, array(
-				'pollID' => $row['pid'],
-				'optionID' => $row['pid'].'-'.$pollOptionKey,
-				'userID' => $row['member_id']
-			));
+			foreach ($data[1] as $pollOptionKey) {
+				ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll.option.vote')->import(0, array(
+					'pollID' => $row['pid'],
+					'optionID' => $row['pid'].'-'.$pollOptionKey,
+					'userID' => $row['member_id']
+				));
+			}
 		}
 	}
 	
@@ -865,7 +847,7 @@ class IPB3xExporter extends AbstractExporter {
 		$sql = "SELECT		core_like.*, topics.topic_firstpost, topics.starter_id
 			FROM		".$this->databasePrefix."core_like core_like
 			LEFT JOIN	".$this->databasePrefix."topics topics
-			ON		(topics.id = core_like.like_rel_id)
+			ON		(topics.tid = core_like.like_rel_id)
 			WHERE		core_like.like_app = ?
 					AND core_like.like_area = ?
 					AND core_like.like_visible = ?
