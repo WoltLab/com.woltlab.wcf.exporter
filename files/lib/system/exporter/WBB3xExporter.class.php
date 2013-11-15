@@ -279,7 +279,7 @@ class WBB3xExporter extends AbstractExporter {
 			));
 		}
 	}
-
+	
 	/**
 	 * Counts users.
 	 */
