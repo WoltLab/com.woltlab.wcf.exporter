@@ -934,50 +934,40 @@ class IPB3xExporter extends AbstractExporter {
 	}
 	
 	private static function fixMessage($string) {
-		// @todo update this
-		
 		// <br /> to newline
-		$string = str_replace('<br />', "\n", $string);
-			
+		$string = str_ireplace('<br />', "\n", $string);
+		$string = str_ireplace('<br>', "\n", $string);
+		
 		// decode html entities
 		$string = StringUtil::decodeHTML($string);
 		
-		// b, i, u, sub, sup
-		$string = preg_replace('~<(/?(?:b|i|u|sub|sup))>~i', '[\\1]', $string);
+		// bold
+		$string = str_ireplace('<strong>', '[b]', $string);
+		$string = str_ireplace('</strong>', '[/b]', $string);
+		
+		// italic
+		$string = str_ireplace('<em>', '[i]', $string);
+		$string = str_ireplace('</em>', '[/i]', $string);
+		
+		// underline
+		$string = str_ireplace('<u>', '[u]', $string);
+		$string = str_ireplace('</u>', '[/u]', $string);
 		
 		// strike
 		$string = str_ireplace('<strike>', '[s]', $string);
 		$string = str_ireplace('</strike>', '[/s]', $string);
 		
-		// smileys
-		$string = preg_replace('~<img src="[^"]*"[^>]+emoid="([^"]+)"[^>]+/>~is', '\\1', $string);
+		// font face
+		$string = preg_replace('~<span style="font-family:(.*?)">(.*?)</span>~i', '[font=\\1]\\2[/font]', $string);
 		
-		// urls
-		$string = preg_replace('~<a href="([^"]*)" target="_blank">(.*?)</a>~is', '[url=\'\\1\']\\2[/url]', $string);
-		// emails
-		$string = preg_replace('~<a href="mailto:([^"]*)">(.*?)</a>~is', '[email=\'\\1\']\\2[/email]', $string);
+		// font size
+		$string = preg_replace('~<span style="font-size:(\d+)px;">(.*?)</span>~i', '[size=\\1]\\2[/size]', $string);
 		
-		// images
-		$string = preg_replace('~<img[^>]+src="([^"]+)"[^>]+/>~is', '[img]\\1[/img]', $string);
-		
-		// quotes
-		$string = preg_replace('~<!--quoteo.*?<!--quotec-->(.*?)<!--QuoteEnd--></div><!--QuoteEEnd-->~is', '[quote]\\1[/quote]', $string);
-		
-		// code
-		$string = preg_replace('~<!--c1--><div class=\'codetop\'>CODE</div><div class=\'codemain\'><!--ec1-->(.*?)<!--c2--></div><!--ec2-->~is', '[code]\\1[/code]', $string);
-		
-		// font
-		$string = preg_replace('~<!--fonto:([^-]+).*?<!--/fonto-->(.*?)<!--fontc--></span><!--/fontc-->~is', '[font=\'\\1\']\\2[/font]', $string);
-		
-		// size
-		$string = preg_replace('~<!--sizeo:\d+.*?font-size:(\d+)pt.*?<!--/sizeo-->(.*?)<!--sizec--></span><!--/sizec-->~is', '[size=\\1]\\2[/size]', $string);
-		
-		// color
-		$string = preg_replace('~<!--coloro:([^-]+).*?<!--/coloro-->(.*?)<!--colorc--></span><!--/colorc-->~is', '[color=\'\\1\']\\2[/color]', $string);
+		// font color
+		$string = preg_replace('~<span style="color:(.*?)">(.*?)</span>~i', '[color=\\1]\\2[/color]', $string);
 		
 		// align
-		$string = preg_replace('~<div align="(left|center|right)">~i', '[align=\\1]', $string);
-		$string = str_ireplace('</div>', '[/align]', $string);
+		$string = preg_replace('~<p style="text-align:(left|center|right);">(.*?)</p>~i', '[align=\\1]\\2[/align]', $string);
 		
 		// list
 		$string = str_ireplace('</ol>', '[/list]', $string);
@@ -987,9 +977,29 @@ class IPB3xExporter extends AbstractExporter {
 		$string = str_ireplace('<li>', '[*]', $string);
 		$string = str_ireplace('</li>', '', $string);
 		
+		// mails
+		$string = preg_replace('~<a.*?href=(?:"|\')mailto:([^"]*)(?:"|\')>(.*?)</a>~is', '[email=\'\\1\']\\2[/email]', $string);
+		
+		// urls
+		$string = preg_replace('~<a.*?href=(?:"|\')([^"]*)(?:"|\')>(.*?)</a>~is', '[url=\'\\1\']\\2[/url]', $string);
+		
+		// images
+		$string = preg_replace('~<img[^>]+src="([^"]+)"[^>]+/?>~is', '[img]\\1[/img]', $string);
+		
+		// quotes
+		$string = preg_replace('~<blockquote[^>]*>(.*?)</blockquote>~is', '[quote]\\1[/quote]', $string);
+		
+		// code
+		$string = preg_replace('~<pre[^>]*>(.*?)</pre>~is', '[code]\\1[/code]', $string);
+		
 		// embedded attachments
 		$string = preg_replace('~\[attachment=(\d+):[^\]]*\]~i', '[attach]\\1[/attach]', $string);
-	
+		
+		// remove obsolete code
+		$string = str_ireplace('<p>&nbsp;</p>', '', $string);
+		$string = str_ireplace('<p>', '', $string);
+		$string = str_ireplace('</p>', '', $string);
+		
 		return $string;
 	}
 }
