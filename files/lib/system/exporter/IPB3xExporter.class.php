@@ -302,7 +302,8 @@ class IPB3xExporter extends AbstractExporter {
 	public function countUserAvatars() {
 		$sql = "SELECT	COUNT(*) AS count
 			FROM	".$this->databasePrefix."profile_portal
-			WHERE	avatar_location <> ''";
+			WHERE	avatar_location <> ''
+				OR pp_main_photo <> ''";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute();
 		$row = $statement->fetchArray();
@@ -316,24 +317,32 @@ class IPB3xExporter extends AbstractExporter {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."profile_portal
 			WHERE		avatar_location <> ''
+					OR pp_main_photo <> ''
 			ORDER BY	pp_member_id";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
-			$avatarName = basename($row['avatar_location']);
-			$avatarExtension = pathinfo($avatarName, PATHINFO_EXTENSION);
-			
-			$source = '';
-			if ($row['avatar_type'] != 'url') {
-				$source = $this->fileSystemPath;
-				if ($row['avatar_type'] == 'upload') $source .= 'uploads/';
-				else $source .= 'style_avatars/';
+			if ($row['pp_main_photo']) {
+				$avatarName = basename($row['pp_main_photo']);
+				
+				$source = $this->fileSystemPath.'uploads/'.$row['pp_main_photo'];
 			}
-			$source .= $row['avatar_location'];
+			else {
+				$avatarName = basename($row['avatar_location']);
+				
+				$source = '';
+				if ($row['avatar_type'] != 'url') {
+					$source = $this->fileSystemPath;
+					if ($row['avatar_type'] == 'upload') $source .= 'uploads/';
+					else $source .= 'style_avatars/';
+				}
+				$source .= $row['avatar_location'];
+			}
 			
+			$avatarExtension = pathinfo($avatarName, PATHINFO_EXTENSION);
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.avatar')->import($row['pp_member_id'], array(
 				'avatarName' => $avatarName,
-				'avatarExtension' => $avatarExtension,
+					'avatarExtension' => $avatarExtension,
 				'userID' => $row['pp_member_id']
 			), array('fileLocation' => $source));
 		}
@@ -958,13 +967,15 @@ class IPB3xExporter extends AbstractExporter {
 		$string = str_ireplace('</strike>', '[/s]', $string);
 		
 		// font face
-		$string = preg_replace('~<span style="font-family:(.*?)">(.*?)</span>~i', '[font=\\1]\\2[/font]', $string);
+		$string = preg_replace_callback('~<span style="font-family:(.*?)">(.*?)</span>~i', function ($matches) {
+			return "[font='".str_replace(";", '', str_replace("'", '', $matches[1]))."']".$matches[2]."[/font]";
+		}, $string);
 		
 		// font size
 		$string = preg_replace('~<span style="font-size:(\d+)px;">(.*?)</span>~i', '[size=\\1]\\2[/size]', $string);
 		
 		// font color
-		$string = preg_replace('~<span style="color:(.*?)">(.*?)</span>~i', '[color=\\1]\\2[/color]', $string);
+		$string = preg_replace('~<span style="color:(.*?);?">(.*?)</span>~i', '[color=\\1]\\2[/color]', $string);
 		
 		// align
 		$string = preg_replace('~<p style="text-align:(left|center|right);">(.*?)</p>~i', '[align=\\1]\\2[/align]', $string);
@@ -974,6 +985,7 @@ class IPB3xExporter extends AbstractExporter {
 		$string = str_ireplace('</ul>', '[/list]', $string);
 		$string = str_ireplace('<ul>', '[list]', $string);
 		$string = str_ireplace("<ol type='1'>", '[list=1]', $string);
+		$string = str_ireplace("<ol>", '[list=1]', $string);
 		$string = str_ireplace('<li>', '[*]', $string);
 		$string = str_ireplace('</li>', '', $string);
 		
@@ -999,7 +1011,7 @@ class IPB3xExporter extends AbstractExporter {
 		$string = str_ireplace('<p>&nbsp;</p>', '', $string);
 		$string = str_ireplace('<p>', '', $string);
 		$string = str_ireplace('</p>', '', $string);
-		
+
 		return $string;
 	}
 }
