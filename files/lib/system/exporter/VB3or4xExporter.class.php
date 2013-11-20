@@ -312,15 +312,15 @@ class VB3or4xExporter extends AbstractExporter {
 			switch ($row['usergroupid']) {
 				case 1:
 					$groupType = UserGroup::GUESTS;
-					break;
+				break;
 				case 2:
 					$groupType = UserGroup::USERS;
-					break;
+				break;
 				default:
 					$groupType = UserGroup::OTHER;
-					break;
+				break;
 			}
-				
+			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.group')->import($row['usergroupid'], array(
 				'groupName' => $row['title'],
 				'groupDescription' => $row['description'],
@@ -1079,7 +1079,7 @@ class VB3or4xExporter extends AbstractExporter {
 		$sql = "SELECT	COUNT(*) AS count
 			FROM	".$this->databasePrefix."poll";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array('post'));
+		$statement->execute(array());
 		$row = $statement->fetchArray();
 		return $row['count'];
 	}

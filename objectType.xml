@@ -66,5 +66,11 @@
 			<definitionname>com.woltlab.wcf.exporter</definitionname>
 			<classname>wcf\system\exporter\XF12xExporter</classname>
 		</type>
+		
+		<type>
+			<name>com.woltlab.wcf.exporter.vb5x</name>
+			<definitionname>com.woltlab.wcf.exporter</definitionname>
+			<classname>wcf\system\exporter\VB5xExporter</classname>
+		</type>
 	</import>
 </data>
