@@ -3,6 +3,8 @@ namespace wcf\system\exporter;
 use wcf\system\database\util\PreparedStatementConditionBuilder;
 use wcf\system\importer\ImportHandler;
 use wcf\system\WCF;
+use wcf\util\StringUtil;
+
 /**
  * Exporter for Wordpress 3.x
  * 
@@ -63,6 +65,17 @@ class Wordpress3xExporter extends AbstractExporter {
 		}
 		
 		return $queue;
+	}
+	
+	/**
+	 * @see	\wcf\system\exporter\IExporter::validateDatabaseAccess()
+	 */
+	public function validateDatabaseAccess() {
+		parent::validateDatabaseAccess();
+	
+		$sql = "SELECT COUNT(*) FROM ".$this->databasePrefix."posts";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
 	}
 	
 	/**
@@ -166,7 +179,7 @@ class Wordpress3xExporter extends AbstractExporter {
 	
 		foreach ($this->categoryCache[$parentID] as $category) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.blog.category')->import($category['term_id'], array(
-				'title' => $category['name'],
+				'title' => StringUtil::decodeHTML($category['name']),
 				'parentCategoryID' => $category['parent'],
 				'showOrder' => 0
 			));
@@ -229,7 +242,7 @@ class Wordpress3xExporter extends AbstractExporter {
 		$conditionBuilder = new PreparedStatementConditionBuilder();
 		$conditionBuilder->add('term_taxonomy.term_taxonomy_id = term_relationships.term_taxonomy_id');
 		$conditionBuilder->add('term_relationships.object_id IN (?)', array($entryIDs));
-		$conditionBuilder->add('term_taxonomy.taxonomy = ?', array('post_tag'));
+		$conditionBuilder->add('term_taxonomy.taxonomy = ?', array('category'));
 		$sql = "SELECT		term_taxonomy.term_id, term_relationships.object_id
 			FROM		".$this->databasePrefix."term_relationships term_relationships,
 					".$this->databasePrefix."term_taxonomy term_taxonomy
@@ -261,7 +274,7 @@ class Wordpress3xExporter extends AbstractExporter {
 				'userID' => ($row['post_author'] ?: null),
 				'username' => $row['user_login'],
 				'subject' => $row['post_title'],
-				'message' => $row['post_content'],
+				'message' => self::fixMessage($row['post_content']),
 				'time' => @strtotime($row['post_date_gmt']),
 				'comments' => $row['comment_count'],
 				'enableSmilies' => 0,
@@ -304,7 +317,7 @@ class Wordpress3xExporter extends AbstractExporter {
 					'objectID' => $row['comment_post_ID'],
 					'userID' => ($row['user_id'] ?: null),
 					'username' => $row['comment_author'],
-					'message' => $row['comment_content'],
+					'message' => StringUtil::decodeHTML($row['comment_content']),
 					'time' => @strtotime($row['comment_date_gmt'])
 				));
 			}
@@ -320,7 +333,7 @@ class Wordpress3xExporter extends AbstractExporter {
 							'commentID' => $row2['comment_ID'],
 							'userID' => ($row['user_id'] ?: null),
 							'username' => $row['comment_author'],
-							'message' => $row['comment_content'],
+							'message' => StringUtil::decodeHTML($row['comment_content']),
 							'time' => @strtotime($row['comment_date_gmt'])
 						));
 						break;
@@ -330,5 +343,11 @@ class Wordpress3xExporter extends AbstractExporter {
 				while (true);
 			}
 		}
+	}
+	
+	private static function fixMessage($string) {
+		$string = str_replace("\n", "<br />\n", StringUtil::unifyNewlines($string));
+		
+		return $string;
 	}
 }
