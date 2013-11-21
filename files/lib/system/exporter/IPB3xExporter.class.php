@@ -20,6 +20,8 @@ use wcf\util\UserUtil;
  * @category	Community Framework (commercial)
  */
 class IPB3xExporter extends AbstractExporter {
+	protected static $knownProfileFields = array('website', 'icq', 'gender', 'location', 'interests', 'skype');
+	
 	/**
 	 * board cache
 	 * @var	array
@@ -36,7 +38,7 @@ class IPB3xExporter extends AbstractExporter {
 		'com.woltlab.wcf.user.comment' => 'StatusUpdates',
 		'com.woltlab.wcf.user.comment.response' => 'StatusReplies',
 		'com.woltlab.wcf.user.avatar' => 'UserAvatars',
-		//'com.woltlab.wcf.user.option' => 'UserOptions',
+		'com.woltlab.wcf.user.option' => 'UserOptions',
 		'com.woltlab.wcf.conversation' => 'Conversations',
 		'com.woltlab.wcf.conversation.message' => 'ConversationMessages',
 		'com.woltlab.wcf.conversation.user' => 'ConversationUsers',
@@ -59,7 +61,7 @@ class IPB3xExporter extends AbstractExporter {
 			'com.woltlab.wcf.user' => array(
 				'com.woltlab.wcf.user.group',
 				'com.woltlab.wcf.user.avatar',
-				//'com.woltlab.wcf.user.option',
+				'com.woltlab.wcf.user.option',
 				'com.woltlab.wcf.user.comment',
 				'com.woltlab.wcf.user.follower'
 			),
@@ -108,7 +110,7 @@ class IPB3xExporter extends AbstractExporter {
 			if (in_array('com.woltlab.wcf.user.group', $this->selectedData)) {
 				$queue[] = 'com.woltlab.wcf.user.group';
 			}
-			//@todo if (in_array('com.woltlab.wcf.user.option', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.option';
+			if (in_array('com.woltlab.wcf.user.option', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.option';
 			$queue[] = 'com.woltlab.wcf.user'; 
 			if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.avatar';
 				
@@ -166,13 +168,18 @@ class IPB3xExporter extends AbstractExporter {
 	 */
 	public function exportUsers($offset, $limit) {
 		// cache profile fields
-		$profileFields = array();
+		$profileFields = $knownProfileFields = array();
 		$sql = "SELECT	*
 			FROM	".$this->databasePrefix."pfields_data";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
-			$profileFields[$row['pf_key']] = $row;
+			if (in_array($row['pf_key'], self::$knownProfileFields)) {
+				$knownProfileFields[$row['pf_key']] = $row;
+			}
+			else {
+				$profileFields[] = $row;
+			}
 		}
 	
 		// prepare password update
@@ -213,11 +220,11 @@ class IPB3xExporter extends AbstractExporter {
 			// get user options
 			$options = array(
 				'timezone' => $row['time_offset'],
-				'homepage' => (isset($profileFields['website']) && !empty($row['field_'.$profileFields['website']['pf_id']])) ? $row['field_'.$profileFields['website']['pf_id']] : '',
-				'icq' => (isset($profileFields['icq']) && !empty($row['field_'.$profileFields['icq']['pf_id']])) ? $row['field_'.$profileFields['icq']['pf_id']] : '',
-				'hobbies' => (isset($profileFields['interests']) && !empty($row['field_'.$profileFields['interests']['pf_id']])) ? $row['field_'.$profileFields['interests']['pf_id']] : '',
-				'skype' => (isset($profileFields['skype']) && !empty($row['field_'.$profileFields['skype']['pf_id']])) ? $row['field_'.$profileFields['skype']['pf_id']] : '',
-				'location' => (isset($profileFields['location']) && !empty($row['field_'.$profileFields['location']['pf_id']])) ? $row['field_'.$profileFields['location']['pf_id']] : ''
+				'homepage' => (isset($knownProfileFields['website']) && !empty($row['field_'.$knownProfileFields['website']['pf_id']])) ? $row['field_'.$knownProfileFields['website']['pf_id']] : '',
+				'icq' => (isset($knownProfileFields['icq']) && !empty($row['field_'.$knownProfileFields['icq']['pf_id']])) ? $row['field_'.$knownProfileFields['icq']['pf_id']] : '',
+				'hobbies' => (isset($knownProfileFields['interests']) && !empty($row['field_'.$knownProfileFields['interests']['pf_id']])) ? $row['field_'.$knownProfileFields['interests']['pf_id']] : '',
+				'skype' => (isset($knownProfileFields['skype']) && !empty($row['field_'.$knownProfileFields['skype']['pf_id']])) ? $row['field_'.$knownProfileFields['skype']['pf_id']] : '',
+				'location' => (isset($knownProfileFields['location']) && !empty($row['field_'.$knownProfileFields['location']['pf_id']])) ? $row['field_'.$knownProfileFields['location']['pf_id']] : ''
 			);
 			
 			// get birthday
@@ -226,8 +233,8 @@ class IPB3xExporter extends AbstractExporter {
 			}
 			
 			// get gender
-			if (isset($profileFields['gender']) && !empty($row['field_'.$profileFields['gender']['pf_id']])) {
-				$gender = $row['field_'.$profileFields['gender']['pf_id']];
+			if (isset($knownProfileFields['gender']) && !empty($row['field_'.$knownProfileFields['gender']['pf_id']])) {
+				$gender = $row['field_'.$knownProfileFields['gender']['pf_id']];
 				if ($gender == 'm') $options['gender'] = 1;
 				if ($gender == 'f') $options['gender'] = 2;
 			}
@@ -238,13 +245,11 @@ class IPB3xExporter extends AbstractExporter {
 			);
 				
 			// handle user options
-			/*foreach ($userOptions as $optionID => $optionName) {
-				if ($optionName == 'timezone') continue; // skip broken timezone setting
-	
-				if (isset($row['userOption'.$optionID])) {
-					$additionalData['options'][$optionName] = $row['userOption'.$optionID];
+			foreach ($profileFields as $profileField) {
+				if (!empty($row['field_'.$profileField['pf_id']])) {
+					$additionalData['options'][$profileField['pf_id']] = $row['field_'.$profileField['pf_id']];
 				}
-			}*/
+			}
 				
 			// import user
 			$newUserID = ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user')->import($row['member_id'], $data, $additionalData);
@@ -253,6 +258,44 @@ class IPB3xExporter extends AbstractExporter {
 			if ($newUserID) {
 				$passwordUpdateStatement->execute(array('ipb3:'.$row['members_pass_hash'].':'.$row['members_pass_salt'], $newUserID));
 			}
+		}
+	}
+	
+	/**
+	 * Counts user options.
+	 */
+	public function countUserOptions() {
+		$conditionBuilder = new PreparedStatementConditionBuilder();
+		$conditionBuilder->add('pf_key NOT IN (?)', array(self::$knownProfileFields));
+		
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."pfields_data
+			".$conditionBuilder;
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute($conditionBuilder->getParameters());
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports user options.
+	 */
+	public function exportUserOptions($offset, $limit) {
+		$conditionBuilder = new PreparedStatementConditionBuilder();
+		$conditionBuilder->add('pf_key NOT IN (?)', array(self::$knownProfileFields));
+		
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."pfields_data
+			".$conditionBuilder."
+			ORDER BY	pf_id";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute($conditionBuilder->getParameters());
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.option')->import($row['pf_id'], array(
+				'categoryName' => 'profile.personal',
+				'optionType' => 'textarea',
+				'askDuringRegistration' => $row['pf_show_on_reg'],
+			), array('name' => $row['pf_title']));
 		}
 	}
 	
