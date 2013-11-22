@@ -46,7 +46,7 @@
 		<type>
 			<name>com.woltlab.wcf.exporter.wordpress3x</name>
 			<definitionname>com.woltlab.wcf.exporter</definitionname>
-			<classname>wcf\system\exporter\Wordpress3xExporter</classname>
+			<classname>wcf\system\exporter\WordPress3xExporter</classname>
 		</type>
 		
 		<type>

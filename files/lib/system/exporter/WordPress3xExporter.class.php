@@ -6,7 +6,7 @@ use wcf\system\WCF;
 use wcf\util\StringUtil;
 
 /**
- * Exporter for Wordpress 3.x
+ * Exporter for WordPress 3.x
  * 
  * @author	Marcel Werk
  * @copyright	2001-2013 WoltLab GmbH
@@ -15,7 +15,7 @@ use wcf\util\StringUtil;
  * @subpackage	system.exporter
  * @category	Community Framework (commercial)
  */
-class Wordpress3xExporter extends AbstractExporter {
+class WordPress3xExporter extends AbstractExporter {
 	/**
 	 * category cache
 	 * @var	array
