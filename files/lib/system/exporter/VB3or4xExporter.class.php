@@ -535,9 +535,10 @@ class VB3or4xExporter extends AbstractExporter {
 	public function countConversationFolders() {
 		$sql = "SELECT	COUNT(*) AS count
 			FROM	".$this->databasePrefix."usertextfield
-			WHERE	pmfolders IS NOT NULL";
+			WHERE		pmfolders IS NOT NULL
+				AND	pmfolders <> ?";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
+		$statement->execute(array(''));
 		$row = $statement->fetchArray();
 		return $row['count'];
 	}
@@ -549,9 +550,10 @@ class VB3or4xExporter extends AbstractExporter {
 		$sql = "SELECT		userid, pmfolders
 			FROM		".$this->databasePrefix."usertextfield
 			WHERE		pmfolders IS NOT NULL
+				AND	pmfolders <> ?
 			ORDER BY	userid ASC";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement->execute(array(''));
 		while ($row = $statement->fetchArray()) {
 			$pmfolders = unserialize($row['pmfolders']);
 			foreach ($pmfolders as $key => $val) {
