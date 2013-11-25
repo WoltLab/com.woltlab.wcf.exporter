@@ -1712,7 +1712,7 @@ class WBB4xExporter extends AbstractExporter {
 		$statement->execute($conditionBuilder->getParameters());
 		while ($row = $statement->fetchArray()) {
 			if (!isset($labels[$row['objectID']])) $labels[$row['objectID']] = array();
-			$labels[$row['objectID']][] = $row['objectID'];
+			$labels[$row['objectID']][] = $row['labelID'];
 		}
 	
 		return $labels;
