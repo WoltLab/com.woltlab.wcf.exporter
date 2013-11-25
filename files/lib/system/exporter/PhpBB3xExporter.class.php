@@ -1,10 +1,9 @@
 <?php
 namespace wcf\system\exporter;
-use wcf\data\user\option\UserOption;
-
 use wbb\data\board\Board;
 use wbb\data\board\BoardCache;
 use wcf\data\user\group\UserGroup;
+use wcf\data\user\option\UserOption;
 use wcf\system\database\util\PreparedStatementConditionBuilder;
 use wcf\system\importer\ImportHandler;
 use wcf\system\WCF;
@@ -264,6 +263,16 @@ class PhpBB3xExporter extends AbstractExporter {
 	 * Exports users.
 	 */
 	public function exportUsers($offset, $limit) {
+		// cache profile fields
+		$profileFields = array();
+		$sql = "SELECT	*
+			FROM	".$this->databasePrefix."profile_fields";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			$profileFields[] = $row;
+		}
+		
 		// prepare password update
 		$sql = "UPDATE	wcf".WCF_N."_user
 			SET	password = ?
@@ -271,18 +280,20 @@ class PhpBB3xExporter extends AbstractExporter {
 		$passwordUpdateStatement = WCF::getDB()->prepareStatement($sql);
 		
 		// get users
-		$sql = "SELECT		user_table.*, ban_table.ban_give_reason AS banReason,
+		$sql = "SELECT		fields_table.*, user_table.*, ban_table.ban_give_reason AS banReason,
 					(
-						SELECT	GROUP_CONCAT(group_id)
-						FROM	".$this->databasePrefix."user_group
-						WHERE	user_id = user_table.user_id
+						SELECT	GROUP_CONCAT(group_table.group_id)
+						FROM	".$this->databasePrefix."user_group group_table
+						WHERE	group_table.user_id = user_table.user_id
 					) AS groupIDs
 			FROM		".$this->databasePrefix."users user_table
 			LEFT JOIN	".$this->databasePrefix."banlist ban_table
 			ON			user_table.user_id = ban_table.ban_userid
 					AND	ban_table.ban_end = ?
-			WHERE		user_type <> ?
-			ORDER BY	user_id ASC";
+			LEFT JOIN	".$this->databasePrefix."profile_fields_data fields_table
+			ON		user_table.user_id = fields_table.user_id
+			WHERE		user_table.user_type <> ?
+			ORDER BY	user_table.user_id ASC";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array(0, 2));
 		
@@ -301,11 +312,34 @@ class PhpBB3xExporter extends AbstractExporter {
 				'signatureEnableSmilies' => preg_match('/<!-- s.*? -->/', $row['user_sig']),
 				'lastActivityTime' => $row['user_lastvisit']
 			);
-			// TODO: import options
+			
+			$birthday = \DateTime::createFromFormat('j-n-Y', str_replace(' ', '', $row['user_birthday']));
+			// get user options
+			$options = array(
+				'location' => $row['user_from'],
+				'birthday' => $birthday ? $birthday->format('Y-m-d') : '',
+				'icq' => $row['user_icq'],
+				'homepage' => $row['user_website'],
+				'hobbies' => $row['user_interests']
+			);
+			
 			$additionalData = array(
 				'groupIDs' => explode(',', $row['groupIDs']),
-				'options' => array()
+				'options' => $options
 			);
+			
+			// handle user options
+			foreach ($profileFields as $profileField) {
+				if (!empty($row['pf_'.$profileField['field_name']])) {
+					// prevent issues with 0 being false for select
+					if ($profileField['field_type'] == 5) { // 5 = select
+						$additionalData['options'][$profileField['field_id']] = '_'.$row['pf_'.$profileField['field_name']];
+					}
+					else {
+						$additionalData['options'][$profileField['field_id']] = $row['pf_'.$profileField['field_name']];
+					}
+				}
+			}
 			
 			// import user
 			$newUserID = ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user')->import($row['user_id'], $data, $additionalData);
@@ -335,7 +369,7 @@ class PhpBB3xExporter extends AbstractExporter {
 	public function exportUserOptions($offset, $limit) {
 		$sql = "SELECT		fields.*,
 					(
-						SELECT	GROUP_CONCAT((lang.option_id || ':' || lang.lang_value) SEPARATOR '\n')
+						SELECT	GROUP_CONCAT(('_' || lang.option_id || ':' || lang.lang_value) SEPARATOR '\n')
 						FROM		".$this->databasePrefix."profile_fields_lang lang
 						WHERE		lang.field_id = fields.field_id
 							AND	lang.field_type = 5
@@ -375,7 +409,8 @@ class PhpBB3xExporter extends AbstractExporter {
 				'askDuringRegistration' => $row['field_show_on_reg'] ? 1 : 0,
 				'selectOptions' => $row['selectOptions'] ?: '',
 				'visible' => $row['field_no_view'] ? UserOption::VISIBILITY_ADMINISTRATOR | UserOption::VISIBILITY_OWNER : UserOption::VISIBILITY_ALL,
-				'showOrder' => $row['field_order']
+				'showOrder' => $row['field_order'],
+				'outputClass' => $type == 'select' ? 'wcf\system\option\user\SelectOptionsUserOptionOutput' : ''
 			), array('name' => $row['field_name']));
 		}
 	}
