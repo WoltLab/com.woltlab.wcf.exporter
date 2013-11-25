@@ -1,5 +1,7 @@
 <?php
 namespace wcf\system\exporter;
+use wcf\data\user\option\UserOption;
+
 use wbb\data\board\Board;
 use wbb\data\board\BoardCache;
 use wcf\data\user\group\UserGroup;
@@ -99,7 +101,7 @@ class PhpBB3xExporter extends AbstractExporter {
 			'com.woltlab.wcf.user' => array(
 				'com.woltlab.wcf.user.group',
 				'com.woltlab.wcf.user.avatar',
-			/*	'com.woltlab.wcf.user.option',*/
+				'com.woltlab.wcf.user.option',
 				'com.woltlab.wcf.user.follower',
 				'com.woltlab.wcf.user.rank'
 			),
@@ -151,7 +153,7 @@ class PhpBB3xExporter extends AbstractExporter {
 				$queue[] = 'com.woltlab.wcf.user.group';
 				if (in_array('com.woltlab.wcf.user.rank', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.rank';
 			}
-			/*if (in_array('com.woltlab.wcf.user.option', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.option';*/
+			if (in_array('com.woltlab.wcf.user.option', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.option';
 			$queue[] = 'com.woltlab.wcf.user';
 			if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.avatar';
 			
@@ -299,6 +301,7 @@ class PhpBB3xExporter extends AbstractExporter {
 				'signatureEnableSmilies' => preg_match('/<!-- s.*? -->/', $row['user_sig']),
 				'lastActivityTime' => $row['user_lastvisit']
 			);
+			// TODO: import options
 			$additionalData = array(
 				'groupIDs' => explode(',', $row['groupIDs']),
 				'options' => array()
@@ -311,6 +314,69 @@ class PhpBB3xExporter extends AbstractExporter {
 			if ($newUserID) {
 				$passwordUpdateStatement->execute(array('phpbb3:'.$row['user_password'].':', $newUserID));
 			}
+		}
+	}
+	
+	/**
+	 * Counts user options.
+	 */
+	public function countUserOptions() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."profile_fields";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports user options.
+	 */
+	public function exportUserOptions($offset, $limit) {
+		$sql = "SELECT		fields.*,
+					(
+						SELECT	GROUP_CONCAT((lang.option_id || ':' || lang.lang_value) SEPARATOR '\n')
+						FROM		".$this->databasePrefix."profile_fields_lang lang
+						WHERE		lang.field_id = fields.field_id
+							AND	lang.field_type = 5
+							AND	lang.lang_id = (SELECT MIN(lang_id) FROM ".$this->databasePrefix."profile_fields_lang)
+					) AS selectOptions
+			FROM		".$this->databasePrefix."profile_fields fields
+			ORDER BY	fields.field_id ASC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute(array(5));
+		while ($row = $statement->fetchArray()) {
+			$selectOptions = '';
+			switch ($row['field_type']) {
+				case 1:
+					$type = 'integer';
+				break;
+				case 2:
+					$type = 'text';
+				break;
+				case 3:
+					$type = 'textarea';
+				break;
+				case 4:
+					$type = 'boolean';
+				break;
+				case 5:
+					$type = 'select';
+				break;
+				case 6:
+					$type = 'date';
+				break;
+			}
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.option')->import($row['field_id'], array(
+				'categoryName' => 'profile.personal',
+				'optionType' => $type,
+				'editable' => $row['field_show_profile'] ? UserOption::EDITABILITY_ALL : UserOption::EDITABILITY_ADMINISTRATOR,
+				'required' => $row['field_required'] ? 1 : 0,
+				'askDuringRegistration' => $row['field_show_on_reg'] ? 1 : 0,
+				'selectOptions' => $row['selectOptions'] ?: '',
+				'visible' => $row['field_no_view'] ? UserOption::VISIBILITY_ADMINISTRATOR | UserOption::VISIBILITY_OWNER : UserOption::VISIBILITY_ALL,
+				'showOrder' => $row['field_order']
+			), array('name' => $row['field_name']));
 		}
 	}
 	
