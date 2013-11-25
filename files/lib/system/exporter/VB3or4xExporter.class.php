@@ -832,7 +832,7 @@ class VB3or4xExporter extends AbstractExporter {
 					) AS editCount
 			FROM		".$this->databasePrefix."post post
 			LEFT JOIN	".$this->databasePrefix."postedithistory postedithistory
-			ON		".$this->databasePrefix."postedithistory.postedithistoryid = (
+			ON		postedithistory.postedithistoryid = (
 						SELECT	MAX(postedithistoryid)
 						FROM	".$this->databasePrefix."postedithistory postedithistory2
 						WHERE	postedithistory2.postid = post.postid
