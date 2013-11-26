@@ -417,7 +417,7 @@ class IPB3xExporter extends AbstractExporter {
 				'objectID' => $row['status_member_id'],
 				'userID' => $row['status_author_id'],
 				'username' => $row['status_creator'],
-				'message' => $row['status_content'],
+				'message' => self::fixStatusUpdate($row['status_content']),
 				'time' => $row['status_date']
 			));
 		}
@@ -452,7 +452,7 @@ class IPB3xExporter extends AbstractExporter {
 				'time' => $row['reply_date'],
 				'userID' => $row['reply_member_id'],
 				'username' => $row['name'],
-				'message' => $row['reply_content'],
+				'message' => self::fixStatusUpdate($row['reply_content']),
 			));
 		}
 	}
@@ -693,12 +693,12 @@ class IPB3xExporter extends AbstractExporter {
 		$sql = "SELECT		topics.*
 			FROM		".$this->databasePrefix."topics topics
 			".$conditionBuilder;
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement = $this->database->prepareStatement($sql);
 		$statement->execute($conditionBuilder->getParameters());
 		while ($row = $statement->fetchArray()) {
 			$data = array(
 				'boardID' => $row['forum_id'],
-				'topic' => $row['title'],
+				'topic' => StringUtil::decodeHTML($row['title']),
 				'time' => $row['start_date'],
 				'userID' => $row['starter_id'],
 				'username' => $row['starter_name'],
@@ -824,7 +824,7 @@ class IPB3xExporter extends AbstractExporter {
 				'question' => $data[1]['question'],
 				'time' => $row['start_date'],
 				'isPublic' => $row['poll_view_voters'],
-				'maxVotes' => ($data[1]['multi'] ? count($data[1]['choice']) : 1),
+				'maxVotes' => (!empty($data[1]['multi']) ? count($data[1]['choice']) : 1),
 				'votes' => $row['votes']
 			));
 			
@@ -1010,18 +1010,18 @@ class IPB3xExporter extends AbstractExporter {
 		$string = str_ireplace('</strike>', '[/s]', $string);
 		
 		// font face
-		$string = preg_replace_callback('~<span style="font-family:(.*?)">(.*?)</span>~i', function ($matches) {
+		$string = preg_replace_callback('~<span style="font-family:(.*?)">(.*?)</span>~is', function ($matches) {
 			return "[font='".str_replace(";", '', str_replace("'", '', $matches[1]))."']".$matches[2]."[/font]";
 		}, $string);
 		
 		// font size
-		$string = preg_replace('~<span style="font-size:(\d+)px;">(.*?)</span>~i', '[size=\\1]\\2[/size]', $string);
+		$string = preg_replace('~<span style="font-size:(\d+)px;">(.*?)</span>~is', '[size=\\1]\\2[/size]', $string);
 		
 		// font color
-		$string = preg_replace('~<span style="color:(.*?);?">(.*?)</span>~i', '[color=\\1]\\2[/color]', $string);
+		$string = preg_replace('~<span style="color:(.*?);?">(.*?)</span>~is', '[color=\\1]\\2[/color]', $string);
 		
 		// align
-		$string = preg_replace('~<p style="text-align:(left|center|right);">(.*?)</p>~i', '[align=\\1]\\2[/align]', $string);
+		$string = preg_replace('~<p style="text-align:(left|center|right);">(.*?)</p>~is', '[align=\\1]\\2[/align]', $string);
 		
 		// list
 		$string = str_ireplace('</ol>', '[/list]', $string);
@@ -1055,6 +1055,17 @@ class IPB3xExporter extends AbstractExporter {
 		$string = str_ireplace('<p>', '', $string);
 		$string = str_ireplace('</p>', '', $string);
 
+		return $string;
+	}
+	
+	private static function fixStatusUpdate($string) {
+		// <br /> to newline
+		$string = str_ireplace('<br />', "\n", $string);
+		$string = str_ireplace('<br>', "\n", $string);
+		
+		// decode html entities
+		$string = StringUtil::decodeHTML($string);
+		
 		return $string;
 	}
 }
