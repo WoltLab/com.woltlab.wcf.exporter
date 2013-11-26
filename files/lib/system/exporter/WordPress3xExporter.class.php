@@ -272,7 +272,7 @@ class WordPress3xExporter extends AbstractExporter {
 				
 			ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry')->import($row['ID'], array(
 				'userID' => ($row['post_author'] ?: null),
-				'username' => $row['user_login'],
+				'username' => ($row['user_login'] ?: ''),
 				'subject' => $row['post_title'],
 				'message' => self::fixMessage($row['post_content']),
 				'time' => @strtotime($row['post_date_gmt']),
