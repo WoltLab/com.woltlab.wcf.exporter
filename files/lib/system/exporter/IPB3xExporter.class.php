@@ -994,13 +994,20 @@ class IPB3xExporter extends AbstractExporter {
 		// decode html entities
 		$string = StringUtil::decodeHTML($string);
 		
+		// replace single quote entity
+		$string = str_replace('&#39;', "'", $string);
+		
 		// bold
 		$string = str_ireplace('<strong>', '[b]', $string);
 		$string = str_ireplace('</strong>', '[/b]', $string);
+		$string = str_ireplace('<b>', '[b]', $string);
+		$string = str_ireplace('</b>', '[/b]', $string);
 		
 		// italic
 		$string = str_ireplace('<em>', '[i]', $string);
 		$string = str_ireplace('</em>', '[/i]', $string);
+		$string = str_ireplace('<i>', '[i]', $string);
+		$string = str_ireplace('</i>', '[/i]', $string);
 		
 		// underline
 		$string = str_ireplace('<u>', '[u]', $string);
@@ -1023,6 +1030,7 @@ class IPB3xExporter extends AbstractExporter {
 		
 		// align
 		$string = preg_replace('~<p style="text-align:(left|center|right);">(.*?)</p>~is', '[align=\\1]\\2[/align]', $string);
+		$string = preg_replace('~<p class="bbc_center">(.*?)</p>~is', '[align=center]\\1[/align]', $string);
 		
 		// list
 		$string = str_ireplace('</ol>', '[/list]', $string);
@@ -1039,8 +1047,11 @@ class IPB3xExporter extends AbstractExporter {
 		// urls
 		$string = preg_replace('~<a.*?href=(?:"|\')([^"]*)(?:"|\')>(.*?)</a>~is', '[url=\'\\1\']\\2[/url]', $string);
 		
+		// smileys
+		$string = preg_replace('~<img src=\'[^\']+\' class=\'bbc_emoticon\' alt=\'([^\']+)\' ?/?>~is', '\\1', $string);		
+		
 		// images
-		$string = preg_replace('~<img[^>]+src="([^"]+)"[^>]+/?>~is', '[img]\\1[/img]', $string);
+		$string = preg_replace('~<img[^>]+src=["\']([^"\']+)["\'][^>]*/?>~is', '[img]\\1[/img]', $string);
 		
 		// quotes
 		$string = preg_replace('~<blockquote[^>]*>(.*?)</blockquote>~is', '[quote]\\1[/quote]', $string);
@@ -1051,11 +1062,53 @@ class IPB3xExporter extends AbstractExporter {
 		// embedded attachments
 		$string = preg_replace('~\[attachment=(\d+):[^\]]*\]~i', '[attach]\\1[/attach]', $string);
 		
+		// [center] => [align=center]
+		$string = str_ireplace('[center]', '[align=center]', $string);
+		$string = str_ireplace('[/center]', '[/align]', $string);
+		
+		// [font=""] => [font='']
+		$string = preg_replace('~\[([a-z]+)="(.*?)"\]~i', "[\\1='\\2']", $string);
+		
+		// fix quote tags
+		$string = preg_replace('~\[quote name=\'([^\']+)\'.*?\]~si', "[quote='\\1']", $string);
+		
+		// fix size bbcodes
+		$string = preg_replace_callback('/\[size=\'?(\d+)\'?\]/i', function ($matches) {
+			$size = 36;
+				
+			switch ($matches[1]) {
+				case 1:
+					$size = 8;
+					break;
+				case 2:
+					$size = 10;
+					break;
+				case 3:
+					$size = 12;
+					break;
+				case 4:
+					$size = 14;
+					break;
+				case 5:
+					$size = 18;
+					break;
+				case 6:
+					$size = 24;
+					break;
+			}
+				
+			return '[size='.$size.']';
+		}, $string);
+		
 		// remove obsolete code
 		$string = str_ireplace('<p>&nbsp;</p>', '', $string);
 		$string = str_ireplace('<p>', '', $string);
 		$string = str_ireplace('</p>', '', $string);
-
+		$string = str_ireplace('<div>', '', $string);
+		$string = str_ireplace('</div>', '', $string);
+		$string = str_ireplace('</span>', '', $string);
+		$string = preg_replace('~<span.*?>~', '', $string);
+		
 		return $string;
 	}
 	
