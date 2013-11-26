@@ -1210,7 +1210,7 @@ class VB3or4xExporter extends AbstractExporter {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."forumpermission
 			ORDER BY	forumpermissionid ASC";
-		$statement = $this->database->prepareStatement($sql);
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		
 		while ($row = $statement->fetchArray()) {
