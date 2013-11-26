@@ -3,6 +3,7 @@ namespace wcf\system\exporter;
 use wbb\data\board\Board;
 use wcf\data\like\Like;
 use wcf\data\user\group\UserGroup;
+use wcf\data\user\UserProfile;
 use wcf\system\database\util\PreparedStatementConditionBuilder;
 use wcf\system\importer\ImportHandler;
 use wcf\system\WCF;
@@ -235,8 +236,8 @@ class IPB3xExporter extends AbstractExporter {
 			// get gender
 			if (isset($knownProfileFields['gender']) && !empty($row['field_'.$knownProfileFields['gender']['pf_id']])) {
 				$gender = $row['field_'.$knownProfileFields['gender']['pf_id']];
-				if ($gender == 'm') $options['gender'] = 1;
-				if ($gender == 'f') $options['gender'] = 2;
+				if ($gender == 'm') $options['gender'] = UserProfile::GENDER_MALE;
+				if ($gender == 'f') $options['gender'] = UserProfile::GENDER_FEMALE;
 			}
 			
 			$additionalData = array(

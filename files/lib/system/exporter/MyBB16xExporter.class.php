@@ -5,6 +5,8 @@ use wbb\data\board\BoardCache;
 use wcf\data\like\Like;
 use wcf\data\object\type\ObjectTypeCache;
 use wcf\data\user\group\UserGroup;
+use wcf\data\user\option\UserOption;
+use wcf\data\user\UserProfile;
 use wcf\system\database\util\PreparedStatementConditionBuilder;
 use wcf\system\database\DatabaseException;
 use wcf\system\importer\ImportHandler;
@@ -30,6 +32,8 @@ use wcf\util\UserUtil;
  * @category	Community Framework (commercial)
  */
 class MyBB16xExporter extends AbstractExporter {
+	protected static $knownProfileFields = array('Bio', 'Sex', 'Location');
+	
 	/**
 	 * board cache
 	 * @var	array
@@ -82,7 +86,7 @@ class MyBB16xExporter extends AbstractExporter {
 			'com.woltlab.wcf.user' => array(
 				'com.woltlab.wcf.user.group',
 				'com.woltlab.wcf.user.avatar',
-				/*'com.woltlab.wcf.user.option',*/
+				'com.woltlab.wcf.user.option',
 				'com.woltlab.wcf.user.follower',
 				'com.woltlab.wcf.user.rank'
 			),
@@ -142,7 +146,7 @@ class MyBB16xExporter extends AbstractExporter {
 				if (in_array('com.woltlab.wcf.user.rank', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.rank';
 			}
 			
-			/*if (in_array('com.woltlab.wcf.user.option', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.option';*/
+			if (in_array('com.woltlab.wcf.user.option', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.option';
 			$queue[] = 'com.woltlab.wcf.user';
 			if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.avatar';
 			
@@ -248,6 +252,21 @@ class MyBB16xExporter extends AbstractExporter {
 	 * Exports users.
 	 */
 	public function exportUsers($offset, $limit) {
+		// cache profile fields
+		$profileFields = $knownProfileFields = array();
+		$sql = "SELECT	*
+			FROM	".$this->databasePrefix."profilefields";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			if (in_array($row['name'], self::$knownProfileFields)) {
+				$knownProfileFields[$row['name']] = $row;
+			}
+			else {
+				$profileFields[] = $row;
+			}
+		}
+		
 		// prepare password update
 		$sql = "UPDATE	wcf".WCF_N."_user
 			SET	password = ?
@@ -255,11 +274,13 @@ class MyBB16xExporter extends AbstractExporter {
 		$passwordUpdateStatement = WCF::getDB()->prepareStatement($sql);
 		
 		// get users
-		$sql = "SELECT		user_table.*, activation_table.code AS activationCode, activation_table.type AS activationType,
+		$sql = "SELECT		userfields_table.*, user_table.*, activation_table.code AS activationCode, activation_table.type AS activationType,
 					activation_table.misc AS newEmail, ban_table.reason AS banReason
 			FROM		".$this->databasePrefix."users user_table
 			LEFT JOIN	".$this->databasePrefix."awaitingactivation activation_table
 			ON		user_table.uid = activation_table.uid
+			LEFT JOIN	".$this->databasePrefix."userfields userfields_table
+			ON		user_table.uid = userfields_table.ufid
 			LEFT JOIN	".$this->databasePrefix."banned ban_table
 			ON			user_table.uid = ban_table.uid
 					AND	ban_table.lifted <> ?
@@ -288,10 +309,38 @@ class MyBB16xExporter extends AbstractExporter {
 				'userTitle' => $row['usertitle'],
 				'lastActivityTime' => $row['lastactive']
 			);
-			$additionalData = array(
-				'groupIDs' => explode(',', $row['additionalgroups'].','.$row['usergroup']),
-				'options' => array()
+			
+			$birthday = \DateTime::createFromFormat('j-n-Y', $row['birthday']);
+			// get user options
+			$options = array(
+				'location' => (isset($knownProfileFields['Location']) && !empty($row['fid'.$knownProfileFields['Location']['fid']])) ? $row['fid'.$knownProfileFields['Location']['fid']] : '',
+				'birthday' => $birthday ? $birthday->format('Y-m-d') : '',
+				'icq' => $row['icq'],
+				'homepage' => $row['website']
 			);
+			
+			// get gender
+			if (isset($knownProfileFields['Sex']) && !empty($row['fid'.$knownProfileFields['Sex']['fid']])) {
+				switch ($row['fid'.$knownProfileFields['Sex']['fid']]) {
+					case 'Male':
+						$options['gender'] = UserProfile::GENDER_MALE;
+					break;
+					case 'Female':
+						$options['gender'] = UserProfile::GENDER_FEMALE;
+				}
+			}
+			
+			$additionalData = array(
+				'groupIDs' => array_unique(ArrayUtil::toIntegerArray(explode(',', $row['additionalgroups'].','.$row['usergroup']))),
+				'options' => $options
+			);
+			
+			// handle user options
+			foreach ($profileFields as $profileField) {
+				if (!empty($row['fid'.$profileField['fid']])) {
+					$additionalData['options'][$profileField['fid']] = $row['fid'.$profileField['fid']];
+				}
+			}
 			
 			// import user
 			$newUserID = ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user')->import($row['uid'], $data, $additionalData);
@@ -300,6 +349,73 @@ class MyBB16xExporter extends AbstractExporter {
 			if ($newUserID) {
 				$passwordUpdateStatement->execute(array('mybb1:'.$row['password'].':'.$row['salt'], $newUserID));
 			}
+		}
+	}
+	
+	/**
+	 * Counts user options.
+	 */
+	public function countUserOptions() {
+		$conditionBuilder = new PreparedStatementConditionBuilder();
+		$conditionBuilder->add('name NOT IN (?)', array(self::$knownProfileFields));
+		
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."profilefields
+			".$conditionBuilder;
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute($conditionBuilder->getParameters());
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports user options.
+	 */
+	public function exportUserOptions($offset, $limit) {
+		$conditionBuilder = new PreparedStatementConditionBuilder();
+		$conditionBuilder->add('name NOT IN (?)', array(self::$knownProfileFields));
+	
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."profilefields
+			".$conditionBuilder."
+			ORDER BY	fid ASC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute($conditionBuilder->getParameters());
+		while ($row = $statement->fetchArray()) {
+			$selectOptions = '';
+			switch ($row['type']) {
+				case 'text':
+				case 'textarea':
+					// fine
+				break;
+				default:
+					$type = explode("\n", $row['type'], 2);
+					if (count($type) < 2) continue;
+					switch ($type[0]) {
+						case 'select':
+							$row['type'] = $type[0];
+						break;
+						case 'multiselect':
+							$row['type'] = 'multiSelect';
+						break;
+						case 'radio':
+							$row['type'] = 'radioButton';
+						break;
+						default:
+							continue;
+					}
+					
+					$selectOptions = $type[1];
+			}
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.option')->import($row['fid'], array(
+				'categoryName' => 'profile.personal',
+				'optionType' => $row['type'],
+				'editable' => $row['editable'] ? UserOption::EDITABILITY_ALL : UserOption::EDITABILITY_ADMINISTRATOR,
+				'required' => $row['required'],
+				'selectOptions' => $selectOptions,
+				'visible' => $row['hidden'] ? UserOption::VISIBILITY_ADMINISTRATOR | UserOption::VISIBILITY_OWNER : UserOption::VISIBILITY_ALL,
+				'showOrder' => $row['disporder']
+			), array('name' => $row['name']));
 		}
 	}
 	
