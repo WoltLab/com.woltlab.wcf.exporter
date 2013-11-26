@@ -237,7 +237,7 @@ class IPB3xExporter extends AbstractExporter {
 			if (isset($knownProfileFields['gender']) && !empty($row['field_'.$knownProfileFields['gender']['pf_id']])) {
 				$gender = $row['field_'.$knownProfileFields['gender']['pf_id']];
 				if ($gender == 'm') $options['gender'] = UserProfile::GENDER_MALE;
-				if ($gender == 'f') $options['gender'] = UserProfile::GENDER_MALE;
+				if ($gender == 'f') $options['gender'] = UserProfile::GENDER_FEMALE;
 			}
 			
 			$additionalData = array(
