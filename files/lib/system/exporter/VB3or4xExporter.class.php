@@ -776,7 +776,7 @@ class VB3or4xExporter extends AbstractExporter {
 					) AS deleteTime
 			FROM		".$this->databasePrefix."thread thread
 			ORDER BY	thread.threadid ASC";
-		$statement = $this->database->prepareStatement($sql);
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array(14)); // 14 = soft delete
 		while ($row = $statement->fetchArray()) {
 			$data = array(
