@@ -583,7 +583,7 @@ class IPB3xExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.user')->import(0, array(
 				'conversationID' => $row['map_topic_id'],
 				'participantID' => $row['map_user_id'],
-				'username' => $row['name'],
+				'username' => ($row['name'] ?: ''),
 				'hideConversation' => ($row['map_left_time'] ? 1 : 0),
 				'isInvisible' => 0,
 				'lastVisitTime' => $row['map_read_time']
