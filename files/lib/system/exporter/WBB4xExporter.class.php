@@ -1034,7 +1034,7 @@ class WBB4xExporter extends AbstractExporter {
 				'endTime' => $row['endTime'],
 				'isChangeable' => $row['isChangeable'],
 				'isPublic' => $row['isPublic'],
-				'sortByVotes' => $row['sortByResult'],
+				'sortByVotes' => $row['sortByVotes'],
 				'resultsRequireVote' => $row['resultsRequireVote'],
 				'maxVotes' => $row['maxVotes'],
 				'votes' => $row['votes']
