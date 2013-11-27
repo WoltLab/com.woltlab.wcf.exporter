@@ -220,7 +220,7 @@ class IPB3xExporter extends AbstractExporter {
 			
 			// get user options
 			$options = array(
-				'timezone' => $row['time_offset'],
+				//'timezone' => $row['time_offset'],
 				'homepage' => (isset($knownProfileFields['website']) && !empty($row['field_'.$knownProfileFields['website']['pf_id']])) ? $row['field_'.$knownProfileFields['website']['pf_id']] : '',
 				'icq' => (isset($knownProfileFields['icq']) && !empty($row['field_'.$knownProfileFields['icq']['pf_id']])) ? $row['field_'.$knownProfileFields['icq']['pf_id']] : '',
 				'hobbies' => (isset($knownProfileFields['interests']) && !empty($row['field_'.$knownProfileFields['interests']['pf_id']])) ? $row['field_'.$knownProfileFields['interests']['pf_id']] : '',
@@ -335,7 +335,7 @@ class IPB3xExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.group')->import($row['g_id'], array(
 				'groupName' => $row['g_title'],
 				'groupType' => $groupType,
-				'userOnlineMarking' => (!empty($row['prefix']) ? ($row['prefix'].'%s'.$row['suffix']) : '')
+				'userOnlineMarking' => (!empty($row['prefix']) ? ($row['prefix'].'%s'.$row['suffix']) : '%s')
 			));
 		}
 	}
@@ -408,16 +408,18 @@ class IPB3xExporter extends AbstractExporter {
 	 * Exports status updates.
 	 */
 	public function exportStatusUpdates($offset, $limit) {
-		$sql = "SELECT		*
-			FROM		".$this->databasePrefix."member_status_updates
-			ORDER BY	status_id";
+		$sql = "SELECT		status_updates.*, members.name
+			FROM		".$this->databasePrefix."member_status_updates status_updates
+			LEFT JOIN	".$this->databasePrefix."members members
+			ON		(members.member_id = status_updates.status_author_id)
+			ORDER BY	status_updates.status_id";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.comment')->import($row['status_id'], array(
 				'objectID' => $row['status_member_id'],
 				'userID' => $row['status_author_id'],
-				'username' => $row['status_creator'],
+				'username' => ($row['name'] ?: ''),
 				'message' => self::fixStatusUpdate($row['status_content']),
 				'time' => $row['status_date']
 			));
@@ -452,7 +454,7 @@ class IPB3xExporter extends AbstractExporter {
 				'commentID' => $row['reply_status_id'],
 				'time' => $row['reply_date'],
 				'userID' => $row['reply_member_id'],
-				'username' => $row['name'],
+				'username' => ($row['name'] ?: ''),
 				'message' => self::fixStatusUpdate($row['reply_content']),
 			));
 		}
@@ -513,7 +515,7 @@ class IPB3xExporter extends AbstractExporter {
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import($row['mt_id'], array(
-				'subject' => $row['mt_title'],
+				'subject' => self::fixSubject($row['mt_title']),
 				'time' => $row['mt_date'],
 				'userID' => ($row['mt_starter_id'] ?: null),
 				'username' => ($row['mt_is_system'] ? 'System' : ($row['name'] ?: '')),
@@ -699,7 +701,7 @@ class IPB3xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			$data = array(
 				'boardID' => $row['forum_id'],
-				'topic' => StringUtil::decodeHTML($row['title']),
+				'topic' => self::fixSubject($row['title']),
 				'time' => $row['start_date'],
 				'userID' => $row['starter_id'],
 				'username' => $row['starter_name'],
@@ -1112,6 +1114,16 @@ class IPB3xExporter extends AbstractExporter {
 		return $string;
 	}
 	
+	private static function fixSubject($string) {
+		// decode html entities
+		$string = StringUtil::decodeHTML($string);
+		
+		// replace single quote entity
+		$string = str_replace('&#39;', "'", $string);
+		
+		return $string;
+	}
+	
 	private static function fixStatusUpdate($string) {
 		// <br /> to newline
 		$string = str_ireplace('<br />', "\n", $string);
@@ -1119,6 +1131,9 @@ class IPB3xExporter extends AbstractExporter {
 		
 		// decode html entities
 		$string = StringUtil::decodeHTML($string);
+		
+		// replace single quote entity
+		$string = str_replace('&#39;', "'", $string);
 		
 		return $string;
 	}
