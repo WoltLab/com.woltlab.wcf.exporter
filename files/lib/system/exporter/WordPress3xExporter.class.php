@@ -210,9 +210,10 @@ class WordPress3xExporter extends AbstractExporter {
 		$sql = "SELECT		ID
 			FROM		".$this->databasePrefix."posts
 			WHERE		post_type = ?
+					AND post_status IN (?, ?, ?, ?, ?, ?)
 			ORDER BY	ID";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute(array('post'));
+		$statement->execute(array('post', 'publish', 'pending', 'draft', 'future', 'private', 'trash'));
 		while ($row = $statement->fetchArray()) {
 			$entryIDs[] = $row['ID'];
 		}
@@ -269,18 +270,22 @@ class WordPress3xExporter extends AbstractExporter {
 			$additionalData = array();
 			if (isset($tags[$row['ID']])) $additionalData['tags'] = $tags[$row['ID']];
 			if (isset($categories[$row['ID']])) $additionalData['categories'] = $categories[$row['ID']];
-				
+			
+			$time = @strtotime($row['post_date_gmt']);
+			if (!$time) $time = @strtotime($row['post_date']);
+			
 			ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry')->import($row['ID'], array(
 				'userID' => ($row['post_author'] ?: null),
 				'username' => ($row['user_login'] ?: ''),
 				'subject' => $row['post_title'],
 				'message' => self::fixMessage($row['post_content']),
-				'time' => @strtotime($row['post_date_gmt']),
+				'time' => $time,
 				'comments' => $row['comment_count'],
 				'enableSmilies' => 0,
 				'enableHtml' => 1,
 				'enableBBCodes' => 0,
-				'isPublished' => ($row['post_status'] == 'publish' ? 1 : 0)
+				'isPublished' => ($row['post_status'] == 'publish' ? 1 : 0),
+				'isDeleted' => ($row['post_status'] == 'trash' ? 1 : 0)
 			), $additionalData);
 		}
 	}
