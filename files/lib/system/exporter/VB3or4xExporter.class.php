@@ -555,7 +555,11 @@ class VB3or4xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array(''));
 		while ($row = $statement->fetchArray()) {
-			$pmfolders = unserialize($row['pmfolders']);
+			// vBulletin relies on undefined behaviour by default, we cannot know in which
+			// encoding the data was saved -> drop it
+			$pmfolders = @unserialize($row['pmfolders']);
+			if (!is_array($pmfolders)) continue;
+			
 			foreach ($pmfolders as $key => $val) {
 				ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.label')->import($row['userid'].'-'.$key, array(
 					'userID' => $row['userid'],
@@ -668,7 +672,11 @@ class VB3or4xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
-			$recipients = unserialize($row['touserarray']);
+			// vBulletin relies on undefined behaviour by default, we cannot know in which
+			// encoding the data was saved
+			// this may cause some hidden participants to become visible
+			$recipients = @unserialize($row['touserarray']);
+			if (!is_array($recipients)) $recipients = array();
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.user')->import(0, array(
 				'conversationID' => ($row['parentpmid'] ?: $row['pmid']),
