@@ -555,12 +555,23 @@ class VB3or4xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array(''));
 		while ($row = $statement->fetchArray()) {
+			$convert = false;
 			// vBulletin relies on undefined behaviour by default, we cannot know in which
-			// encoding the data was saved -> drop it
+			// encoding the data was saved
 			$pmfolders = @unserialize($row['pmfolders']);
-			if (!is_array($pmfolders)) continue;
+			if (!is_array($pmfolders)) {
+				// try to convert it to the most common encoding
+				$convert = true;
+				$pmfolders = @unserialize(mb_convert_encoding($row['pmfolders'], 'ISO-8859-1', 'UTF-8'));
+				
+				// still unparseable
+				if (!is_array($pmfolders)) continue;
+			}
 			
 			foreach ($pmfolders as $key => $val) {
+				// convert back to utf-8
+				if ($convert) $val = mb_convert_encoding($val, 'UTF-8', 'ISO-8859-1');
+				
 				ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.label')->import($row['userid'].'-'.$key, array(
 					'userID' => $row['userid'],
 					'label' => mb_substr($val, 0, 80)
