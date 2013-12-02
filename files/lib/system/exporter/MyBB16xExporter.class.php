@@ -1278,6 +1278,9 @@ class MyBB16xExporter extends AbstractExporter {
 			});
 		}
 		
+		// attachment bbcodes
+		$message = str_replace(array('[attachment=', '[/attachment]'), array('[attach=', '[/attach]'), $message);
+		
 		// code bbcodes
 		$message = str_replace('[php]', '[code=php]', $message);
 		
