@@ -1259,6 +1259,7 @@ class MyBB16xExporter extends AbstractExporter {
 		static $videoRegex = null;
 		static $quoteRegex = null;
 		static $quoteCallback = null;
+		static $attachmentRegex = null;
 		
 		if ($videoRegex === null) {
 			$videoRegex = new Regex('\[video=[a-z]+\]');
@@ -1276,10 +1277,12 @@ class MyBB16xExporter extends AbstractExporter {
 				
 				return "[quote='".$username."','".$postLink."']";
 			});
+			
+			$attachmentRegex = new Regex('\[attachment=([0-9]+)\]');
 		}
 		
 		// attachment bbcodes
-		$message = str_replace(array('[attachment=', '[/attachment]'), array('[attach=', '[/attach]'), $message);
+		$message = $attachmentRegex->replace($message, '[attach=\\1][/attach]');
 		
 		// code bbcodes
 		$message = str_replace('[php]', '[code=php]', $message);
