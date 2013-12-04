@@ -10,10 +10,10 @@ use wcf\system\WCF;
  * 
  * @author	Marcel Werk
  * @copyright	2001-2013 WoltLab GmbH
- * @license	WoltLab Burning Board License <http://www.woltlab.com/products/burning_board/license.php>
+ * @license	GNU Lesser General Public License <http://opensource.org/licenses/lgpl-license.php>
  * @package	com.woltlab.wcf.exporter
  * @subpackage	system.exporter
- * @category	Community Framework (commercial)
+ * @category	Community Framework
  */
 class WBB4xExporter extends AbstractExporter {
 	/**

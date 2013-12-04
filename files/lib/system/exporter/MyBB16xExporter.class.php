@@ -26,10 +26,10 @@ use wcf\util\UserUtil;
  * 
  * @author	Tim Duesterhus
  * @copyright	2001-2013 WoltLab GmbH
- * @license	WoltLab Burning Board License <http://www.woltlab.com/products/burning_board/license.php>
+ * @license	GNU Lesser General Public License <http://opensource.org/licenses/lgpl-license.php>
  * @package	com.woltlab.wcf.exporter
  * @subpackage	system.exporter
- * @category	Community Framework (commercial)
+ * @category	Community Framework
  */
 class MyBB16xExporter extends AbstractExporter {
 	protected static $knownProfileFields = array('Bio', 'Sex', 'Location');
