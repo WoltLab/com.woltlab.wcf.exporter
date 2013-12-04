@@ -602,14 +602,14 @@ class MyBB16xExporter extends AbstractExporter {
 				'subject' => $row['subject'],
 				'time' => $row['dateline'],
 				'userID' => $row['fromid'],
-				'username' => $row['username'],
+				'username' => $row['username'] ?: '',
 				'isDraft' => $row['isDraft']
 			));
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.message')->import($row['pmid'], array(
 				'conversationID' => $row['fromid'].'-'.$row['dateline'],
 				'userID' => $row['fromid'],
-				'username' => $row['username'],
+				'username' => $row['username'] ?: '',
 				'message' => self::fixBBCodes($row['message']),
 				'time' => $row['dateline'],
 				'enableSmilies' => $row['smilieoff'] ? 0 : 1,
