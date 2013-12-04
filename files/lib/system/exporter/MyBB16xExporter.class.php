@@ -634,8 +634,10 @@ class MyBB16xExporter extends AbstractExporter {
 	 * Exports conversation recipients.
 	 */
 	public function exportConversationUsers($offset, $limit) {
-		$sql = "SELECT		*
-			FROM		".$this->databasePrefix."privatemessages
+		$sql = "SELECT		message_table.*, user_table.username
+			FROM		".$this->databasePrefix."privatemessages message_table
+			LEFT JOIN	".$this->databasePrefix."users user_table
+			ON		user_table.uid = message_table.uid
 			ORDER BY	pmid ASC";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
@@ -644,6 +646,7 @@ class MyBB16xExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.user')->import(0, array(
 				'conversationID' => $row['fromid'].'-'.$row['dateline'],
 				'participantID' => $row['uid'],
+				'username' => $row['username'] ?: '',
 				'hideConversation' => $row['deletetime'] ? 1 : 0,
 				'isInvisible' => (isset($recipients['bcc']) && in_array($row['uid'], $recipients['bcc'])) ? 1 : 0,
 				'lastVisitTime' => $row['readtime']
