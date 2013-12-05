@@ -2,6 +2,8 @@
 namespace wcf\system\exporter;
 use wbb\data\board\Board;
 use wcf\data\user\group\UserGroup;
+use wcf\data\user\option\UserOption;
+use wcf\system\database\util\PreparedStatementConditionBuilder;
 use wcf\system\database\DatabaseException;
 use wcf\system\importer\ImportHandler;
 use wcf\system\Regex;
@@ -84,7 +86,7 @@ class SMF2xExporter extends AbstractExporter {
 			'com.woltlab.wcf.user' => array(
 				'com.woltlab.wcf.user.group',
 				'com.woltlab.wcf.user.avatar',
-			/*	'com.woltlab.wcf.user.option',*/
+				'com.woltlab.wcf.user.option',
 				'com.woltlab.wcf.user.follower',
 				'com.woltlab.wcf.user.rank'
 			),
@@ -134,7 +136,7 @@ class SMF2xExporter extends AbstractExporter {
 				if (in_array('com.woltlab.wcf.user.rank', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.rank';
 			}
 			
-			/*if (in_array('com.woltlab.wcf.user.option', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.option';*/
+			if (in_array('com.woltlab.wcf.user.option', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.option';
 			$queue[] = 'com.woltlab.wcf.user';
 			if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.avatar';
 			
@@ -239,13 +241,55 @@ class SMF2xExporter extends AbstractExporter {
 	 * Exports users.
 	 */
 	public function exportUsers($offset, $limit) {
+		// cache profile fields
+		$profileFields = array();
+		$sql = "SELECT	col_name, id_field
+			FROM	".$this->databasePrefix."custom_fields";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			$profileFields[$row['col_name']] = $row;
+		}
+		
 		// prepare password update
 		$sql = "UPDATE	wcf".WCF_N."_user
 			SET	password = ?
 			WHERE	userID = ?";
 		$passwordUpdateStatement = WCF::getDB()->prepareStatement($sql);
 		
+		// get userIDs
+		$userIDs = array();
+		$sql = "SELECT		id_member
+			FROM		".$this->databasePrefix."members
+			ORDER BY	id_member ASC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			$userIDs[] = $row['id_member'];
+		}
+		
+		// wtf?!
+		if (empty($userIDs)) return;
+		
+
+		// get profile field values
+		$condition = new PreparedStatementConditionBuilder();
+		$condition->add('id_member IN(?)', array($userIDs));
+		$condition->add('variable IN(?)', array(array_keys($profileFields)));
+		$profileFieldValues = array();
+		$sql = "SELECT	*
+			FROM	".$this->databasePrefix."themes
+			".$condition;
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute($condition->getParameters());
+		while ($row = $statement->fetchArray()) {
+			if (!isset($profileFieldValues[$row['id_member']])) $profileFieldValues[$row['id_member']] = array();
+			$profileFieldValues[$row['id_member']][$profileFields[$row['variable']]['id_field']] = $row['value'];
+		}
+		
 		// get users
+		$condition = new PreparedStatementConditionBuilder();
+		$condition->add('member.id_member IN(?)', array($userIDs));
 		$sql = "SELECT		member.*, ban_group.ban_time, ban_group.expire_time AS banExpire, ban_group.reason AS banReason,
 					(SELECT COUNT(*) FROM ".$this->databasePrefix."moderators moderator WHERE member.id_member = moderator.id_member) AS isMod
 			FROM		".$this->databasePrefix."members member
@@ -253,10 +297,9 @@ class SMF2xExporter extends AbstractExporter {
 			ON		(member.id_member = ban_item.id_member)
 			LEFT JOIN	".$this->databasePrefix."ban_groups ban_group
 			ON		(ban_item.id_ban_group = ban_group.id_ban_group)
-			ORDER BY	member.id_member ASC";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
-		
+			".$condition;
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute($condition->getParameters());
 		while ($row = $statement->fetchArray()) {
 			$data = array(
 				'username' => $row['member_name'],
@@ -274,12 +317,31 @@ class SMF2xExporter extends AbstractExporter {
 				'userTitle' => $row['usertitle'],
 				'lastActivityTime' => $row['last_login']
 			);
+			
+			// get user options
+			$options = array(
+				'location' => $row['location'],
+				'birthday' => $row['birthdate'],
+				'icq' => $row['icq'],
+				'homepage' => $row['website_url'],
+				'aboutMe' => $row['personal_text']
+			);
+			
 			$additionalData = array(
 				'groupIDs' => explode(',', $row['additional_groups'].','.$row['id_group']),
-				'options' => array()
+				'options' => $options
 			);
+			
 			if ($row['isMod']) {
 				$additionalData['groupIDs'][] = self::GROUP_MODERATORS;
+			}
+			
+			// handle user options
+			if (isset($profileFieldValues[$row['id_member']])) {
+				foreach ($profileFieldValues[$row['id_member']] as $key => $val) {
+					if (!$val) continue;
+					$additionalData['options'][$key] = $val;
+				}
 			}
 			
 			// import user
@@ -289,6 +351,76 @@ class SMF2xExporter extends AbstractExporter {
 			if ($newUserID) {
 				$passwordUpdateStatement->execute(array('smf2:'.$row['passwd'].':'.$row['password_salt'], $newUserID));
 			}
+		}
+	}
+
+	/**
+	 * Counts user options.
+	 */
+	public function countUserOptions() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."custom_fields";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports user options.
+	 */
+	public function exportUserOptions($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."custom_fields
+			ORDER BY	id_field ASC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			switch ($row['field_type']) {
+				case 'text':
+				case 'textarea':
+				case 'select':
+					// fine
+				break;
+				case 'radio':
+					$row['field_type'] = 'radioButton';
+				break;
+				case 'check':
+					$row['field_type'] = 'boolean';
+				break;
+				default:
+					continue;
+			}
+			
+			switch ($row['private']) {
+				case 0:
+					$visible = UserOption::VISIBILITY_ALL;
+					$editable = UserOption::EDITABILITY_ALL;
+				break;
+				case 1:
+					$visible = UserOption::VISIBILITY_ALL;
+					$editable = UserOption::EDITABILITY_ADMINISTRATOR;
+				break;
+				case 2:
+					$visible = UserOption::VISIBILITY_ADMINISTRATOR | UserOption::VISIBILITY_OWNER;
+					$editable = UserOption::EDITABILITY_ALL;
+				break;
+				case 3:
+					$visible = UserOption::VISIBILITY_ADMINISTRATOR;
+					$editable = UserOption::EDITABILITY_ADMINISTRATOR;
+			}
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.option')->import($row['id_field'], array(
+				'categoryName' => 'profile.personal',
+				'optionType' => $row['field_type'],
+				'editable' => $editable,
+				'askDuringRegistration' => $row['show_reg'] ? 1 : 0,
+				'selectOptions' => implode("\n", explode(',', $row['field_options'])),
+				'visible' => $visible,
+				'searchable' => $row['can_search'] ? 1 : 0,
+				'outputClass' => $row['field_type'] == 'select' ? 'wcf\system\option\user\SelectOptionsUserOptionOutput' : '',
+				'defaultValue' => $row['default_value']
+			), array('name' => $row['field_name']));
 		}
 	}
 	
