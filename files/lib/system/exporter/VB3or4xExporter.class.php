@@ -917,14 +917,18 @@ class VB3or4xExporter extends AbstractExporter {
 	 */
 	public function exportPostAttachments($offset, $limit) {
 		try {
-			$sql = "SELECT		*, contentid AS postid
-				FROM		".$this->databasePrefix."attachment
-				WHERE		contenttypeid = (SELECT contenttypeid FROM ".$this->databasePrefix."contenttype WHERE class = 'Post')
-				ORDER BY	attachmentid ASC";
+			// vb 4
+			$sql = "SELECT		attachment.*, attachment.contentid AS postid, filedata.filedata
+				FROM		".$this->databasePrefix."attachment attachment
+				LEFT JOIN	".$this->databasePrefix."filedata filedata
+				ON		attachment.filedataid = filedata.filedataid
+				WHERE		attachment.contenttypeid = (SELECT contenttypeid FROM ".$this->databasePrefix."contenttype contenttype WHERE contenttype.class = 'Post')
+				ORDER BY	attachment.attachmentid ASC";
 			$statement = $this->database->prepareStatement($sql, $limit, $offset);
 			$statement->execute();
 		}
 		catch (DatabaseException $e) {
+			// vb 3
 			$sql = "SELECT		*
 				FROM		".$this->databasePrefix."attachment
 				ORDER BY	attachmentid ASC";
