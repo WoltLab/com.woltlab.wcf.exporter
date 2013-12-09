@@ -25,6 +25,6 @@
 	</instructions>
 	
 	<instructions type="update" fromversion="2.0.0 RC 4">
-		<!-- fake update -->
+		<instruction type="file">files_update.tar</instruction>
 	</instructions>
 </package>
