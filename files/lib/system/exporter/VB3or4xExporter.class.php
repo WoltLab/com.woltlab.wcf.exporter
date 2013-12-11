@@ -1288,8 +1288,7 @@ class VB3or4xExporter extends AbstractExporter {
 	public function countSmileyCategories() {
 		$sql = "SELECT		COUNT(*) AS count
 			FROM		".$this->databasePrefix."imagecategory
-			WHERE		imagetype = ?
-			ORDER BY	imagecategoryid ASC";
+			WHERE		imagetype = ?";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute(array(3));
 		$row = $statement->fetchArray();
