@@ -8,7 +8,7 @@ use wcf\data\user\group\UserGroup;
 use wcf\system\database\DatabaseException;
 use wcf\system\importer\ImportHandler;
 use wcf\system\request\LinkHandler;
-use wcf\system\Callback;
+use wcf\system\Callback;ex
 use wcf\system\Regex;
 use wcf\system\WCF;
 use wcf\util\ArrayUtil;
@@ -1304,7 +1304,7 @@ class VB3or4xExporter extends AbstractExporter {
 			WHERE		imagetype = ?
 			ORDER BY	imagecategoryid ASC";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement->execute(array(3));
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.smiley.category')->import($row['imagecategoryid'], array(
 				'title' => $row['title'],
