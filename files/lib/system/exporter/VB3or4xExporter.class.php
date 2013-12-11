@@ -8,7 +8,7 @@ use wcf\data\user\group\UserGroup;
 use wcf\system\database\DatabaseException;
 use wcf\system\importer\ImportHandler;
 use wcf\system\request\LinkHandler;
-use wcf\system\Callback;ex
+use wcf\system\Callback;
 use wcf\system\Regex;
 use wcf\system\WCF;
 use wcf\util\ArrayUtil;
