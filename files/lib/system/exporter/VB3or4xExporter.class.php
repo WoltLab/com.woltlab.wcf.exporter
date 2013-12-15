@@ -177,7 +177,9 @@ class VB3or4xExporter extends AbstractExporter {
 		
 		if (in_array('com.woltlab.wbb.attachment', $this->selectedData)) {
 			if ($this->readOption('attachfile') != self::ATTACHFILE_DATABASE) {
-				if (!is_dir($this->readOption('attachpath'))) return false;
+				$path = $this->readOption('attachpath');
+				if (!StringUtil::startsWith($path, '/')) $path = realpath($this->fileSystemPath.$path);
+				if (!is_dir($path)) return false;
 			}
 		}
 		
@@ -946,11 +948,15 @@ class VB3or4xExporter extends AbstractExporter {
 						file_put_contents($file, $row['filedata']);
 					break;
 					case self::ATTACHFILE_FILESYSTEM:
-						$file = FileUtil::addTrailingSlash($this->readOption('attachpath'));
+						$file = $this->readOption('attachpath');
+						if (!StringUtil::startsWith($file, '/')) $file = realpath($this->fileSystemPath.$file);
+						$file = FileUtil::addTrailingSlash($file);
 						$file .= $row['userid'].'/'.$row['attachmentid'].'.attach';
 					break;
 					case self::ATTACHFILE_FILESYSTEM_SUBFOLDER:
-						$file = FileUtil::addTrailingSlash($this->readOption('attachpath'));
+						$file = $this->readOption('attachpath');
+						if (!StringUtil::startsWith($file, '/')) $file = realpath($this->fileSystemPath.$file);
+						$file = FileUtil::addTrailingSlash($file);
 						$file .= implode('/', str_split($row['userid'])).'/'.$row['attachmentid'].'.attach';
 					break;
 				}
