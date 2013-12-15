@@ -694,7 +694,7 @@ class VB3or4xExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.user')->import(0, array(
 				'conversationID' => ($row['parentpmid'] ?: $row['pmid']),
 				'participantID' => $row['userid'],
-				'username' => $row['username'],
+				'username' => $row['username'] ?: '',
 				'hideConversation' => 0, // there is no trash
 				'isInvisible' => (isset($recipients['bcc']) && isset($recipients['bcc'][$row['userid']])) ? 1 : 0,
 				'lastVisitTime' => $row['messageread'] ? $row['dateline'] : 0
