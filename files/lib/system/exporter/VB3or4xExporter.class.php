@@ -961,6 +961,8 @@ class VB3or4xExporter extends AbstractExporter {
 					break;
 				}
 				
+				// unable to read file -> abort
+				if (!is_file($file) || !is_readable($file)) continue;
 				if ($imageSize = getimagesize($file)) {
 					$row['isImage'] = 1;
 					$row['width'] = $imageSize[0];
