@@ -951,13 +951,13 @@ class VB3or4xExporter extends AbstractExporter {
 						$file = $this->readOption('attachpath');
 						if (!StringUtil::startsWith($file, '/')) $file = realpath($this->fileSystemPath.$file);
 						$file = FileUtil::addTrailingSlash($file);
-						$file .= $row['userid'].'/'.$row['attachmentid'].'.attach';
+						$file .= $row['userid'].'/'.(isset($row['filedataid']) ? $row['filedataid'] : $row['attachmentid']).'.attach';
 					break;
 					case self::ATTACHFILE_FILESYSTEM_SUBFOLDER:
 						$file = $this->readOption('attachpath');
 						if (!StringUtil::startsWith($file, '/')) $file = realpath($this->fileSystemPath.$file);
 						$file = FileUtil::addTrailingSlash($file);
-						$file .= implode('/', str_split($row['userid'])).'/'.$row['attachmentid'].'.attach';
+						$file .= implode('/', str_split($row['userid'])).'/'.(isset($row['filedataid']) ? $row['filedataid'] : $row['attachmentid']).'.attach';
 					break;
 				}
 				
