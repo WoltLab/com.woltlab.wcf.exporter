@@ -836,7 +836,7 @@ class PhpBB3xExporter extends AbstractExporter {
 				'isDisabled' => 0,
 				'isClosed' => $row['topic_status'] == self::TOPIC_STATUS_CLOSED ? 1 : 0,
 				'movedThreadID' => ($row['topic_status'] == self::TOPIC_STATUS_LINK && $row['topic_moved_id']) ? $row['topic_moved_id'] : null,
-				'movedTime' => TIME_NOW, // TODO
+				'movedTime' => 0,
 			);
 			$additionalData = array();
 			if ($row['topic_type'] == self::TOPIC_TYPE_GLOBAL) $additionalData['assignedBoards'] = $boardIDs;
