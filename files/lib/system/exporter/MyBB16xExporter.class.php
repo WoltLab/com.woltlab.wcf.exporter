@@ -554,6 +554,7 @@ class MyBB16xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
+			if (empty($row['pmfolders'])) continue;
 			$folders = explode('$%%$', $row['pmfolders']);
 			foreach ($folders as $folder) {
 				list($folderID, $folderName) = explode('**', $folder);
