@@ -1985,6 +1985,7 @@ class WBB3xExporter extends AbstractExporter {
 				'filename' => $row['filename'],
 				'fileExtension' => $row['fileExtension'],
 				'filesize' => $row['filesize'],
+				'comments' => $row['comments'],
 				'views' => $row['views'],
 				'uploadTime' => $row['uploadTime'],
 				'creationTime' => $row['creationTime'],
