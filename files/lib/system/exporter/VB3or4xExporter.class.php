@@ -751,8 +751,8 @@ class VB3or4xExporter extends AbstractExporter {
 				'parentID' => ($board['parentid'] != -1 ? $board['parentid'] : null),
 				'position' => $board['displayorder'],
 				'boardType' => ($board['link'] ? Board::TYPE_LINK : ($board['options'] & self::FORUMOPTIONS_CANCONTAINTHREADS ? Board::TYPE_BOARD : Board::TYPE_CATEGORY)),
-				'title' => $board['title_clean'],
-				'description' => $board['description_clean'],
+				'title' => str_replace('&amp;', '&', $board['title_clean']),
+				'description' => str_replace('&amp;', '&', $board['description_clean']),
 				'descriptionUseHtml' => 0,
 				'externalURL' => $board['link'],
 				'countUserPosts' => $board['options'] & self::FORUMOPTIONS_COUNTPOSTS ? 1 : 0,
@@ -802,7 +802,7 @@ class VB3or4xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			$data = array(
 				'boardID' => $row['forumid'],
-				'topic' => $row['title'],
+				'topic' => StringUtil::decodeHTML($row['title']),
 				'time' => $row['dateline'],
 				'userID' => $row['postuserid'],
 				'username' => $row['postusername'],
