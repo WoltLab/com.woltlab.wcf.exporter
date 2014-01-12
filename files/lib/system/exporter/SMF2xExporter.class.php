@@ -271,20 +271,22 @@ class SMF2xExporter extends AbstractExporter {
 		// wtf?!
 		if (empty($userIDs)) return;
 		
-
+		
 		// get profile field values
-		$condition = new PreparedStatementConditionBuilder();
-		$condition->add('id_member IN(?)', array($userIDs));
-		$condition->add('variable IN(?)', array(array_keys($profileFields)));
 		$profileFieldValues = array();
-		$sql = "SELECT	*
-			FROM	".$this->databasePrefix."themes
-			".$condition;
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute($condition->getParameters());
-		while ($row = $statement->fetchArray()) {
-			if (!isset($profileFieldValues[$row['id_member']])) $profileFieldValues[$row['id_member']] = array();
-			$profileFieldValues[$row['id_member']][$profileFields[$row['variable']]['id_field']] = $row['value'];
+		if (!empty($profileFields)) {
+			$condition = new PreparedStatementConditionBuilder();
+			$condition->add('id_member IN(?)', array($userIDs));
+			$condition->add('variable IN(?)', array(array_keys($profileFields)));
+			$sql = "SELECT	*
+				FROM	".$this->databasePrefix."themes
+				".$condition;
+			$statement = $this->database->prepareStatement($sql);
+			$statement->execute($condition->getParameters());
+			while ($row = $statement->fetchArray()) {
+				if (!isset($profileFieldValues[$row['id_member']])) $profileFieldValues[$row['id_member']] = array();
+				$profileFieldValues[$row['id_member']][$profileFields[$row['variable']]['id_field']] = $row['value'];
+			}
 		}
 		
 		// get users
