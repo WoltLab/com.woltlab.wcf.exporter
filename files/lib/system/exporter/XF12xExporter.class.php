@@ -158,10 +158,10 @@ class XF12xExporter extends AbstractExporter {
 		// board
 		if (in_array('com.woltlab.wbb.board', $this->selectedData)) {
 			$queue[] = 'com.woltlab.wbb.board';
-			/*$queue[] = 'com.woltlab.wbb.thread';
+			$queue[] = 'com.woltlab.wbb.thread';
 			$queue[] = 'com.woltlab.wbb.post';
 			
-			if (in_array('com.woltlab.wbb.acl', $this->selectedData)) $queue[] = 'com.woltlab.wbb.acl';
+			/*if (in_array('com.woltlab.wbb.acl', $this->selectedData)) $queue[] = 'com.woltlab.wbb.acl';
 			if (in_array('com.woltlab.wbb.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wbb.attachment';*/
 			if (in_array('com.woltlab.wbb.watchedThread', $this->selectedData)) $queue[] = 'com.woltlab.wbb.watchedThread';
 			/*if (in_array('com.woltlab.wbb.poll', $this->selectedData)) {
@@ -654,6 +654,97 @@ class XF12xExporter extends AbstractExporter {
 			));
 		}
 	}
+
+	/**
+	 * Counts threads.
+	 */
+	public function countThreads() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."thread";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports threads.
+	 */
+	public function exportThreads($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."thread
+			ORDER BY	thread_id ASC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		
+		while ($row = $statement->fetchArray()) {
+			$data = array(
+				'boardID' => $row['node_id'],
+				'topic' => $row['title'],
+				'time' => $row['post_date'],
+				'userID' => $row['user_id'],
+				'username' => $row['username'],
+				'views' => $row['view_count'],
+				'isSticky' => $row['sticky'] ? 1 : 0,
+				'isDisabled' => $row['discussion_state'] == 'moderated' ? 1 : 0,
+				'isClosed' => $row['discussion_open'] ? 0 : 1,
+				'isDeleted' => $row['discussion_state'] == 'deleted' ? 1 : 0,
+				'deleteTime' => $row['discussion_state'] == 'deleted' ? TIME_NOW : 0
+			);
+			
+			$additionalData = array();
+			if ($row['prefix_id']) $additionalData['labels'] = array(); // todo
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.thread')->import($row['thread_id'], $data, $additionalData);
+		}
+	}
+	
+	/**
+	 * Counts posts.
+	 */
+	public function countPosts() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."post";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports posts.
+	 */
+	public function exportPosts($offset, $limit) {
+		$sql = "SELECT		post.*, user.username AS editor, INET_NTOA(ip.ip) AS ip, thread.title
+			FROM		".$this->databasePrefix."post post
+			LEFT JOIN	".$this->databasePrefix."user user
+			ON		post.last_edit_user_id = user.user_id
+			LEFT JOIN	".$this->databasePrefix."ip ip
+			ON		post.ip_id = ip.ip_id
+			LEFT JOIN	".$this->databasePrefix."thread thread
+			ON		thread.first_post_id = post.post_id
+			ORDER BY	post_id ASC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.post')->import($row['post_id'], array(
+				'threadID' => $row['thread_id'],
+				'userID' => $row['user_id'],
+				'username' => $row['username'],
+				'subject' => $row['title'],
+				'message' => self::fixBBCodes($row['message']),
+				'time' => $row['post_date'],
+				'isDisabled' => $row['message_state'] == 'moderated' ? 1 : 0,
+				'editorID' => ($row['last_edit_user_id'] ?: null),
+				'editor' => $row['editor'] ?: '',
+				'lastEditTime' => $row['last_edit_date'],
+				'editCount' => $row['editor'] ? $row['edit_count'] : 0, // todo
+				'enableSmilies' => 1,
+				'showSignature' => 1,
+				'ipAddress' => UserUtil::convertIPv4To6($row['ip'])
+			));
+		}
+	}
 	
 	/**
 	 * Counts watched threads.
@@ -682,6 +773,33 @@ class XF12xExporter extends AbstractExporter {
 				'userID' => $row['user_id']
 			));
 		}
+	}
+	
+	/**
+	 * Counts labels.
+	 */
+	public function countLabels() {
+		/*$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."threadprefixes";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array(0));
+		$row = $statement->fetchArray();
+		return $row['count'];*/
+		return 0;
+	}
+	
+	/**
+	 * Exports labels.
+	 */
+	public function exportLabels($offset, $limit) {
+/*		ImportHandler::getInstance()->getImporter('com.woltlab.wcf.label.group')->import($key, array(
+		'groupName' => 'labelgroup'.$i
+		), array('objects' => array($objectType->objectTypeID => $data['boardIDs'])));
+		
+		ImportHandler::getInstance()->getImporter('com.woltlab.wcf.label')->import($forumID.'-'.$prefixID, array(
+			'groupID' => $forumID,
+			'label' => $prefix
+		));*/
 	}
 	
 	private static function fixBBCodes($message) {
