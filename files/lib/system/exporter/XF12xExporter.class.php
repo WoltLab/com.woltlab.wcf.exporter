@@ -88,12 +88,12 @@ class XF12xExporter extends AbstractExporter {
 				'com.woltlab.wcf.user.follower',
 				'com.woltlab.wcf.user.rank'
 			),
-			/*'com.woltlab.wbb.board' => array(
-				'com.woltlab.wbb.acl',
+			'com.woltlab.wbb.board' => array(
+				/*'com.woltlab.wbb.acl',
 				'com.woltlab.wbb.attachment',
-				'com.woltlab.wbb.poll',
+				'com.woltlab.wbb.poll',*/
 				'com.woltlab.wbb.watchedThread'
-			),*/
+			),
 			'com.woltlab.wcf.conversation' => array(
 				'com.woltlab.wcf.conversation.label'
 			),
@@ -157,8 +157,8 @@ class XF12xExporter extends AbstractExporter {
 		
 		// board
 		if (in_array('com.woltlab.wbb.board', $this->selectedData)) {
-			/*$queue[] = 'com.woltlab.wbb.board';
-			$queue[] = 'com.woltlab.wbb.thread';
+			$queue[] = 'com.woltlab.wbb.board';
+			/*$queue[] = 'com.woltlab.wbb.thread';
 			$queue[] = 'com.woltlab.wbb.post';
 			
 			if (in_array('com.woltlab.wbb.acl', $this->selectedData)) $queue[] = 'com.woltlab.wbb.acl';
@@ -605,6 +605,53 @@ class XF12xExporter extends AbstractExporter {
 				'isInvisible' => 0,
 				'lastVisitTime' => $row['last_read_date']
 			), array('labelIDs' => ($row['is_starred'] ? array($row['user_id']) : array())));
+		}
+	}
+	
+	/**
+	 * Counts boards.
+	 */
+	public function countBoards() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."node
+			WHERE	node_type_id IN (?, ?, ?)";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array('Forum', 'Category', 'LinkForum'));
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports boards.
+	 */
+	public function exportBoards($offset, $limit) {
+		$sql = "SELECT		node.node_id AS nodeID, node.*, forum.*, link_forum.*
+			FROM		".$this->databasePrefix."node node
+			LEFT JOIN	".$this->databasePrefix."forum forum
+			ON		node.node_id = forum.node_id
+			LEFT JOIN	".$this->databasePrefix."link_forum link_forum
+			ON		node.node_id = link_forum.node_id
+			WHERE		node_type_id IN (?, ?, ?)
+			ORDER BY	node.lft ASC";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array('Forum', 'Category', 'LinkForum'));
+		
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import($row['nodeID'], array(
+				'parentID' => ($row['parent_node_id'] ?: null),
+				'position' => $row['lft'],
+				'boardType' => ($row['node_type_id'] == 'Category' ? Board::TYPE_CATEGORY : ($row['node_type_id'] == 'Forum' ? Board::TYPE_BOARD : Board::TYPE_LINK)),
+				'title' => $row['title'],
+				'description' => $row['description'],
+				'descriptionUseHtml' => 1, // cannot be disabled
+				'externalURL' => $row['link_url'] ?: '',
+				'countUserPosts' => $row['count_messages'] !== null ? $row['count_messages'] : 1,
+				'isClosed' => $row['allow_posting'] ? 0 : 1,
+				'isInvisible' => $row['display_in_list'] ? 0 : 1,
+				'clicks' => $row['redirect_count'] ?: 0,
+				'posts' => $row['message_count'] ?: 0,
+				'threads' => $row['discussion_count'] ?: 0
+			));
 		}
 	}
 	
