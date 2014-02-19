@@ -881,7 +881,7 @@ class SMF2xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			$fileLocation = $this->readOption('attachmentUploadDir').'/'.$row['id_attach'].'_'.$row['file_hash'];
 			
-			if ($imageSize = getimagesize($fileLocation)) {
+			if ($imageSize = @getimagesize($fileLocation)) {
 				$row['isImage'] = 1;
 				$row['width'] = $imageSize[0];
 				$row['height'] = $imageSize[1];

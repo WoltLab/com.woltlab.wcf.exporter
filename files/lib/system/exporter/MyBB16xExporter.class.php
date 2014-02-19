@@ -832,7 +832,7 @@ class MyBB16xExporter extends AbstractExporter {
 			$fileLocation = FileUtil::addTrailingSlash($uploadsPath).$row['attachname'];
 			if (!file_exists($fileLocation)) continue;
 			
-			if ($imageSize = getimagesize($fileLocation)) {
+			if ($imageSize = @getimagesize($fileLocation)) {
 				$row['isImage'] = 1;
 				$row['width'] = $imageSize[0];
 				$row['height'] = $imageSize[1];
