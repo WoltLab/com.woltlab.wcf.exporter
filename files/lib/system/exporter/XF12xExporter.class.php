@@ -89,15 +89,14 @@ class XF12xExporter extends AbstractExporter {
 				'com.woltlab.wcf.user.rank'
 			),
 			'com.woltlab.wbb.board' => array(
-				/*'com.woltlab.wbb.acl',
-				'com.woltlab.wbb.attachment',*/
+				/*'com.woltlab.wbb.acl',*/
+				'com.woltlab.wbb.attachment',
 				'com.woltlab.wbb.poll',
 				'com.woltlab.wbb.watchedThread'
 			),
 			'com.woltlab.wcf.conversation' => array(
 				'com.woltlab.wcf.conversation.label'
-			),
-			// 'com.woltlab.wcf.smiley' => array()
+			)
 		);
 	}
 	
@@ -161,8 +160,8 @@ class XF12xExporter extends AbstractExporter {
 			$queue[] = 'com.woltlab.wbb.thread';
 			$queue[] = 'com.woltlab.wbb.post';
 			
-			/*if (in_array('com.woltlab.wbb.acl', $this->selectedData)) $queue[] = 'com.woltlab.wbb.acl';
-			if (in_array('com.woltlab.wbb.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wbb.attachment';*/
+			/*if (in_array('com.woltlab.wbb.acl', $this->selectedData)) $queue[] = 'com.woltlab.wbb.acl';*/
+			if (in_array('com.woltlab.wbb.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wbb.attachment';
 			if (in_array('com.woltlab.wbb.watchedThread', $this->selectedData)) $queue[] = 'com.woltlab.wbb.watchedThread';
 			if (in_array('com.woltlab.wbb.poll', $this->selectedData)) {
 				$queue[] = 'com.woltlab.wbb.poll';
@@ -170,9 +169,6 @@ class XF12xExporter extends AbstractExporter {
 				$queue[] = 'com.woltlab.wbb.poll.option.vote';
 			}
 		}
-		
-		// smiley
-		//if (in_array('com.woltlab.wcf.smiley', $this->selectedData)) $queue[] = 'com.woltlab.wcf.smiley';*/
 		
 		return $queue;
 	}
@@ -456,7 +452,7 @@ class XF12xExporter extends AbstractExporter {
 			// TODO: read config
 			$location = $this->fileSystemPath.'data/avatars/l/'.floor($row['user_id'] / 1000).'/'.$row['user_id'].'.jpg';
 			
-			if (!$imageSize = getimagesize($location)) continue;
+			if (!$imageSize = @getimagesize($location)) continue;
 			
 			switch ($imageSize[2]) {
 				case IMAGETYPE_JPEG:
@@ -743,6 +739,61 @@ class XF12xExporter extends AbstractExporter {
 				'showSignature' => 1,
 				'ipAddress' => UserUtil::convertIPv4To6($row['ip'])
 			));
+		}
+	}
+	
+	/**
+	 * Counts post attachments.
+	 */
+	public function countPostAttachments() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."attachment
+			WHERE	content_type = ?";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array('post'));
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports post attachments.
+	 */
+	public function exportPostAttachments($offset, $limit) {
+		$sql = "SELECT		attachment.*, data.*
+			FROM		".$this->databasePrefix."attachment attachment
+			LEFT JOIN	".$this->databasePrefix."attachment_data data
+			ON		attachment.data_id = data.data_id
+			WHERE		attachment.content_type = ?
+			ORDER BY	attachment.attachment_id ASC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute(array('post'));
+		while ($row = $statement->fetchArray()) {
+			// TODO: read config
+			$fileLocation = $this->fileSystemPath.'internal_data/attachments/'.floor($row['data_id'] / 1000).'/'.$row['data_id'].'-'.$row['file_hash'].'.data';
+			
+			if (!file_exists($fileLocation)) continue;
+			
+			if ($imageSize = @getimagesize($fileLocation)) {
+				$row['isImage'] = 1;
+				$row['width'] = $imageSize[0];
+				$row['height'] = $imageSize[1];
+			}
+			else {
+				$row['isImage'] = $row['width'] = $row['height'] = 0;
+			}
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.attachment')->import($row['attachment_id'], array(
+				'objectID' => $row['content_id'],
+				'userID' => ($row['user_id'] ?: null),
+				'filename' => $row['filename'],
+				'filesize' => $row['file_size'],
+				'fileType' => FileUtil::getMimeType($fileLocation) ?: 'application/octet-stream',
+				'isImage' => $row['isImage'],
+				'width' => $row['width'],
+				'height' => $row['height'],
+				'downloads' => $row['view_count'],
+				'uploadTime' => $row['upload_date']
+			), array('fileLocation' => $fileLocation));
 		}
 	}
 	
