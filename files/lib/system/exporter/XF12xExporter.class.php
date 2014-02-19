@@ -449,8 +449,8 @@ class XF12xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array(0));
 		while ($row = $statement->fetchArray()) {
-			// TODO: read config
-			$location = $this->fileSystemPath.'data/avatars/l/'.floor($row['user_id'] / 1000).'/'.$row['user_id'].'.jpg';
+			$config = $this->getConfig();
+			$location = $this->fileSystemPath.$config['externalDataPath'].'/avatars/l/'.floor($row['user_id'] / 1000).'/'.$row['user_id'].'.jpg';
 			
 			if (!$imageSize = @getimagesize($location)) continue;
 			
@@ -768,8 +768,8 @@ class XF12xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array('post'));
 		while ($row = $statement->fetchArray()) {
-			// TODO: read config
-			$fileLocation = $this->fileSystemPath.'internal_data/attachments/'.floor($row['data_id'] / 1000).'/'.$row['data_id'].'-'.$row['file_hash'].'.data';
+			$config = self::getConfig();
+			$fileLocation = $this->fileSystemPath.$config['internalDataPath'].'/attachments/'.floor($row['data_id'] / 1000).'/'.$row['data_id'].'-'.$row['file_hash'].'.data';
 			
 			if (!file_exists($fileLocation)) continue;
 			
@@ -951,6 +951,66 @@ class XF12xExporter extends AbstractExporter {
 			'groupID' => $forumID,
 			'label' => $prefix
 		));*/
+	}
+	
+	public function getConfig() {
+		$config = array(
+			'db' => array(
+				'adapter' => 'mysqli',
+				'host' => 'localhost',
+				'port' => '3306',
+				'username' => '',
+				'password' => '',
+				'dbname' => '',
+				'adapterNamespace' => 'Zend_Db_Adapter'
+			),
+			'cache' => array(
+				'enabled' => false,
+				'cacheSessions' => false,
+				'frontend' => 'core',
+				'frontendOptions' => array(
+					'caching' => true,
+					'cache_id_prefix' => 'xf_'
+				),
+				'backend' => 'file',
+				'backendOptions' => array(
+					'file_name_prefix' => 'xf_'
+				)
+			),
+			'debug' => false,
+			'enableListeners' => true,
+			'development' => array(
+				'directory' => '',
+				'default_addon' => ''
+			),
+			'superAdmins' => '1',
+			'globalSalt' => '1717c7e013ff20562bcc1483c1e0c8a8',
+			'jsVersion' => '',
+			'cookie' => array(
+				'prefix' => 'xf_',
+				'path' => '/',
+				'domain' => ''
+			),
+			'enableMail' => true,
+			'enableMailQueue' => true,
+			'internalDataPath' => 'internal_data',
+			'externalDataPath' => 'data',
+			'externalDataUrl' => 'data',
+			'javaScriptUrl' => 'js',
+			'checkVersion' => true,
+			'enableGzip' => true,
+			'enableContentLength' => true,
+			'adminLogLength' => 60,
+			'chmodWritableValue' => 0,
+			'rebuildMaxExecution' => 10,
+			'passwordIterations' => 10,
+			'enableTemplateModificationCallbacks' => true,
+			'enableClickjackingProtection' => true,
+			'maxImageResizePixelCount' => 20000000
+		);
+		require($this->fileSystemPath.'library/config.php');
+		
+		return $config;
 	}
 	
 	private static function fixBBCodes($message) {
