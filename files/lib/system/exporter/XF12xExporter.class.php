@@ -29,6 +29,8 @@ use wcf\util\UserUtil;
  * @category	Community Framework
  */
 class XF12xExporter extends AbstractExporter {
+	protected static $knownProfileFields = array('facebook', 'icq', 'twitter', 'skype');
+	
 	/**
 	 * board cache
 	 * @var	array
@@ -83,7 +85,7 @@ class XF12xExporter extends AbstractExporter {
 			'com.woltlab.wcf.user' => array(
 				'com.woltlab.wcf.user.group',
 				'com.woltlab.wcf.user.avatar',
-			//	'com.woltlab.wcf.user.option',
+				'com.woltlab.wcf.user.option',
 				'com.woltlab.wcf.user.comment',
 				'com.woltlab.wcf.user.follower',
 				'com.woltlab.wcf.user.rank'
@@ -133,7 +135,7 @@ class XF12xExporter extends AbstractExporter {
 				if (in_array('com.woltlab.wcf.user.rank', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.rank';
 			}
 			
-			//if (in_array('com.woltlab.wcf.user.option', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.option';
+			if (in_array('com.woltlab.wcf.user.option', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.option';
 			$queue[] = 'com.woltlab.wcf.user';
 			if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.avatar';
 			
@@ -263,7 +265,26 @@ class XF12xExporter extends AbstractExporter {
 				'signatureEnableSmilies' => 1,
 				'lastActivityTime' => $row['last_activity']
 			);
-			$options = array();
+			$options = array(
+				'location' => $row['location'],
+				'occupation' => $row['occupation'],
+				'homepage' => $row['homepage'],
+				'aboutMe' => $row['about'],
+				'birthday' => $row['dob_year'].'-'.$row['dob_month'].'-'.$row['dob_day']
+			);
+			
+			$customFields = unserialize($row['custom_fields']);
+			
+			if ($customFields) {
+				foreach ($customFields as $key => $value) {
+					if (in_array($key, self::$knownProfileFields)) {
+						$options[$key] = $value;
+						continue;
+					}
+					
+					$options[hexdec(substr(sha1($key), 0, 7))] = $value;
+				}
+			}
 			
 			$additionalData = array(
 				'groupIDs' => explode(',', $row['secondary_group_ids'].','.$row['user_group_id']),
@@ -295,6 +316,77 @@ class XF12xExporter extends AbstractExporter {
 				}
 				$passwordUpdateStatement->execute(array($password, $newUserID));
 			}
+		}
+	}
+	
+	/**
+	 * Counts user options.
+	 */
+	public function countUserOptions() {
+		$condition = new PreparedStatementConditionBuilder();
+		$condition->add('field_id NOT IN (?)', array(self::$knownProfileFields));
+		
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."user_field
+			".$condition;
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute($condition->getParameters());
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports user options.
+	 */
+	public function exportUserOptions($offset, $limit) {
+		$condition = new PreparedStatementConditionBuilder();
+		$condition->add('field_id NOT IN (?)', array(self::$knownProfileFields));
+		
+		$sql = "SELECT	*
+			FROM	".$this->databasePrefix."user_field
+			".$condition."
+			ORDER BY	field_id ASC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute($condition->getParameters());
+		while ($row = $statement->fetchArray()) {
+			switch ($row['field_type']) {
+				case 'textarea':
+				case 'select':
+					// fine
+					break;
+				case 'textbox':
+					$row['field_type'] = 'text';
+					break;
+				case 'radio':
+					$row['field_type'] = 'radioButton';
+					break;
+				case 'check':
+					$row['field_type'] = 'boolean';
+					break;
+				default:
+					continue;
+			}
+				
+			$selectOptions = array();
+			if ($row['field_choices']) {
+				$field_choices = @unserialize($row['field_choices']);
+				if (!$field_choices) continue 2;
+				foreach ($field_choices as $key => $value) {
+					$selectOptions[] = $key.':'.$value;
+				}
+			}
+			
+			// the ID is transformed into an integer, because the importer cannot handle strings as IDs
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.option')->import(hexdec(substr(sha1($row['field_id']), 0, 7)), array(
+				'categoryName' => 'profile.personal',
+				'optionType' => $row['field_type'],
+				'editable' => $row['user_editable'] == 'yes' ? UserOption::EDITABILITY_ALL : UserOption::EDITABILITY_ADMINISTRATOR,
+				'required' => $row['required'] ? 1 : 0,
+				'askDuringRegistration' => $row['show_registration'] ? 1 : 0,
+				'selectOptions' => implode("\n", $selectOptions),
+				'visible' => UserOption::VISIBILITY_ALL,
+				'outputClass' => $row['field_type'] == 'select' ? 'wcf\system\option\user\SelectOptionsUserOptionOutput' : '',
+			), array('name' => $row['field_id']));
 		}
 	}
 	
