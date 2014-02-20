@@ -299,7 +299,7 @@ class XF12xExporter extends AbstractExporter {
 				$passwordData = unserialize($row['passwordData']);
 				switch ($row['scheme_class']) {
 					case 'XenForo_Authentication_Core12':
-						$password = 'xf12:'.$passwordData['hash'].':';
+						$password = PasswordUtil::getSaltedHash($passwordData['hash'], $passwordData['hash']);
 					break;
 					case 'XenForo_Authentication_Core':
 						$password = 'xf1:'.$passwordData['hash'].':'.$passwordData['salt'];
@@ -1106,6 +1106,33 @@ class XF12xExporter extends AbstractExporter {
 	}
 	
 	private static function fixBBCodes($message) {
+		// fix size bbcodes
+		$message = preg_replace_callback('/\[size=\'?(\d+)\'?\]/i', function ($matches) {
+			$size = 36;
+			
+			switch ($matches[1]) {
+				case 1:
+					$size = 8;
+					break;
+				case 2:
+					$size = 10;
+					break;
+				case 3:
+					$size = 12;
+					break;
+				case 4:
+					$size = 14;
+					break;
+				case 5:
+					$size = 18;
+					break;
+				case 6:
+					$size = 24;
+					break;
+			}
+			
+			return '[size='.$size.']';
+		}, $message);
 		
 		return $message;
 	}
