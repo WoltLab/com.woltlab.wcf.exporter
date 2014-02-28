@@ -1995,10 +1995,7 @@ class WBB3xExporter extends AbstractExporter {
 				'latitude' => $row['latitude'],
 				'longitude' => $row['longitude'],
 				'ipAddress' => UserUtil::convertIPv4To6($row['ipAddress']),
-				'showOrder' => $row['showOrder'],
-				'coordinateX' => $row['coordinateX'],
-				'coordinateY' => $row['coordinateY'],
-				'coordinateZ' => $row['coordinateZ']
+				'showOrder' => $row['showOrder']
 			), $additionalData);
 		}
 	}
