@@ -602,7 +602,7 @@ class VB3or4xExporter extends AbstractExporter {
 	public function exportConversations($offset, $limit) {
 		$sql = "SELECT		pm.*, text.*
 			FROM		".$this->databasePrefix."pm pm
-			LEFT JOIN	".$this->databasePrefix."pmtext text
+			INNER JOIN	".$this->databasePrefix."pmtext text
 			ON		pm.pmtextid = text.pmtextid
 			WHERE			pm.parentpmid = ?
 					OR	pm.pmid = pm.parentpmid
