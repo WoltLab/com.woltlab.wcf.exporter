@@ -1994,8 +1994,7 @@ class WBB3xExporter extends AbstractExporter {
 				'camera' => $row['camera'],
 				'latitude' => $row['latitude'],
 				'longitude' => $row['longitude'],
-				'ipAddress' => UserUtil::convertIPv4To6($row['ipAddress']),
-				'showOrder' => $row['showOrder']
+				'ipAddress' => UserUtil::convertIPv4To6($row['ipAddress'])
 			), $additionalData);
 		}
 	}
