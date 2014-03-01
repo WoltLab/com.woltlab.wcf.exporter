@@ -677,9 +677,9 @@ class VB3or4xExporter extends AbstractExporter {
 	public function exportConversationUsers($offset, $limit) {
 		$sql = "SELECT		pm.*, user.username, pmtext.touserarray, pmtext.dateline
 			FROM		".$this->databasePrefix."pm pm
-			LEFT JOIN	".$this->databasePrefix."user user
+			INNER JOIN	".$this->databasePrefix."user user
 			ON		pm.userid = user.userid
-			LEFT JOIN	".$this->databasePrefix."pmtext pmtext
+			INNER JOIN	".$this->databasePrefix."pmtext pmtext
 			ON		pmtext.pmtextid = pm.pmtextid
 			ORDER BY	pm.pmid ASC";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
