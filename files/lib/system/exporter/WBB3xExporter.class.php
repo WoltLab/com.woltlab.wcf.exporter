@@ -2100,9 +2100,10 @@ class WBB3xExporter extends AbstractExporter {
 	public function countCalendarCategories() {
 		$sql = "SELECT	COUNT(*) AS count
 			FROM	wcf".$this->dbNo."_calendar
-			WHERE	calendarID IN (SELECT calendarID FROM wcf".$this->dbNo."_calendar_to_group)";
+			WHERE	calendarID IN (SELECT calendarID FROM wcf".$this->dbNo."_calendar_to_group)
+				AND className <> ?";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
+		$statement->execute(array('BirthdayEvent'));
 		$row = $statement->fetchArray();
 		return $row['count'];
 	}
@@ -2114,9 +2115,10 @@ class WBB3xExporter extends AbstractExporter {
 		$sql = "SELECT		*
 			FROM		wcf".$this->dbNo."_calendar
 			WHERE		calendarID IN (SELECT calendarID FROM wcf".$this->dbNo."_calendar_to_group)
+					AND className <> ?
 			ORDER BY	calendarID";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement->execute(array('BirthdayEvent'));
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.calendar.category')->import($row['calendarID'], array(
 				'title' => $row['title'],
