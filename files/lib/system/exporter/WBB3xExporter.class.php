@@ -104,6 +104,12 @@ class WBB3xExporter extends AbstractExporter {
 	);
 	
 	/**
+	 * valid thread sort fields
+	 * @var array<string>
+	 */
+	protected static $availableThreadSortFields = array('topic', 'username', 'time', 'views', 'replies', 'lastPostTime', 'cumulativeLikes');
+	
+	/**
 	 * @see	\wcf\system\exporter\IExporter::init()
 	 */
 	public function init() {
@@ -953,6 +959,8 @@ class WBB3xExporter extends AbstractExporter {
 		if (!isset($this->boardCache[$parentID])) return;
 		
 		foreach ($this->boardCache[$parentID] as $board) {
+			if (!in_array($board['sortField'], self::$availableThreadSortFields)) $board['sortField'] = 'lastPostTime';
+			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import($board['boardID'], array(
 				'parentID' => ($board['parentID'] ?: null),
 				'position' => $board['position'],
