@@ -1936,7 +1936,7 @@ class WBB3xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.gallery.album')->import($row['albumID'], array(
 				'userID' => $row['ownerID'],
-				'username' => $row['username'],
+				'username' => ($row['username'] ?: ''),
 				'title' => $row['title'],
 				'description' => $row['description'],
 				'lastUpdateTime' => $row['lastUpdateTime']
