@@ -2209,6 +2209,10 @@ class WBB3xExporter extends AbstractExporter {
 				}
 			}
 			
+			$repeatEndCount = 1000;
+			if (isset($oldEventDateData['repeatEndCount']) && $oldEventDateData['repeatEndCount'] < $repeatEndCount) $repeatEndCount = $oldEventDateData['repeatEndCount'];
+			$repeatEndDate = 1395415497;
+			if (isset($oldEventDateData['repeatEndTime']) && $oldEventDateData['repeatEndTime'] < $repeatEndDate) $repeatEndDate = $oldEventDateData['repeatEndTime'];
 			$eventDateData = array(
 				'startTime' => $oldEventDateData['startTime'],
 				'endTime' => $oldEventDateData['endTime'],
@@ -2226,8 +2230,8 @@ class WBB3xExporter extends AbstractExporter {
 				'repeatYearlyDayOffset' => $repeatYearlyDayOffset,
 				'repeatYearlyByWeekDay' => $repeatYearlyByWeekDay,
 				'repeatEndType' => $repeatEndType,
-				'repeatEndCount' => (isset($oldEventDateData['repeatEndCount']) ? $oldEventDateData['repeatEndCount'] : 0),
-				'repeatEndDate' => (isset($oldEventDateData['repeatEndTime']) ? $oldEventDateData['repeatEndTime'] : 0)
+				'repeatEndCount' => $repeatEndCount,
+				'repeatEndDate' => $repeatEndDate
 			);
 			
 			$data = array(
