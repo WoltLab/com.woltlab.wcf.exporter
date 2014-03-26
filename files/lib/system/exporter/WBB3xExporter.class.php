@@ -2006,7 +2006,7 @@ class WBB3xExporter extends AbstractExporter {
 				'fileLocation' => $this->fileSystemPath . 'images/photos/photo-' . $row['photoID'] . ($row['photoHash'] ? ('-' . $row['photoHash']) : '') . '.' . $row['fileExtension'] 
 			);
 			if (isset($tags[$row['photoID']])) $additionalData['tags'] = $tags[$row['photoID']];
-			if (isset($categories[$row['photoID']])) $additionalData['categories'] = $categories[$row['photoID']];
+			if (isset($categories[$row['photoID']])) $additionalData['categories'] = array_unique($categories[$row['photoID']]);
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.gallery.image')->import($row['photoID'], array(
 				'userID' => ($row['ownerID'] ?: null),
