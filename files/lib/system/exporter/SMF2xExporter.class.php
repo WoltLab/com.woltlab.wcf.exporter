@@ -5,7 +5,9 @@ use wcf\data\user\group\UserGroup;
 use wcf\data\user\option\UserOption;
 use wcf\system\database\util\PreparedStatementConditionBuilder;
 use wcf\system\database\DatabaseException;
+use wcf\system\request\LinkHandler;
 use wcf\system\importer\ImportHandler;
+use wcf\system\Callback;
 use wcf\system\Regex;
 use wcf\system\WCF;
 use wcf\util\ArrayUtil;
@@ -1273,6 +1275,29 @@ class SMF2xExporter extends AbstractExporter {
 	}
 	
 	private static function fixBBCodes($message) {
+		static $sizeRegex = null;
+		static $quoteRegex = null;
+		static $quoteCallback = null;
+		
+		if ($sizeRegex === null) {
+			$quoteRegex = new Regex('\[quote author=(.*?) link=topic=\d+\.msg(\d+)#msg\\2 date=\d+\]');
+			$quoteCallback = new Callback(function ($matches) {
+				$username = str_replace(array("\\", "'"), array("\\\\", "\'"), $matches[1]);
+				$postID = $matches[2];
+				
+				$postLink = LinkHandler::getInstance()->getLink('Thread', array(
+					'application' => 'wbb',
+					'postID' => $postID,
+					'forceFrontend' => true
+				)).'#post'.$postID;
+				$postLink = str_replace(array("\\", "'"), array("\\\\", "\'"), $postLink);
+				
+				return "[quote='".$username."','".$postLink."']";
+			});
+			
+			$sizeRegex = new Regex('\[size=(8|10|12|14|18|24|34)pt\]');
+		}
+		
 		// use proper WCF 2 bbcode
 		$message = strtr($message, array(
 			'<br />' => "\n",
@@ -1291,10 +1316,13 @@ class SMF2xExporter extends AbstractExporter {
 		));
 		
 		// fix size bbcode
-		$message = Regex::compile('\[size=(8|10|12|14|18|24|34)pt\]')->replace($message, '[size=\\1]');
+		$message = $sizeRegex->replace($message, '[size=\\1]');
 		
 		// convert html entities in text
 		$message = StringUtil::decodeHTML($message);
+		
+		// quotes
+		$message = $quoteRegex->replace($message, $quoteCallback);
 		
 		// remove crap
 		$message = MessageUtil::stripCrap($message);
