@@ -134,9 +134,7 @@ class IPB3xExporter extends AbstractExporter {
 		
 		// board
 		if (in_array('com.woltlab.wbb.board', $this->selectedData)) {
-			$queue[] = 'com.woltlab.wbb.board';
-			
-			
+			$queue[] = 'com.woltlab.wbb.board';			
 			$queue[] = 'com.woltlab.wbb.thread';
 			$queue[] = 'com.woltlab.wbb.post';
 			
