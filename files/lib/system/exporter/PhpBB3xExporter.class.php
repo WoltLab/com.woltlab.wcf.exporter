@@ -332,7 +332,8 @@ class PhpBB3xExporter extends AbstractExporter {
 			foreach ($profileFields as $profileField) {
 				if (!empty($row['pf_'.$profileField['field_name']])) {
 					// prevent issues with 0 being false for select
-					if ($profileField['field_type'] == 5) { // 5 = select
+					// 5 = select
+					if ($profileField['field_type'] == 5) {
 						$additionalData['options'][$profileField['field_id']] = '_'.$row['pf_'.$profileField['field_name']];
 					}
 					else {
