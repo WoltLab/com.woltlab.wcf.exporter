@@ -1,13 +1,13 @@
 <?php
 namespace wcf\system\exporter;
-use wcf\data\conversation\Conversation;
-
 use wbb\data\board\Board;
+use wcf\data\conversation\Conversation;
 use wcf\data\user\group\UserGroup;
 use wcf\data\user\option\UserOption;
 use wcf\system\database\util\PreparedStatementConditionBuilder;
 use wcf\system\database\DatabaseException;
 use wcf\system\importer\ImportHandler;
+use wcf\system\Callback;
 use wcf\system\Regex;
 use wcf\system\WCF;
 use wcf\util\ArrayUtil;
@@ -1171,6 +1171,29 @@ class XF12xExporter extends AbstractExporter {
 	}
 	
 	private static function fixBBCodes($message) {
+		static $mediaRegex = null;
+		static $mediaCallback = null;
+		if ($mediaRegex === null) {
+			$mediaRegex = new Regex('\[media=(youtube|vimeo|dailymotion)\]([a-zA-Z0-9_-]+)', Regex::CASE_INSENSITIVE);
+			$mediaCallback = new Callback(function ($matches) {
+				switch ($matches[1]) {
+					case 'youtube':
+						$url = 'https://www.youtube.com/watch?v='.$matches[2];
+					break;
+					case 'vimeo':
+						$url = 'http://vimeo.com/'.$matches[2];
+					break;
+					case 'dailymotion':
+						$url = 'http://dailymotion.com/video/'.$matches[2];
+					break;
+				}
+				
+				return '[media]'.$url;
+			});
+		}
+		
+		$message = $mediaRegex->replace($message, $mediaCallback);
+		
 		// fix size bbcodes
 		$message = preg_replace_callback('/\[size=\'?(\d+)\'?\]/i', function ($matches) {
 			$size = 36;
@@ -1198,6 +1221,19 @@ class XF12xExporter extends AbstractExporter {
 			
 			return '[size='.$size.']';
 		}, $message);
+		
+		static $map = array(
+			'[php]' => '[code=php]',
+			'[/php]' => '[/code]',
+			'[html]' => '[code=html]',
+			'[/html]' => '[/code]'
+		);
+		
+		// use proper WCF 2 bbcode
+		$message = str_ireplace(array_keys($map), array_values($map), $message);
+		
+		// remove crap
+		$message = MessageUtil::stripCrap($message);
 		
 		return $message;
 	}
