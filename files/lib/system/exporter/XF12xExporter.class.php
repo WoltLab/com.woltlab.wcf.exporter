@@ -2,6 +2,7 @@
 namespace wcf\system\exporter;
 use wbb\data\board\Board;
 use wcf\data\conversation\Conversation;
+use wcf\data\object\type\ObjectTypeCache;
 use wcf\data\user\group\UserGroup;
 use wcf\data\user\option\UserOption;
 use wcf\system\database\util\PreparedStatementConditionBuilder;
@@ -95,7 +96,7 @@ class XF12xExporter extends AbstractExporter {
 				'com.woltlab.wbb.attachment',
 				'com.woltlab.wbb.poll',
 				'com.woltlab.wbb.watchedThread',
-			//	'com.woltlab.wcf.label'
+				'com.woltlab.wcf.label'
 			),
 			'com.woltlab.wcf.conversation' => array(
 				'com.woltlab.wcf.conversation.label'
@@ -774,7 +775,7 @@ class XF12xExporter extends AbstractExporter {
 			);
 			
 			$additionalData = array();
-			if ($row['prefix_id']) $additionalData['labels'] = array(); // todo
+			if ($row['prefix_id']) $additionalData['labels'] = array($row['node_id'].'-'.$row['prefix_id']);
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.thread')->import($row['thread_id'], $data, $additionalData);
 		}
@@ -1010,32 +1011,46 @@ class XF12xExporter extends AbstractExporter {
 			));
 		}
 	}
-	
+
 	/**
 	 * Counts labels.
 	 */
 	public function countLabels() {
-		/*$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."threadprefixes";
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."forum_prefix";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array(0));
+		$statement->execute();
 		$row = $statement->fetchArray();
-		return $row['count'];*/
-		return 0;
+		return $row['count'];
 	}
 	
 	/**
 	 * Exports labels.
 	 */
 	public function exportLabels($offset, $limit) {
-/*		ImportHandler::getInstance()->getImporter('com.woltlab.wcf.label.group')->import($key, array(
-		'groupName' => 'labelgroup'.$i
-		), array('objects' => array($objectType->objectTypeID => $data['boardIDs'])));
+		$objectType = ObjectTypeCache::getInstance()->getObjectTypeByName('com.woltlab.wcf.label.objectType', 'com.woltlab.wbb.board');
 		
-		ImportHandler::getInstance()->getImporter('com.woltlab.wcf.label')->import($forumID.'-'.$prefixID, array(
-			'groupID' => $forumID,
-			'label' => $prefix
-		));*/
+		$sql = "SELECT		forum.*, phrase.phrase_text
+			FROM		".$this->databasePrefix."forum_prefix forum
+			LEFT JOIN	".$this->databasePrefix."phrase phrase
+			ON		phrase.title = ('thread_prefix_' || forum.prefix_id)";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			// import label group
+			if (!ImportHandler::getInstance()->getNewID('com.woltlab.wcf.label.group', $row['node_id'])) {
+				ImportHandler::getInstance()->getImporter('com.woltlab.wcf.label.group')->import($row['node_id'], array(
+					'groupName' => 'labelgroup'.$row['node_id']
+				), array('objects' => array($objectType->objectTypeID => array(ImportHandler::getInstance()->getNewID('com.woltlab.wbb.board', $row['node_id'])))));
+			}
+			
+			if (!ImportHandler::getInstance()->getNewID('com.woltlab.wcf.label', $row['node_id'].'-'.$row['prefix_id'])) {
+				ImportHandler::getInstance()->getImporter('com.woltlab.wcf.label')->import($row['node_id'].'-'.$row['prefix_id'], array(
+					'groupID' => $row['node_id'],
+					'label' => $row['phrase_text']
+				));
+			}
+		}
 	}
 	
 	/**
