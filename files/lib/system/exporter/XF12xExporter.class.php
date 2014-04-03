@@ -91,7 +91,7 @@ class XF12xExporter extends AbstractExporter {
 				'com.woltlab.wcf.user.rank'
 			),
 			'com.woltlab.wbb.board' => array(
-				/*'com.woltlab.wbb.acl',*/
+				'com.woltlab.wbb.acl',
 				'com.woltlab.wbb.attachment',
 				'com.woltlab.wbb.poll',
 				'com.woltlab.wbb.watchedThread'
@@ -162,7 +162,7 @@ class XF12xExporter extends AbstractExporter {
 			$queue[] = 'com.woltlab.wbb.thread';
 			$queue[] = 'com.woltlab.wbb.post';
 			
-			/*if (in_array('com.woltlab.wbb.acl', $this->selectedData)) $queue[] = 'com.woltlab.wbb.acl';*/
+			if (in_array('com.woltlab.wbb.acl', $this->selectedData)) $queue[] = 'com.woltlab.wbb.acl';
 			if (in_array('com.woltlab.wbb.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wbb.attachment';
 			if (in_array('com.woltlab.wbb.watchedThread', $this->selectedData)) $queue[] = 'com.woltlab.wbb.watchedThread';
 			if (in_array('com.woltlab.wbb.poll', $this->selectedData)) {
@@ -1043,6 +1043,71 @@ class XF12xExporter extends AbstractExporter {
 			'groupID' => $forumID,
 			'label' => $prefix
 		));*/
+	}
+	
+	/**
+	 * Counts ACLs.
+	 */
+	public function countACLs() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."permission_entry_content
+			WHERE		permission_group_id = ?
+				AND	permission_value <> ?
+				AND	content_type = ?";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array('forum', 'use_int', 'node'));
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports ACLs.
+	 */
+	public function exportACLs($offset, $limit) {
+		static $mapping = array(
+			'approveUnapprove' => array('canEnableThread', 'canEnablePost'),
+			'deleteAnyPost' => array('canDeletePost'),
+			'deleteAnyThread' => array('canDeleteThread'),
+			'deleteOwnPost' => array('canDeleteOwnPost'),
+			'deleteOwnThread' => array('canDeleteOwnPost'),
+			'editAnyPost' => array('canEditPost'),
+			'editOwnPost' => array('canEditOwnPost'),
+			'hardDeleteAnyPost' => array('canDeletePostCompletely'),
+			'hardDeleteAnyThread' => array('canDeleteThreadCompletely'),
+			'lockUnlockThread' => array('canCloseThread'),
+			'manageAnyThread' => array('canMoveThread', 'canMergeThread'),
+			'postReply' => array('canReplyThread'),
+			'postThread' => array('canStartThread'),
+			'stickUnstickThread' => array('canPinThread'),
+			'undelete' => array('canRestorePost', 'canRestoreThread'),
+			'uploadAttachments' => array('canUploadAttachment'),
+			'viewAttachment' => array('canDownloadAttachment'),
+			'viewContent' => array('canReadThread'),
+			'viewDeleted' => array('canReadDeletedPost', 'canReadDeletedThread'),
+			'votePoll' => array('canVotePoll')
+		);
+		
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."permission_entry_content
+			WHERE		permission_group_id = ?
+				AND	permission_value <> ?
+				AND	content_type = ?
+			ORDER BY	permission_entry_id";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute(array('forum', 'use_int', 'node'));
+		while ($row = $statement->fetchArray()) {
+			if (!isset($mapping[$row['permission_id']])) continue;
+			
+			foreach ($mapping[$row['permission_id']] as $permission) {
+				ImportHandler::getInstance()->getImporter('com.woltlab.wbb.acl')->import(0, array(
+					'objectID' => $row['content_id'],
+					($row['user_id'] ? 'userID' : 'groupID') => $row['user_id'] ?: $row['user_group_id'],
+					'optionValue' => $row['permission_value'] == 'content_allow' ? 1 : 0
+				), array(
+					'optionName' => $permission
+				));
+			}
+		}
 	}
 	
 	public function getConfig() {
