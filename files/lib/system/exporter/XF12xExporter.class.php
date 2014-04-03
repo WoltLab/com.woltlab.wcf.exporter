@@ -94,21 +94,13 @@ class XF12xExporter extends AbstractExporter {
 				'com.woltlab.wbb.acl',
 				'com.woltlab.wbb.attachment',
 				'com.woltlab.wbb.poll',
-				'com.woltlab.wbb.watchedThread'
+				'com.woltlab.wbb.watchedThread',
+			//	'com.woltlab.wcf.label'
 			),
 			'com.woltlab.wcf.conversation' => array(
 				'com.woltlab.wcf.conversation.label'
 			)
 		);
-	}
-	
-	/**
-	 * @see	\wcf\system\exporter\IExporter::validateDatabaseAccess()
-	 */
-	public function validateDatabaseAccess() {
-		parent::validateDatabaseAccess();
-		
-		
 	}
 	
 	/**
@@ -159,6 +151,7 @@ class XF12xExporter extends AbstractExporter {
 		// board
 		if (in_array('com.woltlab.wbb.board', $this->selectedData)) {
 			$queue[] = 'com.woltlab.wbb.board';
+			if (in_array('com.woltlab.wcf.label', $this->selectedData)) $queue[] = 'com.woltlab.wcf.label';
 			$queue[] = 'com.woltlab.wbb.thread';
 			$queue[] = 'com.woltlab.wbb.post';
 			
