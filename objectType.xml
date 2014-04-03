@@ -54,5 +54,11 @@
 			<definitionname>com.woltlab.wcf.exporter</definitionname>
 			<classname>wcf\system\exporter\VB3or4xExporter</classname>
 		</type>
+		
+		<type>
+			<name>com.woltlab.wcf.exporter.xf12x</name>
+			<definitionname>com.woltlab.wcf.exporter</definitionname>
+			<classname>wcf\system\exporter\XF12xExporter</classname>
+		</type>
 	</import>
 </data>

@@ -10,5 +10,6 @@
 		<item name="wcf.acp.dataImport.exporter.com.woltlab.wcf.exporter.wordpress3x"><![CDATA[WordPress 3.7+]]></item>
 		<item name="wcf.acp.dataImport.exporter.com.woltlab.wcf.exporter.vb3or4x"><![CDATA[vBulletin 3.8.x - 4.2.x]]></item>
 		<item name="wcf.acp.dataImport.exporter.com.woltlab.wcf.exporter.ipb3x"><![CDATA[IP.Board 3.4.x]]></item>
+		<item name="wcf.acp.dataImport.exporter.com.woltlab.wcf.exporter.xf12x"><![CDATA[XenForo 1.2.x]]></item>
 	</category>
 </language>
