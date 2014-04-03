@@ -30,5 +30,7 @@
 	
 	<instructions type="update" fromversion="2.0.4">
 		<instruction type="file">files_update.tar</instruction>
+		<instruction type="objectType">objectType.xml</instruction>
+		<instruction type="language">language/*.xml</instruction>
 	</instructions>
 </package>
