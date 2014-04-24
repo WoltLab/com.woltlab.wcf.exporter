@@ -6,6 +6,7 @@ use wcf\data\user\option\UserOption;
 use wcf\system\database\util\PreparedStatementConditionBuilder;
 use wcf\system\importer\ImportHandler;
 use wcf\system\WCF;
+use wcf\util\DateUtil;
 use wcf\util\MessageUtil;
 use wcf\util\StringUtil;
 use wcf\util\UserUtil;
@@ -2171,8 +2172,19 @@ class WBB3xExporter extends AbstractExporter {
 			$repeatType = '';
 			$repeatMonthlyByMonthDay = $repeatMonthlyByWeekDay = $repeatMonthlyDayOffset = 1;
 			$repeatYearlyByMonthDay = $repeatYearlyByWeekDay = $repeatYearlyDayOffset = $repeatYearlyByMonth = 1;
+			$repeatWeeklyByDay = array();
+			$dateTime = DateUtil::getDateTimeByTimestamp($oldEventDateData['startTime']);
 			if ($oldEventDateData['repeatType'] != 'no') {
 				$repeatType = $oldEventDateData['repeatType'];
+				if ($repeatType == 'weekly') {
+					if (!empty($oldEventDateData['repeatByDay']) && is_array($oldEventDateData['repeatByDay'])) {
+						$repeatWeeklyByDay = $oldEventDateData['repeatByDay'];
+					}
+					else {
+						$repeatWeeklyByDay = array($dateTime->format('w'));
+					}
+				}
+				
 				if ($repeatType == 'monthly') {
 					if (!empty($oldEventDateData['repeatByMonthDay'])) {
 						$repeatType = 'monthlyByDayOfMonth';
@@ -2182,6 +2194,9 @@ class WBB3xExporter extends AbstractExporter {
 						$repeatType = 'monthlyByDayOfWeek';
 						if (!empty($oldEventDateData['repeatByDay'])) {
 							$repeatMonthlyByWeekDay = reset($oldEventDateData['repeatByDay']);
+						}
+						else {
+							$repeatMonthlyByWeekDay = $dateTime->format('w');
 						}
 						if (!empty($oldEventDateData['repeatByWeek'])) {
 							$repeatMonthlyDayOffset = reset($oldEventDateData['repeatByWeek']);
@@ -2199,12 +2214,18 @@ class WBB3xExporter extends AbstractExporter {
 						if (!empty($oldEventDateData['repeatByDay'])) {
 							$repeatYearlyByWeekDay = reset($oldEventDateData['repeatByDay']);
 						}
+						else {
+							$repeatYearlyByWeekDay = $dateTime->format('w');
+						}
 						if (!empty($oldEventDateData['repeatByWeek'])) {
 							$repeatYearlyDayOffset = reset($oldEventDateData['repeatByWeek']);
 						}
 					}
 					if (!empty($oldEventDateData['repeatByMonth'])) {
 						$repeatYearlyByMonth = reset($oldEventDateData['repeatByMonth']);
+					}
+					else {
+						$repeatYearlyByMonth = $dateTime->format('n');
 					}
 				}
 			}
@@ -2221,7 +2242,7 @@ class WBB3xExporter extends AbstractExporter {
 				'firstDayOfWeek' => (isset($oldEventDateData['wkst']) ? $oldEventDateData['wkst'] : 1),
 				'repeatType' => $repeatType,
 				'repeatInterval' => (isset($oldEventDateData['repeatInterval']) ? $oldEventDateData['repeatInterval'] : 1),
-				'repeatWeeklyByDay' => ($repeatType == 'weekly' ? $oldEventDateData['repeatByDay'] : array()),
+				'repeatWeeklyByDay' => $repeatWeeklyByDay,
 				'repeatMonthlyByMonthDay' => $repeatMonthlyByMonthDay,
 				'repeatMonthlyDayOffset' => $repeatMonthlyDayOffset,
 				'repeatMonthlyByWeekDay' => $repeatMonthlyByWeekDay,
