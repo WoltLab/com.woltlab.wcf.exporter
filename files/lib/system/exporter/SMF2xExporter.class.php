@@ -317,7 +317,7 @@ class SMF2xExporter extends AbstractExporter {
 				'signatureEnableBBCodes' => 1,
 				'signatureEnableHtml' => 0,
 				'signatureEnableSmilies' => 1,
-				'userTitle' => $row['usertitle'],
+				'userTitle' => StringUtil::decodeHTML($row['usertitle']),
 				'lastActivityTime' => $row['last_login']
 			);
 			
@@ -750,7 +750,7 @@ class SMF2xExporter extends AbstractExporter {
 				'parentID' => ($board['id_parent'] ?: 'cat-'.$board['id_cat']),
 				'position' => $board['board_order'],
 				'boardType' => $board['redirect'] ? Board::TYPE_LINK : Board::TYPE_BOARD,
-				'title' => $board['name'],
+				'title' => str_replace('&amp;', '&', $board['name']),
 				'description' => $board['description'],
 				'descriptionUseHtml' => 1,
 				'externalURL' => $board['redirect'],
@@ -791,7 +791,7 @@ class SMF2xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.thread')->import($row['id_topic'], array(
 				'boardID' => $row['id_board'],
-				'topic' => $row['subject'],
+				'topic' => StringUtil::decodeHTML($row['subject']),
 				'time' => $row['time'],
 				'userID' => $row['id_member_started'],
 				'username' => $row['username'],
@@ -834,7 +834,7 @@ class SMF2xExporter extends AbstractExporter {
 				'threadID' => $row['id_topic'],
 				'userID' => $row['id_member'],
 				'username' => $row['poster_name'],
-				'subject' => $row['subject'],
+				'subject' => StringUtil::decodeHTML($row['subject']),
 				'message' => self::fixBBCodes($row['body']),
 				'time' => $row['poster_time'],
 				'isDisabled' => $row['approved'] ? 0 : 1,
