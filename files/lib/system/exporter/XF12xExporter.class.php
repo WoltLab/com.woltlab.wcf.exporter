@@ -6,17 +6,13 @@ use wcf\data\object\type\ObjectTypeCache;
 use wcf\data\user\group\UserGroup;
 use wcf\data\user\option\UserOption;
 use wcf\system\database\util\PreparedStatementConditionBuilder;
-use wcf\system\database\DatabaseException;
 use wcf\system\importer\ImportHandler;
 use wcf\system\Callback;
 use wcf\system\Regex;
 use wcf\system\WCF;
-use wcf\util\ArrayUtil;
 use wcf\util\FileUtil;
 use wcf\util\MessageUtil;
 use wcf\util\PasswordUtil;
-use wcf\util\StringUtil;
-use wcf\util\UserRegistrationUtil;
 use wcf\util\UserUtil;
 
 /**
