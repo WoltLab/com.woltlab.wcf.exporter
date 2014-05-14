@@ -12,6 +12,7 @@ use wcf\system\Callback;
 use wcf\system\Regex;
 use wcf\system\WCF;
 use wcf\util\ArrayUtil;
+use wcf\util\DateUtil;
 use wcf\util\FileUtil;
 use wcf\util\MessageUtil;
 use wcf\util\StringUtil;
@@ -113,6 +114,10 @@ class VB3or4xExporter extends AbstractExporter {
 		'com.woltlab.wbb.acl' => 'ACLs',
 		'com.woltlab.wcf.smiley.category' => 'SmileyCategories',
 		'com.woltlab.wcf.smiley' => 'Smilies',
+		
+		'com.woltlab.calendar.category' => 'CalendarCategories',
+		'com.woltlab.calendar.event' => 'CalendarEvents',
+		'com.woltlab.calendar.event.date' => 'CalendarEventDates'
 	);
 	
 	/**
@@ -150,6 +155,9 @@ class VB3or4xExporter extends AbstractExporter {
 			),
 			'com.woltlab.wcf.conversation' => array(
 				'com.woltlab.wcf.conversation.label'
+			),
+			'com.woltlab.calendar.event' => array(
+				'com.woltlab.calendar.category'
 			),
 			'com.woltlab.wcf.smiley' => array()
 		);
@@ -248,6 +256,12 @@ class VB3or4xExporter extends AbstractExporter {
 		if (in_array('com.woltlab.wcf.smiley', $this->selectedData)) {
 			$queue[] = 'com.woltlab.wcf.smiley.category';
 			$queue[] = 'com.woltlab.wcf.smiley';
+		}
+		
+		// calendar
+		if (in_array('com.woltlab.calendar.event', $this->selectedData)) {
+			if (in_array('com.woltlab.calendar.category', $this->selectedData)) $queue[] = 'com.woltlab.calendar.category';
+			$queue[] = 'com.woltlab.calendar.event';
 		}
 		
 		return $queue;
@@ -1318,6 +1332,165 @@ class VB3or4xExporter extends AbstractExporter {
 				'title' => $row['title'],
 				'parentCategoryID' => 0,
 				'showOrder' => $row['displayorder']
+			));
+		}
+	}
+	
+	/**
+	 * Counts calendar categories.
+	 */
+	public function countCalendarCategories() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."calendar";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports calendar categories.
+	 */
+	public function exportCalendarCategories($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."calendar
+			ORDER BY	calendarid";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.calendar.category')->import($row['calendarid'], array(
+				'title' => $row['title'],
+				'description' => $row['description'],
+				'parentCategoryID' => 0,
+				'showOrder' => $row['displayorder']
+			));
+		}
+	}
+	
+	/**
+	 * Counts calendar events.
+	 */
+	public function countCalendarEvents() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."event";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports calendar events.
+	 */
+	public function exportCalendarEvents($offset, $limit) {
+		$sql = "SELECT		event.*, user.username
+			FROM		".$this->databasePrefix."event event
+			LEFT JOIN	".$this->databasePrefix."user user
+			ON		event.userid = user.userid
+			ORDER BY	eventid";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		
+		$timezones = array();
+		foreach (DateUtil::getAvailableTimezones() as $timezone) {
+			$dateTimeZone = new \DateTimeZone($timezone);
+			$offset = $dateTimeZone->getOffset(new \DateTime("now", $dateTimeZone));
+			$timezones[round($offset / 360, 0)] = $timezone;
+		}
+		
+		while ($row = $statement->fetchArray()) {
+			
+			$eventDateData = array(
+				'startTime' => $row['dateline_from'],
+				'endTime' => ($row['recurring'] != 0) ? $row['dateline_from'] + 1 : $row['dateline_to'], // vBulletin does not properly support endTime for recurring events
+				'isFullDay' => $row['dateline_to'] ? 0 : 1,
+				'timezone' => $timezones[round($row['utc'] * 10, 0)],
+				'repeatEndType' => 'date',
+				'repeatEndDate' => $row['dateline_to'],
+				'repeatEndCount' => 1000,
+				'firstDayOfWeek' => 1,
+				'repeatType' => '',
+				'repeatInterval' => 1,
+				'repeatWeeklyByDay' => array(),
+				'repeatMonthlyByMonthDay' => 1,
+				'repeatMonthlyDayOffset' => 1,
+				'repeatMonthlyByWeekDay' => 0,
+				'repeatYearlyByMonthDay' => 1,
+				'repeatYearlyByMonth' => 1,
+				'repeatYearlyDayOffset' => 1,
+				'repeatYearlyByWeekDay' => 1
+			);
+			
+			switch ($row['recurring']) {
+				case 0:
+					$eventDateData['repeatType'] = '';
+				break;
+				case 1:
+					$eventDateData['repeatType'] = 'daily';
+					$eventDateData['repeatInterval'] = $row['recuroption'];
+				break;
+				case 2:
+					$eventDateData['repeatType'] = 'daily';
+					$eventDateData['repeatInterval'] = 1;
+				break;
+				case 3:
+					$eventDateData['repeatType'] = 'weekly';
+					list($interval, $days) = explode('|', $row['recuroption']);
+					$eventDateData['repeatInterval'] = $interval;
+					// each day is represented as one bit
+					for ($i = 0; $i < 7; $i++) {
+						if ($days & (1 << $i)) {
+							$eventDateData['repeatWeeklyByDay'][] = $i; 
+						}
+					}
+				break;
+				case 4:
+					$eventDateData['repeatType'] = 'monthlyByDayOfMonth';
+					list($day, $interval) = explode('|', $row['recuroption']);
+					$eventDateData['repeatInterval'] = $interval;
+					$eventDateData['repeatMonthlyByMonthDay'] = $day;
+				break;
+				case 5:
+					$eventDateData['repeatType'] = 'monthlyByDayOfWeek';
+					list($offset, $day, $interval) = explode('|', $row['recuroption']);
+					$eventDateData['repeatInterval'] = $interval;
+					
+					// last is -1 for WoltLab and 5 for vBulletin
+					$eventDateData['repeatMonthlyDayOffset'] = $offset == 5 ? -1 : $offset;
+					
+					// week day is one indexed, starting at sunday
+					$eventDateData['repeatMonthlyByWeekDay'] = $day - 1;
+				break;
+				case 6:
+					$eventDateData['repeatType'] = 'yearlyByDayOfMonth';
+					list($month, $day) = explode('|', $row['recuroption']);
+					$eventDateData['repeatYearlyByMonthDay'] = $day;
+					$eventDateData['repeatYearlyByMonth'] = $month;
+				break;
+				case 7:
+					$eventDateData['repeatType'] = 'yearlyByDayOfWeek';
+					list($offset, $day, $month) = explode('|', $row['recuroption']);
+					$eventDateData['repeatYearlyByMonth'] = $month;
+					$eventDateData['repeatYearlyDayOffset'] = $offset;
+					
+					// week day is one indexed, starting at sunday
+					$eventDateData['repeatYearlyByWeekDay'] = $day - 1;
+				break;
+			}
+			
+			$data = array(
+				'userID' => ($row['userid'] ?: null),
+				'username' => $row['username'],
+				'subject' => $row['title'],
+				'message' => self::fixBBCodes($row['event']),
+				'time' => $row['dateline'],
+				'enableSmilies' => $row['allowsmilies'],
+				'eventDate' => serialize($eventDateData)
+			);
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.calendar.event')->import($row['eventid'], $data, array(
+				'categories' => array($row['calendarid']),
+				'createEventDates' => true
 			));
 		}
 	}
