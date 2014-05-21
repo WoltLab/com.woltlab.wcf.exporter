@@ -78,6 +78,11 @@ class VB3or4xExporter extends AbstractExporter {
 	const ATTACHFILE_FILESYSTEM = 1;
 	const ATTACHFILE_FILESYSTEM_SUBFOLDER = 2;
 	
+	const GALLERY_DATABASE = 'db';
+	const GALLERY_FILESYSTEM = 'fs';
+	const GALLERY_FILESYSTEM_DIRECT_THUMBS = 'fs_directthumb';
+	
+	
 	/**
 	 * board cache
 	 * @var	array
@@ -114,6 +119,10 @@ class VB3or4xExporter extends AbstractExporter {
 		'com.woltlab.wbb.acl' => 'ACLs',
 		'com.woltlab.wcf.smiley.category' => 'SmileyCategories',
 		'com.woltlab.wcf.smiley' => 'Smilies',
+
+		'com.woltlab.gallery.album' => 'GalleryAlbums',
+		'com.woltlab.gallery.image' => 'GalleryImages',
+		'com.woltlab.gallery.image.comment' => 'GalleryComments',
 		
 		'com.woltlab.calendar.category' => 'CalendarCategories',
 		'com.woltlab.calendar.event' => 'CalendarEvents',
@@ -155,6 +164,10 @@ class VB3or4xExporter extends AbstractExporter {
 			),
 			'com.woltlab.wcf.conversation' => array(
 				'com.woltlab.wcf.conversation.label'
+			),
+			'com.woltlab.gallery.image' => array(
+				'com.woltlab.gallery.album',
+				'com.woltlab.gallery.image.comment'
 			),
 			'com.woltlab.calendar.event' => array(
 				'com.woltlab.calendar.category'
@@ -256,6 +269,13 @@ class VB3or4xExporter extends AbstractExporter {
 		if (in_array('com.woltlab.wcf.smiley', $this->selectedData)) {
 			$queue[] = 'com.woltlab.wcf.smiley.category';
 			$queue[] = 'com.woltlab.wcf.smiley';
+		}
+		
+		// gallery
+		if (in_array('com.woltlab.gallery.image', $this->selectedData)) {
+			if (in_array('com.woltlab.gallery.album', $this->selectedData)) $queue[] = 'com.woltlab.gallery.album';
+			$queue[] = 'com.woltlab.gallery.image';
+			if (in_array('com.woltlab.gallery.image.comment', $this->selectedData)) $queue[] = 'com.woltlab.gallery.image.comment';
 		}
 		
 		// calendar
@@ -1332,6 +1352,142 @@ class VB3or4xExporter extends AbstractExporter {
 				'title' => $row['title'],
 				'parentCategoryID' => 0,
 				'showOrder' => $row['displayorder']
+			));
+		}
+	}
+	
+	/**
+	 * Counts gallery albums.
+	 */
+	public function countGalleryAlbums() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."album";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports gallery albums.
+	 */
+	public function exportGalleryAlbums($offset, $limit) {
+		$sql = "SELECT		album.*, user.username
+			FROM		".$this->databasePrefix."album album
+			LEFT JOIN	".$this->databasePrefix."user user
+			ON		album.userid = user.userid
+			ORDER BY	albumid";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.gallery.album')->import($row['albumid'], array(
+				'userID' => $row['userid'],
+				'username' => ($row['username'] ?: ''),
+				'title' => $row['title'],
+				'description' => $row['description'],
+				'lastUpdateTime' => $row['lastpicturedate']
+			));
+		}
+	}
+	
+	/**
+	 * Counts gallery images.
+	 */
+	public function countGalleryImages() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."picture";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports gallery images.
+	 */
+	public function exportGalleryImages($offset, $limit) {
+		$sql = "SELECT		picture.*, album.albumid, album.dateline, user.username
+			FROM		".$this->databasePrefix."picture picture
+			LEFT JOIN	".$this->databasePrefix."albumpicture album
+			ON		picture.pictureid = album.pictureid
+			LEFT JOIN	".$this->databasePrefix."user user
+			ON		picture.userid = user.userid
+			ORDER BY	picture.pictureid ASC";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			try {
+				switch ($this->readOption('album_dataloc')) {
+					case self::GALLERY_DATABASE:
+						$file = FileUtil::getTemporaryFilename('attachment_');
+						file_put_contents($file, $row['filedata']);
+					break;
+					case self::GALLERY_FILESYSTEM:
+					case self::GALLERY_FILESYSTEM_DIRECT_THUMBS:
+						$file = $this->readOption('album_picpath');
+						if (!StringUtil::startsWith($file, '/')) $file = realpath($this->fileSystemPath.$file);
+						$file = FileUtil::addTrailingSlash($file);
+						$file .= floor($row['pictureid'] / 1000).'/'.$row['pictureid'].'.picture';
+					break;
+				}
+				
+				$additionalData = array(
+					'fileLocation' => $file
+				);
+				
+				ImportHandler::getInstance()->getImporter('com.woltlab.gallery.image')->import($row['pictureid'], array(
+					'userID' => ($row['userid'] ?: null),
+					'username' => $row['username'],
+					'albumID' => ($row['albumid'] ?: null),
+					'title' => $row['caption'],
+					'description' => '',
+					'filename' => '',
+					'fileExtension' => $row['extension'],
+					'filesize' => $row['filesize'],
+					'uploadTime' => $row['dateline'],
+					'creationTime' => $row['dateline'],
+					'width' => $row['width'],
+					'height' => $row['height']
+				), $additionalData);
+			}
+			catch (\Exception $e) {
+				if ($this->readOption('album_dataloc') == self::GALLERY_DATABASE && $file) @unlink($file);
+				
+				throw $e;
+			}
+		}
+	}
+	
+	/**
+	 * Counts gallery comments.
+	 */
+	public function countGalleryComments() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."picturecomment";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports gallery comments.
+	 */
+	public function exportGalleryComments($offset, $limit) {
+		$sql = "SELECT		comment.*, user.username
+			FROM		".$this->databasePrefix."picturecomment comment
+			LEFT JOIN	".$this->databasePrefix."user user
+			ON		comment.postuserid = user.userid
+			ORDER BY	comment.commentid ASC";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.gallery.image.comment')->import($row['commentid'], array(
+				'objectID' => $row['pictureid'],
+				'userID' => ($row['postuserid'] ?: null),
+				'username' => $row['username'],
+				'message' => $row['pagetext'],
+				'time' => $row['dateline']
 			));
 		}
 	}
