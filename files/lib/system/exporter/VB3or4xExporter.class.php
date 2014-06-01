@@ -1671,6 +1671,7 @@ class VB3or4xExporter extends AbstractExporter {
 	private static function fixBBCodes($message) {
 		static $quoteRegex = null;
 		static $quoteCallback = null;
+		static $mediaRegex = null;
 		
 		if ($quoteRegex === null) {
 			$quoteRegex = new Regex('\[quote=(.*?);(\d+)\]', Regex::CASE_INSENSITIVE);
@@ -1687,6 +1688,7 @@ class VB3or4xExporter extends AbstractExporter {
 				
 				return "[quote='".$username."','".$postLink."']";
 			});
+			$mediaRegex = new Regex('\[video=([a-z]+);([a-z0-9-_]+)\]', Regex::CASE_INSENSITIVE);
 		}
 		
 		// use proper WCF 2 bbcode
@@ -1700,7 +1702,8 @@ class VB3or4xExporter extends AbstractExporter {
 			'[php]' => '[code=php]',
 			'[/php]' => '[/code]',
 			'[html]' => '[code=html]',
-			'[/html]' => '[/code]'
+			'[/html]' => '[/code]',
+			'[/video]' => '[/media]'
 		);
 		$message = str_ireplace(array_keys($replacements), array_values($replacements), $message);
 		
@@ -1739,6 +1742,9 @@ class VB3or4xExporter extends AbstractExporter {
 		
 		// quotes
 		$message = $quoteRegex->replace($message, $quoteCallback);
+		
+		// media
+		$message = $mediaRegex->replace($message, '[media]');
 		
 		$message = MessageUtil::stripCrap($message);
 		
