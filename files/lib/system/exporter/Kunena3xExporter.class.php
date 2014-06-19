@@ -8,6 +8,8 @@ use wcf\system\Regex;
 use wcf\util\FileUtil;
 use wcf\util\StringUtil;
 use wcf\util\UserUtil;
+use wcf\util\PasswordUtil;
+use wcf\system\WCF;
 
 /**
  * Exporter for Kunena 3.x
@@ -178,10 +180,10 @@ class Kunena3xExporter extends AbstractExporter {
 	 */
 	public function exportUsers($offset, $limit) {
 		// prepare password update
-		/*$sql = "UPDATE	wcf".WCF_N."_user
+		$sql = "UPDATE	wcf".WCF_N."_user
 			SET	password = ?
 			WHERE	userID = ?";
-		$passwordUpdateStatement = WCF::getDB()->prepareStatement($sql);*/
+		$passwordUpdateStatement = WCF::getDB()->prepareStatement($sql);
 	
 		// get users
 		$sql = "SELECT		kunena_users.*, users.*,
@@ -227,7 +229,18 @@ class Kunena3xExporter extends AbstractExporter {
 				
 			// update password hash
 			if ($newUserID) {
-				//$passwordUpdateStatement->execute(array('phpbb3:'.$row['user_password'].':', $newUserID));
+				$password = 'joomla3:'.$row['password'];
+				if (substr($row['password'], 0, 3) == '$1$') {
+					$password = 'cryptMD5:'.$row['password'];
+				}
+				else if (substr($row['password'], 0, 4) == '$2y$' || substr($row['password'], 0, 4) == '$2a$') {
+					$password = PasswordUtil::getSaltedHash($row['password'], $row['password']);
+				}
+				else if (substr($row['password'], 0, 3) == '$P$') {
+					$password = 'phpass:'.$row['password'];
+				}
+				
+				$passwordUpdateStatement->execute(array($password, $newUserID));
 			}
 		}
 	}
