@@ -261,7 +261,7 @@ class WBB3xExporter extends AbstractExporter {
 		}
 		
 		// blog
-		if ($this->getPackageVersion('com.woltlab.wcf.user.blog')) {
+		if (substr($this->getPackageVersion('com.woltlab.wcf.user.blog'), 0, 3) == '1.1') {
 			if (in_array('com.woltlab.blog.entry', $this->selectedData)) {
 				if (in_array('com.woltlab.blog.category', $this->selectedData)) $queue[] = 'com.woltlab.blog.category';
 				$queue[] = 'com.woltlab.blog.entry';
@@ -272,7 +272,7 @@ class WBB3xExporter extends AbstractExporter {
 		}
 		
 		// gallery
-		if ($this->getPackageVersion('com.woltlab.wcf.user.gallery')) {
+		if (substr($this->getPackageVersion('com.woltlab.wcf.user.gallery'), 0, 3) == '1.1') {
 			if (in_array('com.woltlab.gallery.image', $this->selectedData)) {
 				if (in_array('com.woltlab.gallery.category', $this->selectedData)) $queue[] = 'com.woltlab.gallery.category';
 				if (in_array('com.woltlab.gallery.album', $this->selectedData)) $queue[] = 'com.woltlab.gallery.album';
