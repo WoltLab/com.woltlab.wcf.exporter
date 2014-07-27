@@ -6,9 +6,9 @@ use wcf\system\request\LinkHandler;
 use wcf\system\Callback;
 use wcf\system\Regex;
 use wcf\util\FileUtil;
+use wcf\util\PasswordUtil;
 use wcf\util\StringUtil;
 use wcf\util\UserUtil;
-use wcf\util\PasswordUtil;
 use wcf\system\WCF;
 
 /**
