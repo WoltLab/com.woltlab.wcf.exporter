@@ -1394,10 +1394,20 @@ class VB3or4xExporter extends AbstractExporter {
 	 * Counts gallery images.
 	 */
 	public function countGalleryImages() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."picture";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
+		try {
+			$sql = "SELECT	COUNT(*) AS count
+				FROM	".$this->databasePrefix."picture";
+			$statement = $this->database->prepareStatement($sql);
+			$statement->execute();
+		}
+		catch (DatabaseException $e) {
+			$sql = "SELECT	COUNT(*) AS count
+				FROM	".$this->databasePrefix."attachment
+				WHERE	contenttypeid = (SELECT contenttypeid FROM ".$this->databasePrefix."contenttype WHERE class = 'Album')";
+			$statement = $this->database->prepareStatement($sql);
+			$statement->execute();
+		}
+		
 		$row = $statement->fetchArray();
 		return $row['count'];
 	}
@@ -1406,42 +1416,85 @@ class VB3or4xExporter extends AbstractExporter {
 	 * Exports gallery images.
 	 */
 	public function exportGalleryImages($offset, $limit) {
-		$sql = "SELECT		picture.*, album.albumid, album.dateline, user.username
-			FROM		".$this->databasePrefix."picture picture
-			LEFT JOIN	".$this->databasePrefix."albumpicture album
-			ON		picture.pictureid = album.pictureid
-			LEFT JOIN	".$this->databasePrefix."user user
-			ON		picture.userid = user.userid
-			ORDER BY	picture.pictureid ASC";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
+		try {
+			// vb 3
+			$sql = "SELECT		picture.*, album.albumid, album.dateline, user.username
+				FROM		".$this->databasePrefix."picture picture
+				LEFT JOIN	".$this->databasePrefix."albumpicture album
+				ON		picture.pictureid = album.pictureid
+				LEFT JOIN	".$this->databasePrefix."user user
+				ON		picture.userid = user.userid
+				ORDER BY	picture.pictureid ASC";
+			$statement = $this->database->prepareStatement($sql, $limit, $offset);
+			$statement->execute();
+			
+			$vB = 3;
+		}
+		catch (DatabaseException $e) {
+			// vb 4
+			$sql = "SELECT		attachment.*, attachment.contentid AS albumid, filedata.filedata, filedata.extension,
+						filedata.filesize, filedata.width, filedata.height, user.username
+				FROM		".$this->databasePrefix."attachment attachment
+				LEFT JOIN	".$this->databasePrefix."filedata filedata
+				ON		attachment.filedataid = filedata.filedataid
+				LEFT JOIN	".$this->databasePrefix."user user
+				ON		attachment.userid = user.userid
+				WHERE		attachment.contenttypeid = (SELECT contenttypeid FROM ".$this->databasePrefix."contenttype contenttype WHERE contenttype.class = 'Album')
+				ORDER BY	attachment.attachmentid ASC";
+			$statement = $this->database->prepareStatement($sql, $limit, $offset);
+			$statement->execute();
+			
+			$vB = 4;
+		}
 		while ($row = $statement->fetchArray()) {
 			try {
-				switch ($this->readOption('album_dataloc')) {
-					case self::GALLERY_DATABASE:
-						$file = FileUtil::getTemporaryFilename('attachment_');
-						file_put_contents($file, $row['filedata']);
-					break;
-					case self::GALLERY_FILESYSTEM:
-					case self::GALLERY_FILESYSTEM_DIRECT_THUMBS:
-						$file = $this->readOption('album_picpath');
-						if (!StringUtil::startsWith($file, '/')) $file = realpath($this->fileSystemPath.$file);
-						$file = FileUtil::addTrailingSlash($file);
-						$file .= floor($row['pictureid'] / 1000).'/'.$row['pictureid'].'.picture';
-					break;
+				if ($vB === 4) {
+					switch ($this->readOption('attachfile')) {
+						case self::ATTACHFILE_DATABASE:
+							$file = FileUtil::getTemporaryFilename('attachment_');
+							file_put_contents($file, $row['filedata']);
+						break;
+						case self::ATTACHFILE_FILESYSTEM:
+							$file = $this->readOption('attachpath');
+							if (!StringUtil::startsWith($file, '/')) $file = realpath($this->fileSystemPath.$file);
+							$file = FileUtil::addTrailingSlash($file);
+							$file .= $row['userid'].'/'.(isset($row['filedataid']) ? $row['filedataid'] : $row['attachmentid']).'.attach';
+						break;
+						case self::ATTACHFILE_FILESYSTEM_SUBFOLDER:
+							$file = $this->readOption('attachpath');
+							if (!StringUtil::startsWith($file, '/')) $file = realpath($this->fileSystemPath.$file);
+							$file = FileUtil::addTrailingSlash($file);
+							$file .= implode('/', str_split($row['userid'])).'/'.(isset($row['filedataid']) ? $row['filedataid'] : $row['attachmentid']).'.attach';
+						break;
+					}
+				}
+				else {
+					switch ($this->readOption('album_dataloc')) {
+						case self::GALLERY_DATABASE:
+							$file = FileUtil::getTemporaryFilename('attachment_');
+							file_put_contents($file, $row['filedata']);
+						break;
+						case self::GALLERY_FILESYSTEM:
+						case self::GALLERY_FILESYSTEM_DIRECT_THUMBS:
+							$file = $this->readOption('album_picpath');
+							if (!StringUtil::startsWith($file, '/')) $file = realpath($this->fileSystemPath.$file);
+							$file = FileUtil::addTrailingSlash($file);
+							$file .= floor($row['pictureid'] / 1000).'/'.$row['pictureid'].'.picture';
+						break;
+					}
 				}
 				
 				$additionalData = array(
 					'fileLocation' => $file
 				);
 				
-				ImportHandler::getInstance()->getImporter('com.woltlab.gallery.image')->import($row['pictureid'], array(
+				ImportHandler::getInstance()->getImporter('com.woltlab.gallery.image')->import((isset($row['pictureid']) ? $row['pictureid'] : $row['filedataid']), array(
 					'userID' => ($row['userid'] ?: null),
-					'username' => $row['username'],
+					'username' => ($row['username'] ?: ''),
 					'albumID' => ($row['albumid'] ?: null),
 					'title' => $row['caption'],
 					'description' => '',
-					'filename' => '',
+					'filename' => (isset($row['filename']) ? $row['filename'] : ''),
 					'fileExtension' => $row['extension'],
 					'filesize' => $row['filesize'],
 					'uploadTime' => $row['dateline'],
@@ -1451,7 +1504,8 @@ class VB3or4xExporter extends AbstractExporter {
 				), $additionalData);
 			}
 			catch (\Exception $e) {
-				if ($this->readOption('album_dataloc') == self::GALLERY_DATABASE && $file) @unlink($file);
+				if ($vB === 3 && $this->readOption('album_dataloc') == self::GALLERY_DATABASE && $file) @unlink($file);
+				if ($vB === 4 && $this->readOption('attachfile') == self::ATTACHFILE_DATABASE && $file) @unlink($file);
 				
 				throw $e;
 			}
@@ -1483,9 +1537,9 @@ class VB3or4xExporter extends AbstractExporter {
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.gallery.image.comment')->import($row['commentid'], array(
-				'objectID' => $row['pictureid'],
+				'objectID' => (isset($row['pictureid']) ? $row['pictureid'] : $row['filedataid']),
 				'userID' => ($row['postuserid'] ?: null),
-				'username' => $row['username'],
+				'username' => ($row['username'] ?: ''),
 				'message' => $row['pagetext'],
 				'time' => $row['dateline']
 			));
