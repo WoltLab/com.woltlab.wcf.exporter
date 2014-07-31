@@ -14,7 +14,7 @@ use wcf\util\UserUtil;
 /**
  * Exporter for Burning Board 3.x
  * 
- * @author	Marcel Werk
+ * @author	Tim Duesterhus, Marcel Werk
  * @copyright	2001-2014 WoltLab GmbH
  * @license	GNU Lesser General Public License <http://opensource.org/licenses/lgpl-license.php>
  * @package	com.woltlab.wcf.exporter
@@ -799,15 +799,30 @@ class WBB3xExporter extends AbstractExporter {
 	}
 	
 	/**
+	 * Creates a conversation id out of the old parentPmID
+	 * and the participants.
+	 * 
+	 * This ensures that only the actual receivers of a pm
+	 * are able to see it after import, while minimizing the
+	 * number of conversations.
+	 */
+	private function getConversationID($parentPmID, array $participants) {
+		$conversationID = $parentPmID;
+		$participants = array_unique($participants);
+		sort($participants);
+		$conversationID .= '-'.implode(',', $participants);
+		
+		return StringUtil::getHash($conversationID);
+	}
+	
+	/**
 	 * Counts conversations.
 	 */
 	public function countConversations() {
 		$sql = "SELECT	COUNT(*) AS count
-			FROM	wcf".$this->dbNo."_pm
-			WHERE	parentPmID = ?
-				OR pmID = parentPmID";
+			FROM	wcf".$this->dbNo."_pm";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array(0));
+		$statement->execute();
 		$row = $statement->fetchArray();
 		return $row['count'];
 	}
@@ -816,15 +831,24 @@ class WBB3xExporter extends AbstractExporter {
 	 * Exports conversations.
 	 */
 	public function exportConversations($offset, $limit) {
-		$sql = "SELECT		*
-			FROM		wcf".$this->dbNo."_pm
-			WHERE		parentPmID = ?
-					OR pmID = parentPmID
-			ORDER BY	pmID";
+		$sql = "SELECT		pm.*,
+					(
+						SELECT	GROUP_CONCAT(pm_to_user.recipientID)
+						FROM	wcf".$this->dbNo."_pm_to_user pm_to_user
+						WHERE	pm_to_user.pmID = pm.pmID
+					) AS participants
+			FROM		wcf".$this->dbNo."_pm pm
+			ORDER BY	pm.pmID";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute(array(0));
+		$statement->execute();
 		while ($row = $statement->fetchArray()) {
-			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import($row['pmID'], array(
+			$participants = explode(',', $row['participants']);
+			$participants[] = $row['userID'];
+			$conversationID = $this->getConversationID($row['parentPmID'] ?: $row['pmID'], $participants);
+			
+			if (ImportHandler::getInstance()->getNewID('com.woltlab.wcf.conversation', $conversationID) !== null) continue;
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import($conversationID, array(
 				'subject' => $row['subject'],
 				'time' => $row['time'],
 				'userID' => $row['userID'],
@@ -850,14 +874,23 @@ class WBB3xExporter extends AbstractExporter {
 	 * Exports conversation messages.
 	 */
 	public function exportConversationMessages($offset, $limit) {
-		$sql = "SELECT		*
-			FROM		wcf".$this->dbNo."_pm
-			ORDER BY	pmID";
+		$sql = "SELECT		pm.*,
+					(
+						SELECT	GROUP_CONCAT(pm_to_user.recipientID)
+						FROM	wcf".$this->dbNo."_pm_to_user pm_to_user
+						WHERE	pm_to_user.pmID = pm.pmID
+					) AS participants
+			FROM		wcf".$this->dbNo."_pm pm
+			ORDER BY	pm.pmID";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
+			$participants = explode(',', $row['participants']);
+			$participants[] = $row['userID'];
+			$conversationID = $this->getConversationID($row['parentPmID'] ?: $row['pmID'], $participants);
+			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.message')->import($row['pmID'], array(
-				'conversationID' => ($row['parentPmID'] ?: $row['pmID']),
+				'conversationID' => $conversationID,
 				'userID' => $row['userID'],
 				'username' => $row['username'],
 				'message' => self::fixBBCodes($row['message']),
@@ -887,7 +920,15 @@ class WBB3xExporter extends AbstractExporter {
 	 * Exports conversation recipients.
 	 */
 	public function exportConversationUsers($offset, $limit) {
-		$sql = "SELECT		pm_to_user.*, pm.parentPmID, pm.isDraft
+		$sql = "SELECT		pm_to_user.*,
+					pm.isDraft,
+					pm.parentPmID,
+					(
+						SELECT	GROUP_CONCAT(pm_to_user.recipientID)
+						FROM	wcf1_pm_to_user pm_to_user
+						WHERE	pm_to_user.pmID = pm.pmID
+					) AS participants,
+					pm.userID AS sender
 			FROM		wcf".$this->dbNo."_pm_to_user pm_to_user
 			FORCE INDEX(PRIMARY)
 			LEFT JOIN	wcf".$this->dbNo."_pm pm
@@ -896,10 +937,14 @@ class WBB3xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
+			$participants = explode(',', $row['participants']);
+			$participants[] = $row['sender'];
+			$conversationID = $this->getConversationID($row['parentPmID'] ?: $row['pmID'], $participants);
+			
 			if ($row['isDraft']) continue;
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.user')->import(0, array(
-				'conversationID' => ($row['parentPmID'] ?: $row['pmID']),
+				'conversationID' => $conversationID,
 				'participantID' => $row['recipientID'],
 				'username' => $row['recipient'],
 				'hideConversation' => $row['isDeleted'],
