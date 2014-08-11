@@ -925,7 +925,7 @@ class WBB3xExporter extends AbstractExporter {
 					pm.parentPmID,
 					(
 						SELECT	GROUP_CONCAT(pm_to_user.recipientID)
-						FROM	wcf1_pm_to_user pm_to_user
+						FROM	wcf".$this->dbNo."_pm_to_user pm_to_user
 						WHERE	pm_to_user.pmID = pm.pmID
 					) AS participants,
 					pm.userID AS sender
