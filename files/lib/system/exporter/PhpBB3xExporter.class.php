@@ -568,13 +568,13 @@ class PhpBB3xExporter extends AbstractExporter {
 	}
 	
 	/**
-	* Creates a conversation id out of the old rootLevel
-	* and the participants.
-	* 
-	* This ensures that only the actual receivers of a pm
-	* are able to see it after import, while minimizing the
-	* number of conversations.
-	*/
+	 * Creates a conversation id out of the old rootLevel
+	 * and the participants.
+	 * 
+	 * This ensures that only the actual receivers of a pm
+	 * are able to see it after import, while minimizing the
+	 * number of conversations.
+	 */
 	private function getConversationID($rootLevel, array $participants) {
 		$conversationID = $rootLevel;
 		$participants = array_unique($participants);

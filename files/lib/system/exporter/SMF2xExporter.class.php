@@ -583,12 +583,28 @@ class SMF2xExporter extends AbstractExporter {
 	}
 	
 	/**
+	 * Creates a conversation id out of the old pmHead
+	 * and the participants.
+	 * 
+	 * This ensures that only the actual receivers of a pm
+	 * are able to see it after import, while minimizing the
+	 * number of conversations.
+	 */
+	private function getConversationID($pmHead, array $participants) {
+		$conversationID = $pmHead;
+		$participants = array_unique($participants);
+		sort($participants);
+		$conversationID .= '-'.implode(',', $participants);
+		
+		return StringUtil::getHash($conversationID);
+	}
+	
+	/**
 	 * Counts conversations.
 	 */
 	public function countConversations() {
 		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."personal_messages
-			WHERE	id_pm = id_pm_head";
+			FROM	".$this->databasePrefix."personal_messages";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute();
 		$row = $statement->fetchArray();
@@ -599,14 +615,24 @@ class SMF2xExporter extends AbstractExporter {
 	 * Exports conversations.
 	 */
 	public function exportConversations($offset, $limit) {
-		$sql = "SELECT		*
-			FROM		".$this->databasePrefix."personal_messages
-			WHERE		id_pm = id_pm_head
-			ORDER BY	id_pm";
+		$sql = "SELECT		pm.*,
+					(
+						SELECT	GROUP_CONCAT(recipients.id_member)
+						FROM	".$this->databasePrefix."pm_recipients recipients
+						WHERE	pm.id_pm = recipients.id_pm
+					) AS participants
+			FROM		".$this->databasePrefix."personal_messages pm
+			ORDER BY	pm.id_pm";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute(array(0));
+		$statement->execute();
 		while ($row = $statement->fetchArray()) {
-			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import($row['id_pm'], array(
+			$participants = explode(',', $row['participants']);
+			$participants[] = $row['id_member_from'];
+			$conversationID = $this->getConversationID($row['id_pm_head'], $participants);
+			
+			if (ImportHandler::getInstance()->getNewID('com.woltlab.wcf.conversation', $conversationID) !== null) continue;
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import($conversationID, array(
 				'subject' => $row['subject'],
 				'time' => $row['msgtime'],
 				'userID' => $row['id_member_from'],
@@ -632,14 +658,23 @@ class SMF2xExporter extends AbstractExporter {
 	 * Exports conversation messages.
 	 */
 	public function exportConversationMessages($offset, $limit) {
-		$sql = "SELECT		*
-			FROM		".$this->databasePrefix."personal_messages
-			ORDER BY	id_pm";
+		$sql = "SELECT		pm.*,
+					(
+						SELECT	GROUP_CONCAT(recipients.id_member)
+						FROM	".$this->databasePrefix."pm_recipients recipients
+						WHERE	pm.id_pm = recipients.id_pm
+					) AS participants
+			FROM		".$this->databasePrefix."personal_messages pm
+			ORDER BY	pm.id_pm";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
+			$participants = explode(',', $row['participants']);
+			$participants[] = $row['id_member_from'];
+			$conversationID = $this->getConversationID($row['id_pm_head'], $participants);
+			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.message')->import($row['id_pm'], array(
-				'conversationID' => $row['id_pm_head'],
+				'conversationID' => $conversationID,
 				'userID' => $row['id_member_from'],
 				'username' => $row['from_name'],
 				'message' => self::fixBBCodes($row['body']),
@@ -669,7 +704,12 @@ class SMF2xExporter extends AbstractExporter {
 	 * Exports conversation recipients.
 	 */
 	public function exportConversationUsers($offset, $limit) {
-		$sql = "SELECT		recipients.*, pm.id_pm_head, members.member_name, pm.msgtime
+		$sql = "SELECT		recipients.*, pm.id_pm_head, members.member_name, pm.msgtime, pm.id_member_from,
+					(
+						SELECT	GROUP_CONCAT(recipients2.id_member)
+						FROM	".$this->databasePrefix."pm_recipients recipients2
+						WHERE	recipients.id_pm = recipients2.id_pm
+					) AS participants
 			FROM		".$this->databasePrefix."pm_recipients recipients
 			LEFT JOIN	".$this->databasePrefix."personal_messages pm
 			ON		(pm.id_pm = recipients.id_pm)
@@ -679,6 +719,10 @@ class SMF2xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
+			$participants = explode(',', $row['participants']);
+			$participants[] = $row['id_member_from'];
+			$conversationID = $this->getConversationID($row['id_pm_head'], $participants);
+			
 			$labels = array_map(function ($item) use ($row) {
 				return $row['id_member'].'-'.$item;
 			}, array_unique(ArrayUtil::toIntegerArray(explode(',', $row['labels']))));
@@ -687,7 +731,7 @@ class SMF2xExporter extends AbstractExporter {
 			});
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.user')->import(0, array(
-				'conversationID' => $row['id_pm_head'],
+				'conversationID' => $conversationID,
 				'participantID' => $row['id_member'],
 				'username' => $row['member_name'],
 				'hideConversation' => $row['deleted'] ? 1 : 0,
