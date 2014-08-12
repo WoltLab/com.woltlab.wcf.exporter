@@ -568,14 +568,30 @@ class PhpBB3xExporter extends AbstractExporter {
 	}
 	
 	/**
+	* Creates a conversation id out of the old rootLevel
+	* and the participants.
+	* 
+	* This ensures that only the actual receivers of a pm
+	* are able to see it after import, while minimizing the
+	* number of conversations.
+	*/
+	private function getConversationID($rootLevel, array $participants) {
+		$conversationID = $rootLevel;
+		$participants = array_unique($participants);
+		sort($participants);
+		$conversationID .= '-'.implode(',', $participants);
+		
+		return StringUtil::getHash($conversationID);
+	}
+	
+	/**
 	 * Counts conversations.
 	 */
 	public function countConversations() {
 		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."privmsgs
-			WHERE	root_level = ?";
+			FROM	".$this->databasePrefix."privmsgs";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array(0));
+		$statement->execute();
 		$row = $statement->fetchArray();
 		return $row['count'];
 	}
@@ -586,24 +602,31 @@ class PhpBB3xExporter extends AbstractExporter {
 	public function exportConversations($offset, $limit) {
 		$sql = "(
 				SELECT		msg_table.msg_id,
+						msg_table.root_level,
 						msg_table.message_subject,
 						msg_table.message_time,
 						msg_table.author_id,
 						0 AS isDraft,
-						user_table.username
+						user_table.username,
+						(
+							SELECT	GROUP_CONCAT(to_table.user_id)
+							FROM	".$this->databasePrefix."privmsgs_to to_table
+							WHERE	msg_table.msg_id = to_table.msg_id
+						) AS participants
 				FROM		".$this->databasePrefix."privmsgs msg_table
 				LEFT JOIN	".$this->databasePrefix."users user_table
 				ON		msg_table.author_id = user_table.user_id
-				WHERE		root_level = ?
 			)
 			UNION
 			(
 				SELECT		draft_table.draft_id AS msg_id,
+						0 AS root_level,
 						draft_table.draft_subject AS message_subject,
 						draft_table.save_time AS message_time,
 						draft_table.user_id AS author_id,
 						1 AS isDraft,
-						user_table.username
+						user_table.username,
+						'' AS participants
 				FROM		".$this->databasePrefix."drafts draft_table
 				LEFT JOIN	".$this->databasePrefix."users user_table
 				ON		draft_table.user_id = user_table.user_id
@@ -611,9 +634,17 @@ class PhpBB3xExporter extends AbstractExporter {
 			)
 			ORDER BY	isDraft ASC, msg_id ASC";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute(array(0, 0));
+		$statement->execute(array(0));
 		while ($row = $statement->fetchArray()) {
-			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import(($row['isDraft'] ? 'draft-' : '').$row['msg_id'], array(
+			if (!$row['isDraft']) {
+				$participants = explode(',', $row['participants']);
+				$participants[] = $row['author_id'];
+				$conversationID = $this->getConversationID($row['root_level'] ?: $row['msg_id'], $participants);
+				
+				if (ImportHandler::getInstance()->getNewID('com.woltlab.wcf.conversation', $conversationID) !== null) continue;
+			}
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import(($row['isDraft'] ? 'draft-'.$row['msg_id'] : $conversationID), array(
 				'subject' => StringUtil::decodeHTML($row['message_subject']),
 				'time' => $row['message_time'],
 				'userID' => $row['author_id'],
@@ -650,7 +681,12 @@ class PhpBB3xExporter extends AbstractExporter {
 						msg_table.enable_smilies,
 						msg_table.enable_bbcode,
 						msg_table.enable_sig,
-						(SELECT COUNT(*) FROM ".$this->databasePrefix."attachments attachment_table WHERE attachment_table.post_msg_id = msg_table.msg_id AND in_message = ?) AS attachments
+						(SELECT COUNT(*) FROM ".$this->databasePrefix."attachments attachment_table WHERE attachment_table.post_msg_id = msg_table.msg_id AND in_message = ?) AS attachments,
+						(
+							SELECT	GROUP_CONCAT(to_table.user_id)
+							FROM	".$this->databasePrefix."privmsgs_to to_table
+							WHERE	msg_table.msg_id = to_table.msg_id
+						) AS participants
 				FROM		".$this->databasePrefix."privmsgs msg_table
 				LEFT JOIN	".$this->databasePrefix."users user_table
 				ON		msg_table.author_id = user_table.user_id
@@ -667,7 +703,8 @@ class PhpBB3xExporter extends AbstractExporter {
 						1 AS enable_smilies,
 						1 AS enable_bbcode,
 						1 AS enable_sig,
-						0 AS attachments
+						0 AS attachments,
+						'' AS participants
 				FROM		".$this->databasePrefix."drafts draft_table
 				LEFT JOIN	".$this->databasePrefix."users user_table
 				ON		draft_table.user_id = user_table.user_id
@@ -677,8 +714,12 @@ class PhpBB3xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array(1, 0));
 		while ($row = $statement->fetchArray()) {
+			$participants = explode(',', $row['participants']);
+			$participants[] = $row['author_id'];
+			$conversationID = $this->getConversationID($row['root_level'] ?: $row['msg_id'], $participants);
+			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.message')->import($row['msg_id'], array(
-				'conversationID' => ($row['root_level'] ?: $row['msg_id']),
+				'conversationID' => $conversationID,
 				'userID' => $row['author_id'],
 				'username' => $row['username'] ?: '',
 				'message' => self::fixBBCodes(StringUtil::decodeHTML($row['message_text']), $row['bbcode_uid']),
@@ -708,19 +749,28 @@ class PhpBB3xExporter extends AbstractExporter {
 	 * Exports conversation recipients.
 	 */
 	public function exportConversationUsers($offset, $limit) {
-		$sql = "SELECT		to_table.*, msg_table.root_level, msg_table.bcc_address, user_table.username, msg_table.message_time
+		$sql = "SELECT		to_table.*, msg_table.root_level, msg_table.author_id, msg_table.bcc_address, user_table.username, msg_table.message_time,
+					(
+						SELECT	GROUP_CONCAT(to_table2.user_id)
+						FROM	".$this->databasePrefix."privmsgs_to to_table2
+						WHERE	to_table.msg_id = to_table2.msg_id
+					) AS participants
 			FROM		".$this->databasePrefix."privmsgs_to to_table
 			LEFT JOIN	".$this->databasePrefix."privmsgs msg_table
 			ON		(msg_table.msg_id = to_table.msg_id)
 			LEFT JOIN	".$this->databasePrefix."users user_table
 			ON		to_table.user_id = user_table.user_id
-			ORDER BY	to_table.msg_id DESC, to_table.user_id ASC";
+			ORDER BY	to_table.msg_id ASC, to_table.user_id ASC";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
+			$participants = explode(',', $row['participants']);
+			$participants[] = $row['author_id'];
+			$conversationID = $this->getConversationID($row['root_level'] ?: $row['msg_id'], $participants);
+			
 			$bcc = explode(':', $row['bcc_address']);
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.user')->import(0, array(
-				'conversationID' => ($row['root_level'] ?: $row['msg_id']),
+				'conversationID' => $conversationID,
 				'participantID' => $row['user_id'],
 				'username' => $row['username'] ?: '',
 				'hideConversation' => $row['pm_deleted'],
