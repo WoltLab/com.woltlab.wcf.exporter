@@ -29,7 +29,8 @@ class WordPress3xExporter extends AbstractExporter {
 		'com.woltlab.wcf.user' => 'Users',
 		'com.woltlab.blog.category' => 'BlogCategories',
 		'com.woltlab.blog.entry' => 'BlogEntries',
-		'com.woltlab.blog.entry.comment' => 'BlogComments'
+		'com.woltlab.blog.entry.comment' => 'BlogComments',
+		'com.woltlab.blog.entry.attachment' => 'BlogAttachments'
 	);
 	
 	/**
@@ -41,7 +42,8 @@ class WordPress3xExporter extends AbstractExporter {
 			),
 			'com.woltlab.blog.entry' => array(
 				'com.woltlab.blog.category',
-				'com.woltlab.blog.entry.comment'
+				'com.woltlab.blog.entry.comment',
+				'com.woltlab.blog.entry.attachment'
 			)
 		);
 	}
@@ -62,6 +64,7 @@ class WordPress3xExporter extends AbstractExporter {
 			if (in_array('com.woltlab.blog.category', $this->selectedData)) $queue[] = 'com.woltlab.blog.category';
 			$queue[] = 'com.woltlab.blog.entry';
 			if (in_array('com.woltlab.blog.entry.comment', $this->selectedData)) $queue[] = 'com.woltlab.blog.entry.comment';
+			if (in_array('com.woltlab.blog.entry.attachment', $this->selectedData)) $queue[] = 'com.woltlab.blog.entry.attachment';
 		}
 		
 		return $queue;
@@ -82,6 +85,10 @@ class WordPress3xExporter extends AbstractExporter {
 	 * @see	\wcf\system\exporter\IExporter::validateFileAccess()
 	 */
 	public function validateFileAccess() {
+		if (in_array('com.woltlab.blog.entry.attachment', $this->selectedData)) {
+			if (empty($this->fileSystemPath) || (!@file_exists($this->fileSystemPath . 'wp-trackback.php'))) return false;
+		}
+		
 		return true;
 	}
 	
@@ -347,6 +354,66 @@ class WordPress3xExporter extends AbstractExporter {
 				}
 				while (true);
 			}
+		}
+	}
+	
+
+	/**
+	 * Counts blog attachments.
+	 */
+	public function countBlogAttachments() {
+		$sql = "SELECT		COUNT(*) AS count
+			FROM		".$this->databasePrefix."posts
+			WHERE		post_type = ?
+					AND post_parent IN (
+						SELECT	ID
+						FROM	".$this->databasePrefix."posts	
+						WHERE	post_type = ?
+							AND post_status IN (?, ?, ?, ?, ?, ?)
+					)";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array('attachment', 'post', 'publish', 'pending', 'draft', 'future', 'private', 'trash'));
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports blog attachments.
+	 */
+	public function exportBlogAttachments($offset, $limit) {
+		$sql = "SELECT		posts.*, postmeta.*
+			FROM		".$this->databasePrefix."posts posts
+			LEFT JOIN	".$this->databasePrefix."postmeta postmeta
+			ON		(postmeta.post_id = posts.ID AND postmeta.meta_key = ?)
+			WHERE		post_type = ?
+					AND post_parent IN (
+						SELECT	ID
+						FROM	".$this->databasePrefix."posts
+						WHERE	post_type = ?
+							AND post_status IN (?, ?, ?, ?, ?, ?)
+					)
+			ORDER BY 	ID";
+		$statement = $this->database->prepareStatement($sql, $offset, $limit);
+		$statement->execute(array('_wp_attachment_metadata', 'attachment', 'post', 'publish', 'pending', 'draft', 'future', 'private', 'trash'));
+		while ($row = $statement->fetchArray()) {
+			$metaValue = unserialize($row['meta_value']);
+			$fileLocation = $this->fileSystemPath.'wp-content/uploads/'.$metaValue['file'];
+			
+			$isImage = 0;
+			if ($row['post_mime_type'] == 'image/jpeg' || $row['post_mime_type'] == 'image/png' || $row['post_mime_type'] == 'image/gif') $isImage = 1;
+				
+			ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry.attachment')->import($row['meta_id'], array(
+				'objectID' => $row['post_parent'],
+				'userID' => null,
+				'filename' => basename($fileLocation),
+				'filesize' => filesize($fileLocation),
+				'fileType' => $row['post_mime_type'],
+				'isImage' => $isImage,
+				'downloads' => 0,
+				'lastDownloadTime' => 0,
+				'uploadTime' => 0,
+				'showOrder' => 0
+			), array('fileLocation' => $fileLocation));
 		}
 	}
 	
