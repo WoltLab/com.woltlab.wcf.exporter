@@ -617,13 +617,13 @@ class VB3or4xExporter extends AbstractExporter {
 	}
 	
 	/**
-	* Creates a conversation id out of the old parentpmid
-	* and the participants.
-	* 
-	* This ensures that only the actual receivers of a pm
-	* are able to see it after import, while minimizing the
-	* number of conversations.
-	*/
+	 * Creates a conversation id out of the old parentpmid
+	 * and the participants.
+	 * 
+	 * This ensures that only the actual receivers of a pm
+	 * are able to see it after import, while minimizing the
+	 * number of conversations.
+	 */
 	private function getConversationID($parentpmid, array $participants) {
 		$conversationID = $parentpmid;
 		$participants = array_unique($participants);
