@@ -615,17 +615,32 @@ class VB3or4xExporter extends AbstractExporter {
 			}
 		}
 	}
-
+	
+	/**
+	* Creates a conversation id out of the old parentpmid
+	* and the participants.
+	* 
+	* This ensures that only the actual receivers of a pm
+	* are able to see it after import, while minimizing the
+	* number of conversations.
+	*/
+	private function getConversationID($parentpmid, array $participants) {
+		$conversationID = $parentpmid;
+		$participants = array_unique($participants);
+		sort($participants);
+		$conversationID .= '-'.implode(',', $participants);
+		
+		return StringUtil::getHash($conversationID);
+	}
+	
 	/**
 	 * Counts conversations.
 	 */
 	public function countConversations() {
 		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."pm
-			WHERE	parentpmid = ?
-				OR pmid = parentpmid";
+			FROM	".$this->databasePrefix."pm";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array(0));
+		$statement->execute();
 		$row = $statement->fetchArray();
 		return $row['count'];
 	}
@@ -634,17 +649,26 @@ class VB3or4xExporter extends AbstractExporter {
 	 * Exports conversations.
 	 */
 	public function exportConversations($offset, $limit) {
-		$sql = "SELECT		pm.*, text.*
+		$sql = "SELECT		pm.*, text.*,
+					(
+						SELECT	GROUP_CONCAT(pm2.userid)
+						FROM	".$this->databasePrefix."pm pm2
+						WHERE	pm.pmtextid = pm2.pmtextid
+					) AS participants
 			FROM		".$this->databasePrefix."pm pm
 			INNER JOIN	".$this->databasePrefix."pmtext text
 			ON		pm.pmtextid = text.pmtextid
-			WHERE			pm.parentpmid = ?
-					OR	pm.pmid = pm.parentpmid
 			ORDER BY	pm.pmid";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute(array(0));
+		$statement->execute();
 		while ($row = $statement->fetchArray()) {
-			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import($row['pmid'], array(
+			$participants = explode(',', $row['participants']);
+			$participants[] = $row['fromuserid'];
+			$conversationID = $this->getConversationID($row['parentpmid'] ?: $row['pmid'], $participants);
+			
+			if (ImportHandler::getInstance()->getNewID('com.woltlab.wcf.conversation', $conversationID) !== null) continue;
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import($conversationID, array(
 				'subject' => $row['title'],
 				'time' => $row['dateline'],
 				'userID' => $row['fromuserid'],
@@ -673,14 +697,23 @@ class VB3or4xExporter extends AbstractExporter {
 		$sql = "SELECT		pmtext.*,
 					(
 					".$this->database->handleLimitParameter("SELECT IF(pm.parentpmid = 0, pm.pmid, pm.parentpmid) FROM ".$this->databasePrefix."pm pm WHERE pmtext.pmtextid = pm.pmtextid", 1)."
-					) AS conversationID
+					) AS conversationID,
+					(
+						SELECT	GROUP_CONCAT(pm.userid)
+						FROM	".$this->databasePrefix."pm pm
+						WHERE	pmtext.pmtextid = pm.pmtextid
+					) AS participants
 			FROM		".$this->databasePrefix."pmtext pmtext
 			ORDER BY	pmtext.pmtextid";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
+			$participants = explode(',', $row['participants']);
+			$participants[] = $row['fromuserid'];
+			$conversationID = $this->getConversationID($row['conversationID'], $participants);
+			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.message')->import($row['pmtextid'], array(
-				'conversationID' => $row['conversationID'],
+				'conversationID' => $conversationID,
 				'userID' => $row['fromuserid'],
 				'username' => $row['fromusername'],
 				'message' => self::fixBBCodes($row['message']),
@@ -709,7 +742,12 @@ class VB3or4xExporter extends AbstractExporter {
 	 * Exports conversation recipients.
 	 */
 	public function exportConversationUsers($offset, $limit) {
-		$sql = "SELECT		pm.*, user.username, pmtext.touserarray, pmtext.dateline
+		$sql = "SELECT		pm.*, user.username, pmtext.touserarray, pmtext.dateline, pmtext.fromuserid,
+					(
+						SELECT	GROUP_CONCAT(pm2.userid)
+						FROM	".$this->databasePrefix."pm pm2
+						WHERE	pm.pmtextid = pm2.pmtextid
+					) AS participants
 			FROM		".$this->databasePrefix."pm pm
 			INNER JOIN	".$this->databasePrefix."user user
 			ON		pm.userid = user.userid
@@ -719,6 +757,10 @@ class VB3or4xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
+			$participants = explode(',', $row['participants']);
+			$participants[] = $row['fromuserid'];
+			$conversationID = $this->getConversationID($row['parentpmid'] ?: $row['pmid'], $participants);
+			
 			// vBulletin relies on undefined behaviour by default, we cannot know in which
 			// encoding the data was saved
 			// this may cause some hidden participants to become visible
@@ -726,7 +768,7 @@ class VB3or4xExporter extends AbstractExporter {
 			if (!is_array($recipients)) $recipients = array();
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.user')->import(0, array(
-				'conversationID' => ($row['parentpmid'] ?: $row['pmid']),
+				'conversationID' => $conversationID,
 				'participantID' => $row['userid'],
 				'username' => $row['username'] ?: '',
 				'hideConversation' => 0, // there is no trash
