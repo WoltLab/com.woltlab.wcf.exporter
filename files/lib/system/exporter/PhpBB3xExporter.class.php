@@ -325,6 +325,7 @@ class PhpBB3xExporter extends AbstractExporter {
 			
 			$additionalData = array(
 				'groupIDs' => explode(',', $row['groupIDs']),
+				'languages' => array($row['user_lang']),
 				'options' => $options
 			);
 			
