@@ -226,12 +226,16 @@ class XF12xExporter extends AbstractExporter {
 		$passwordUpdateStatement = WCF::getDB()->prepareStatement($sql);
 		
 		// get users
-		$sql = "SELECT		user_table.*, user_profile_table.*, INET_NTOA(ip_table.ip) AS ip, authenticate_table.scheme_class, authenticate_table.data AS passwordData
+		$sql = "SELECT		user_table.*, user_profile_table.*, INET_NTOA(ip_table.ip) AS ip,
+					authenticate_table.scheme_class, authenticate_table.data AS passwordData,
+					language_table.language_code
 			FROM		".$this->databasePrefix."user user_table
 			LEFT JOIN	".$this->databasePrefix."user_profile user_profile_table
 			ON		user_table.user_id = user_profile_table.user_id
 			LEFT JOIN	".$this->databasePrefix."user_authenticate authenticate_table
 			ON		user_table.user_id = authenticate_table.user_id
+			LEFT JOIN	".$this->databasePrefix."language language_table
+			ON		user_table.language_id = language_table.language_id
 			LEFT JOIN	".$this->databasePrefix."ip ip_table
 			ON		user_table.user_id = ip_table.user_id
 				AND	content_type = ?
@@ -276,8 +280,13 @@ class XF12xExporter extends AbstractExporter {
 				}
 			}
 			
+			$languageCode = '';
+			$countryCode = '';
+			if ($row['language_code']) list($languageCode, $countryCode) = explode('-', $row['language_code'], 2);
+			
 			$additionalData = array(
 				'groupIDs' => explode(',', $row['secondary_group_ids'].','.$row['user_group_id']),
+				'languages' => array($languageCode),
 				'options' => $options
 			);
 			
