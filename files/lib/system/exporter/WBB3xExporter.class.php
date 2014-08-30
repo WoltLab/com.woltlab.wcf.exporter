@@ -1009,7 +1009,7 @@ class WBB3xExporter extends AbstractExporter {
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import($board['boardID'], array(
 				'parentID' => ($board['parentID'] ?: null),
-				'position' => $board['position'],
+				'position' => ($board['position'] ?: 0),
 				'boardType' => $board['boardType'],
 				'title' => $board['title'],
 				'description' => $board['description'],
