@@ -95,10 +95,8 @@ class WBB3xExporter extends AbstractExporter {
 	 * @see	\wcf\system\exporter\AbstractExporter::$limits
 	 */
 	protected $limits = array(
-		'com.woltlab.wcf.user' => 100,
 		'com.woltlab.wcf.user.avatar' => 100,
 		'com.woltlab.wcf.conversation.attachment' => 100,
-		'com.woltlab.wbb.thread' => 200,
 		'com.woltlab.wbb.attachment' => 100,
 		'com.woltlab.wbb.acl' => 50,
 		'com.woltlab.gallery.image' => 100
@@ -308,12 +306,7 @@ class WBB3xExporter extends AbstractExporter {
 	 * Counts user groups.
 	 */
 	public function countUserGroups() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	wcf".$this->dbNo."_group";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID("wcf".$this->dbNo."_group", 'groupID');
 	}
 	
 	/**
@@ -322,9 +315,10 @@ class WBB3xExporter extends AbstractExporter {
 	public function exportUserGroups($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		wcf".$this->dbNo."_group
+			WHERE		groupID BETWEEN ? AND ?
 			ORDER BY	groupID";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.group')->import($row['groupID'], array(
 				'groupName' => $row['groupName'],
@@ -339,12 +333,7 @@ class WBB3xExporter extends AbstractExporter {
 	 * Counts users.
 	 */
 	public function countUsers() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	wcf".$this->dbNo."_user";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID("wcf".$this->dbNo."_user", 'userID');
 	}
 	
 	/**
@@ -419,10 +408,10 @@ class WBB3xExporter extends AbstractExporter {
 			FROM		wcf".$this->dbNo."_user user_table
 			LEFT JOIN	wcf".$this->dbNo."_user_option_value user_option_value
 			ON		(user_option_value.userID = user_table.userID)
+			WHERE		user_table.userID BETWEEN ? AND ?
 			ORDER BY	user_table.userID";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
-		
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			$data = array(
 				'username' => $row['username'],
@@ -476,12 +465,7 @@ class WBB3xExporter extends AbstractExporter {
 	 * Counts user ranks.
 	 */
 	public function countUserRanks() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	wcf".$this->dbNo."_user_rank";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID("wcf".$this->dbNo."_user_rank", 'rankID');
 	}
 	
 	/**
@@ -490,9 +474,10 @@ class WBB3xExporter extends AbstractExporter {
 	public function exportUserRanks($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		wcf".$this->dbNo."_user_rank
+			WHERE		rankID BETWEEN ? AND ?
 			ORDER BY	rankID";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.rank')->import($row['rankID'], array(
 				'groupID' => $row['groupID'],
@@ -539,12 +524,7 @@ class WBB3xExporter extends AbstractExporter {
 	 * Counts guestbook entries.
 	 */
 	public function countGuestbookEntries() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	wcf".$this->dbNo."_user_guestbook";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID("wcf".$this->dbNo."_user_guestbook", 'entryID');
 	}
 	
 	/**
@@ -553,9 +533,10 @@ class WBB3xExporter extends AbstractExporter {
 	public function exportGuestbookEntries($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		wcf".$this->dbNo."_user_guestbook
+			WHERE		entryID BETWEEN ? AND ?
 			ORDER BY	entryID";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.comment')->import($row['entryID'], array(
 				'objectID' => $row['ownerID'],
@@ -571,13 +552,14 @@ class WBB3xExporter extends AbstractExporter {
 	 * Counts guestbook responses.
 	 */
 	public function countGuestbookResponses() {
-		$sql = "SELECT	COUNT(*) AS count
+		$sql = "SELECT	MAX(entryID) AS maxID
 			FROM	wcf".$this->dbNo."_user_guestbook
 			WHERE	commentTime > ?";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute(array(0));
 		$row = $statement->fetchArray();
-		return $row['count'];
+		if ($row !== false) return $row['maxID'];
+		return 0;
 	}
 	
 	/**
@@ -589,9 +571,10 @@ class WBB3xExporter extends AbstractExporter {
 			LEFT JOIN	wcf".$this->dbNo."_user user_table
 			ON		(user_table.userID = user_guestbook.ownerID)
 			WHERE		user_guestbook.commentTime > ?
+					AND user_guestbook.entryID BETWEEN ? AND ?
 			ORDER BY	user_guestbook.entryID";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute(array(0));
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array(0, $offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.comment.response')->import($row['entryID'], array(
 				'commentID' => $row['entryID'],
@@ -607,13 +590,14 @@ class WBB3xExporter extends AbstractExporter {
 	 * Counts user avatars.
 	 */
 	public function countUserAvatars() {
-		$sql = "SELECT	COUNT(*) AS count
+		$sql = "SELECT	MAX(avatarID) AS maxID
 			FROM	wcf".$this->dbNo."_avatar
 			WHERE	userID <> ?";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute(array(0));
 		$row = $statement->fetchArray();
-		return $row['count'];
+		if ($row !== false) return $row['maxID'];
+		return 0;
 	}
 	
 	/**
@@ -623,9 +607,10 @@ class WBB3xExporter extends AbstractExporter {
 		$sql = "SELECT		*
 			FROM		wcf".$this->dbNo."_avatar
 			WHERE		userID <> ?
+					AND avatarID BETWEEN ? AND ?
 			ORDER BY	avatarID";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute(array(0));
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array(0, $offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.avatar')->import($row['avatarID'], array(
 				'avatarName' => $row['avatarName'],
@@ -760,12 +745,7 @@ class WBB3xExporter extends AbstractExporter {
 	 * Counts conversation folders.
 	 */
 	public function countConversationFolders() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	wcf".$this->dbNo."_pm_folder";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID("wcf".$this->dbNo."_pm_folder", 'folderID');
 	}
 	
 	/**
@@ -774,9 +754,10 @@ class WBB3xExporter extends AbstractExporter {
 	public function exportConversationFolders($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		wcf".$this->dbNo."_pm_folder
+			WHERE		folderID BETWEEN ? AND ?
 			ORDER BY	folderID";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			$cssClassName = '';
 			if (!empty($row['color'])) {
@@ -819,12 +800,7 @@ class WBB3xExporter extends AbstractExporter {
 	 * Counts conversations.
 	 */
 	public function countConversations() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	wcf".$this->dbNo."_pm";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID("wcf".$this->dbNo."_pm", 'pmID');
 	}
 	
 	/**
@@ -838,9 +814,10 @@ class WBB3xExporter extends AbstractExporter {
 						WHERE	pm_to_user.pmID = pm.pmID
 					) AS participants
 			FROM		wcf".$this->dbNo."_pm pm
+			WHERE		pm.pmID BETWEEN ? AND ?
 			ORDER BY	pm.pmID";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			$participants = explode(',', $row['participants']);
 			$participants[] = $row['userID'];
@@ -862,12 +839,7 @@ class WBB3xExporter extends AbstractExporter {
 	 * Counts conversation messages.
 	 */
 	public function countConversationMessages() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	wcf".$this->dbNo."_pm";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID("wcf".$this->dbNo."_pm", 'pmID');
 	}
 	
 	/**
@@ -881,9 +853,10 @@ class WBB3xExporter extends AbstractExporter {
 						WHERE	pm_to_user.pmID = pm.pmID
 					) AS participants
 			FROM		wcf".$this->dbNo."_pm pm
+			WHERE		pm.pmID BETWEEN ? AND ?
 			ORDER BY	pm.pmID";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			$participants = explode(',', $row['participants']);
 			$participants[] = $row['userID'];
@@ -1043,12 +1016,7 @@ class WBB3xExporter extends AbstractExporter {
 	 * Counts threads.
 	 */
 	public function countThreads() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	wbb".$this->dbNo."_".$this->instanceNo."_thread";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID("wbb".$this->dbNo."_".$this->instanceNo."_thread", 'threadID');
 	}
 	
 	/**
@@ -1109,9 +1077,10 @@ class WBB3xExporter extends AbstractExporter {
 		$threadIDs = $announcementIDs = array();
 		$sql = "SELECT		threadID, isAnnouncement
 			FROM		wbb".$this->dbNo."_".$this->instanceNo."_thread
+			WHERE		threadID BETWEEN ? AND ?
 			ORDER BY	threadID";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			$threadIDs[] = $row['threadID'];
 			if ($row['isAnnouncement']) $announcementIDs[] = $row['threadID'];
@@ -1181,12 +1150,7 @@ class WBB3xExporter extends AbstractExporter {
 	 * Counts posts.
 	 */
 	public function countPosts() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	wbb".$this->dbNo."_".$this->instanceNo."_post";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID("wbb".$this->dbNo."_".$this->instanceNo."_post", 'postID');
 	}
 	
 	/**
@@ -1195,9 +1159,10 @@ class WBB3xExporter extends AbstractExporter {
 	public function exportPosts($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		wbb".$this->dbNo."_".$this->instanceNo."_post
+			WHERE		postID BETWEEN ? AND ?
 			ORDER BY	postID";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.post')->import($row['postID'], array(
 				'threadID' => $row['threadID'],
@@ -1272,13 +1237,14 @@ class WBB3xExporter extends AbstractExporter {
 	 * Counts polls.
 	 */
 	public function countPolls() {
-		$sql = "SELECT	COUNT(*) AS count
+		$sql = "SELECT	MAX(pollID) AS maxID
 			FROM	wcf".$this->dbNo."_poll
 			WHERE	messageType = ?";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute(array('post'));
 		$row = $statement->fetchArray();
-		return $row['count'];
+		if ($row !== false) return $row['maxID'];
+		return 0;
 	}
 	
 	/**
@@ -1288,9 +1254,10 @@ class WBB3xExporter extends AbstractExporter {
 		$sql = "SELECT		*
 			FROM		wcf".$this->dbNo."_poll
 			WHERE		messageType = ?
+					AND pollID BETWEEN ? AND ?
 			ORDER BY	pollID";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute(array('post'));
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array('post', $offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll')->import($row['pollID'], array(
 				'objectID' => $row['messageID'],
@@ -1310,7 +1277,7 @@ class WBB3xExporter extends AbstractExporter {
 	 * Counts poll options.
 	 */
 	public function countPollOptions() {
-		$sql = "SELECT	COUNT(*) AS count
+		$sql = "SELECT	MAX(pollOptionID) AS maxID
 			FROM	wcf".$this->dbNo."_poll_option
 			WHERE	pollID IN (
 					SELECT	pollID
@@ -1320,7 +1287,8 @@ class WBB3xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute(array('post'));
 		$row = $statement->fetchArray();
-		return $row['count'];
+		if ($row !== false) return $row['maxID'];
+		return 0;
 	}
 	
 	/**
@@ -1334,9 +1302,10 @@ class WBB3xExporter extends AbstractExporter {
 						FROM	wcf".$this->dbNo."_poll
 						WHERE	messageType = ?	
 					)
+					AND pollOptionID BETWEEN ? AND ?
 			ORDER BY	pollOptionID";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute(array('post'));
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array('post', $offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll.option')->import($row['pollOptionID'], array(
 				'pollID' => $row['pollID'],
@@ -1762,12 +1731,7 @@ class WBB3xExporter extends AbstractExporter {
 	 * Counts blog entries.
 	 */
 	public function countBlogEntries() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	wcf".$this->dbNo."_user_blog";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID("wcf".$this->dbNo."_user_blog", 'entryID');
 	}
 	
 	/**
@@ -1778,9 +1742,10 @@ class WBB3xExporter extends AbstractExporter {
 		$entryIDs = array();
 		$sql = "SELECT		entryID
 			FROM		wcf".$this->dbNo."_user_blog
+			WHERE		entryID BETWEEN ? AND ?
 			ORDER BY	entryID";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			$entryIDs[] = $row['entryID'];
 		}
@@ -1859,12 +1824,7 @@ class WBB3xExporter extends AbstractExporter {
 	 * Counts blog comments.
 	 */
 	public function countBlogComments() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	wcf".$this->dbNo."_user_blog_comment";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID("wcf".$this->dbNo."_user_blog_comment", 'commentID');
 	}
 	
 	/**
@@ -1873,9 +1833,10 @@ class WBB3xExporter extends AbstractExporter {
 	public function exportBlogComments($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		wcf".$this->dbNo."_user_blog_comment
+			WHERE		commentID BETWEEN ? AND ?
 			ORDER BY	commentID";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry.comment')->import($row['commentID'], array(
 				'objectID' => $row['entryID'],
@@ -1960,12 +1921,7 @@ class WBB3xExporter extends AbstractExporter {
 	 * Counts gallery albums.
 	 */
 	public function countGalleryAlbums() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	wcf".$this->dbNo."_user_gallery_album";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID("wcf".$this->dbNo."_user_gallery_album", 'albumID');
 	}
 	
 	/**
@@ -1976,9 +1932,10 @@ class WBB3xExporter extends AbstractExporter {
 			FROM		wcf".$this->dbNo."_user_gallery_album gallery_album
 			LEFT JOIN	wcf".$this->dbNo."_user user_table
 			ON		(user_table.userID = gallery_album.ownerID)
+			WHERE		gallery_album.albumID BETWEEN ? AND ?
 			ORDER BY	albumID";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.gallery.album')->import($row['albumID'], array(
 				'userID' => $row['ownerID'],
@@ -1994,12 +1951,7 @@ class WBB3xExporter extends AbstractExporter {
 	 * Counts gallery images.
 	 */
 	public function countGalleryImages() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	wcf".$this->dbNo."_user_gallery";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID("wcf".$this->dbNo."_user_gallery", 'photoID');
 	}
 	
 	/**
@@ -2010,9 +1962,10 @@ class WBB3xExporter extends AbstractExporter {
 		$imageIDs = array();
 		$sql = "SELECT		photoID
 			FROM		wcf".$this->dbNo."_user_gallery
+			WHERE		photoID BETWEEN ? AND ?
 			ORDER BY	photoID";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			$imageIDs[] = $row['photoID'];
 		}
@@ -2081,12 +2034,7 @@ class WBB3xExporter extends AbstractExporter {
 	 * Counts gallery comments.
 	 */
 	public function countGalleryComments() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	wcf".$this->dbNo."_user_gallery_comment";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID("wcf".$this->dbNo."_user_gallery_comment", 'commentID');
 	}
 	
 	/**
@@ -2095,9 +2043,10 @@ class WBB3xExporter extends AbstractExporter {
 	public function exportGalleryComments($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		wcf".$this->dbNo."_user_gallery_comment
+			WHERE		commentID BETWEEN ? AND ?
 			ORDER BY	commentID";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.gallery.image.comment')->import($row['commentID'], array(
 				'objectID' => $row['photoID'],
@@ -2186,12 +2135,7 @@ class WBB3xExporter extends AbstractExporter {
 	 * Counts calendar events.
 	 */
 	public function countCalendarEvents() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	wcf".$this->dbNo."_calendar_event";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID("wcf".$this->dbNo."_calendar_event", 'eventID');
 	}
 	
 	/**
@@ -2203,10 +2147,11 @@ class WBB3xExporter extends AbstractExporter {
 			LEFT JOIN	wcf".$this->dbNo."_calendar_event_message calendar_event_message
 			ON		(calendar_event_message.messageID = calendar_event.messageID)
 			LEFT JOIN	wcf".$this->dbNo."_calendar_event_participation calendar_event_participation
-			ON		(calendar_event_participation.eventID = calendar_event.eventID)		
+			ON		(calendar_event_participation.eventID = calendar_event.eventID)
+			WHERE		calendar_event.eventID BETWEEN ? AND ?			
 			ORDER BY	calendar_event.eventID";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			$oldEventDateData = @unserialize($row['eventDate']);
 			
