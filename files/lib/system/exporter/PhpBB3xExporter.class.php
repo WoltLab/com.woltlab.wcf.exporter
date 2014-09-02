@@ -1363,7 +1363,7 @@ class PhpBB3xExporter extends AbstractExporter {
 		$text = preg_replace('#<!\-\- l \-\-><a (?:class="[\w-]+" )?href="(.*?)(?:(&amp;|\?)sid=[0-9a-f]{32})?">.*?</a><!\-\- l \-\->#', '[url]\\1[/url]', $text);
 		
 		// fix code php bbcode...
-		$text = preg_replace_callback('#\[code=php\](.*)\[/code\]#s', function ($matches) {
+		$text = preg_replace_callback('#\[code(=php)?\](.*)\[/code\]#s', function ($matches) {
 			$content = $matches[2];
 			$content = str_replace(array(
 				'<br />',
