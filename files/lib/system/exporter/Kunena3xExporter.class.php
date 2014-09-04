@@ -121,12 +121,7 @@ class Kunena3xExporter extends AbstractExporter {
 	 * Counts user groups.
 	 */
 	public function countUserGroups() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."usergroups";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID($this->databasePrefix."usergroups", 'id');
 	}
 	
 	/**
@@ -135,9 +130,10 @@ class Kunena3xExporter extends AbstractExporter {
 	public function exportUserGroups($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."usergroups
+			WHERE		id BETWEEN ? AND ?
 			ORDER BY	id";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			switch ($row['id']) {
 				case 1:
@@ -368,12 +364,7 @@ class Kunena3xExporter extends AbstractExporter {
 	 * Counts threads.
 	 */
 	public function countThreads() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."kunena_topics";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID($this->databasePrefix."kunena_topics", 'id');
 	}
 	
 	/**
@@ -382,9 +373,10 @@ class Kunena3xExporter extends AbstractExporter {
 	public function exportThreads($offset, $limit) {
 		$sql = "SELECT		kunena_topics.*
 			FROM		".$this->databasePrefix."kunena_topics kunena_topics
+			WHERE		id BETWEEN ? AND ?
 			ORDER BY	id";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			$data = array(
 				'boardID' => $row['category_id'],
@@ -406,12 +398,7 @@ class Kunena3xExporter extends AbstractExporter {
 	 * Counts posts.
 	 */
 	public function countPosts() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."kunena_messages";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID($this->databasePrefix."kunena_messages", 'id');
 	}
 	
 	/**
@@ -422,9 +409,10 @@ class Kunena3xExporter extends AbstractExporter {
 			FROM		".$this->databasePrefix."kunena_messages kunena_messages
 			LEFT JOIN	".$this->databasePrefix."kunena_messages_text kunena_messages_text
 			ON		(kunena_messages_text.mesid = kunena_messages.id)
+			WHERE		id BETWEEN ? AND ?
 			ORDER BY	id";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute(array(0));
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.post')->import($row['id'], array(
 				'threadID' => $row['thread'],
@@ -444,12 +432,7 @@ class Kunena3xExporter extends AbstractExporter {
 	 * Counts attachments.
 	 */
 	public function countAttachments() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."kunena_attachments";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID($this->databasePrefix."kunena_attachments", 'id');
 	}
 	
 	/**
@@ -458,9 +441,10 @@ class Kunena3xExporter extends AbstractExporter {
 	public function exportAttachments($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."kunena_attachments
+			WHERE		id BETWEEN ? AND ?
 			ORDER BY	id";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			$fileLocation = FileUtil::addTrailingSlash($this->fileSystemPath . $row['folder']) . $row['filename'];
 				

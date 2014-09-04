@@ -154,12 +154,7 @@ class IPB3xExporter extends AbstractExporter {
 	 * Counts users.
 	 */
 	public function countUsers() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."members";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID($this->databasePrefix."members", 'member_id');
 	}
 	
 	/**
@@ -194,9 +189,10 @@ class IPB3xExporter extends AbstractExporter {
 			ON		(profile_portal.pp_member_id = members.member_id)
 			LEFT JOIN	".$this->databasePrefix."pfields_content pfields_content
 			ON		(pfields_content.member_id = members.member_id)
+			WHERE		members.member_id BETWEEN ? AND ?
 			ORDER BY	members.member_id";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			$data = array(
 				'username' => $row['name'],
@@ -302,12 +298,7 @@ class IPB3xExporter extends AbstractExporter {
 	 * Counts user groups.
 	 */
 	public function countUserGroups() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."groups";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID($this->databasePrefix."groups", 'g_id');
 	}
 	
 	/**
@@ -316,9 +307,10 @@ class IPB3xExporter extends AbstractExporter {
 	public function exportUserGroups($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."groups
+			WHERE		g_id BETWEEN ? AND ?
 			ORDER BY	g_id";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			$groupType = UserGroup::OTHER;
 			switch ($row['g_id']) {
@@ -342,14 +334,15 @@ class IPB3xExporter extends AbstractExporter {
 	 * Counts user avatars.
 	 */
 	public function countUserAvatars() {
-		$sql = "SELECT	COUNT(*) AS count
+		$sql = "SELECT	MAX(pp_member_id) AS maxID
 			FROM	".$this->databasePrefix."profile_portal
 			WHERE	avatar_location <> ''
 				OR pp_main_photo <> ''";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute();
 		$row = $statement->fetchArray();
-		return $row['count'];
+		if ($row !== false) return $row['maxID'];
+		return 0;
 	}
 	
 	/**
@@ -358,11 +351,12 @@ class IPB3xExporter extends AbstractExporter {
 	public function exportUserAvatars($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."profile_portal
-			WHERE		avatar_location <> ''
-					OR pp_main_photo <> ''
+			WHERE		pp_member_id BETWEEN ? AND ?
+					AND (avatar_location <> ''
+					OR pp_main_photo <> '')
 			ORDER BY	pp_member_id";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			if ($row['pp_main_photo']) {
 				$avatarName = basename($row['pp_main_photo']);
@@ -394,12 +388,7 @@ class IPB3xExporter extends AbstractExporter {
 	 * Counts status updates.
 	 */
 	public function countStatusUpdates() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."member_status_updates";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID($this->databasePrefix."member_status_updates", 'status_id');
 	}
 	
 	/**
@@ -410,9 +399,10 @@ class IPB3xExporter extends AbstractExporter {
 			FROM		".$this->databasePrefix."member_status_updates status_updates
 			LEFT JOIN	".$this->databasePrefix."members members
 			ON		(members.member_id = status_updates.status_author_id)
+			WHERE		status_updates.status_id BETWEEN ? AND ?
 			ORDER BY	status_updates.status_id";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.comment')->import($row['status_id'], array(
 				'objectID' => $row['status_member_id'],
@@ -428,12 +418,7 @@ class IPB3xExporter extends AbstractExporter {
 	 * Counts status replies.
 	 */
 	public function countStatusReplies() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."member_status_replies";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID($this->databasePrefix."member_status_replies", 'reply_id');
 	}
 	
 	/**
@@ -444,9 +429,10 @@ class IPB3xExporter extends AbstractExporter {
 			FROM		".$this->databasePrefix."member_status_replies member_status_replies
 			LEFT JOIN	".$this->databasePrefix."members members
 			ON		(members.member_id = member_status_replies.reply_member_id)
+			WHERE		member_status_replies.reply_id BETWEEN ? AND ?
 			ORDER BY	member_status_replies.reply_id";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.comment.response')->import($row['reply_id'], array(
 				'commentID' => $row['reply_status_id'],
@@ -462,12 +448,7 @@ class IPB3xExporter extends AbstractExporter {
 	 * Counts followers.
 	 */
 	public function countFollowers() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."profile_friends";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID($this->databasePrefix."profile_friends", 'friends_id');
 	}
 	
 	/**
@@ -476,9 +457,10 @@ class IPB3xExporter extends AbstractExporter {
 	public function exportFollowers($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."profile_friends
+			WHERE		friends_id BETWEEN ? AND ?
 			ORDER BY	friends_id";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.follower')->import(0, array(
 				'userID' => $row['friends_member_id'],
@@ -492,12 +474,7 @@ class IPB3xExporter extends AbstractExporter {
 	 * Counts conversations.
 	 */
 	public function countConversations() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."message_topics";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID($this->databasePrefix."message_topics", 'mt_id');
 	}
 	
 	/**
@@ -508,9 +485,10 @@ class IPB3xExporter extends AbstractExporter {
 			FROM		".$this->databasePrefix."message_topics message_topics
 			LEFT JOIN	".$this->databasePrefix."members members
 			ON		(members.member_id = message_topics.mt_starter_id)
+			WHERE		message_topics.mt_id BETWEEN ? AND ?
 			ORDER BY	message_topics.mt_id";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import($row['mt_id'], array(
 				'subject' => self::fixSubject($row['mt_title']),
@@ -526,12 +504,7 @@ class IPB3xExporter extends AbstractExporter {
 	 * Counts conversation messages.
 	 */
 	public function countConversationMessages() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."message_posts";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID($this->databasePrefix."message_posts", 'msg_id');
 	}
 	
 	/**
@@ -542,9 +515,10 @@ class IPB3xExporter extends AbstractExporter {
 			FROM		".$this->databasePrefix."message_posts message_posts
 			LEFT JOIN	".$this->databasePrefix."members members
 			ON		(members.member_id = message_posts.msg_author_id)
+			WHERE		message_posts.msg_id BETWEEN ? AND ?
 			ORDER BY	message_posts.msg_id";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.message')->import($row['msg_id'], array(
 				'conversationID' => $row['msg_topic_id'],
@@ -560,12 +534,7 @@ class IPB3xExporter extends AbstractExporter {
 	 * Counts conversation recipients.
 	 */
 	public function countConversationUsers() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."message_topic_user_map";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID($this->databasePrefix."message_topic_user_map", 'map_id');
 	}
 	
 	/**
@@ -576,9 +545,10 @@ class IPB3xExporter extends AbstractExporter {
 			FROM		".$this->databasePrefix."message_topic_user_map message_topic_user_map
 			LEFT JOIN	".$this->databasePrefix."members members
 			ON		(members.member_id = message_topic_user_map.map_user_id)
+			WHERE		message_topic_user_map.map_id BETWEEN ? AND ?
 			ORDER BY	message_topic_user_map.map_id";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.user')->import(0, array(
 				'conversationID' => $row['map_topic_id'],
@@ -661,12 +631,7 @@ class IPB3xExporter extends AbstractExporter {
 	 * Counts threads.
 	 */
 	public function countThreads() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."topics";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID($this->databasePrefix."topics", 'tid');
 	}
 	
 	/**
@@ -677,9 +642,10 @@ class IPB3xExporter extends AbstractExporter {
 		$threadIDs = array();
 		$sql = "SELECT		tid
 			FROM		".$this->databasePrefix."topics
+			WHERE		tid BETWEEN ? AND ?
 			ORDER BY	tid";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			$threadIDs[] = $row['tid'];
 		}
@@ -724,12 +690,7 @@ class IPB3xExporter extends AbstractExporter {
 	 * Counts posts.
 	 */
 	public function countPosts() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."posts";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID($this->databasePrefix."posts", 'pid');
 	}
 	
 	/**
@@ -738,9 +699,10 @@ class IPB3xExporter extends AbstractExporter {
 	public function exportPosts($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."posts
+			WHERE		pid BETWEEN ? AND ?
 			ORDER BY	pid";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.post')->import($row['pid'], array(
 				'threadID' => $row['topic_id'],
@@ -796,12 +758,7 @@ class IPB3xExporter extends AbstractExporter {
 	 * Counts polls.
 	 */
 	public function countPolls() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."polls";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID($this->databasePrefix."polls", 'pid');
 	}
 	
 	/**
@@ -811,10 +768,11 @@ class IPB3xExporter extends AbstractExporter {
 		$sql = "SELECT		polls.*, topics.topic_firstpost
 			FROM		".$this->databasePrefix."polls polls
 			LEFT JOIN	".$this->databasePrefix."topics topics
-			ON		(topics.tid = polls.tid)		
+			ON		(topics.tid = polls.tid)
+			WHERE		pid BETWEEN ? AND ?
 			ORDER BY	pid";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			$data = @unserialize($row['choices']);
 			if (!$data || !isset($data[1])) continue; 
@@ -845,12 +803,7 @@ class IPB3xExporter extends AbstractExporter {
 	 * Counts poll option votes.
 	 */
 	public function countPollOptionVotes() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."voters";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID($this->databasePrefix."voters", 'vid');
 	}
 	
 	/**
@@ -861,9 +814,10 @@ class IPB3xExporter extends AbstractExporter {
 			FROM		".$this->databasePrefix."voters voters
 			LEFT JOIN	".$this->databasePrefix."polls polls
 			ON		(polls.tid = voters.tid)
+			WHERE		voters.vid BETWEEN ? AND ?
 			ORDER BY	voters.vid";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			$data = @unserialize($row['member_choices']);
 			if (!$data || !isset($data[1])) continue;

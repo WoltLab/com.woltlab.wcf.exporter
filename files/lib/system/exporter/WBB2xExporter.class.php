@@ -233,12 +233,7 @@ class WBB2xExporter extends AbstractExporter {
 	 * Counts users.
 	 */
 	public function countUsers() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."users";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID($this->databasePrefix."users", 'userid');
 	}
 	
 	/**
@@ -272,9 +267,10 @@ class WBB2xExporter extends AbstractExporter {
 			FROM		".$this->databasePrefix."users user
 			LEFT JOIN	".$this->databasePrefix."userfields userfields
 			ON		(userfields.userid = user.userid)
+			WHERE		user.userid BETWEEN ? AND ?
 			ORDER BY	user.userid";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			$data = array(
 				'username' => $row['username'],
@@ -473,12 +469,7 @@ class WBB2xExporter extends AbstractExporter {
 	 * Counts conversations.
 	 */
 	public function countConversations() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."privatemessage";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID($this->databasePrefix."privatemessage", 'privatemessageid');
 	}
 	
 	/**
@@ -489,9 +480,10 @@ class WBB2xExporter extends AbstractExporter {
 			FROM		".$this->databasePrefix."privatemessage pm
 			LEFT JOIN	".$this->databasePrefix."users user_table
 			ON		(user_table.userid = pm.senderid)
+			WHERE		pm.privatemessageid BETWEEN ? AND ?
 			ORDER BY	pm.privatemessageid";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			$conversationID = ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import($row['privatemessageid'], array(
 				'subject' => $row['subject'],
@@ -618,12 +610,7 @@ class WBB2xExporter extends AbstractExporter {
 	 * Counts threads.
 	 */
 	public function countThreads() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."threads";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID($this->databasePrefix."threads", 'threadid');
 	}
 	
 	/**
@@ -674,9 +661,10 @@ class WBB2xExporter extends AbstractExporter {
 		$threadIDs = $announcementIDs = array();
 		$sql = "SELECT		threadid, important
 			FROM		".$this->databasePrefix."threads
+			WHERE		threadid BETWEEN ? AND ?
 			ORDER BY	threadid";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			$threadIDs[] = $row['threadid'];
 			if ($row['important'] == 2) $announcementIDs[] = $row['threadid'];
@@ -735,12 +723,7 @@ class WBB2xExporter extends AbstractExporter {
 	 * Counts posts.
 	 */
 	public function countPosts() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."posts";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID($this->databasePrefix."posts", 'postid');
 	}
 	
 	/**
@@ -749,9 +732,10 @@ class WBB2xExporter extends AbstractExporter {
 	public function exportPosts($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."posts
+			WHERE		postid BETWEEN ? AND ?
 			ORDER BY	postid";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.post')->import($row['postid'], array(
 				'threadID' => $row['threadid'],

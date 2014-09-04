@@ -190,7 +190,7 @@ class XF12xExporter extends AbstractExporter {
 	public function exportUserGroups($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."user_group
-			ORDER BY	user_group_id ASC";
+			ORDER BY	user_group_id";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
@@ -207,12 +207,7 @@ class XF12xExporter extends AbstractExporter {
 	 * Counts users.
 	 */
 	public function countUsers() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."user";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID($this->databasePrefix."user", 'user_id');
 	}
 	
 	/**
@@ -238,12 +233,12 @@ class XF12xExporter extends AbstractExporter {
 			ON		user_table.language_id = language_table.language_id
 			LEFT JOIN	".$this->databasePrefix."ip ip_table
 			ON		user_table.user_id = ip_table.user_id
-				AND	content_type = ?
-				AND	action = ?
-			ORDER BY	user_table.user_id ASC";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute(array('user', 'register'));
-	
+					AND content_type = ?
+					AND action = ?
+			WHERE		user_table.user_id BETWEEN ? AND ?
+			ORDER BY	user_table.user_id";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array('user', 'register', $offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			$data = array(
 				'username' => $row['username'],
@@ -344,7 +339,7 @@ class XF12xExporter extends AbstractExporter {
 		$sql = "SELECT	*
 			FROM	".$this->databasePrefix."user_field
 			".$condition."
-			ORDER BY	field_id ASC";
+			ORDER BY	field_id";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute($condition->getParameters());
 		while ($row = $statement->fetchArray()) {
@@ -407,7 +402,7 @@ class XF12xExporter extends AbstractExporter {
 	public function exportUserRanks($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."trophy_user_title
-			ORDER BY	minimum_points ASC";
+			ORDER BY	minimum_points";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
@@ -440,7 +435,7 @@ class XF12xExporter extends AbstractExporter {
 	public function exportFollowers($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."user_follow
-			ORDER BY	user_id ASC, follow_user_id ASC";
+			ORDER BY	user_id, follow_user_id";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
@@ -456,12 +451,7 @@ class XF12xExporter extends AbstractExporter {
 	 * Counts wall entries.
 	 */
 	public function countWallEntries() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."profile_post";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID($this->databasePrefix."profile_post", 'profile_post_id');
 	}
 	
 	/**
@@ -470,9 +460,10 @@ class XF12xExporter extends AbstractExporter {
 	public function exportWallEntries($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."profile_post
+			WHERE		profile_post_id BETWEEN ? AND ?
 			ORDER BY	profile_post_id";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.comment')->import($row['profile_post_id'], array(
 				'objectID' => $row['profile_user_id'],
@@ -488,12 +479,7 @@ class XF12xExporter extends AbstractExporter {
 	 * Counts wall responses.
 	 */
 	public function countWallResponses() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."profile_post_comment";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID($this->databasePrefix."profile_post_comment", 'profile_post_comment_id');
 	}
 	
 	/**
@@ -502,9 +488,10 @@ class XF12xExporter extends AbstractExporter {
 	public function exportWallResponses($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."profile_post_comment
-			ORDER BY	profile_post_comment_id ASC";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+			WHERE		profile_post_comment_id BETWEEN ? AND ?
+			ORDER BY	profile_post_comment_id";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.comment.response')->import($row['profile_post_comment_id'], array(
 				'commentID' => $row['profile_post_id'],
@@ -536,7 +523,7 @@ class XF12xExporter extends AbstractExporter {
 		$sql = "SELECT		user_id
 			FROM		".$this->databasePrefix."user
 			WHERE		avatar_date <> ?
-			ORDER BY	user_id ASC";
+			ORDER BY	user_id";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array(0));
 		while ($row = $statement->fetchArray()) {
@@ -577,7 +564,7 @@ class XF12xExporter extends AbstractExporter {
 	public function exportConversationFolders($offset, $limit) {
 		$sql = "SELECT		user_id
 			FROM		".$this->databasePrefix."user
-			ORDER BY	user_id ASC";
+			ORDER BY	user_id";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array(''));
 		while ($row = $statement->fetchArray()) {
@@ -592,12 +579,7 @@ class XF12xExporter extends AbstractExporter {
 	 * Counts conversations.
 	 */
 	public function countConversations() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."conversation_master";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID($this->databasePrefix."conversation_master", 'conversation_id');
 	}
 	
 	/**
@@ -606,9 +588,10 @@ class XF12xExporter extends AbstractExporter {
 	public function exportConversations($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."conversation_master
+			WHERE		conversation_id BETWEEN ? AND ?
 			ORDER BY	conversation_id";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import($row['conversation_id'], array(
 				'subject' => $row['title'],
@@ -626,12 +609,7 @@ class XF12xExporter extends AbstractExporter {
 	 * Counts conversation messages.
 	 */
 	public function countConversationMessages() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."conversation_message";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID($this->databasePrefix."conversation_message", 'message_id');
 	}
 	
 	/**
@@ -642,9 +620,10 @@ class XF12xExporter extends AbstractExporter {
 			FROM		".$this->databasePrefix."conversation_message message_table
 			LEFT JOIN	".$this->databasePrefix."ip ip_table
 			ON		message_table.ip_id = ip_table.ip_id
+			WHERE		message_table.message_id BETWEEN ? AND ?
 			ORDER BY	message_table.message_id";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.message')->import($row['message_id'], array(
 				'conversationID' => $row['conversation_id'],
@@ -680,7 +659,7 @@ class XF12xExporter extends AbstractExporter {
 			LEFT JOIN	".$this->databasePrefix."conversation_user cuser_table
 			ON		cuser_table.owner_user_id = recipient_table.user_id
 				AND	cuser_table.conversation_id = recipient_table.conversation_id
-			ORDER BY	recipient_table.conversation_id ASC, recipient_table.user_id ASC";
+			ORDER BY	recipient_table.conversation_id, recipient_table.user_id";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
@@ -719,7 +698,7 @@ class XF12xExporter extends AbstractExporter {
 			LEFT JOIN	".$this->databasePrefix."link_forum link_forum
 			ON		node.node_id = link_forum.node_id
 			WHERE		node_type_id IN (?, ?, ?)
-			ORDER BY	node.lft ASC";
+			ORDER BY	node.lft";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute(array('Forum', 'Category', 'LinkForum'));
 		
@@ -746,12 +725,7 @@ class XF12xExporter extends AbstractExporter {
 	 * Counts threads.
 	 */
 	public function countThreads() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."thread";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID($this->databasePrefix."thread", 'thread_id');
 	}
 	
 	/**
@@ -760,10 +734,10 @@ class XF12xExporter extends AbstractExporter {
 	public function exportThreads($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."thread
-			ORDER BY	thread_id ASC";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
-		
+			WHERE		thread_id BETWEEN ? AND ?
+			ORDER BY	thread_id";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			$data = array(
 				'boardID' => $row['node_id'],
@@ -790,12 +764,7 @@ class XF12xExporter extends AbstractExporter {
 	 * Counts posts.
 	 */
 	public function countPosts() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."post";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID($this->databasePrefix."post", 'post_id');
 	}
 	
 	/**
@@ -810,9 +779,10 @@ class XF12xExporter extends AbstractExporter {
 			ON		post.ip_id = ip.ip_id
 			LEFT JOIN	".$this->databasePrefix."thread thread
 			ON		thread.first_post_id = post.post_id
-			ORDER BY	post_id ASC";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+			WHERE		post_id BETWEEN ? AND ?
+			ORDER BY	post_id";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.post')->import($row['post_id'], array(
 				'threadID' => $row['thread_id'],
@@ -855,7 +825,7 @@ class XF12xExporter extends AbstractExporter {
 			LEFT JOIN	".$this->databasePrefix."attachment_data data
 			ON		attachment.data_id = data.data_id
 			WHERE		attachment.content_type = ?
-			ORDER BY	attachment.attachment_id ASC";
+			ORDER BY	attachment.attachment_id";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array('post'));
 		while ($row = $statement->fetchArray()) {
@@ -906,7 +876,7 @@ class XF12xExporter extends AbstractExporter {
 	public function exportWatchedThreads($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."thread_watch
-			ORDER BY	user_id ASC, thread_id ASC";
+			ORDER BY	user_id, thread_id";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
@@ -940,7 +910,7 @@ class XF12xExporter extends AbstractExporter {
 			INNER JOIN	".$this->databasePrefix."thread thread
 			ON		(poll.content_id = thread.thread_id)
 			WHERE		content_type = ?
-			ORDER BY	poll.poll_id ASC";
+			ORDER BY	poll.poll_id";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array('thread'));
 		while ($row = $statement->fetchArray()) {
@@ -974,7 +944,7 @@ class XF12xExporter extends AbstractExporter {
 	public function exportPollOptions($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."poll_response
-			ORDER BY	poll_response_id ASC";
+			ORDER BY	poll_response_id";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
@@ -1005,7 +975,7 @@ class XF12xExporter extends AbstractExporter {
 	public function exportPollOptionVotes($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."poll_vote
-			ORDER BY	poll_response_id ASC, user_id ASC";
+			ORDER BY	poll_response_id, user_id";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array(0));
 		while ($row = $statement->fetchArray()) {

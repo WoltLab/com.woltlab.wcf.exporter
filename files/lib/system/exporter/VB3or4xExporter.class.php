@@ -305,7 +305,7 @@ class VB3or4xExporter extends AbstractExporter {
 	public function exportUserGroups($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."usergroup
-			ORDER BY	usergroupid ASC";
+			ORDER BY	usergroupid";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
@@ -334,12 +334,7 @@ class VB3or4xExporter extends AbstractExporter {
 	 * Counts users.
 	 */
 	public function countUsers() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."user";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID($this->databasePrefix."user", 'userid');
 	}
 	
 	/**
@@ -361,10 +356,10 @@ class VB3or4xExporter extends AbstractExporter {
 			ON		user_table.userid = useractivation.userid
 			LEFT JOIN	".$this->databasePrefix."userban userban
 			ON		user_table.userid = userban.userid
-			ORDER BY	user_table.userid ASC";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute(array(0));
-		
+			WHERE		user_table.userid BETWEEN ? AND ?
+			ORDER BY	user_table.userid";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			$data = array(
 				'username' => $row['username'],
@@ -432,7 +427,7 @@ class VB3or4xExporter extends AbstractExporter {
 				WHERE		usergroupid NOT IN(?, ?)
 					AND	usertitle <> ?
 			)
-			ORDER BY	usertitleid ASC";
+			ORDER BY	usertitleid";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array(1, 2, ''));
 		while ($row = $statement->fetchArray()) {
@@ -464,7 +459,7 @@ class VB3or4xExporter extends AbstractExporter {
 		$sql = "SELECT		userid, buddylist
 			FROM		".$this->databasePrefix."usertextfield
 			WHERE		buddylist <> ?
-			ORDER BY	userid ASC";
+			ORDER BY	userid";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array(''));
 		while ($row = $statement->fetchArray()) {
@@ -482,12 +477,7 @@ class VB3or4xExporter extends AbstractExporter {
 	 * Counts guestbook entries.
 	 */
 	public function countGuestbookEntries() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."visitormessage";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID($this->databasePrefix."visitormessage", 'vmid');
 	}
 	
 	/**
@@ -496,9 +486,10 @@ class VB3or4xExporter extends AbstractExporter {
 	public function exportGuestbookEntries($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."visitormessage
-			ORDER BY	vmid ASC";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+			WHERE		vmid BETWEEN ? AND ?
+			ORDER BY	vmid";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.comment')->import($row['vmid'], array(
 				'objectID' => $row['userid'],
@@ -530,7 +521,7 @@ class VB3or4xExporter extends AbstractExporter {
 			FROM		".$this->databasePrefix."customavatar customavatar
 			LEFT JOIN	".$this->databasePrefix."user user
 			ON		user.userid = customavatar.userid
-			ORDER BY	customavatar.userid ASC";
+			ORDER BY	customavatar.userid";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
@@ -587,7 +578,7 @@ class VB3or4xExporter extends AbstractExporter {
 			FROM		".$this->databasePrefix."usertextfield
 			WHERE		pmfolders IS NOT NULL
 				AND	pmfolders <> ?
-			ORDER BY	userid ASC";
+			ORDER BY	userid";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array(''));
 		while ($row = $statement->fetchArray()) {
@@ -637,12 +628,7 @@ class VB3or4xExporter extends AbstractExporter {
 	 * Counts conversations.
 	 */
 	public function countConversations() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."pm";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID($this->databasePrefix."pm", 'pmid');
 	}
 	
 	/**
@@ -658,9 +644,10 @@ class VB3or4xExporter extends AbstractExporter {
 			FROM		".$this->databasePrefix."pm pm
 			INNER JOIN	".$this->databasePrefix."pmtext text
 			ON		pm.pmtextid = text.pmtextid
+			WHERE		pm.pmid BETWEEN ? AND ?
 			ORDER BY	pm.pmid";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			$participants = explode(',', $row['participants']);
 			$participants[] = $row['fromuserid'];
@@ -682,12 +669,7 @@ class VB3or4xExporter extends AbstractExporter {
 	 * Counts conversation messages.
 	 */
 	public function countConversationMessages() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."pmtext";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID($this->databasePrefix."pmtext", 'pmtextid');
 	}
 	
 	/**
@@ -704,9 +686,10 @@ class VB3or4xExporter extends AbstractExporter {
 						WHERE	pmtext.pmtextid = pm.pmtextid
 					) AS participants
 			FROM		".$this->databasePrefix."pmtext pmtext
+			WHERE		pmtext.pmtextid BETWEEN ? AND ?
 			ORDER BY	pmtext.pmtextid";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			$participants = explode(',', $row['participants']);
 			$participants[] = $row['fromuserid'];
@@ -753,7 +736,7 @@ class VB3or4xExporter extends AbstractExporter {
 			ON		pm.userid = user.userid
 			INNER JOIN	".$this->databasePrefix."pmtext pmtext
 			ON		pmtext.pmtextid = pm.pmtextid
-			ORDER BY	pm.pmid ASC";
+			ORDER BY	pm.pmid";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
@@ -796,7 +779,7 @@ class VB3or4xExporter extends AbstractExporter {
 	public function exportBoards($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."forum
-			ORDER BY	forumid ASC";
+			ORDER BY	forumid";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
@@ -852,12 +835,7 @@ class VB3or4xExporter extends AbstractExporter {
 	 * Counts threads.
 	 */
 	public function countThreads() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."thread";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID($this->databasePrefix."thread", 'threadid');
 	}
 	
 	/**
@@ -872,9 +850,10 @@ class VB3or4xExporter extends AbstractExporter {
 							AND	type = ?
 					) AS deleteTime
 			FROM		".$this->databasePrefix."thread thread
-			ORDER BY	thread.threadid ASC";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute(array(14)); // 14 = soft delete
+			WHERE		thread.threadid BETWEEN ? AND ?
+			ORDER BY	thread.threadid";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array(14, $offset + 1, $offset + $limit)); // 14 = soft delete
 		while ($row = $statement->fetchArray()) {
 			$data = array(
 				'boardID' => $row['forumid'],
@@ -909,12 +888,7 @@ class VB3or4xExporter extends AbstractExporter {
 	 * Counts posts.
 	 */
 	public function countPosts() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."post";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID($this->databasePrefix."post", 'postid');
 	}
 	
 	/**
@@ -936,9 +910,10 @@ class VB3or4xExporter extends AbstractExporter {
 						FROM	".$this->databasePrefix."postedithistory postedithistory2
 						WHERE	postedithistory2.postid = post.postid
 					)
-			ORDER BY	post.postid ASC";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+			WHERE		post.postid BETWEEN ? AND ?
+			ORDER BY	post.postid";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			if (isset($row['htmlState']) && $row['htmlState'] == 'on_nl2br') {
 				$row['pagetext'] = str_replace("\n", '<br />', StringUtil::unifyNewlines($row['pagetext']));
@@ -1001,7 +976,7 @@ class VB3or4xExporter extends AbstractExporter {
 				LEFT JOIN	".$this->databasePrefix."filedata filedata
 				ON		attachment.filedataid = filedata.filedataid
 				WHERE		attachment.contenttypeid = (SELECT contenttypeid FROM ".$this->databasePrefix."contenttype contenttype WHERE contenttype.class = 'Post')
-				ORDER BY	attachment.attachmentid ASC";
+				ORDER BY	attachment.attachmentid";
 			$statement = $this->database->prepareStatement($sql, $limit, $offset);
 			$statement->execute();
 		}
@@ -1009,7 +984,7 @@ class VB3or4xExporter extends AbstractExporter {
 			// vb 3
 			$sql = "SELECT		*
 				FROM		".$this->databasePrefix."attachment
-				ORDER BY	attachmentid ASC";
+				ORDER BY	attachmentid";
 			$statement = $this->database->prepareStatement($sql, $limit, $offset);
 			$statement->execute();
 		}
@@ -1076,12 +1051,7 @@ class VB3or4xExporter extends AbstractExporter {
 	 * Counts watched threads.
 	 */
 	public function countWatchedThreads() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."subscribethread";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID($this->databasePrefix."subscribethread", 'subscribethreadid');
 	}
 	
 	/**
@@ -1090,9 +1060,10 @@ class VB3or4xExporter extends AbstractExporter {
 	public function exportWatchedThreads($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."subscribethread
+			WHERE		subscribethreadid BETWEEN ? AND ?
 			ORDER BY	subscribethreadid";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.watchedThread')->import($row['subscribethreadid'], array(
 				'objectID' => $row['threadid'],
@@ -1122,7 +1093,7 @@ class VB3or4xExporter extends AbstractExporter {
 			LEFT JOIN	".$this->databasePrefix."thread thread
 			ON			poll.pollid = thread.pollid
 					AND	thread.open <> ?
-			ORDER BY	poll.pollid ASC";
+			ORDER BY	poll.pollid";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array(10));
 		while ($row = $statement->fetchArray()) {
@@ -1153,7 +1124,7 @@ class VB3or4xExporter extends AbstractExporter {
 	public function exportPollOptions($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."poll
-			ORDER BY	pollid ASC";
+			ORDER BY	pollid";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
@@ -1178,12 +1149,7 @@ class VB3or4xExporter extends AbstractExporter {
 	 * Counts poll option votes.
 	 */
 	public function countPollOptionVotes() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."pollvote";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array('post'));
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID($this->databasePrefix."pollvote", 'pollvoteid');
 	}
 	
 	/**
@@ -1192,9 +1158,10 @@ class VB3or4xExporter extends AbstractExporter {
 	public function exportPollOptionVotes($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."pollvote
-			ORDER BY	pollvoteid ASC";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+			WHERE		pollvoteid BETWEEN ? AND ?
+			ORDER BY	pollvoteid";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll.option.vote')->import(0, array(
 				'pollID' => $row['pollid'],
@@ -1208,12 +1175,7 @@ class VB3or4xExporter extends AbstractExporter {
 	 * Counts likes.
 	 */
 	public function countLikes() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."reputation";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID($this->databasePrefix."reputation", 'reputationid');
 	}
 	
 	/**
@@ -1222,9 +1184,10 @@ class VB3or4xExporter extends AbstractExporter {
 	public function exportLikes($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."reputation
-			ORDER BY	reputationid ASC";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+			WHERE		reputationid BETWEEN ? AND ?
+			ORDER BY	reputationid";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.like')->import(0, array(
 				'objectID' => $row['postid'],
@@ -1258,7 +1221,7 @@ class VB3or4xExporter extends AbstractExporter {
 			
 			$sql = "SELECT		*
 				FROM		".$this->databasePrefix."prefixset
-				ORDER BY	prefixsetid ASC";
+				ORDER BY	prefixsetid";
 			$statement = $this->database->prepareStatement($sql);
 			$statement->execute();
 			
@@ -1271,7 +1234,7 @@ class VB3or4xExporter extends AbstractExporter {
 		
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."prefix
-			ORDER BY	prefixid ASC";
+			ORDER BY	prefixid";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
@@ -1316,7 +1279,7 @@ class VB3or4xExporter extends AbstractExporter {
 		
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."forumpermission
-			ORDER BY	forumpermissionid ASC";
+			ORDER BY	forumpermissionid";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		
@@ -1351,7 +1314,7 @@ class VB3or4xExporter extends AbstractExporter {
 	public function exportSmilies($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."smilie
-			ORDER BY	smilieid ASC";
+			ORDER BY	smilieid";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array());
 		while ($row = $statement->fetchArray()) {
@@ -1386,7 +1349,7 @@ class VB3or4xExporter extends AbstractExporter {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."imagecategory
 			WHERE		imagetype = ?
-			ORDER BY	imagecategoryid ASC";
+			ORDER BY	imagecategoryid";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array(3));
 		while ($row = $statement->fetchArray()) {
@@ -1466,7 +1429,7 @@ class VB3or4xExporter extends AbstractExporter {
 				ON		picture.pictureid = album.pictureid
 				LEFT JOIN	".$this->databasePrefix."user user
 				ON		picture.userid = user.userid
-				ORDER BY	picture.pictureid ASC";
+				ORDER BY	picture.pictureid";
 			$statement = $this->database->prepareStatement($sql, $limit, $offset);
 			$statement->execute();
 			
@@ -1482,7 +1445,7 @@ class VB3or4xExporter extends AbstractExporter {
 				LEFT JOIN	".$this->databasePrefix."user user
 				ON		attachment.userid = user.userid
 				WHERE		attachment.contenttypeid = (SELECT contenttypeid FROM ".$this->databasePrefix."contenttype contenttype WHERE contenttype.class = 'Album')
-				ORDER BY	attachment.attachmentid ASC";
+				ORDER BY	attachment.attachmentid";
 			$statement = $this->database->prepareStatement($sql, $limit, $offset);
 			$statement->execute();
 			
@@ -1558,12 +1521,7 @@ class VB3or4xExporter extends AbstractExporter {
 	 * Counts gallery comments.
 	 */
 	public function countGalleryComments() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."picturecomment";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID($this->databasePrefix."picturecomment", 'commentid');
 	}
 	
 	/**
@@ -1574,9 +1532,10 @@ class VB3or4xExporter extends AbstractExporter {
 			FROM		".$this->databasePrefix."picturecomment comment
 			LEFT JOIN	".$this->databasePrefix."user user
 			ON		comment.postuserid = user.userid
-			ORDER BY	comment.commentid ASC";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+			WHERE		comment.commentid BETWEEN ? AND ?
+			ORDER BY	comment.commentid";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.gallery.image.comment')->import($row['commentid'], array(
 				'objectID' => (isset($row['pictureid']) ? $row['pictureid'] : $row['filedataid']),
@@ -1623,12 +1582,7 @@ class VB3or4xExporter extends AbstractExporter {
 	 * Counts calendar events.
 	 */
 	public function countCalendarEvents() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."event";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID($this->databasePrefix."event", 'eventid');
 	}
 	
 	/**
@@ -1639,9 +1593,10 @@ class VB3or4xExporter extends AbstractExporter {
 			FROM		".$this->databasePrefix."event event
 			LEFT JOIN	".$this->databasePrefix."user user
 			ON		event.userid = user.userid
+			WHERE		eventid BETWEEN ? AND ?
 			ORDER BY	eventid";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		
 		$timezones = array();
 		foreach (DateUtil::getAvailableTimezones() as $timezone) {

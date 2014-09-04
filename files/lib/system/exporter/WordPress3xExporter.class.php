@@ -103,12 +103,7 @@ class WordPress3xExporter extends AbstractExporter {
 	 * Counts users.
 	 */
 	public function countUsers() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."users";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID($this->databasePrefix."users", 'ID');
 	}
 	
 	/**
@@ -124,10 +119,10 @@ class WordPress3xExporter extends AbstractExporter {
 		// get users
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."users
+			WHERE		ID BETWEEN ? AND ?
 			ORDER BY	ID";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
-	
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			$data = array(
 				'username' => $row['user_login'],

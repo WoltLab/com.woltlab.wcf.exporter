@@ -203,12 +203,7 @@ class PhpBB3xExporter extends AbstractExporter {
 	 * Counts user groups.
 	 */
 	public function countUserGroups() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."groups";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID($this->databasePrefix."groups", 'group_id');
 	}
 	
 	/**
@@ -217,9 +212,10 @@ class PhpBB3xExporter extends AbstractExporter {
 	public function exportUserGroups($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."groups
-			ORDER BY	group_id ASC";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+			WHERE		group_id BETWEEN ? AND ?
+			ORDER BY	group_id";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			switch ($row['group_id']) {
 				case 1:
@@ -250,13 +246,14 @@ class PhpBB3xExporter extends AbstractExporter {
 	 * Counts users.
 	 */
 	public function countUsers() {
-		$sql = "SELECT	COUNT(*) AS count
+		$sql = "SELECT	MAX(user_id) AS maxID
 			FROM	".$this->databasePrefix."users
 			WHERE	user_type <> ?";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute(array(self::USER_TYPE_USER_IGNORE));
 		$row = $statement->fetchArray();
-		return $row['count'];
+		if ($row !== false) return $row['maxID'];
+		return 0;
 	}
 	
 	/**
@@ -293,10 +290,10 @@ class PhpBB3xExporter extends AbstractExporter {
 			LEFT JOIN	".$this->databasePrefix."profile_fields_data fields_table
 			ON		user_table.user_id = fields_table.user_id
 			WHERE		user_table.user_type <> ?
-			ORDER BY	user_table.user_id ASC";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute(array(0, 2));
-		
+					AND user_table.user_id BETWEEN ? AND ?
+			ORDER BY	user_table.user_id";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array(0, self::USER_TYPE_USER_IGNORE, $offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			$data = array(
 				'username' => $row['username'],
@@ -378,7 +375,7 @@ class PhpBB3xExporter extends AbstractExporter {
 							AND	lang.lang_id = (SELECT MIN(lang_id) FROM ".$this->databasePrefix."profile_fields_lang)
 					) AS selectOptions
 			FROM		".$this->databasePrefix."profile_fields fields
-			ORDER BY	fields.field_id ASC";
+			ORDER BY	fields.field_id";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array(5));
 		while ($row = $statement->fetchArray()) {
@@ -437,7 +434,7 @@ class PhpBB3xExporter extends AbstractExporter {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."ranks
 			WHERE		rank_special = ?
-			ORDER BY	rank_id ASC";
+			ORDER BY	rank_id";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array(0));
 		while ($row = $statement->fetchArray()) {
@@ -474,7 +471,7 @@ class PhpBB3xExporter extends AbstractExporter {
 			FROM		".$this->databasePrefix."zebra
 			WHERE			friend = ?
 					AND	foe = ?
-			ORDER BY	user_id ASC, zebra_id ASC";
+			ORDER BY	user_id, zebra_id";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array(1, 0));
 		while ($row = $statement->fetchArray()) {
@@ -517,7 +514,7 @@ class PhpBB3xExporter extends AbstractExporter {
 		$sql = "SELECT		user_id, user_avatar, user_avatar_type, user_avatar_width, user_avatar_height
 			FROM		".$this->databasePrefix."users
 			WHERE		user_avatar_type IN (?, ?)
-			ORDER BY	user_id ASC";
+			ORDER BY	user_id";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array(self::AVATAR_TYPE_GALLERY, self::AVATAR_TYPE_UPLOADED));
 		while ($row = $statement->fetchArray()) {
@@ -557,7 +554,7 @@ class PhpBB3xExporter extends AbstractExporter {
 	public function exportConversationFolders($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."privmsgs_folder
-			ORDER BY	folder_id ASC";
+			ORDER BY	folder_id";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
@@ -633,7 +630,7 @@ class PhpBB3xExporter extends AbstractExporter {
 				ON		draft_table.user_id = user_table.user_id
 				WHERE		forum_id = ?
 			)
-			ORDER BY	isDraft ASC, msg_id ASC";
+			ORDER BY	isDraft, msg_id";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array(0));
 		while ($row = $statement->fetchArray()) {
@@ -711,7 +708,7 @@ class PhpBB3xExporter extends AbstractExporter {
 				ON		draft_table.user_id = user_table.user_id
 				WHERE		forum_id = ?
 			)
-			ORDER BY	msg_id ASC";
+			ORDER BY	msg_id";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array(1, 0));
 		while ($row = $statement->fetchArray()) {
@@ -761,7 +758,7 @@ class PhpBB3xExporter extends AbstractExporter {
 			ON		(msg_table.msg_id = to_table.msg_id)
 			LEFT JOIN	".$this->databasePrefix."users user_table
 			ON		to_table.user_id = user_table.user_id
-			ORDER BY	to_table.msg_id ASC, to_table.user_id ASC";
+			ORDER BY	to_table.msg_id, to_table.user_id";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
@@ -813,7 +810,7 @@ class PhpBB3xExporter extends AbstractExporter {
 	public function exportBoards($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."forums
-			ORDER BY	parent_id ASC, left_id ASC, forum_id ASC";
+			ORDER BY	parent_id, left_id, forum_id";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
@@ -856,12 +853,7 @@ class PhpBB3xExporter extends AbstractExporter {
 	 * Counts threads.
 	 */
 	public function countThreads() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."topics";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID($this->databasePrefix."topics", 'topic_id');
 	}
 	
 	/**
@@ -870,11 +862,12 @@ class PhpBB3xExporter extends AbstractExporter {
 	public function exportThreads($offset, $limit) {
 		$boardIDs = array_keys(BoardCache::getInstance()->getBoards());
 		
-		$sql = "SELECT		topic_table.*
-			FROM		".$this->databasePrefix."topics topic_table
-			ORDER BY	topic_id ASC";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."topics
+			WHERE		topic_id BETWEEN ? AND ?
+			ORDER BY	topic_id";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			$data = array(
 				'boardID' => $row['forum_id'] ?: $boardIDs[0], // map global annoucements to a random board
@@ -902,12 +895,7 @@ class PhpBB3xExporter extends AbstractExporter {
 	 * Counts posts.
 	 */
 	public function countPosts() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."posts";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID($this->databasePrefix."posts", 'post_id');
 	}
 	
 	/**
@@ -921,9 +909,10 @@ class PhpBB3xExporter extends AbstractExporter {
 			ON		post_table.poster_id = user_table.user_id
 			LEFT JOIN	".$this->databasePrefix."users editor
 			ON		post_table.post_edit_user = editor.user_id
-			ORDER BY	post_id ASC";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute(array(0));
+			WHERE		post_id BETWEEN ? AND ?
+			ORDER BY	post_id";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.post')->import($row['post_id'], array(
 				'threadID' => $row['topic_id'],
@@ -983,7 +972,7 @@ class PhpBB3xExporter extends AbstractExporter {
 		// TODO: Import bookmarks as watched threads as well?
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."topics_watch
-			ORDER BY	topic_id ASC, user_id ASC";
+			ORDER BY	topic_id, user_id";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
@@ -1016,7 +1005,7 @@ class PhpBB3xExporter extends AbstractExporter {
 					(SELECT COUNT(DISTINCT vote_user_id) FROM ".$this->databasePrefix."poll_votes votes WHERE votes.topic_id = topic.topic_id) AS poll_votes
 			FROM		".$this->databasePrefix."topics topic
 			WHERE		poll_start <> ?
-			ORDER BY	topic_id ASC";
+			ORDER BY	topic_id";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array('post'));
 		while ($row = $statement->fetchArray()) {
@@ -1051,7 +1040,7 @@ class PhpBB3xExporter extends AbstractExporter {
 	public function exportPollOptions($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."poll_options
-			ORDER BY	poll_option_id ASC";
+			ORDER BY	poll_option_id";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array('post'));
 		while ($row = $statement->fetchArray()) {
@@ -1084,7 +1073,7 @@ class PhpBB3xExporter extends AbstractExporter {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."poll_votes
 			WHERE		vote_user_id <> ?
-			ORDER BY	poll_option_id ASC, vote_user_id ASC";
+			ORDER BY	poll_option_id, vote_user_id";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array(0));
 		while ($row = $statement->fetchArray()) {
@@ -1268,7 +1257,7 @@ class PhpBB3xExporter extends AbstractExporter {
 					GROUP_CONCAT(emotion SEPARATOR '\n') AS emotion
 			FROM		".$this->databasePrefix."smilies
 			GROUP BY	smiley_url
-			ORDER BY	smiley_id ASC";
+			ORDER BY	smiley_id";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array());
 		while ($row = $statement->fetchArray()) {
