@@ -383,7 +383,7 @@ class Kunena3xExporter extends AbstractExporter {
 				'topic' => $row['subject'],
 				'time' => $row['first_post_time'],
 				'userID' => $row['first_post_userid'],
-				'username' => $row['first_post_guest_name'],
+				'username' => ($row['first_post_guest_name'] ?: ''),
 				'views' => $row['hits'],
 				'isSticky' => $row['ordering'] == 1 ? 1 : 0,
 				'isClosed' => $row['locked'] == 1 ? 1 : 0,
