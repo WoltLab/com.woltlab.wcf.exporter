@@ -389,14 +389,13 @@ class WordPress3xExporter extends AbstractExporter {
 					)
 			ORDER BY 	ID";
 		$statement = $this->database->prepareStatement($sql, $offset, $limit);
-		$statement->execute(array('_wp_attachment_metadata', 'attachment', 'post', 'publish', 'pending', 'draft', 'future', 'private', 'trash'));
+		$statement->execute(array('_wp_attached_file', 'attachment', 'post', 'publish', 'pending', 'draft', 'future', 'private', 'trash'));
 		while ($row = $statement->fetchArray()) {
-			$metaValue = unserialize($row['meta_value']);
-			$fileLocation = $this->fileSystemPath.'wp-content/uploads/'.$metaValue['file'];
+			$fileLocation = $this->fileSystemPath.'wp-content/uploads/'.$row['meta_value'];
 			
 			$isImage = 0;
 			if ($row['post_mime_type'] == 'image/jpeg' || $row['post_mime_type'] == 'image/png' || $row['post_mime_type'] == 'image/gif') $isImage = 1;
-				
+			
 			ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry.attachment')->import($row['meta_id'], array(
 				'objectID' => $row['post_parent'],
 				'userID' => null,
