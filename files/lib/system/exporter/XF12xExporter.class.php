@@ -112,6 +112,17 @@ class XF12xExporter extends AbstractExporter {
 	}
 	
 	/**
+	 * @see	\wcf\system\exporter\IExporter::validateDatabaseAccess()
+	 */
+	public function validateDatabaseAccess() {
+		parent::validateDatabaseAccess();
+	
+		$sql = "SELECT COUNT(*) FROM xf_template_compiled";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+	}
+	
+	/**
 	 * @see	\wcf\system\exporter\IExporter::validateFileAccess()
 	 */
 	public function validateFileAccess() {
