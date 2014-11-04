@@ -17,7 +17,7 @@ use wcf\util\PasswordUtil;
 use wcf\util\UserUtil;
 
 /**
- * Exporter for XenForo 1.2.x
+ * Exporter for XenForo 1.2.x - 1.4.x
  * 
  * @author	Tim Duesterhus
  * @copyright	2001-2014 WoltLab GmbH
