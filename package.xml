@@ -18,10 +18,6 @@
 		<requiredpackage minversion="2.0.7">com.woltlab.wcf</requiredpackage>
 	</requiredpackages>
 	
-	<excludedpackages>
-		<excludedpackage version="2.1.0 Alpha 1">com.woltlab.wcf</excludedpackage>
-	</excludedpackages>
-	
 	<instructions type="install">
 		<instruction type="file">files.tar</instruction>
 		<instruction type="objectType">objectType.xml</instruction>
