@@ -195,7 +195,7 @@ class XF12xExporter extends AbstractExporter {
 	 */
 	public function countUserGroups() {
 		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."user_group";
+			FROM	xf_user_group";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute();
 		$row = $statement->fetchArray();
@@ -207,7 +207,7 @@ class XF12xExporter extends AbstractExporter {
 	 */
 	public function exportUserGroups($offset, $limit) {
 		$sql = "SELECT		*
-			FROM		".$this->databasePrefix."user_group
+			FROM		xf_user_group
 			ORDER BY	user_group_id";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
@@ -242,14 +242,14 @@ class XF12xExporter extends AbstractExporter {
 		$sql = "SELECT		user_table.*, user_profile_table.*, INET_NTOA(ip_table.ip) AS ip,
 					authenticate_table.scheme_class, authenticate_table.data AS passwordData,
 					language_table.language_code
-			FROM		".$this->databasePrefix."user user_table
-			LEFT JOIN	".$this->databasePrefix."user_profile user_profile_table
+			FROM		xf_user user_table
+			LEFT JOIN	xf_user_profile user_profile_table
 			ON		user_table.user_id = user_profile_table.user_id
-			LEFT JOIN	".$this->databasePrefix."user_authenticate authenticate_table
+			LEFT JOIN	xf_user_authenticate authenticate_table
 			ON		user_table.user_id = authenticate_table.user_id
-			LEFT JOIN	".$this->databasePrefix."language language_table
+			LEFT JOIN	xf_language language_table
 			ON		user_table.language_id = language_table.language_id
-			LEFT JOIN	".$this->databasePrefix."ip ip_table
+			LEFT JOIN	xf_ip ip_table
 			ON		user_table.user_id = ip_table.user_id
 					AND content_type = ?
 					AND action = ?
@@ -339,7 +339,7 @@ class XF12xExporter extends AbstractExporter {
 		$condition->add('field_id NOT IN (?)', array(self::$knownProfileFields));
 		
 		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."user_field
+			FROM	xf_user_field
 			".$condition;
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute($condition->getParameters());
@@ -355,7 +355,7 @@ class XF12xExporter extends AbstractExporter {
 		$condition->add('field_id NOT IN (?)', array(self::$knownProfileFields));
 		
 		$sql = "SELECT	*
-			FROM	".$this->databasePrefix."user_field
+			FROM	xf_user_field
 			".$condition."
 			ORDER BY	field_id";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
@@ -407,7 +407,7 @@ class XF12xExporter extends AbstractExporter {
 	 */
 	public function countUserRanks() {
 		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."trophy_user_title";
+			FROM	xf_trophy_user_title";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute();
 		$row = $statement->fetchArray();
@@ -419,7 +419,7 @@ class XF12xExporter extends AbstractExporter {
 	 */
 	public function exportUserRanks($offset, $limit) {
 		$sql = "SELECT		*
-			FROM		".$this->databasePrefix."trophy_user_title
+			FROM		xf_trophy_user_title
 			ORDER BY	minimum_points";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
@@ -440,7 +440,7 @@ class XF12xExporter extends AbstractExporter {
 	 */
 	public function countFollowers() {
 		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."user_follow";
+			FROM	xf_user_follow";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute();
 		$row = $statement->fetchArray();
@@ -452,7 +452,7 @@ class XF12xExporter extends AbstractExporter {
 	 */
 	public function exportFollowers($offset, $limit) {
 		$sql = "SELECT		*
-			FROM		".$this->databasePrefix."user_follow
+			FROM		xf_user_follow
 			ORDER BY	user_id, follow_user_id";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
@@ -477,7 +477,7 @@ class XF12xExporter extends AbstractExporter {
 	 */
 	public function exportWallEntries($offset, $limit) {
 		$sql = "SELECT		*
-			FROM		".$this->databasePrefix."profile_post
+			FROM		xf_profile_post
 			WHERE		profile_post_id BETWEEN ? AND ?
 			ORDER BY	profile_post_id";
 		$statement = $this->database->prepareStatement($sql);
@@ -505,7 +505,7 @@ class XF12xExporter extends AbstractExporter {
 	 */
 	public function exportWallResponses($offset, $limit) {
 		$sql = "SELECT		*
-			FROM		".$this->databasePrefix."profile_post_comment
+			FROM		xf_profile_post_comment
 			WHERE		profile_post_comment_id BETWEEN ? AND ?
 			ORDER BY	profile_post_comment_id";
 		$statement = $this->database->prepareStatement($sql);
@@ -526,7 +526,7 @@ class XF12xExporter extends AbstractExporter {
 	 */
 	public function countUserAvatars() {
 		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."user
+			FROM	xf_user
 			WHERE	avatar_date <> ?";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute(array(0));
@@ -539,7 +539,7 @@ class XF12xExporter extends AbstractExporter {
 	 */
 	public function exportUserAvatars($offset, $limit) {
 		$sql = "SELECT		user_id
-			FROM		".$this->databasePrefix."user
+			FROM		xf_user
 			WHERE		avatar_date <> ?
 			ORDER BY	user_id";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
@@ -581,7 +581,7 @@ class XF12xExporter extends AbstractExporter {
 	 */
 	public function exportConversationFolders($offset, $limit) {
 		$sql = "SELECT		user_id
-			FROM		".$this->databasePrefix."user
+			FROM		xf_user
 			ORDER BY	user_id";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array(''));
@@ -605,7 +605,7 @@ class XF12xExporter extends AbstractExporter {
 	 */
 	public function exportConversations($offset, $limit) {
 		$sql = "SELECT		*
-			FROM		".$this->databasePrefix."conversation_master
+			FROM		xf_conversation_master
 			WHERE		conversation_id BETWEEN ? AND ?
 			ORDER BY	conversation_id";
 		$statement = $this->database->prepareStatement($sql);
@@ -635,8 +635,8 @@ class XF12xExporter extends AbstractExporter {
 	 */
 	public function exportConversationMessages($offset, $limit) {
 		$sql = "SELECT		message_table.*, INET_NTOA(ip_table.ip) AS ip
-			FROM		".$this->databasePrefix."conversation_message message_table
-			LEFT JOIN	".$this->databasePrefix."ip ip_table
+			FROM		xf_conversation_message message_table
+			LEFT JOIN	xf_ip ip_table
 			ON		message_table.ip_id = ip_table.ip_id
 			WHERE		message_table.message_id BETWEEN ? AND ?
 			ORDER BY	message_table.message_id";
@@ -659,7 +659,7 @@ class XF12xExporter extends AbstractExporter {
 	 */
 	public function countConversationUsers() {
 		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."conversation_recipient";
+			FROM	xf_conversation_recipient";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute();
 		$row = $statement->fetchArray();
@@ -671,10 +671,10 @@ class XF12xExporter extends AbstractExporter {
 	 */
 	public function exportConversationUsers($offset, $limit) {
 		$sql = "SELECT		recipient_table.*, user_table.username, cuser_table.is_starred
-			FROM		".$this->databasePrefix."conversation_recipient recipient_table
-			LEFT JOIN	".$this->databasePrefix."user user_table
+			FROM		xf_conversation_recipient recipient_table
+			LEFT JOIN	xf_user user_table
 			ON		user_table.user_id = recipient_table.user_id
-			LEFT JOIN	".$this->databasePrefix."conversation_user cuser_table
+			LEFT JOIN	xf_conversation_user cuser_table
 			ON		cuser_table.owner_user_id = recipient_table.user_id
 				AND	cuser_table.conversation_id = recipient_table.conversation_id
 			ORDER BY	recipient_table.conversation_id, recipient_table.user_id";
@@ -697,7 +697,7 @@ class XF12xExporter extends AbstractExporter {
 	 */
 	public function countBoards() {
 		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."node
+			FROM	xf_node
 			WHERE	node_type_id IN (?, ?, ?)";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute(array('Forum', 'Category', 'LinkForum'));
@@ -710,10 +710,10 @@ class XF12xExporter extends AbstractExporter {
 	 */
 	public function exportBoards($offset, $limit) {
 		$sql = "SELECT		node.node_id AS nodeID, node.*, forum.*, link_forum.*
-			FROM		".$this->databasePrefix."node node
-			LEFT JOIN	".$this->databasePrefix."forum forum
+			FROM		xf_node node
+			LEFT JOIN	xf_forum forum
 			ON		node.node_id = forum.node_id
-			LEFT JOIN	".$this->databasePrefix."link_forum link_forum
+			LEFT JOIN	xf_link_forum link_forum
 			ON		node.node_id = link_forum.node_id
 			WHERE		node_type_id IN (?, ?, ?)
 			ORDER BY	node.lft";
@@ -751,7 +751,7 @@ class XF12xExporter extends AbstractExporter {
 	 */
 	public function exportThreads($offset, $limit) {
 		$sql = "SELECT		*
-			FROM		".$this->databasePrefix."thread
+			FROM		xf_thread
 			WHERE		thread_id BETWEEN ? AND ?
 			ORDER BY	thread_id";
 		$statement = $this->database->prepareStatement($sql);
@@ -790,12 +790,12 @@ class XF12xExporter extends AbstractExporter {
 	 */
 	public function exportPosts($offset, $limit) {
 		$sql = "SELECT		post.*, user.username AS editor, INET_NTOA(ip.ip) AS ip, thread.title
-			FROM		".$this->databasePrefix."post post
-			LEFT JOIN	".$this->databasePrefix."user user
+			FROM		xf_post post
+			LEFT JOIN	xf_user user
 			ON		post.last_edit_user_id = user.user_id
-			LEFT JOIN	".$this->databasePrefix."ip ip
+			LEFT JOIN	xf_ip ip
 			ON		post.ip_id = ip.ip_id
-			LEFT JOIN	".$this->databasePrefix."thread thread
+			LEFT JOIN	xf_thread thread
 			ON		thread.first_post_id = post.post_id
 			WHERE		post_id BETWEEN ? AND ?
 			ORDER BY	post_id";
@@ -826,7 +826,7 @@ class XF12xExporter extends AbstractExporter {
 	 */
 	public function countPostAttachments() {
 		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."attachment
+			FROM	xf_attachment
 			WHERE	content_type = ?";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute(array('post'));
@@ -839,8 +839,8 @@ class XF12xExporter extends AbstractExporter {
 	 */
 	public function exportPostAttachments($offset, $limit) {
 		$sql = "SELECT		attachment.*, data.*
-			FROM		".$this->databasePrefix."attachment attachment
-			LEFT JOIN	".$this->databasePrefix."attachment_data data
+			FROM		xf_attachment attachment
+			LEFT JOIN	xf_attachment_data data
 			ON		attachment.data_id = data.data_id
 			WHERE		attachment.content_type = ?
 			ORDER BY	attachment.attachment_id";
@@ -881,7 +881,7 @@ class XF12xExporter extends AbstractExporter {
 	 */
 	public function countWatchedThreads() {
 		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."thread_watch";
+			FROM	xf_thread_watch";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute();
 		$row = $statement->fetchArray();
@@ -893,7 +893,7 @@ class XF12xExporter extends AbstractExporter {
 	 */
 	public function exportWatchedThreads($offset, $limit) {
 		$sql = "SELECT		*
-			FROM		".$this->databasePrefix."thread_watch
+			FROM		xf_thread_watch
 			ORDER BY	user_id, thread_id";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
@@ -910,7 +910,7 @@ class XF12xExporter extends AbstractExporter {
 	 */
 	public function countPolls() {
 		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."poll
+			FROM	xf_poll
 			WHERE	content_type = ?";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute(array('thread'));
@@ -923,9 +923,9 @@ class XF12xExporter extends AbstractExporter {
 	 */
 	public function exportPolls($offset, $limit) {
 		$sql = "SELECT		poll.*, thread.first_post_id,
-					(SELECT COUNT(*) FROM ".$this->databasePrefix."poll_response response WHERE poll.poll_id = response.poll_id) AS responses
-			FROM		".$this->databasePrefix."poll poll
-			INNER JOIN	".$this->databasePrefix."thread thread
+					(SELECT COUNT(*) FROM xf_poll_response response WHERE poll.poll_id = response.poll_id) AS responses
+			FROM		xf_poll poll
+			INNER JOIN	xf_thread thread
 			ON		(poll.content_id = thread.thread_id)
 			WHERE		content_type = ?
 			ORDER BY	poll.poll_id";
@@ -949,7 +949,7 @@ class XF12xExporter extends AbstractExporter {
 	 */
 	public function countPollOptions() {
 		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."poll_response";
+			FROM	xf_poll_response";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute();
 		$row = $statement->fetchArray();
@@ -961,7 +961,7 @@ class XF12xExporter extends AbstractExporter {
 	 */
 	public function exportPollOptions($offset, $limit) {
 		$sql = "SELECT		*
-			FROM		".$this->databasePrefix."poll_response
+			FROM		xf_poll_response
 			ORDER BY	poll_response_id";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
@@ -980,7 +980,7 @@ class XF12xExporter extends AbstractExporter {
 	 */
 	public function countPollOptionVotes() {
 		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."poll_vote";
+			FROM	xf_poll_vote";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute();
 		$row = $statement->fetchArray();
@@ -992,7 +992,7 @@ class XF12xExporter extends AbstractExporter {
 	 */
 	public function exportPollOptionVotes($offset, $limit) {
 		$sql = "SELECT		*
-			FROM		".$this->databasePrefix."poll_vote
+			FROM		xf_poll_vote
 			ORDER BY	poll_response_id, user_id";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array(0));
@@ -1010,7 +1010,7 @@ class XF12xExporter extends AbstractExporter {
 	 */
 	public function countLabels() {
 		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."forum_prefix";
+			FROM	xf_forum_prefix";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute();
 		$row = $statement->fetchArray();
@@ -1024,8 +1024,8 @@ class XF12xExporter extends AbstractExporter {
 		$objectType = ObjectTypeCache::getInstance()->getObjectTypeByName('com.woltlab.wcf.label.objectType', 'com.woltlab.wbb.board');
 		
 		$sql = "SELECT		forum.*, phrase.phrase_text
-			FROM		".$this->databasePrefix."forum_prefix forum
-			LEFT JOIN	".$this->databasePrefix."phrase phrase
+			FROM		xf_forum_prefix forum
+			LEFT JOIN	xf_phrase phrase
 			ON		phrase.title = ('thread_prefix_' || forum.prefix_id)";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute();
@@ -1051,7 +1051,7 @@ class XF12xExporter extends AbstractExporter {
 	 */
 	public function countACLs() {
 		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."permission_entry_content
+			FROM	xf_permission_entry_content
 			WHERE		permission_group_id = ?
 				AND	permission_value <> ?
 				AND	content_type = ?";
@@ -1089,7 +1089,7 @@ class XF12xExporter extends AbstractExporter {
 		);
 		
 		$sql = "SELECT		*
-			FROM		".$this->databasePrefix."permission_entry_content
+			FROM		xf_permission_entry_content
 			WHERE		permission_group_id = ?
 				AND	permission_value <> ?
 				AND	content_type = ?
@@ -1174,7 +1174,7 @@ class XF12xExporter extends AbstractExporter {
 						entry.message, entry.post_date, entry.reply_count, entry.view_count,
 						(SELECT GROUP_CONCAT(category_id) FROM xfa_blog_entry_category category WHERE category.entry_id = entry.entry_id) AS categories
 				FROM		xfa_blog_entry entry
-				LEFT JOIN	".$this->databasePrefix."user user
+				LEFT JOIN	xf_user user
 				ON		entry.user_id = user.user_id
 			)
 			UNION ALL
@@ -1184,7 +1184,7 @@ class XF12xExporter extends AbstractExporter {
 						entry.message, entry.post_date, 0 AS reply_count, 0 AS view_count,
 						entry.categories
 				FROM		xfa_blog_entry_scheduled entry
-				LEFT JOIN	".$this->databasePrefix."user user
+				LEFT JOIN	xf_user user
 				ON		entry.user_id = user.user_id
 			)
 			ORDER BY isPublished DESC, entry_id ASC";
@@ -1232,7 +1232,7 @@ class XF12xExporter extends AbstractExporter {
 	public function exportBlogComments($offset, $limit) {
 		$sql = "SELECT		comment.*, user.username
 			FROM		xfa_blog_comment comment
-			LEFT JOIN	".$this->databasePrefix."user user
+			LEFT JOIN	xf_user user
 			ON		comment.user_id = user.user_id
 			ORDER BY	comment.comment_id";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
@@ -1253,7 +1253,7 @@ class XF12xExporter extends AbstractExporter {
 	 */
 	public function countBlogEntryLikes() {
 		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."liked_content
+			FROM	xf_liked_content
 			WHERE	content_type = ?";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute(array('xfa_blog_entry'));
@@ -1266,7 +1266,7 @@ class XF12xExporter extends AbstractExporter {
 	 */
 	public function exportBlogEntryLikes($offset, $limit) {
 		$sql = "SELECT		*
-			FROM		".$this->databasePrefix."liked_content
+			FROM		xf_liked_content
 			WHERE		content_type = ?
 			ORDER BY	like_id ASC";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
