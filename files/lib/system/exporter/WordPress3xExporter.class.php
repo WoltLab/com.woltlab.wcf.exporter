@@ -297,9 +297,10 @@ class WordPress3xExporter extends AbstractExporter {
 	 */
 	public function countBlogComments() {
 		$sql = "SELECT	COUNT(*) AS count
-			FROM	".$this->databasePrefix."comments";
+			FROM	".$this->databasePrefix."comments
+			WHERE	comment_approved = ?";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
+		$statement->execute(array(1));
 		$row = $statement->fetchArray();
 		return $row['count'];
 	}
@@ -315,9 +316,10 @@ class WordPress3xExporter extends AbstractExporter {
 		
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."comments
+			WHERE	comment_approved = ?
 			ORDER BY	comment_parent, comment_ID";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement->execute(array(1));
 		while ($row = $statement->fetchArray()) {
 			if (!$row['comment_parent']) {
 				ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry.comment')->import($row['comment_ID'], array(
@@ -396,6 +398,9 @@ class WordPress3xExporter extends AbstractExporter {
 			$isImage = 0;
 			if ($row['post_mime_type'] == 'image/jpeg' || $row['post_mime_type'] == 'image/png' || $row['post_mime_type'] == 'image/gif') $isImage = 1;
 			
+			$time = @strtotime($row['post_date_gmt']);
+			if (!$time) $time = @strtotime($row['post_date']);
+			
 			ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry.attachment')->import($row['meta_id'], array(
 				'objectID' => $row['post_parent'],
 				'userID' => null,
@@ -405,7 +410,7 @@ class WordPress3xExporter extends AbstractExporter {
 				'isImage' => $isImage,
 				'downloads' => 0,
 				'lastDownloadTime' => 0,
-				'uploadTime' => 0,
+				'uploadTime' => $time,
 				'showOrder' => 0
 			), array('fileLocation' => $fileLocation));
 		}
