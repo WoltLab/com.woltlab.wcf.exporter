@@ -403,7 +403,7 @@ class WordPress3xExporter extends AbstractExporter {
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry.attachment')->import($row['meta_id'], array(
 				'objectID' => $row['post_parent'],
-				'userID' => null,
+				'userID' => ($row['post_author'] ?: null),
 				'filename' => basename($fileLocation),
 				'filesize' => filesize($fileLocation),
 				'fileType' => $row['post_mime_type'],
