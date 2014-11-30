@@ -399,7 +399,10 @@ class PhpBB3xExporter extends AbstractExporter {
 				case 6:
 					$type = 'date';
 				break;
+				default:
+					continue 2;
 			}
+			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.option')->import($row['field_id'], array(
 				'categoryName' => 'profile.personal',
 				'optionType' => $type,
