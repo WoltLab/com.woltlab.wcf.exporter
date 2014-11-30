@@ -134,7 +134,7 @@ class PhpBB3xExporter extends AbstractExporter {
 	 */
 	public function validateFileAccess() {
 		if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData) || in_array('com.woltlab.wbb.attachment', $this->selectedData) || in_array('com.woltlab.wcf.smiley', $this->selectedData)) {
-			if (empty($this->fileSystemPath) || !@file_exists($this->fileSystemPath . 'includes/error_collector.php')) return false;
+			if (empty($this->fileSystemPath) || !@file_exists($this->fileSystemPath . 'phpbb/error_collector.php')) return false;
 		}
 		
 		return true;
