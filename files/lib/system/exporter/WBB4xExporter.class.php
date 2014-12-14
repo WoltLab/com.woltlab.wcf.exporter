@@ -816,6 +816,8 @@ class WBB4xExporter extends AbstractExporter {
 			if ($row['isAnnouncement']) $announcementIDs[] = $row['threadID'];
 		}
 		
+		if (empty($threadIDs)) return;
+		
 		// get assigned boards (for announcements)
 		$assignedBoards = array();
 		if (!empty($announcementIDs)) {
