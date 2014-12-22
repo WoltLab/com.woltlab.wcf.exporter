@@ -411,7 +411,7 @@ class WBB4xExporter extends AbstractExporter {
 				'groupID' => $row['groupID'],
 				'requiredPoints' => $row['requiredPoints'],
 				'rankTitle' => $row['rankTitle'],
-				'rankTitle' => $row['cssClassName'],
+				'cssClassName' => $row['cssClassName'],
 				'rankImage' => $row['rankImage'],
 				'repeatImage' => $row['repeatImage'],
 				'requiredGender' => $row['requiredGender']
