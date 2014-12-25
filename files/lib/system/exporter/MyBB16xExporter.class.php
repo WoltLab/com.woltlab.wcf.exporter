@@ -364,7 +364,7 @@ class MyBB16xExporter extends AbstractExporter {
 	public function exportUserOptions($offset, $limit) {
 		$conditionBuilder = new PreparedStatementConditionBuilder();
 		$conditionBuilder->add('name NOT IN (?)', array(self::$knownProfileFields));
-	
+		
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."profilefields
 			".$conditionBuilder."

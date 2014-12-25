@@ -83,7 +83,7 @@ class IPB3xExporter extends AbstractExporter {
 	 */
 	public function validateDatabaseAccess() {
 		parent::validateDatabaseAccess();
-	
+		
 		$sql = "SELECT COUNT(*) FROM ".$this->databasePrefix."core_like";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute();
@@ -96,7 +96,7 @@ class IPB3xExporter extends AbstractExporter {
 		if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData) || in_array('com.woltlab.wbb.attachment', $this->selectedData) || in_array('com.woltlab.wcf.conversation.attachment', $this->selectedData)) {
 			if (empty($this->fileSystemPath) || !@file_exists($this->fileSystemPath . 'conf_global.php')) return false;
 		}
-	
+		
 		return true;
 	}
 	
@@ -105,7 +105,7 @@ class IPB3xExporter extends AbstractExporter {
 	 */
 	public function getQueue() {
 		$queue = array();
-	
+		
 		// user
 		if (in_array('com.woltlab.wcf.user', $this->selectedData)) {
 			if (in_array('com.woltlab.wcf.user.group', $this->selectedData)) {
@@ -127,14 +127,14 @@ class IPB3xExporter extends AbstractExporter {
 				$queue[] = 'com.woltlab.wcf.conversation';
 				$queue[] = 'com.woltlab.wcf.conversation.message';
 				$queue[] = 'com.woltlab.wcf.conversation.user';
-					
+				
 				if (in_array('com.woltlab.wcf.conversation.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wcf.conversation.attachment';
 			}
 		}
 		
 		// board
 		if (in_array('com.woltlab.wbb.board', $this->selectedData)) {
-			$queue[] = 'com.woltlab.wbb.board';			
+			$queue[] = 'com.woltlab.wbb.board';
 			$queue[] = 'com.woltlab.wbb.thread';
 			$queue[] = 'com.woltlab.wbb.post';
 			
@@ -146,7 +146,7 @@ class IPB3xExporter extends AbstractExporter {
 			}
 			if (in_array('com.woltlab.wbb.like', $this->selectedData)) $queue[] = 'com.woltlab.wbb.like';
 		}
-	
+		
 		return $queue;
 	}
 	
@@ -175,13 +175,13 @@ class IPB3xExporter extends AbstractExporter {
 				$profileFields[] = $row;
 			}
 		}
-	
+		
 		// prepare password update
 		$sql = "UPDATE	wcf".WCF_N."_user
 			SET	password = ?
 			WHERE	userID = ?";
 		$passwordUpdateStatement = WCF::getDB()->prepareStatement($sql);
-	
+		
 		// get users
 		$sql = "SELECT		pfields_content.*, members.*, profile_portal.*
 			FROM		".$this->databasePrefix."members members
@@ -599,7 +599,7 @@ class IPB3xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			$this->boardCache[$row['parent_id']][] = $row;
 		}
-	
+		
 		$this->exportBoardsRecursively();
 	}
 	
@@ -608,7 +608,7 @@ class IPB3xExporter extends AbstractExporter {
 	 */
 	protected function exportBoardsRecursively($parentID = -1) {
 		if (!isset($this->boardCache[$parentID])) return;
-	
+		
 		foreach ($this->boardCache[$parentID] as $board) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import($board['id'], array(
 				'parentID' => ($board['parent_id'] != -1 ? $board['parent_id'] : null),
@@ -649,14 +649,14 @@ class IPB3xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			$threadIDs[] = $row['tid'];
 		}
-	
+		
 		// get tags
 		$tags = $this->getTags('forums', 'topics', $threadIDs);
-	
+		
 		// get threads
 		$conditionBuilder = new PreparedStatementConditionBuilder();
 		$conditionBuilder->add('topics.tid IN (?)', array($threadIDs));
-	
+		
 		$sql = "SELECT		topics.*
 			FROM		".$this->databasePrefix."topics topics
 			".$conditionBuilder;
@@ -925,7 +925,7 @@ class IPB3xExporter extends AbstractExporter {
 		$conditionBuilder->add('tag_meta_app = ?', array($app));
 		$conditionBuilder->add('tag_meta_area = ?', array($area));
 		$conditionBuilder->add('tag_meta_id IN (?)', array($objectIDs));
-	
+		
 		// get taggable id
 		$sql = "SELECT		tag_meta_id, tag_text
 			FROM		".$this->databasePrefix."core_tags
@@ -1002,7 +1002,7 @@ class IPB3xExporter extends AbstractExporter {
 		$string = preg_replace('~<a.*?href=(?:"|\')([^"]*)(?:"|\')>(.*?)</a>~is', '[url=\'\\1\']\\2[/url]', $string);
 		
 		// smileys
-		$string = preg_replace('~<img src=\'[^\']+\' class=\'bbc_emoticon\' alt=\'([^\']+)\' ?/?>~is', '\\1', $string);		
+		$string = preg_replace('~<img src=\'[^\']+\' class=\'bbc_emoticon\' alt=\'([^\']+)\' ?/?>~is', '\\1', $string);
 		
 		// images
 		$string = preg_replace('~<img[^>]+src=["\']([^"\']+)["\'][^>]*/?>~is', '[img]\\1[/img]', $string);

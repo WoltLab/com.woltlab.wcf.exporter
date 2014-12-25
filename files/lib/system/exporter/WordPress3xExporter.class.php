@@ -53,7 +53,7 @@ class WordPress3xExporter extends AbstractExporter {
 	 */
 	public function getQueue() {
 		$queue = array();
-	
+		
 		// user
 		if (in_array('com.woltlab.wcf.user', $this->selectedData)) {
 			$queue[] = 'com.woltlab.wcf.user';
@@ -75,7 +75,7 @@ class WordPress3xExporter extends AbstractExporter {
 	 */
 	public function validateDatabaseAccess() {
 		parent::validateDatabaseAccess();
-	
+		
 		$sql = "SELECT COUNT(*) FROM ".$this->databasePrefix."posts";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute();
@@ -115,7 +115,7 @@ class WordPress3xExporter extends AbstractExporter {
 			SET	password = ?
 			WHERE	userID = ?";
 		$passwordUpdateStatement = WCF::getDB()->prepareStatement($sql);
-	
+		
 		// get users
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."users
@@ -169,7 +169,7 @@ class WordPress3xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			$this->categoryCache[$row['parent']][] = $row;
 		}
-	
+		
 		$this->exportBlogCategoriesRecursively();
 	}
 	
@@ -178,7 +178,7 @@ class WordPress3xExporter extends AbstractExporter {
 	 */
 	protected function exportBlogCategoriesRecursively($parentID = 0) {
 		if (!isset($this->categoryCache[$parentID])) return;
-	
+		
 		foreach ($this->categoryCache[$parentID] as $category) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.blog.category')->import($category['term_id'], array(
 				'title' => StringUtil::decodeHTML($category['name']),
@@ -219,7 +219,7 @@ class WordPress3xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			$entryIDs[] = $row['ID'];
 		}
-	
+		
 		// get tags
 		$tags = array();
 		$conditionBuilder = new PreparedStatementConditionBuilder();
@@ -256,11 +256,11 @@ class WordPress3xExporter extends AbstractExporter {
 			if (!isset($categories[$row['object_id']])) $categories[$row['object_id']] = array();
 			$categories[$row['object_id']][] = $row['term_id'];
 		}
-	
+		
 		// get entries
 		$conditionBuilder = new PreparedStatementConditionBuilder();
 		$conditionBuilder->add('post.ID IN (?)', array($entryIDs));
-	
+		
 		$sql = "SELECT		post.*, user.user_login
 			FROM		".$this->databasePrefix."posts post
 			LEFT JOIN	".$this->databasePrefix."users user
@@ -389,7 +389,7 @@ class WordPress3xExporter extends AbstractExporter {
 						WHERE	post_type = ?
 							AND post_status IN (?, ?, ?, ?, ?, ?)
 					)
-			ORDER BY 	ID";
+			ORDER BY	ID";
 		$statement = $this->database->prepareStatement($sql, $offset, $limit);
 		$statement->execute(array('_wp_attached_file', 'attachment', 'post', 'publish', 'pending', 'draft', 'future', 'private', 'trash'));
 		while ($row = $statement->fetchArray()) {

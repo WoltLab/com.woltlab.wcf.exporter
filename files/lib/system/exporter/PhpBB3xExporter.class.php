@@ -726,7 +726,7 @@ class PhpBB3xExporter extends AbstractExporter {
 				'message' => self::fixBBCodes(StringUtil::decodeHTML($row['message_text']), $row['bbcode_uid']),
 				'time' => $row['message_time'],
 				'attachments' => $row['attachments'],
-				'enableSmilies' =>  $row['enable_smilies'],
+				'enableSmilies' => $row['enable_smilies'],
 				'enableHtml' => 0,
 				'enableBBCodes' => $row['enable_bbcode'],
 				'showSignature' => $row['enable_sig']

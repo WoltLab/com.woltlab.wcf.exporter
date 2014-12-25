@@ -72,7 +72,7 @@ class Kunena3xExporter extends AbstractExporter {
 	 */
 	public function getQueue() {
 		$queue = array();
-	
+		
 		// user
 		if (in_array('com.woltlab.wcf.user', $this->selectedData)) {
 			if (in_array('com.woltlab.wcf.user.group', $this->selectedData)) {
@@ -82,7 +82,7 @@ class Kunena3xExporter extends AbstractExporter {
 			$queue[] = 'com.woltlab.wcf.user';
 			if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.avatar';
 		}
-	
+		
 		// board
 		if (in_array('com.woltlab.wbb.board', $this->selectedData)) {
 			$queue[] = 'com.woltlab.wbb.board';
@@ -91,7 +91,7 @@ class Kunena3xExporter extends AbstractExporter {
 				
 			if (in_array('com.woltlab.wbb.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wbb.attachment';
 		}
-	
+		
 		return $queue;
 	}
 	
@@ -100,7 +100,7 @@ class Kunena3xExporter extends AbstractExporter {
 	 */
 	public function validateDatabaseAccess() {
 		parent::validateDatabaseAccess();
-	
+		
 		$sql = "SELECT COUNT(*) FROM ".$this->databasePrefix."kunena_users";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute();
@@ -113,7 +113,7 @@ class Kunena3xExporter extends AbstractExporter {
 		if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData) || in_array('com.woltlab.wbb.attachment', $this->selectedData)) {
 			if (empty($this->fileSystemPath) || !@file_exists($this->fileSystemPath . 'libraries/kunena/model.php')) return false;
 		}
-	
+		
 		return true;
 	}
 	
@@ -180,7 +180,7 @@ class Kunena3xExporter extends AbstractExporter {
 			SET	password = ?
 			WHERE	userID = ?";
 		$passwordUpdateStatement = WCF::getDB()->prepareStatement($sql);
-	
+		
 		// get users
 		$sql = "SELECT		kunena_users.*, users.*,
 					(
@@ -335,7 +335,7 @@ class Kunena3xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			$this->boardCache[$row['parent_id']][] = $row;
 		}
-	
+		
 		$this->exportBoardsRecursively();
 	}
 	
@@ -344,7 +344,7 @@ class Kunena3xExporter extends AbstractExporter {
 	 */
 	protected function exportBoardsRecursively($parentID = 0) {
 		if (!isset($this->boardCache[$parentID])) return;
-	
+		
 		foreach ($this->boardCache[$parentID] as $board) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import($board['id'], array(
 				'parentID' => ($board['parent_id'] ?: null),
@@ -354,7 +354,7 @@ class Kunena3xExporter extends AbstractExporter {
 				'description' => $board['description'],
 				'isClosed' => $board['locked'] ? 1 : 0
 			));
-				
+			
 			$this->exportBoardsRecursively($board['id']);
 		}
 	}
@@ -471,14 +471,14 @@ class Kunena3xExporter extends AbstractExporter {
 			$quoteCallback = new Callback(function ($matches) {
 				$username = str_replace(array("\\", "'"), array("\\\\", "\'"), $matches[1]);
 				$postID = $matches[2];
-		
+				
 				$postLink = LinkHandler::getInstance()->getLink('Thread', array(
 					'application' => 'wbb',
 					'postID' => $postID,
 					'forceFrontend' => true
 				)).'#post'.$postID;
 				$postLink = str_replace(array("\\", "'"), array("\\\\", "\'"), $postLink);
-		
+				
 				return "[quote='".$username."','".$postLink."']";
 			});
 		}

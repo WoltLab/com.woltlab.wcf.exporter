@@ -1669,7 +1669,7 @@ class WBB4xExporter extends AbstractExporter {
 		$conditionBuilder = new PreparedStatementConditionBuilder();
 		$conditionBuilder->add('objectTypeID = ?', array($this->getObjectTypeID('com.woltlab.wcf.label.object', $objectType)));
 		$conditionBuilder->add('objectID IN (?)', array($objectIDs));
-	
+		
 		$sql = "SELECT		labelID, objectID
 			FROM		wcf".$this->dbNo."_label_object
 			".$conditionBuilder;
@@ -1679,7 +1679,7 @@ class WBB4xExporter extends AbstractExporter {
 			if (!isset($labels[$row['objectID']])) $labels[$row['objectID']] = array();
 			$labels[$row['objectID']][] = $row['labelID'];
 		}
-	
+		
 		return $labels;
 	}
 	

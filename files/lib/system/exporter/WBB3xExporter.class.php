@@ -104,7 +104,7 @@ class WBB3xExporter extends AbstractExporter {
 	
 	/**
 	 * valid thread sort fields
-	 * @var array<string>
+	 * @var	array<string>
 	 */
 	protected static $availableThreadSortFields = array('topic', 'username', 'time', 'views', 'replies', 'lastPostTime', 'cumulativeLikes');
 	
@@ -1969,10 +1969,10 @@ class WBB3xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			$imageIDs[] = $row['photoID'];
 		}
-	
+		
 		// get tags
 		$tags = $this->getTags('com.woltlab.wcf.user.gallery.photo', $imageIDs);
-	
+		
 		// get categories
 		$categories = array();
 		$conditionBuilder = new PreparedStatementConditionBuilder();
@@ -1990,11 +1990,11 @@ class WBB3xExporter extends AbstractExporter {
 			if (!isset($categories[$row['objectID']])) $categories[$row['objectID']] = array();
 			$categories[$row['objectID']][] = $row['categoryID'];
 		}
-	
+		
 		// get images
 		$conditionBuilder = new PreparedStatementConditionBuilder();
 		$conditionBuilder->add('user_gallery.photoID IN (?)', array($imageIDs));
-	
+		
 		$sql = "SELECT		user_gallery.*
 			FROM		wcf".$this->dbNo."_user_gallery user_gallery
 			".$conditionBuilder;
@@ -2383,7 +2383,7 @@ class WBB3xExporter extends AbstractExporter {
 			WHERE		eventID = ?
 			ORDER BY	startTime";
 		$firstEventDateStatement = $this->database->prepareStatement($sql, 1);
-	
+		
 		$sql = "SELECT		participation_to_user.*, participation.eventID
 			FROM		wcf".$this->dbNo."_calendar_event_participation_to_user participation_to_user
 			LEFT JOIN	wcf".$this->dbNo."_calendar_event_participation participation

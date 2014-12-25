@@ -785,7 +785,7 @@ class VB3or4xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			$this->boardCache[$row['parentid']][] = $row;
 		}
-	
+		
 		$this->exportBoardsRecursively();
 	}
 	
@@ -1041,7 +1041,7 @@ class VB3or4xExporter extends AbstractExporter {
 			}
 			catch (\Exception $e) {
 				if ($this->readOption('attachfile') == self::ATTACHFILE_DATABASE && $file) @unlink($file);
-			
+				
 				throw $e;
 			}
 		}

@@ -352,7 +352,7 @@ class SMF2xExporter extends AbstractExporter {
 			}
 		}
 	}
-
+	
 	/**
 	 * Counts user options.
 	 */

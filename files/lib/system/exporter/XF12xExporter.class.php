@@ -116,7 +116,7 @@ class XF12xExporter extends AbstractExporter {
 	 */
 	public function validateDatabaseAccess() {
 		parent::validateDatabaseAccess();
-	
+		
 		$sql = "SELECT COUNT(*) FROM xf_template_compiled";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute();
@@ -749,7 +749,7 @@ class XF12xExporter extends AbstractExporter {
 			));
 		}
 	}
-
+	
 	/**
 	 * Counts threads.
 	 */
@@ -1015,7 +1015,7 @@ class XF12xExporter extends AbstractExporter {
 			));
 		}
 	}
-
+	
 	/**
 	 * Counts labels.
 	 */
