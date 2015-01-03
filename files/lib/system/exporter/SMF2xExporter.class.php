@@ -570,7 +570,7 @@ class SMF2xExporter extends AbstractExporter {
 			
 			$i = 0;
 			foreach ($labels as $label) {
-				ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.label')->import($row['id_member'].'-'.$i++, array(
+				ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.label')->import($row['id_member'].'-'.($i++), array(
 					'userID' => $row['id_member'],
 					'label' => mb_substr($label, 0, 80)
 				));
