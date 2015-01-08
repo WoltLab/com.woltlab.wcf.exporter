@@ -1399,7 +1399,7 @@ class WBB4xExporter extends AbstractExporter {
 		$conditionBuilder->add('entryID IN (?)', array($entryIDs));
 		
 		$sql = "SELECT		* 
-			FROM		blog".WCF_N."_entry_to_category
+			FROM		blog".$this->dbNo."_entry_to_category
 			".$conditionBuilder;
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute($conditionBuilder->getParameters());
