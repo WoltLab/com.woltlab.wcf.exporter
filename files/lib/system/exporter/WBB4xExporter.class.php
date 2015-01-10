@@ -4,6 +4,7 @@ use wcf\data\object\type\ObjectTypeCache;
 use wcf\system\database\util\PreparedStatementConditionBuilder;
 use wcf\system\importer\ImportHandler;
 use wcf\system\WCF;
+use wcf\util\FileUtil;
 
 /**
  * Exporter for Burning Board 4.x
@@ -64,7 +65,15 @@ class WBB4xExporter extends AbstractExporter {
 		'com.woltlab.blog.entry.attachment' => 'BlogAttachments',
 		'com.woltlab.blog.entry.comment' => 'BlogComments',
 		'com.woltlab.blog.entry.comment.response' => 'BlogCommentResponses',
-		'com.woltlab.blog.entry.like' => 'BlogEntryLikes'
+		'com.woltlab.blog.entry.like' => 'BlogEntryLikes',
+		
+		'com.woltlab.gallery.category' => 'GalleryCategories',
+		'com.woltlab.gallery.album' => 'GalleryAlbums',
+		'com.woltlab.gallery.image' => 'GalleryImages',
+		'com.woltlab.gallery.image.comment' => 'GalleryComments',
+		'com.woltlab.gallery.image.comment.response' => 'GalleryCommentResponses',
+		'com.woltlab.gallery.image.like' => 'GalleryImageLikes',
+		'com.woltlab.gallery.image.marker' => 'GalleryImageMarkers'
 	);
 	
 	/**
@@ -128,6 +137,13 @@ class WBB4xExporter extends AbstractExporter {
 				'com.woltlab.blog.entry.comment',
 				'com.woltlab.blog.entry.like'
 			),
+			'com.woltlab.gallery.image' => array(
+				'com.woltlab.gallery.category',
+				'com.woltlab.gallery.album',
+				'com.woltlab.gallery.image.comment',
+				'com.woltlab.gallery.image.like',
+				'com.woltlab.gallery.image.marker'
+			),
 			'com.woltlab.wcf.smiley' => array()
 		);
 	}
@@ -185,7 +201,7 @@ class WBB4xExporter extends AbstractExporter {
 					$queue[] = 'com.woltlab.wcf.conversation';
 					$queue[] = 'com.woltlab.wcf.conversation.message';
 					$queue[] = 'com.woltlab.wcf.conversation.user';
-						
+					
 					if (in_array('com.woltlab.wcf.conversation.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wcf.conversation.attachment';
 				}
 			}
@@ -228,6 +244,22 @@ class WBB4xExporter extends AbstractExporter {
 					$queue[] = 'com.woltlab.blog.entry.comment.response';
 				}
 				if (in_array('com.woltlab.blog.entry.like', $this->selectedData)) $queue[] = 'com.woltlab.blog.entry.like';
+			}
+		}
+		
+		// gallery
+		$galleryVersion = $this->getPackageVersion('com.woltlab.gallery');
+		if ($galleryVersion) {
+			if (in_array('com.woltlab.gallery.image', $this->selectedData)) {
+				if (in_array('com.woltlab.gallery.category', $this->selectedData)) $queue[] = 'com.woltlab.gallery.category';
+				if (in_array('com.woltlab.gallery.album', $this->selectedData)) $queue[] = 'com.woltlab.gallery.album';
+				$queue[] = 'com.woltlab.gallery.image';
+				if (in_array('com.woltlab.gallery.image.comment', $this->selectedData)) {
+					$queue[] = 'com.woltlab.gallery.image.comment';
+					$queue[] = 'com.woltlab.gallery.image.comment.response';
+				}
+				if (in_array('com.woltlab.gallery.image.like', $this->selectedData)) $queue[] = 'com.woltlab.gallery.image.like';
+				if (in_array('com.woltlab.gallery.image.marker', $this->selectedData)) $queue[] = 'com.woltlab.gallery.image.marker';
 			}
 		}
 		
@@ -1301,35 +1333,14 @@ class WBB4xExporter extends AbstractExporter {
 	 * Counts blog categories.
 	 */
 	public function countBlogCategories() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	wcf".$this->dbNo."_category
-			WHERE	objectTypeID = ?";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array($this->getObjectTypeID('com.woltlab.wcf.category', 'com.woltlab.blog.category')));
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->countCategories('com.woltlab.blog.category');
 	}
 	
 	/**
 	 * Exports blog categories.
 	 */
 	public function exportBlogCategories($offset, $limit) {
-		$sql = "SELECT		*
-			FROM		wcf".$this->dbNo."_category
-			WHERE		objectTypeID = ?
-			ORDER BY	parentCategoryID, categoryID";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute(array($this->getObjectTypeID('com.woltlab.wcf.category', 'com.woltlab.blog.category')));
-		while ($row = $statement->fetchArray()) {
-			ImportHandler::getInstance()->getImporter('com.woltlab.blog.category')->import($row['categoryID'], array(
-				'title' => $row['title'],
-				'description' => $row['description'],
-				'parentCategoryID' => $row['parentCategoryID'],
-				'showOrder' => $row['showOrder'],
-				'time' => $row['time'],
-				'isDisabled' => $row['isDisabled']
-			));
-		}
+		$this->exportCategories('com.woltlab.blog.category', 'com.woltlab.blog.category', $offset, $limit);
 	}
 	
 	/**
@@ -1468,6 +1479,255 @@ class WBB4xExporter extends AbstractExporter {
 	 */
 	public function exportBlogEntryLikes($offset, $limit) {
 		$this->exportLikes('com.woltlab.blog.likeableEntry', 'com.woltlab.blog.entry.like', $offset, $limit);
+	}
+	
+	/**
+	 * Counts gallery albums.
+	 */
+	public function countGalleryAlbums() {
+		return $this->__getMaxID("gallery".$this->dbNo."_album", 'albumID');
+	}
+	
+	/**
+	 * Exports gallery albums.
+	 * 
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportGalleryAlbums($offset, $limit) {
+		$version21 = (substr($this->getPackageVersion('com.woltlab.gallery'), 0, 3) == '2.1');
+		
+		$sql = "SELECT		*
+			FROM		gallery".$this->dbNo."_album
+			WHERE		albumID BETWEEN ? AND ?
+			ORDER BY	albumID";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.gallery.album')->import($row['albumID'], array(
+				'userID' => $row['userID'],
+				'username' => ($row['username'] ?: ''),
+				'title' => $row['title'],
+				'description' => $row['description'],
+				'lastUpdateTime' => $row['lastUpdateTime'],
+				'accessLevel' => ($version21 ? $row['accessLevel'] : 0)
+			));
+		}
+	}
+	
+	/**
+	 * Counts gallery categories.
+	 */
+	public function countGalleryCategories() {
+		return $this->countCategories('com.woltlab.gallery.category');
+	}
+	
+	/**
+	 * Exports gallery categories.
+	 */
+	public function exportGalleryCategories($offset, $limit) {
+		$this->exportCategories('com.woltlab.gallery.category', 'com.woltlab.gallery.category', $offset, $limit);
+	}
+	
+	/**
+	 * Counts gallery images.
+	 */
+	public function countGalleryImages() {
+		return $this->__getMaxID("gallery".$this->dbNo."_image", 'imageID');
+	}
+	
+	/**
+	 * Exports gallery images.
+	 */
+	public function exportGalleryImages($offset, $limit) {
+		$version21 = (substr($this->getPackageVersion('com.woltlab.gallery'), 0, 3) == '2.1');
+		
+		// build path to gallery image directories
+		$sql = "SELECT	packageDir
+			FROM	wcf".$this->dbNo."_package
+			WHERE	package = ?";
+		$statement = $this->database->prepareStatement($sql, 1);
+		$statement->execute(array('com.woltlab.gallery'));
+		$packageDir = $statement->fetchColumn();
+		$imageFilePath = FileUtil::getRealPath($this->fileSystemPath.'/'.$packageDir);
+		
+		// fetch image data
+		$sql = "SELECT		*
+			FROM		gallery".$this->dbNo."_image
+			WHERE		imageID BETWEEN ? AND ?
+			ORDER BY	imageID";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
+		
+		$imageIDs = $images = array();
+		while ($row = $statement->fetchArray()) {
+			$imageIDs[] = $row['imageID'];
+			
+			$images[$row['imageID']] = array(
+				'tmpHash' => $row['tmpHash'],
+				'userID' => $row['userID'],
+				'username' => $row['username'],
+				'albumID' => $row['albumID'],
+				'title' => $row['title'],
+				'description' => $row['description'],
+				'filename' => $row['filename'],
+				'fileExtension' => $row['fileExtension'],
+				'fileHash' => $row['fileHash'],
+				'filesize' => $row['filesize'],
+				'comments' => $row['comments'],
+				'views' => $row['views'],
+				'comments' => $row['comments'],
+				'cumulativeLikes' => $row['cumulativeLikes'],
+				'uploadTime' => $row['uploadTime'],
+				'creationTime' => $row['creationTime'],
+				'width' => $row['width'],
+				'creationTime' => $row['creationTime'],
+				'height' => $row['height'],
+				'orientation' => $row['orientation'],
+				'camera' => $row['camera'],
+				'location' => $row['location'],
+				'latitude' => $row['latitude'],
+				'longitude' => $row['longitude'],
+				'thumbnailX' => $row['thumbnailX'],
+				'thumbnailY' => $row['thumbnailY'],
+				'thumbnailHeight' => $row['thumbnailHeight'],
+				'thumbnailWidth' => $row['thumbnailWidth'],
+				'tinyThumbnailSize' => $row['tinyThumbnailSize'],
+				'smallThumbnailSize' => $row['smallThumbnailSize'],
+				'mediumThumbnailSize' => $row['mediumThumbnailSize'],
+				'largeThumbnailSize' => $row['largeThumbnailSize'],
+				'ipAddress' => $row['ipAddress'],
+				'enableComments' => $row['enableComments'],
+				'isDisabled' => $row['isDisabled'],
+				'isDeleted' => $row['isDeleted'],
+				'deleteTime' => $row['deleteTime'],
+				'exifData' => $row['exifData'],
+			);
+			
+			if ($version21) {
+				$images[$row['imageID']] = array_merge($images[$row['imageID']], array(
+					'enableSmilies' => $row['enableSmilies'],
+					'enableHtml' => $row['enableHtml'],
+					'enableBBCodes' => $row['enableBBCodes'],
+					'rawExifData' => $row['rawExifData'],
+					'accessLevel' => $row['accessLevel'],
+					'hasEmbeddedObjects' => $row['hasEmbeddedObjects'],
+					'hasMarkers' => $row['hasMarkers'],
+					'showOrder' => $row['showOrder'],
+					'hasWatermark' => $row['hasWatermark']
+				));
+			}
+		}
+		
+		// fetch tags
+		$tags = $this->getTags('com.woltlab.gallery.image', $imageIDs);
+		
+		// fetch categories
+		$categories = array();
+		$conditionBuilder = new PreparedStatementConditionBuilder();
+		$conditionBuilder->add('imageID IN (?)', array($imageIDs));
+		
+		$sql = "SELECT		*
+			FROM		gallery".$this->dbNo."_image_to_category
+			".$conditionBuilder;
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute($conditionBuilder->getParameters());
+		while ($row = $statement->fetchArray()) {
+			if (!isset($categories[$row['imageID']])) {
+				$categories[$row['imageID']] = array();
+			}
+			$categories[$row['imageID']][] = $row['categoryID'];
+		}
+		
+		foreach ($images as $imageID => $imageData) {
+			$additionalData = array(
+				'fileLocation' => $imageFilePath .'/userImages/' . substr($imageData['fileHash'], 0, 2) . '/' . ($imageID) . '-' . $imageData['fileHash'] . '.' . $imageData['fileExtension']
+			);
+			
+			if (isset($categories[$imageID])) {
+				$additionalData['categories'] = $categories[$imageID];
+			}
+			if (isset($tags[$imageID])) {
+				$additionalData['tags'] = $tags[$imageID];
+			}
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.gallery.image')->import($imageID, $imageData, $additionalData);
+		}
+	}
+	
+	/**
+	 * Counts gallery image markers.
+	 */
+	public function countGalleryImageMarkers() {
+		if ((substr($this->getPackageVersion('com.woltlab.gallery'), 0, 3) == '2.1')) {
+			return $this->__getMaxID("gallery".$this->dbNo."_image_marker", 'markerID');
+		}
+		
+		// version 2.0 does not support image markers
+		return 0;
+	}
+	
+	/**
+	 * Exports gallery image markers.
+	 */
+	public function exportGalleryImageMarkers($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		gallery".$this->dbNo."_image_marker
+			WHERE		markerID BETWEEN ? AND ?
+			ORDER BY	markerID";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.gallery.image.marker')->import($row['markerID'], array(
+				'imageID' => $row['imageID'],
+				'positionX' => $row['positionX'],
+				'positionY' => $row['positionY'],
+				'userID' => $row['userID'],
+				'description' => $row['description']
+			));
+		}
+	}
+	
+	/**
+	 * Counts gallery comments.
+	 */
+	public function countGalleryComments() {
+		return $this->countComments('com.woltlab.gallery.imageComment');
+	}
+	
+	/**
+	 * Exports gallery comments.
+	 */
+	public function exportGalleryComments($offset, $limit) {
+		$this->exportComments('com.woltlab.gallery.imageComment', 'com.woltlab.gallery.image.comment', $offset, $limit);
+	}
+	
+	/**
+	 * Counts gallery comment responses.
+	 */
+	public function countGalleryCommentResponses() {
+		return $this->countCommentResponses('com.woltlab.gallery.imageComment');
+	}
+	
+	/**
+	 * Exports gallery comment responses.
+	 */
+	public function exportGalleryCommentResponses($offset, $limit) {
+		$this->exportCommentResponses('com.woltlab.gallery.imageComment', 'com.woltlab.gallery.image.comment.response', $offset, $limit);
+	}
+	
+	/**
+	 * Counts gallery image likes.
+	 */
+	public function countGalleryImageLikes() {
+		return $this->countLikes('com.woltlab.gallery.likeableImage');
+	}
+	
+	/**
+	 * Exports gallery image likes.
+	 */
+	public function exportGalleryImageLikes($offset, $limit) {
+		$this->exportLikes('com.woltlab.gallery.likeableImage', 'com.woltlab.gallery.image.like', $offset, $limit);
 	}
 	
 	/**
@@ -1648,7 +1908,7 @@ class WBB4xExporter extends AbstractExporter {
 		$conditionBuilder = new PreparedStatementConditionBuilder();
 		$conditionBuilder->add('tag_to_object.objectTypeID = ?', array($this->getObjectTypeID('com.woltlab.wcf.tagging.taggableObject', $objectType)));
 		$conditionBuilder->add('tag_to_object.objectID IN (?)', array($objectIDs));
-				
+		
 		$sql = "SELECT		tag.name, tag_to_object.objectID
 			FROM		wcf".$this->dbNo."_tag_to_object tag_to_object
 			LEFT JOIN	wcf".$this->dbNo."_tag tag
@@ -1696,5 +1956,34 @@ class WBB4xExporter extends AbstractExporter {
 		if ($row !== false) return $row['objectTypeID'];
 		
 		return null;
+	}
+	
+	private function countCategories($objectType) {
+		$sql = "SELECT	COUNT(*)
+			FROM	wcf".$this->dbNo."_category
+			WHERE	objectTypeID = ?";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($this->getObjectTypeID('com.woltlab.wcf.category', $objectType)));
+		
+		return $statement->fetchColumn();
+	}
+	
+	private function exportCategories($objectType, $importer, $offset, $limit) {
+		$sql = "SELECT		*
+			FROM		wcf".$this->dbNo."_category
+			WHERE		objectTypeID = ?
+			ORDER BY	parentCategoryID, categoryID";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute(array($this->getObjectTypeID('com.woltlab.wcf.category', $objectType)));
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter($importer)->import($row['categoryID'], array(
+				'title' => $row['title'],
+				'description' => $row['description'],
+				'parentCategoryID' => $row['parentCategoryID'],
+				'showOrder' => $row['showOrder'],
+				'time' => $row['time'],
+				'isDisabled' => $row['isDisabled']
+			));
+		}
 	}
 }
