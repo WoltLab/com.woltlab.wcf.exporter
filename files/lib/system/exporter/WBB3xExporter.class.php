@@ -1376,7 +1376,8 @@ class WBB3xExporter extends AbstractExporter {
 	 * Exports thread ratings.
 	 */
 	public function exportThreadRatings($offset, $limit) {
-		$sql = "SELECT		thread_rating.*, thread.firstPostID, thread.userID AS objectUserID
+		$sql = "SELECT		thread_rating.*, thread.firstPostID, thread.userID AS objectUserID,
+					thread.time
 			FROM		wbb".$this->dbNo."_".$this->instanceNo."_thread_rating thread_rating
 			LEFT JOIN	wbb".$this->dbNo."_".$this->instanceNo."_thread thread
 			ON		(thread.threadID = thread_rating.threadID)
@@ -1390,7 +1391,8 @@ class WBB3xExporter extends AbstractExporter {
 				'objectID' => $row['firstPostID'],
 				'objectUserID' => ($row['objectUserID'] ?: null),
 				'userID' => $row['userID'],
-				'likeValue' => ($row['rating'] > 3 ? Like::LIKE : Like::DISLIKE)
+				'likeValue' => ($row['rating'] > 3 ? Like::LIKE : Like::DISLIKE),
+				'time' => $row['time']
 			));
 		}
 	}

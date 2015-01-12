@@ -1193,7 +1193,8 @@ class VB3or4xExporter extends AbstractExporter {
 				'objectID' => $row['postid'],
 				'objectUserID' => ($row['userid'] ?: null),
 				'userID' => $row['whoadded'],
-				'likeValue' => ($row['reputation'] > 0 ? Like::LIKE : Like::DISLIKE)
+				'likeValue' => ($row['reputation'] > 0 ? Like::LIKE : Like::DISLIKE),
+				'time' => $row['dateline']
 			));
 		}
 	}
