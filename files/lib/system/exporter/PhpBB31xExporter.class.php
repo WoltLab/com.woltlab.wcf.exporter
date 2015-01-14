@@ -13,7 +13,7 @@ use wcf\util\StringUtil;
 use wcf\util\UserUtil;
 
 /**
- * Exporter for phpBB 3.0.x
+ * Exporter for phpBB 3.1.x
  * 
  * @author	Tim Duesterhus
  * @copyright	2001-2014 WoltLab GmbH
@@ -22,7 +22,12 @@ use wcf\util\UserUtil;
  * @subpackage	system.exporter
  * @category	Community Framework
  */
-class PhpBB3xExporter extends AbstractExporter {
+class PhpBB31xExporter extends AbstractExporter {
+	protected static $knownProfileFields = array(
+		'phpbb_location', 'phpbb_website', 'phpbb_interests', 'phpbb_occupation',
+		'phpbb_icq', 'phpbb_facebook', 'phpbb_twitter', 'phpbb_googleplus', 'phpbb_skype'
+	);
+	
 	const TOPIC_TYPE_GLOBAL = 3;
 	const TOPIC_TYPE_ANNOUCEMENT = 2;
 	const TOPIC_TYPE_STICKY = 1;
@@ -313,11 +318,7 @@ class PhpBB3xExporter extends AbstractExporter {
 			$birthday = \DateTime::createFromFormat('j-n-Y', str_replace(' ', '', $row['user_birthday']));
 			// get user options
 			$options = array(
-				'location' => $row['user_from'],
-				'birthday' => $birthday ? $birthday->format('Y-m-d') : '',
-				'icq' => $row['user_icq'],
-				'homepage' => $row['user_website'],
-				'hobbies' => $row['user_interests']
+				'birthday' => $birthday ? $birthday->format('Y-m-d') : ''
 			);
 			
 			$additionalData = array(
@@ -329,9 +330,36 @@ class PhpBB3xExporter extends AbstractExporter {
 			// handle user options
 			foreach ($profileFields as $profileField) {
 				if (!empty($row['pf_'.$profileField['field_name']])) {
+					switch ($profileField['field_name']) {
+						case 'phpbb_location':
+							$profileField['field_id'] = 'location';
+						break;
+						case 'phpbb_website':
+							$profileField['field_id'] = 'homepage';
+						break;
+						case 'phpbb_interests':
+							$profileField['field_id'] = 'hobbies';
+						break;
+						case 'phpbb_occupation':
+							$profileField['field_id'] = 'occupation';
+						break;
+						case 'phpbb_icq':
+							$profileField['field_id'] = 'icq';
+						break;
+						case 'phpbb_facebook':
+							$profileField['field_id'] = 'facebook';
+						break;
+						case 'phpbb_twitter':
+							$profileField['field_id'] = 'twitter';
+						break;
+						case 'phpbb_googleplus':
+							$profileField['field_id'] = 'googlePlus';
+						break;
+						case 'phpbb_skype':
+							$profileField['field_id'] = 'skype';
+					}
 					// prevent issues with 0 being false for select
-					// 5 = select
-					if ($profileField['field_type'] == 5) {
+					if ($profileField['field_type'] == 'profilefields.type.dropdown') {
 						$additionalData['options'][$profileField['field_id']] = '_'.$row['pf_'.$profileField['field_name']];
 					}
 					else {
@@ -366,41 +394,62 @@ class PhpBB3xExporter extends AbstractExporter {
 	 * Exports user options.
 	 */
 	public function exportUserOptions($offset, $limit) {
+		$condition = new PreparedStatementConditionBuilder();
+		$condition->add('field_name NOT IN (?)', array(self::$knownProfileFields));
+		
 		$sql = "SELECT		fields.*,
 					(
 						SELECT	GROUP_CONCAT(('_' || lang.option_id || ':' || lang.lang_value) SEPARATOR '\n')
 						FROM		".$this->databasePrefix."profile_fields_lang lang
 						WHERE		lang.field_id = fields.field_id
-							AND	lang.field_type = 5
+							AND	lang.field_type = ?
 							AND	lang.lang_id = (SELECT MIN(lang_id) FROM ".$this->databasePrefix."profile_fields_lang)
 					) AS selectOptions
 			FROM		".$this->databasePrefix."profile_fields fields
+			".$condition."
 			ORDER BY	fields.field_id";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute(array(5));
+		$statement->execute(array_merge(array('profilefields.type.dropdown'), $condition->getParameters()));
 		while ($row = $statement->fetchArray()) {
 			$selectOptions = '';
 			switch ($row['field_type']) {
-				case 1:
+				case 'profilefields.type.int':
 					$type = 'integer';
 				break;
-				case 2:
+				case 'profilefields.type.url':
+					$type = 'URL';
+				break;
+				case 'profilefields.type.googleplus':
+				case 'profilefields.type.string':
 					$type = 'text';
 				break;
-				case 3:
+				case 'profilefields.type.text':
 					$type = 'textarea';
 				break;
-				case 4:
+				case 'profilefields.type.bool':
 					$type = 'boolean';
 				break;
-				case 5:
+				case 'profilefields.type.dropdown':
 					$type = 'select';
 				break;
-				case 6:
+				case 'profilefields.type.date':
 					$type = 'date';
 				break;
 				default:
 					continue 2;
+			}
+			switch ($row['field_type']) {
+				case 'profilefields.type.dropdown':
+					$outputClass = 'wcf\system\option\user\SelectOptionsUserOptionOutput';
+				break;
+				case 'profilefields.type.googleplus':
+				$outputClass = 'wcf\system\option\user\GooglePlusUserOptionOutput';
+				break;
+				case 'profilefields.type.url':
+				$outputClass = 'wcf\system\option\user\URLUserOptionOutput';
+				break;
+				default:
+					$outputClass = '';
 			}
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.option')->import($row['field_id'], array(
@@ -412,7 +461,8 @@ class PhpBB3xExporter extends AbstractExporter {
 				'selectOptions' => $row['selectOptions'] ?: '',
 				'visible' => $row['field_no_view'] ? UserOption::VISIBILITY_ADMINISTRATOR | UserOption::VISIBILITY_OWNER : UserOption::VISIBILITY_ALL,
 				'showOrder' => $row['field_order'],
-				'outputClass' => $type == 'select' ? 'wcf\system\option\user\SelectOptionsUserOptionOutput' : ''
+				'outputClass' => $outputClass,
+				'isDisabled' => $row['field_active'] ? 0 : 1
 			), array('name' => $row['field_name']));
 		}
 	}

@@ -50,6 +50,12 @@
 		</type>
 		
 		<type>
+			<name>com.woltlab.wcf.exporter.phpbb31x</name>
+			<definitionname>com.woltlab.wcf.exporter</definitionname>
+			<classname>wcf\system\exporter\PhpBB31xExporter</classname>
+		</type>
+		
+		<type>
 			<name>com.woltlab.wcf.exporter.wordpress3x</name>
 			<definitionname>com.woltlab.wcf.exporter</definitionname>
 			<classname>wcf\system\exporter\WordPress3xExporter</classname>
