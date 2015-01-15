@@ -143,8 +143,9 @@ class XF12xExporter extends AbstractExporter {
 		if (in_array('com.woltlab.wcf.user', $this->selectedData)) {
 			if (in_array('com.woltlab.wcf.user.group', $this->selectedData)) {
 				$queue[] = 'com.woltlab.wcf.user.group';
-				if (in_array('com.woltlab.wcf.user.rank', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.rank';
 			}
+			
+			if (in_array('com.woltlab.wcf.user.rank', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.rank';
 			
 			if (in_array('com.woltlab.wcf.user.option', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.option';
 			$queue[] = 'com.woltlab.wcf.user';
@@ -236,7 +237,7 @@ class XF12xExporter extends AbstractExporter {
 	 * Counts users.
 	 */
 	public function countUsers() {
-		return $this->__getMaxID($this->databasePrefix."user", 'user_id');
+		return $this->__getMaxID("xf_user", 'user_id');
 	}
 	
 	/**
@@ -417,9 +418,16 @@ class XF12xExporter extends AbstractExporter {
 	 * Counts user ranks.
 	 */
 	public function countUserRanks() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	xf_trophy_user_title";
-		$statement = $this->database->prepareStatement($sql);
+		try {
+			$sql = "SELECT	COUNT(*) AS count
+				FROM	xf_user_title_ladder";
+			$statement = $this->database->prepareStatement($sql);
+		}
+		catch (SystemException $e) {
+			$sql = "SELECT	COUNT(*) AS count
+				FROM	xf_trophy_user_title";
+			$statement = $this->database->prepareStatement($sql);
+		}
 		$statement->execute();
 		$row = $statement->fetchArray();
 		return $row['count'];
@@ -429,15 +437,24 @@ class XF12xExporter extends AbstractExporter {
 	 * Exports user ranks.
 	 */
 	public function exportUserRanks($offset, $limit) {
-		$sql = "SELECT		*
-			FROM		xf_trophy_user_title
-			ORDER BY	minimum_points";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		try {
+			$sql = "SELECT		*
+				FROM		xf_user_title_ladder
+				ORDER BY	minimum_level";
+			$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		}
+		catch (SystemException $e) {
+			$sql = "SELECT		minimum_points AS minimum_level, title
+				FROM		xf_trophy_user_title
+				ORDER BY	minimum_points";
+			$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		}
+		
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
-			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.rank')->import($row['minimum_points'], array(
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.rank')->import($row['minimum_level'], array(
 				'groupID' => 2, // 2 = registered users
-				'requiredPoints' => $row['minimum_points'],
+				'requiredPoints' => $row['minimum_level'],
 				'rankTitle' => $row['title'],
 				'rankImage' => '',
 				'repeatImage' => 0,
@@ -480,7 +497,7 @@ class XF12xExporter extends AbstractExporter {
 	 * Counts wall entries.
 	 */
 	public function countWallEntries() {
-		return $this->__getMaxID($this->databasePrefix."profile_post", 'profile_post_id');
+		return $this->__getMaxID("xf_profile_post", 'profile_post_id');
 	}
 	
 	/**
@@ -508,7 +525,7 @@ class XF12xExporter extends AbstractExporter {
 	 * Counts wall responses.
 	 */
 	public function countWallResponses() {
-		return $this->__getMaxID($this->databasePrefix."profile_post_comment", 'profile_post_comment_id');
+		return $this->__getMaxID("xf_profile_post_comment", 'profile_post_comment_id');
 	}
 	
 	/**
@@ -608,7 +625,7 @@ class XF12xExporter extends AbstractExporter {
 	 * Counts conversations.
 	 */
 	public function countConversations() {
-		return $this->__getMaxID($this->databasePrefix."conversation_master", 'conversation_id');
+		return $this->__getMaxID("xf_conversation_master", 'conversation_id');
 	}
 	
 	/**
@@ -638,7 +655,7 @@ class XF12xExporter extends AbstractExporter {
 	 * Counts conversation messages.
 	 */
 	public function countConversationMessages() {
-		return $this->__getMaxID($this->databasePrefix."conversation_message", 'message_id');
+		return $this->__getMaxID("xf_conversation_message", 'message_id');
 	}
 	
 	/**
@@ -754,7 +771,7 @@ class XF12xExporter extends AbstractExporter {
 	 * Counts threads.
 	 */
 	public function countThreads() {
-		return $this->__getMaxID($this->databasePrefix."thread", 'thread_id');
+		return $this->__getMaxID("xf_thread", 'thread_id');
 	}
 	
 	/**
@@ -793,7 +810,7 @@ class XF12xExporter extends AbstractExporter {
 	 * Counts posts.
 	 */
 	public function countPosts() {
-		return $this->__getMaxID($this->databasePrefix."post", 'post_id');
+		return $this->__getMaxID("xf_post", 'post_id');
 	}
 	
 	/**
