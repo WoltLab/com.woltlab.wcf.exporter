@@ -19,7 +19,7 @@ use wcf\util\UserUtil;
  * Exporter for XenForo 1.2.x
  * 
  * @author	Tim Duesterhus
- * @copyright	2001-2014 WoltLab GmbH
+ * @copyright	2001-2015 WoltLab GmbH
  * @license	GNU Lesser General Public License <http://opensource.org/licenses/lgpl-license.php>
  * @package	com.woltlab.wcf.exporter
  * @subpackage	system.exporter
@@ -248,7 +248,7 @@ class XF12xExporter extends AbstractExporter {
 				'registrationDate' => $row['register_date'],
 				'banned' => $row['is_banned'] ? 1 : 0,
 				'banReason' => '',
-				'registrationIpAddress' => UserUtil::convertIPv4To6($row['ip']),
+				'registrationIpAddress' => $row['ip'] ? UserUtil::convertIPv4To6($row['ip']) : '',
 				'signature' => self::fixBBCodes($row['signature']),
 				'signatureEnableBBCodes' => 1,
 				'signatureEnableHtml' => 0,
@@ -643,7 +643,7 @@ class XF12xExporter extends AbstractExporter {
 				'username' => $row['username'],
 				'message' => self::fixBBCodes($row['message']),
 				'time' => $row['message_date'],
-				'ipAddress' => $row['ip']
+				'ipAddress' => $row['ip'] ? UserUtil::convertIPv4To6($row['ip']) : ''
 			));
 		}
 	}
@@ -819,7 +819,7 @@ class XF12xExporter extends AbstractExporter {
 				'editCount' => $row['editor'] ? $row['edit_count'] : 0,
 				'enableSmilies' => 1,
 				'showSignature' => 1,
-				'ipAddress' => UserUtil::convertIPv4To6($row['ip'])
+				'ipAddress' => $row['ip'] ? UserUtil::convertIPv4To6($row['ip']) : ''
 			));
 		}
 	}
