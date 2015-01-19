@@ -866,7 +866,8 @@ class IPB3xExporter extends AbstractExporter {
 				'objectID' => $row['topic_firstpost'],
 				'objectUserID' => ($row['starter_id'] ?: null),
 				'userID' => $row['like_member_id'],
-				'likeValue' => Like::LIKE
+				'likeValue' => Like::LIKE,
+				'time' => $row['like_added']
 			));
 		}
 	}
