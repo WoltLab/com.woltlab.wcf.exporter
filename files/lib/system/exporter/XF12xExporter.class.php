@@ -7,6 +7,7 @@ use wcf\data\object\type\ObjectTypeCache;
 use wcf\data\user\group\UserGroup;
 use wcf\data\user\option\UserOption;
 use wcf\system\database\util\PreparedStatementConditionBuilder;
+use wcf\system\exception\SystemException;
 use wcf\system\importer\ImportHandler;
 use wcf\system\Callback;
 use wcf\system\Regex;
