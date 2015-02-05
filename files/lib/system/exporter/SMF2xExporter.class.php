@@ -1086,8 +1086,11 @@ class SMF2xExporter extends AbstractExporter {
 				'optionName' => 'canEnterBoard'
 			));
 			
-			// admins may do everything
-			$groups[] = self::GROUP_ADMIN;
+			if (!in_array(self::GROUP_ADMIN, $groups)) {
+				// admins may do everything
+				$groups[] = self::GROUP_ADMIN;
+			}
+			
 			foreach ($groups as $groupID) {
 				$groupID = $groupID == self::GROUP_USER ? self::GROUP_USER_FAKE : $groupID;
 				
