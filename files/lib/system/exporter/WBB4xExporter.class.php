@@ -1,6 +1,8 @@
 <?php
 namespace wcf\system\exporter;
 use wcf\data\object\type\ObjectTypeCache;
+use wcf\data\package\Package;
+use wcf\data\package\PackageCache;
 use wcf\system\database\util\PreparedStatementConditionBuilder;
 use wcf\system\importer\ImportHandler;
 use wcf\system\WCF;
@@ -110,7 +112,7 @@ class WBB4xExporter extends AbstractExporter {
 	 * @see	\wcf\system\exporter\IExporter::getSupportedData()
 	 */
 	public function getSupportedData() {
-		return array(
+		$supportedData = array(
 			'com.woltlab.wcf.user' => array(
 				'com.woltlab.wcf.user.group',
 				'com.woltlab.wcf.user.avatar',
@@ -137,15 +139,21 @@ class WBB4xExporter extends AbstractExporter {
 				'com.woltlab.blog.entry.comment',
 				'com.woltlab.blog.entry.like'
 			),
-			'com.woltlab.gallery.image' => array(
+			'com.woltlab.wcf.smiley' => array(),
+		);
+		
+		$gallery = PackageCache::getInstance()->getPackageByIdentifier('com.woltlab.gallery');
+		if ($gallery && Package::compareVersion('2.1.0 Alpha 1', $gallery->packageVersion) != 1) {
+			$supportedData['com.woltlab.gallery.image'] = array(
 				'com.woltlab.gallery.category',
 				'com.woltlab.gallery.album',
 				'com.woltlab.gallery.image.comment',
 				'com.woltlab.gallery.image.like',
 				'com.woltlab.gallery.image.marker'
-			),
-			'com.woltlab.wcf.smiley' => array()
-		);
+			);
+		}
+		
+		return $supportedData;
 	}
 	
 	/**
