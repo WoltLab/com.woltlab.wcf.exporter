@@ -259,7 +259,7 @@ class XF12xExporter extends AbstractExporter {
 				'location' => $row['location'],
 				'occupation' => $row['occupation'],
 				'homepage' => $row['homepage'],
-				'aboutMe' => $row['about'],
+				'aboutMe' => self::fixBBCodes($row['about']),
 				'birthday' => $row['dob_year'].'-'.$row['dob_month'].'-'.$row['dob_day']
 			);
 			
