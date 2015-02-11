@@ -7,6 +7,7 @@ use wcf\data\user\group\UserGroup;
 use wcf\data\user\option\UserOption;
 use wcf\system\database\util\PreparedStatementConditionBuilder;
 use wcf\system\importer\ImportHandler;
+use wcf\system\request\LinkHandler;
 use wcf\system\Callback;
 use wcf\system\Regex;
 use wcf\system\WCF;
@@ -1177,6 +1178,11 @@ class XF12xExporter extends AbstractExporter {
 	private static function fixBBCodes($message) {
 		static $mediaRegex = null;
 		static $mediaCallback = null;
+		static $userRegex = null;
+		static $userCallback = null;
+		static $quoteRegex = null;
+		static $quoteCallback = null;
+		
 		if ($mediaRegex === null) {
 			$mediaRegex = new Regex('\[media=(youtube|vimeo|dailymotion)\]([a-zA-Z0-9_-]+)', Regex::CASE_INSENSITIVE);
 			$mediaCallback = new Callback(function ($matches) {
@@ -1194,9 +1200,44 @@ class XF12xExporter extends AbstractExporter {
 				
 				return '[media]'.$url;
 			});
+			
+			$userRegex = new Regex('\[user=(\d+)\](.*?)\[/user\]', Regex::CASE_INSENSITIVE);
+			$userCallback = new Callback(function ($matches) {
+				$userLink = LinkHandler::getInstance()->getLink('User', array(
+					'userID' => $matches[1],
+					'forceFrontend' => true
+				));
+				
+				$userLink = str_replace(array("\\", "'"), array("\\\\", "\'"), $userLink);
+				
+				return "[url='".$userLink."']".$matches[2]."[/url]";
+			});
+			
+			$quoteRegex = new Regex('\[quote=("?)(?P<username>[^,\]\n]*)(?:, post: (?P<postID>\d+)(?:, member: \d+)?)?\1\]', Regex::CASE_INSENSITIVE);
+			$quoteCallback = new Callback(function ($matches) {
+				if (isset($matches['username']) && $matches['username']) {
+					$username = str_replace(array("\\", "'"), array("\\\\", "\'"), $matches['username']);
+					
+					if (isset($matches['postID']) && $matches['postID']) {
+						$postLink = LinkHandler::getInstance()->getLink('Thread', array(
+							'application' => 'wbb',
+							'postID' => $matches['postID'],
+							'forceFrontend' => true
+						)).'#post'.$matches['postID'];
+						$postLink = str_replace(array("\\", "'"), array("\\\\", "\'"), $postLink);
+						
+						return "[quote='".$username."','".$postLink."']";
+					}
+					
+					return "[quote='".$username."']";
+				}
+				return "[quote]";
+			});
 		}
 		
 		$message = $mediaRegex->replace($message, $mediaCallback);
+		$message = $userRegex->replace($message, $userCallback);
+		$message = $quoteRegex->replace($message, $quoteCallback);
 		
 		// fix size bbcodes
 		$message = preg_replace_callback('/\[size=\'?(\d+)\'?\]/i', function ($matches) {
@@ -1230,7 +1271,11 @@ class XF12xExporter extends AbstractExporter {
 			'[php]' => '[code=php]',
 			'[/php]' => '[/code]',
 			'[html]' => '[code=html]',
-			'[/html]' => '[/code]'
+			'[/html]' => '[/code]',
+			'[center]' => '[align=center]',
+			'[/center]' => '[/align]',
+			'[right]' => '[align=right]',
+			'[/right]' => '[/align]'
 		);
 		
 		// use proper WCF 2 bbcode
