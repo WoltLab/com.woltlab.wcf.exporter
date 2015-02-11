@@ -942,7 +942,7 @@ class XF12xExporter extends AbstractExporter {
 				'endTime' => $row['close_date'],
 				'isChangeable' => 0,
 				'isPublic' => $row['public_votes'] ? 1 : 0,
-				'maxVotes' => $row['multiple'] ? $row['responses'] : 1,
+				'maxVotes' => isset($row['max_votes']) ? $row['max_votes'] : ($row['multiple'] ? $row['responses'] : 1),
 				'votes' => $row['voter_count']
 			));
 		}
