@@ -1100,7 +1100,6 @@ class XF12xExporter extends AbstractExporter {
 			'deleteAnyPost' => array('canDeletePost'),
 			'deleteAnyThread' => array('canDeleteThread'),
 			'deleteOwnPost' => array('canDeleteOwnPost'),
-			'deleteOwnThread' => array('canDeleteOwnPost'),
 			'editAnyPost' => array('canEditPost'),
 			'editOwnPost' => array('canEditOwnPost'),
 			'hardDeleteAnyPost' => array('canDeletePostCompletely'),
