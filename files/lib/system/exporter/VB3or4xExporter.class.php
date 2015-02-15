@@ -5,6 +5,7 @@ use wbb\data\board\BoardCache;
 use wcf\data\like\Like;
 use wcf\data\object\type\ObjectTypeCache;
 use wcf\data\user\group\UserGroup;
+use wcf\data\user\option\UserOption;
 use wcf\system\database\DatabaseException;
 use wcf\system\importer\ImportHandler;
 use wcf\system\request\LinkHandler;
@@ -149,7 +150,7 @@ class VB3or4xExporter extends AbstractExporter {
 			'com.woltlab.wcf.user' => array(
 				'com.woltlab.wcf.user.group',
 				'com.woltlab.wcf.user.avatar',
-			/*	'com.woltlab.wcf.user.option',*/
+				'com.woltlab.wcf.user.option',
 				'com.woltlab.wcf.user.comment',
 				'com.woltlab.wcf.user.follower',
 				'com.woltlab.wcf.user.rank'
@@ -341,6 +342,16 @@ class VB3or4xExporter extends AbstractExporter {
 	 * Exports users.
 	 */
 	public function exportUsers($offset, $limit) {
+		// cache user options
+		$userOptions = array();
+		$sql = "SELECT	profilefieldid
+			FROM	".$this->databasePrefix."profilefield";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			$userOptions[] = $row['profilefieldid'];
+		}
+		
 		// prepare password update
 		$sql = "UPDATE	wcf".WCF_N."_user
 			SET	password = ?
@@ -348,7 +359,7 @@ class VB3or4xExporter extends AbstractExporter {
 		$passwordUpdateStatement = WCF::getDB()->prepareStatement($sql);
 		
 		// get users
-		$sql = "SELECT		user_table.*, textfield.*, useractivation.type AS activationType, useractivation.emailchange, userban.liftdate, userban.reason AS banReason
+		$sql = "SELECT		userfield.*, user_table.*, textfield.*, useractivation.type AS activationType, useractivation.emailchange, userban.liftdate, userban.reason AS banReason
 			FROM		".$this->databasePrefix."user user_table
 			LEFT JOIN	".$this->databasePrefix."usertextfield textfield
 			ON		user_table.userid = textfield.userid
@@ -356,6 +367,8 @@ class VB3or4xExporter extends AbstractExporter {
 			ON		user_table.userid = useractivation.userid
 			LEFT JOIN	".$this->databasePrefix."userban userban
 			ON		user_table.userid = userban.userid
+			LEFT JOIN	".$this->databasePrefix."userfield userfield
+			ON		userfield.userid = user_table.userid
 			WHERE		user_table.userid BETWEEN ? AND ?
 			ORDER BY	user_table.userid";
 		$statement = $this->database->prepareStatement($sql);
@@ -379,6 +392,13 @@ class VB3or4xExporter extends AbstractExporter {
 				'groupIDs' => explode(',', $row['membergroupids'].','.$row['usergroupid']),
 				'options' => array()
 			);
+			
+			// handle user options
+			foreach ($userOptions as $optionID) {
+				if (isset($row['field'.$optionID])) {
+					$additionalData['options'][$optionID] = $row['field'.$optionID];
+				}
+			}
 			
 			// import user
 			$newUserID = ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user')->import($row['userid'], $data, $additionalData);
@@ -553,6 +573,124 @@ class VB3or4xExporter extends AbstractExporter {
 				
 				throw $e;
 			}
+		}
+	}
+	
+	/**
+	 * Counts user options.
+	 */
+	public function countUserOptions() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."profilefield";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return ($row['count'] ? 1 : 0);
+	}
+	
+	/**
+	 * Exports user options.
+	 */
+	public function exportUserOptions($offset, $limit) {
+		$sql = "SELECT	*
+			FROM	".$this->databasePrefix."profilefield";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			$editable = 0;
+			switch ($row['editable']) {
+				case 0:
+					$editable = UserOption::EDITABILITY_ADMINISTRATOR;
+					break;
+				case 1:
+				case 2:
+					$editable = UserOption::EDITABILITY_ALL;
+					break;
+			}
+				
+			$visible = UserOption::VISIBILITY_ALL;
+			if ($row['hidden']) {
+				$visible = UserOption::VISIBILITY_ADMINISTRATOR;
+			}
+			
+			// get select options
+			$selectOptions = array();
+			if ($row['type'] == 'radio' || $row['type'] == 'select' || $row['type'] == 'select_multiple' || $row['type'] == 'checkbox') {
+				$selectOptions = unserialize($row['data']);
+			}
+			
+			// get option type
+			$optionType = 'text';
+			switch ($row['type']) {
+				case 'textarea':
+					$optionType = 'textarea';
+					break;
+				case 'radio':
+					$optionType = 'radioButton';
+					break;
+				case 'select':
+					$optionType = 'select';
+					break;
+				case 'select_multiple':
+				case 'checkbox':
+					$optionType = 'multiSelect';
+					break;
+			}
+			
+			// get default value
+			$defaultValue = '';
+			switch ($row['type']) {
+				case 'input':
+				case 'textarea':
+					$defaultValue = $row['data'];
+					break;
+				case 'radio':
+				case 'select':
+					if ($row['def']) {
+						// use first radio option
+						$defaultValue = reset($selectOptions);
+					}
+					break;
+			}
+			
+			// get required status
+			$required = $askDuringRegistration = 0;
+			switch ($row['required']) {
+				case 1:
+				case 3:
+					$required = 1;
+					break;
+				case 2:
+					$askDuringRegistration = 1;
+					break;
+			}
+			
+			// get field name
+			$fieldName = 'field'.$row['profilefieldid'];
+			$sql = "SELECT	text
+				FROM	".$this->databasePrefix."phrase
+				WHERE	languageid = ?
+					AND varname = ?";
+			$statement2 = $this->database->prepareStatement($sql);
+			$statement2->execute(array(0, 'field'.$row['profilefieldid'].'_title'));
+			$row2 = $statement2->fetchArray();
+			if ($row2 !== false) {
+				$fieldName = $row2['text'];
+			}
+				
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.option')->import($row['profilefieldid'], array(
+				'categoryName' => 'profile.personal',
+				'optionType' => $optionType,
+				'defaultValue' => $defaultValue,
+				'validationPattern' => $row['regex'],
+				'selectOptions' => implode("\n", $selectOptions),
+				'required' => $required,
+				'askDuringRegistration' => $askDuringRegistration,
+				'searchable' => $row['searchable'],
+				'editable' => $editable,
+				'visible' => $visible,
+				'showOrder' => $row['displayorder']
+			), array('name' => $fieldName));
 		}
 	}
 	
