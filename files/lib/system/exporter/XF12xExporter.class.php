@@ -1275,7 +1275,8 @@ class XF12xExporter extends AbstractExporter {
 			'[center]' => '[align=center]',
 			'[/center]' => '[/align]',
 			'[right]' => '[align=right]',
-			'[/right]' => '[/align]'
+			'[/right]' => '[/align]',
+			'[attach=full]' => '[attach]'
 		);
 		
 		// use proper WCF 2 bbcode
