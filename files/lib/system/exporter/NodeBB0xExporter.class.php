@@ -29,6 +29,7 @@ class NodeBB0xExporter extends AbstractExporter {
 		'com.woltlab.wcf.user' => 'Users',
 		'com.woltlab.wbb.board' => 'Boards',
 		'com.woltlab.wbb.thread' => 'Threads',
+		'com.woltlab.wbb.post' => 'Posts',
 	);
 	
 	/**
@@ -94,6 +95,7 @@ class NodeBB0xExporter extends AbstractExporter {
 		if (in_array('com.woltlab.wbb.board', $this->selectedData)) {
 			$queue[] = 'com.woltlab.wbb.board';
 			$queue[] = 'com.woltlab.wbb.thread';
+			$queue[] = 'com.woltlab.wbb.post';
 		}
 		
 		return $queue;
@@ -231,5 +233,46 @@ class NodeBB0xExporter extends AbstractExporter {
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.thread')->import($row['tid'], $data, $additionalData);
 		}
+	}
+	
+	/**
+	 * Counts posts.
+	 */
+	public function countPosts() {
+		return $this->database->zcard('posts:pid');
+	}
+	
+	/**
+	 * Exports posts.
+	 */
+	public function exportPosts($offset, $limit) {
+		$postIDs = $this->database->zrange('posts:pid', $offset, $offset + $limit);
+		if (!$postIDs) throw new SystemException('Could not fetch postIDs');
+		
+		foreach ($postIDs as $postID) {
+			$row = $this->database->hgetall('post:'.$postID);
+			if (!$row) throw new SystemException('Invalid post');
+			
+			$data = array(
+				'threadID' => $row['tid'],
+				'userID' => $row['uid'],
+				'username' => $this->database->hget('user:'.$row['uid'], 'username'),
+				'subject' => '',
+				'message' => self::convertMarkdown($row['content']),
+				'time' => intval($row['timestamp'] / 1000),
+				'isDeleted' => $row['deleted'],
+				'deleteTime' => TIME_NOW,
+				'editorID' => ($row['editor'] ?: null),
+				'editor' => $this->database->hget('user:'.$row['editor'], 'username'),
+				'lastEditTime' => intval($row['edited'] / 1000),
+				'editCount' => $row['edited'] ? 1 : 0
+			);
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.post')->import($row['pid'], $data);
+		}
+	}
+	
+	protected static function convertMarkdown($message) {
+		return $message;
 	}
 }
