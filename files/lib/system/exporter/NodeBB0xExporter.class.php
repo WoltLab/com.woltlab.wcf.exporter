@@ -28,6 +28,7 @@ class NodeBB0xExporter extends AbstractExporter {
 	protected $methods = array(
 		'com.woltlab.wcf.user' => 'Users',
 		'com.woltlab.wbb.board' => 'Boards',
+		'com.woltlab.wbb.thread' => 'Threads',
 	);
 	
 	/**
@@ -92,6 +93,7 @@ class NodeBB0xExporter extends AbstractExporter {
 		// board
 		if (in_array('com.woltlab.wbb.board', $this->selectedData)) {
 			$queue[] = 'com.woltlab.wbb.board';
+			$queue[] = 'com.woltlab.wbb.thread';
 		}
 		
 		return $queue;
@@ -146,7 +148,6 @@ class NodeBB0xExporter extends AbstractExporter {
 		}
 	}
 	
-	
 	/**
 	 * Counts boards.
 	 */
@@ -189,6 +190,46 @@ class NodeBB0xExporter extends AbstractExporter {
 			));
 			
 			$this->exportBoardsRecursively($board['cid']);
+		}
+	}
+	
+	/**
+	 * Counts threads.
+	 */
+	public function countThreads() {
+		return $this->database->zcard('topics:tid');
+	}
+	
+	/**
+	 * Exports threads.
+	 */
+	public function exportThreads($offset, $limit) {
+		$threadIDs = $this->database->zrange('topics:tid', $offset, $offset + $limit);
+		if (!$threadIDs) throw new SystemException('Could not fetch threadIDs');
+		
+		foreach ($threadIDs as $threadID) {
+			$row = $this->database->hgetall('topic:'.$threadID);
+			if (!$row) throw new SystemException('Invalid thread');
+			
+			$data = array(
+				'boardID' => $row['cid'],
+				'topic' => $row['title'],
+				'time' => intval($row['timestamp'] / 1000),
+				'userID' => $row['uid'],
+				'username' => $this->database->hget('user:'.$row['uid'], 'username'),
+				'views' => $row['viewcount'],
+				'isSticky' => $row['pinned'],
+				'isDisabled' => 0,
+				'isClosed' => $row['locked'],
+				'isDeleted' => $row['deleted'],
+				'deleteTime' => TIME_NOW,
+			);
+			
+			$additionalData = array(
+				'tags' => $this->database->smembers('topic:'.$threadID.':tags') ?: array()
+			);
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.thread')->import($row['tid'], $data, $additionalData);
 		}
 	}
 }
