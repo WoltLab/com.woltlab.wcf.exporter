@@ -78,5 +78,11 @@
 			<definitionname>com.woltlab.wcf.exporter</definitionname>
 			<classname>wcf\system\exporter\VB5xExporter</classname>
 		</type>
+		
+		<type>
+			<name>com.woltlab.wcf.exporter.nodeBB0x</name>
+			<definitionname>com.woltlab.wcf.exporter</definitionname>
+			<classname>wcf\system\exporter\NodeBB0xExporter</classname>
+		</type>
 	</import>
 </data>
