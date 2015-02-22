@@ -1,5 +1,6 @@
 <?php
 namespace wcf\system\exporter;
+use wbb\data\board\Board;
 use wcf\system\importer\ImportHandler;
 use wcf\system\WCF;
 use wcf\util\PasswordUtil;
@@ -16,10 +17,17 @@ use wcf\util\PasswordUtil;
  */
 class NodeBB0xExporter extends AbstractExporter {
 	/**
+	 * board cache
+	 * @var	array
+	 */
+	protected $boardCache = array();
+	
+	/**
 	 * @see	\wcf\system\exporter\AbstractExporter::$methods
 	 */
 	protected $methods = array(
-		'com.woltlab.wcf.user' => 'Users'
+		'com.woltlab.wcf.user' => 'Users',
+		'com.woltlab.wbb.board' => 'Boards',
 	);
 	
 	/**
@@ -43,6 +51,8 @@ class NodeBB0xExporter extends AbstractExporter {
 	public function getSupportedData() {
 		$supportedData = array(
 			'com.woltlab.wcf.user' => array(
+			),
+			'com.woltlab.wbb.board' => array(
 			),
 		);
 		
@@ -79,6 +89,11 @@ class NodeBB0xExporter extends AbstractExporter {
 			$queue[] = 'com.woltlab.wcf.user';
 		}
 		
+		// board
+		if (in_array('com.woltlab.wbb.board', $this->selectedData)) {
+			$queue[] = 'com.woltlab.wbb.board';
+		}
+		
 		return $queue;
 	}
 	
@@ -99,7 +114,7 @@ class NodeBB0xExporter extends AbstractExporter {
 			WHERE	userID = ?";
 		$passwordUpdateStatement = WCF::getDB()->prepareStatement($sql);
 		
-		$userIDs = $this->database->zrange('users:joindate', $offset, $limit);
+		$userIDs = $this->database->zrange('users:joindate', $offset, $offset + $limit);
 		if (!$userIDs) throw new SystemException('Could not fetch userIDs');
 		
 		foreach ($userIDs as $userID) {
@@ -113,7 +128,8 @@ class NodeBB0xExporter extends AbstractExporter {
 				'registrationDate' => intval($row['joindate'] / 1000),
 				'banned' => $row['banned'] ? 1 : 0,
 				'banReason' => '',
-				'lastActivityTime' => intval($row['lastonline'] / 1000)
+				'lastActivityTime' => intval($row['lastonline'] / 1000),
+				'signature' => $row['signature']
 			);
 			
 			$additionalData = array(
@@ -127,6 +143,52 @@ class NodeBB0xExporter extends AbstractExporter {
 				$password = PasswordUtil::getSaltedHash($row['password'], $row['password']);
 				$passwordUpdateStatement->execute(array($password, $newUserID));
 			}
+		}
+	}
+	
+	
+	/**
+	 * Counts boards.
+	 */
+	public function countBoards() {
+		return 1;
+	}
+	
+	/**
+	 * Exports boards.
+	 */
+	public function exportBoards($offset, $limit) {
+		$boardIDs = $this->database->zrange('categories:cid', 0, -1);
+		if (!$boardIDs) throw new SystemException('Could not fetch boardIDs');
+		
+		$imported = array();
+		foreach ($boardIDs as $boardID) {
+			$row = $this->database->hgetall('category:'.$boardID);
+			if (!$row) throw new SystemException('Invalid board');
+			
+			$this->boardCache[$row['parentCid']][] = $row;
+		}
+		
+		$this->exportBoardsRecursively();
+	}
+	
+	/**
+	 * Exports the boards recursively.
+	 */
+	protected function exportBoardsRecursively($parentID = 0) {
+		if (!isset($this->boardCache[$parentID])) return;
+		
+		foreach ($this->boardCache[$parentID] as $board) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import($board['cid'], array(
+				'parentID' => ($board['parentCid'] ?: null),
+				'position' => $board['order'] ?: 0,
+				'boardType' => $board['link'] ? Board::TYPE_LINK : Board::TYPE_BOARD,
+				'title' => $board['name'],
+				'description' => $board['description'],
+				'externalURL' => $board['link']
+			));
+			
+			$this->exportBoardsRecursively($board['cid']);
 		}
 	}
 }
