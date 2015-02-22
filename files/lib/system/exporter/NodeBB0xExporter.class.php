@@ -1,6 +1,7 @@
 <?php
 namespace wcf\system\exporter;
 use wbb\data\board\Board;
+use wcf\data\like\Like;
 use wcf\system\importer\ImportHandler;
 use wcf\system\WCF;
 use wcf\util\PasswordUtil;
@@ -30,6 +31,7 @@ class NodeBB0xExporter extends AbstractExporter {
 		'com.woltlab.wbb.board' => 'Boards',
 		'com.woltlab.wbb.thread' => 'Threads',
 		'com.woltlab.wbb.post' => 'Posts',
+		'com.woltlab.wbb.like' => 'Likes',
 	);
 	
 	/**
@@ -55,6 +57,7 @@ class NodeBB0xExporter extends AbstractExporter {
 			'com.woltlab.wcf.user' => array(
 			),
 			'com.woltlab.wbb.board' => array(
+				'com.woltlab.wbb.like',
 			),
 		);
 		
@@ -96,6 +99,8 @@ class NodeBB0xExporter extends AbstractExporter {
 			$queue[] = 'com.woltlab.wbb.board';
 			$queue[] = 'com.woltlab.wbb.thread';
 			$queue[] = 'com.woltlab.wbb.post';
+			
+			if (in_array('com.woltlab.wbb.like', $this->selectedData)) $queue[] = 'com.woltlab.wbb.like';
 		}
 		
 		return $queue;
@@ -269,6 +274,52 @@ class NodeBB0xExporter extends AbstractExporter {
 			);
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.post')->import($row['pid'], $data);
+		}
+	}
+	
+	
+	/**
+	 * Counts likes.
+	 */
+	public function countLikes() {
+		return $this->database->zcard('users:joindate');
+	}
+	
+	/**
+	 * Exports likes.
+	 */
+	public function exportLikes($offset, $limit) {
+		$userIDs = $this->database->zrange('users:joindate', $offset, $offset + $limit);
+		if (!$userIDs) throw new SystemException('Could not fetch userIDs');
+		
+		foreach ($userIDs as $userID) {
+			$likes = $this->database->zrange('uid:'.$userID.':upvote', 0, -1);
+			
+			if ($likes) {
+				foreach ($likes as $postID) {
+					ImportHandler::getInstance()->getImporter('com.woltlab.wbb.like')->import(0, array(
+						'objectID' => $postID,
+						'objectUserID' => $this->database->hget('post:'.$postID, 'uid') ?: null,
+						'userID' => $userID,
+						'likeValue' => Like::LIKE,
+						'time' => intval($this->database->zscore('uid:'.$userID.':upvote', $postID) / 1000)
+					));
+				}
+			}
+			
+			$dislikes = $this->database->zrange('uid:'.$userID.':downvote', 0, -1);
+			
+			if ($dislikes) {
+				foreach ($dislikes as $postID) {
+					ImportHandler::getInstance()->getImporter('com.woltlab.wbb.like')->import(0, array(
+						'objectID' => $postID,
+						'objectUserID' => $this->database->hget('post:'.$postID, 'uid') ?: null,
+						'userID' => $userID,
+						'likeValue' => Like::DISLIKE,
+						'time' => intval($this->database->zscore('uid:'.$userID.':downvote', $postID) / 1000)
+					));
+				}
+			}
 		}
 	}
 	
