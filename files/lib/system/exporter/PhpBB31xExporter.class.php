@@ -965,7 +965,7 @@ class PhpBB31xExporter extends AbstractExporter {
 			WHERE		post_id BETWEEN ? AND ?
 			ORDER BY	post_id";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array($offset + 1, $offset + $limit));
+		$statement->execute(array(0, $offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.post')->import($row['post_id'], array(
 				'threadID' => $row['topic_id'],
