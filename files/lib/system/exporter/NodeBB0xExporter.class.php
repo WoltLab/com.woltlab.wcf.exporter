@@ -29,6 +29,9 @@ class NodeBB0xExporter extends AbstractExporter {
 	protected $methods = array(
 		'com.woltlab.wcf.user' => 'Users',
 		'com.woltlab.wcf.user.follower' => 'Followers',
+		'com.woltlab.wcf.conversation' => 'Conversations',
+		'com.woltlab.wcf.conversation.message' => 'ConversationMessages',
+		'com.woltlab.wcf.conversation.user' => 'ConversationUsers',
 		'com.woltlab.wbb.board' => 'Boards',
 		'com.woltlab.wbb.thread' => 'Threads',
 		'com.woltlab.wbb.post' => 'Posts',
@@ -57,6 +60,8 @@ class NodeBB0xExporter extends AbstractExporter {
 		$supportedData = array(
 			'com.woltlab.wcf.user' => array(
 				'com.woltlab.wcf.user.follower',
+			),
+			'com.woltlab.wcf.conversation' => array(
 			),
 			'com.woltlab.wbb.board' => array(
 				'com.woltlab.wbb.like',
@@ -96,6 +101,12 @@ class NodeBB0xExporter extends AbstractExporter {
 			$queue[] = 'com.woltlab.wcf.user';
 			
 			if (in_array('com.woltlab.wcf.user.follower', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.follower';
+			
+			// conversation
+			if (in_array('com.woltlab.wcf.conversation', $this->selectedData)) {
+				$queue[] = 'com.woltlab.wcf.conversation';
+				$queue[] = 'com.woltlab.wcf.conversation.message';
+			}
 		}
 		
 		// board
@@ -342,7 +353,7 @@ class NodeBB0xExporter extends AbstractExporter {
 		if (!$userIDs) throw new SystemException('Could not fetch userIDs');
 		
 		foreach ($userIDs as $userID) {
-			$followed = $this->database->zrange('following:'.$userID.'', 0, -1);
+			$followed = $this->database->zrange('following:'.$userID, 0, -1);
 			
 			if ($followed) {
 				foreach ($followed as $followUserID) {
@@ -353,6 +364,93 @@ class NodeBB0xExporter extends AbstractExporter {
 					));
 				}
 			}
+		}
+	}
+	
+	/**
+	 * Counts conversations.
+	 */
+	public function countConversations() {
+		return $this->database->zcard('users:joindate');
+	}
+	
+	/**
+	 * Exports conversations.
+	 */
+	public function exportConversations($offset, $limit) {
+		$userIDs = $this->database->zrange('users:joindate', $offset, $offset + $limit);
+		if (!$userIDs) throw new SystemException('Could not fetch userIDs');
+		
+		foreach ($userIDs as $userID) {
+			$chats = $this->database->zrange('uid:'.$userID.':chats', 0, -1);
+			
+			if ($chats) {
+				foreach ($chats as $chat) {
+					$conversationID = min($userID, $chat).':to:'.max($userID, $chat);
+					$firstMessageID = $this->database->zrange('messages:uid:'.$conversationID, 0, 0);
+					if (!$firstMessageID) throw new SystemException('Could not find first message of conversation');
+					
+					$firstMessage = $this->database->hgetall('message:'.$firstMessageID[0]);
+					ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import($conversationID, array(
+						'subject' => $this->database->hget('user:'.$userID, 'username').' - '.$this->database->hget('user:'.$chat, 'username'),
+						'time' => intval($firstMessage['timestamp'] / 1000),
+						'userID' => $userID,
+						'username' => $this->database->hget('user:'.$firstMessage['fromuid'], 'username'),
+						'isDraft' => 0
+					));
+					
+					// participant a
+					ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.user')->import(0, array(
+						'conversationID' => $conversationID,
+						'participantID' => $userID,
+						'username' => $this->database->hget('user:'.$userID, 'username'),
+						'hideConversation' => 0,
+						'isInvisible' => 0,
+						'lastVisitTime' => 0
+					));
+					
+					// participant b
+					ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.user')->import(0, array(
+						'conversationID' => $conversationID,
+						'participantID' => $chat,
+						'username' => $this->database->hget('user:'.$chat, 'username'),
+						'hideConversation' => 0,
+						'isInvisible' => 0,
+						'lastVisitTime' => 0
+					));
+				}
+			}
+		}
+	}
+	
+	/**
+	 * Counts conversation messages.
+	 */
+	public function countConversationMessages() {
+		return $this->database->hget('global', 'nextMid');
+	}
+	
+	/**
+	 * Exports conversation messages.
+	 */
+	public function exportConversationMessages($offset, $limit) {
+		for ($i = 1; $i <= $limit; $i++) {
+			$message = $this->database->hgetall('message:'.($offset + $i));
+			if (!$message) continue;
+			$conversationID = min($message['fromuid'], $message['touid']).':to:'.max($message['fromuid'], $message['touid']);
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.message')->import($offset + $i, array(
+				'conversationID' => $conversationID,
+				'userID' => $message['fromuid'],
+				'username' => $this->database->hget('user:'.$message['fromuid'], 'username'),
+				'message' => self::convertMarkdown($message['content']),
+				'time' => intval($message['timestamp'] / 1000),
+				'attachments' => 0,
+				'enableSmilies' => 1,
+				'enableHtml' => 0,
+				'enableBBCodes' => 0,
+				'showSignature' => 0
+			));
 		}
 	}
 	
