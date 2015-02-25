@@ -28,6 +28,7 @@ class NodeBB0xExporter extends AbstractExporter {
 	 */
 	protected $methods = array(
 		'com.woltlab.wcf.user' => 'Users',
+		'com.woltlab.wcf.user.follower' => 'Followers',
 		'com.woltlab.wbb.board' => 'Boards',
 		'com.woltlab.wbb.thread' => 'Threads',
 		'com.woltlab.wbb.post' => 'Posts',
@@ -55,6 +56,7 @@ class NodeBB0xExporter extends AbstractExporter {
 	public function getSupportedData() {
 		$supportedData = array(
 			'com.woltlab.wcf.user' => array(
+				'com.woltlab.wcf.user.follower',
 			),
 			'com.woltlab.wbb.board' => array(
 				'com.woltlab.wbb.like',
@@ -92,6 +94,8 @@ class NodeBB0xExporter extends AbstractExporter {
 		// user
 		if (in_array('com.woltlab.wcf.user', $this->selectedData)) {
 			$queue[] = 'com.woltlab.wcf.user';
+			
+			if (in_array('com.woltlab.wcf.user.follower', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.follower';
 		}
 		
 		// board
@@ -258,6 +262,7 @@ class NodeBB0xExporter extends AbstractExporter {
 			$row = $this->database->hgetall('post:'.$postID);
 			if (!$row) throw new SystemException('Invalid post');
 			
+			// TODO: ip address
 			$data = array(
 				'threadID' => $row['tid'],
 				'userID' => $row['uid'],
@@ -276,7 +281,6 @@ class NodeBB0xExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.post')->import($row['pid'], $data);
 		}
 	}
-	
 	
 	/**
 	 * Counts likes.
@@ -317,6 +321,35 @@ class NodeBB0xExporter extends AbstractExporter {
 						'userID' => $userID,
 						'likeValue' => Like::DISLIKE,
 						'time' => intval($this->database->zscore('uid:'.$userID.':downvote', $postID) / 1000)
+					));
+				}
+			}
+		}
+	}
+	
+	/**
+	 * Counts followers.
+	 */
+	public function countFollowers() {
+		return $this->database->zcard('users:joindate');
+	}
+	
+	/**
+	 * Exports followers.
+	 */
+	public function exportFollowers($offset, $limit) {
+		$userIDs = $this->database->zrange('users:joindate', $offset, $offset + $limit);
+		if (!$userIDs) throw new SystemException('Could not fetch userIDs');
+		
+		foreach ($userIDs as $userID) {
+			$followed = $this->database->zrange('following:'.$userID.'', 0, -1);
+			
+			if ($followed) {
+				foreach ($followed as $followUserID) {
+					ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.follower')->import(0, array(
+						'userID' => $userID,
+						'followUserID' => $followUserID,
+						'time' => intval($this->database->zscore('following:'.$userID, $followUserID) / 1000)
 					));
 				}
 			}
