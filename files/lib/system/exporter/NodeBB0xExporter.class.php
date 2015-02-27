@@ -2,6 +2,7 @@
 namespace wcf\system\exporter;
 use wbb\data\board\Board;
 use wcf\data\like\Like;
+use wcf\system\exception\SystemException;
 use wcf\system\importer\ImportHandler;
 use wcf\system\Regex;
 use wcf\system\WCF;
@@ -9,7 +10,7 @@ use wcf\util\PasswordUtil;
 use wcf\util\StringUtil;
 
 /**
- * Exporter for NodeBB.
+ * Exporter for NodeBB (Redis).
  * 
  * @author	Tim Duesterhus
  * @copyright	2001-2015 WoltLab GmbH
@@ -51,8 +52,28 @@ class NodeBB0xExporter extends AbstractExporter {
 	 * @see	\wcf\system\exporter\IExporter::init()
 	 */
 	public function init() {
+		$host = $this->databaseHost;
+		$port = 6379;
+		if (preg_match('~^([0-9.]+):([0-9]{1,5})$~', $host, $matches)) {
+			// simple check, does not care for valid ip addresses
+			$host = $matches[1];
+			$port = $matches[2];
+		}
+		
 		$this->database = new \Redis();
-		$this->database->connect('localhost', 6379);
+		$this->database->connect($host, $port);
+		
+		if ($this->databasePassword) {
+			if (!$this->database->auth($this->databasePassword)) {
+				throw new SystemException('Could not auth');
+			}
+		}
+		
+		if ($this->databaseName) {
+			if (!$this->database->select($this->databaseName)) {
+				throw new SystemException('Could not select database');
+			}
+		}
 	}
 	
 	/**
