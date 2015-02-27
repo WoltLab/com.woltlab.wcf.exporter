@@ -80,9 +80,9 @@
 		</type>
 		
 		<type>
-			<name>com.woltlab.wcf.exporter.nodeBB0x</name>
+			<name>com.woltlab.wcf.exporter.nodeBB0xRedis</name>
 			<definitionname>com.woltlab.wcf.exporter</definitionname>
-			<classname>wcf\system\exporter\NodeBB0xExporter</classname>
+			<classname>wcf\system\exporter\NodeBB0xRedisExporter</classname>
 		</type>
 	</import>
 </data>

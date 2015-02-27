@@ -19,7 +19,7 @@ use wcf\util\StringUtil;
  * @subpackage	system.exporter
  * @category	Community Framework
  */
-class NodeBB0xExporter extends AbstractExporter {
+class NodeBB0xRedisExporter extends AbstractExporter {
 	/**
 	 * board cache
 	 * @var	array
