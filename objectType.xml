@@ -78,5 +78,11 @@
 			<definitionname>com.woltlab.wcf.exporter</definitionname>
 			<classname>wcf\system\exporter\VB5xExporter</classname>
 		</type>
+		
+		<type>
+			<name>com.woltlab.wcf.exporter.nodeBB0xRedis</name>
+			<definitionname>com.woltlab.wcf.exporter</definitionname>
+			<classname>wcf\system\exporter\NodeBB0xRedisExporter</classname>
+		</type>
 	</import>
 </data>
