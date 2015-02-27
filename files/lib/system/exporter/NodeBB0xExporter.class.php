@@ -3,6 +3,7 @@ namespace wcf\system\exporter;
 use wbb\data\board\Board;
 use wcf\data\like\Like;
 use wcf\system\importer\ImportHandler;
+use wcf\system\Regex;
 use wcf\system\WCF;
 use wcf\util\PasswordUtil;
 use wcf\util\StringUtil;
@@ -154,7 +155,7 @@ class NodeBB0xExporter extends AbstractExporter {
 				'banned' => $row['banned'] ? 1 : 0,
 				'banReason' => '',
 				'lastActivityTime' => intval($row['lastonline'] / 1000),
-				'signature' => $row['signature']
+				'signature' => self::convertMarkdown($row['signature'])
 			);
 			
 			$birthday = \DateTime::createFromFormat('m/d/Y', StringUtil::decodeHTML($row['birthday']));
@@ -464,6 +465,51 @@ class NodeBB0xExporter extends AbstractExporter {
 	}
 	
 	protected static function convertMarkdown($message) {
-		return $message;
+		static $parsedown = null;
+		static $codeRegex = null;
+		static $imgRegex = null;
+		static $urlRegex = null;
+		
+		if ($parsedown === null) {
+			require_once(WCF_DIR.'lib/system/api/parsedown/Parsedown.php');
+			$parsedown = new \Parsedown();
+			
+			$codeRegex = new Regex('<pre><code class="language-([a-z]+)">');
+			$imgRegex = new Regex('<img src="([^"]+)"(?: alt="(?:[^"]+)")? />');
+			$urlRegex = new Regex('<a href="([^"]+)">');
+		}
+		
+		$out = $parsedown->text($message);
+		$out = $codeRegex->replace($out, '[code=\1]');
+
+		$out = strtr($out, array(
+			'<p>' => '',
+			'</p>' => '',
+			'<br />' => '',
+			
+			'<strong>' => '[b]',
+			'</strong>' => '[/b]',
+			'<em>' => '[i]',
+			'</em>' => '[/i]',
+			'<ol>' => '[list=1]',
+			'</ol>' => '[/list]',
+			'<ul>' => '[list]',
+			'</ul>' => '[/list]',
+			'<li>' => '[*]',
+			'</li>' => '',
+			'<pre><code>' => '[code]',
+			'</code></pre>' => '[/code]',
+			'<code>' => '[tt]',
+			'</code>' => '[/tt]',
+			'<blockquote>' => '[quote]',
+			'</blockquote>' => '[/quote]',
+			
+			'</a>' => '[/url]'
+		));
+		
+		$out = $imgRegex->replace($out, '[img]\1[/img]');
+		$out = $urlRegex->replace($out, '[url=\1]');
+		
+		return $out;
 	}
 }
