@@ -5,6 +5,7 @@ use wcf\data\like\Like;
 use wcf\system\importer\ImportHandler;
 use wcf\system\WCF;
 use wcf\util\PasswordUtil;
+use wcf\util\StringUtil;
 
 /**
  * Exporter for NodeBB.
@@ -156,8 +157,16 @@ class NodeBB0xExporter extends AbstractExporter {
 				'signature' => $row['signature']
 			);
 			
+			$birthday = \DateTime::createFromFormat('m/d/Y', StringUtil::decodeHTML($row['birthday']));
+			// get user options
+			$options = array(
+				'birthday' => $birthday ? $birthday->format('Y-m-d') : '',
+				'homepage' => StringUtil::decodeHTML($row['website']),
+				'location' => StringUtil::decodeHTML($row['location']),
+			);
+			
 			$additionalData = array(
-				
+				'options' => $options
 			);
 			
 			$newUserID = ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user')->import($row['uid'], $data, $additionalData);
