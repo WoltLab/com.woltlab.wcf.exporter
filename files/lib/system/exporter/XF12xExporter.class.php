@@ -69,6 +69,7 @@ class XF12xExporter extends AbstractExporter {
 		
 		'com.woltlab.blog.category' => 'BlogCategories',
 		'com.woltlab.blog.entry' => 'BlogEntries',
+		'com.woltlab.blog.entry.attachment' => 'BlogAttachments',
 		'com.woltlab.blog.entry.comment' => 'BlogComments',
 		'com.woltlab.blog.entry.like' => 'BlogEntryLikes'
 	);
@@ -107,6 +108,7 @@ class XF12xExporter extends AbstractExporter {
 			),
 			'com.woltlab.blog.entry' => array(
 				'com.woltlab.blog.category',
+				'com.woltlab.blog.entry.attachment',
 				'com.woltlab.blog.entry.comment',
 				'com.woltlab.blog.entry.like'
 			)
@@ -128,7 +130,7 @@ class XF12xExporter extends AbstractExporter {
 	 * @see	\wcf\system\exporter\IExporter::validateFileAccess()
 	 */
 	public function validateFileAccess() {
-		if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData) || in_array('com.woltlab.wbb.attachment', $this->selectedData) || in_array('com.woltlab.wcf.smiley', $this->selectedData)) {
+		if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData) || in_array('com.woltlab.wbb.attachment', $this->selectedData) || in_array('com.woltlab.blog.entry.attachment', $this->selectedData) || in_array('com.woltlab.wcf.smiley', $this->selectedData)) {
 			if (empty($this->fileSystemPath) || !@file_exists($this->fileSystemPath . 'library/XenForo/Application.php')) return false;
 		}
 		
@@ -190,6 +192,7 @@ class XF12xExporter extends AbstractExporter {
 		if (in_array('com.woltlab.blog.entry', $this->selectedData)) {
 			if (in_array('com.woltlab.blog.category', $this->selectedData)) $queue[] = 'com.woltlab.blog.category';
 			$queue[] = 'com.woltlab.blog.entry';
+			if (in_array('com.woltlab.blog.entry.attachment', $this->selectedData)) $queue[] = 'com.woltlab.blog.entry.attachment';
 			if (in_array('com.woltlab.blog.entry.comment', $this->selectedData)) $queue[] = 'com.woltlab.blog.entry.comment';
 			if (in_array('com.woltlab.blog.entry.like', $this->selectedData)) $queue[] = 'com.woltlab.blog.entry.like';
 		}
@@ -867,55 +870,14 @@ class XF12xExporter extends AbstractExporter {
 	 * Counts post attachments.
 	 */
 	public function countPostAttachments() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	xf_attachment
-			WHERE	content_type = ?";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array('post'));
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->countAttachments('post');
 	}
 	
 	/**
 	 * Exports post attachments.
 	 */
 	public function exportPostAttachments($offset, $limit) {
-		$sql = "SELECT		attachment.*, data.*
-			FROM		xf_attachment attachment
-			LEFT JOIN	xf_attachment_data data
-			ON		attachment.data_id = data.data_id
-			WHERE		attachment.content_type = ?
-			ORDER BY	attachment.attachment_id";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute(array('post'));
-		while ($row = $statement->fetchArray()) {
-			$config = self::getConfig();
-			$fileLocation = $this->fileSystemPath.$config['internalDataPath'].'/attachments/'.floor($row['data_id'] / 1000).'/'.$row['data_id'].'-'.$row['file_hash'].'.data';
-			
-			if (!file_exists($fileLocation)) continue;
-			
-			if ($imageSize = @getimagesize($fileLocation)) {
-				$row['isImage'] = 1;
-				$row['width'] = $imageSize[0];
-				$row['height'] = $imageSize[1];
-			}
-			else {
-				$row['isImage'] = $row['width'] = $row['height'] = 0;
-			}
-			
-			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.attachment')->import($row['attachment_id'], array(
-				'objectID' => $row['content_id'],
-				'userID' => ($row['user_id'] ?: null),
-				'filename' => $row['filename'],
-				'filesize' => $row['file_size'],
-				'fileType' => FileUtil::getMimeType($fileLocation) ?: 'application/octet-stream',
-				'isImage' => $row['isImage'],
-				'width' => $row['width'],
-				'height' => $row['height'],
-				'downloads' => $row['view_count'],
-				'uploadTime' => $row['upload_date']
-			), array('fileLocation' => $fileLocation));
-		}
+		$this->exportAttachments('post', 'com.woltlab.wbb.attachment', $offset, $limit);
 	}
 	
 	/**
@@ -1320,6 +1282,63 @@ class XF12xExporter extends AbstractExporter {
 				'likeValue' => Like::LIKE,
 				'time' => $row['like_date']
 			));
+		}
+	}
+	
+	public function countBlogAttachments() {
+		return $this->countAttachments('xfa_blog_entry');
+	}
+	
+	public function exportBlogAttachments($offset, $limit) {
+		$this->exportAttachments('xfa_blog_entry', 'com.woltlab.blog.entry.attachment', $offset, $limit);
+	}
+	
+	public function countAttachments($type) {
+		$sql = "SELECT	COUNT(*) AS count
+		FROM	xf_attachment
+		WHERE	content_type = ?";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($type));
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	public function exportAttachments($type, $objectType, $offset, $limit) {
+		$sql = "SELECT		attachment.*, data.*
+		FROM		xf_attachment attachment
+		LEFT JOIN	xf_attachment_data data
+		ON		attachment.data_id = data.data_id
+		WHERE		attachment.content_type = ?
+		ORDER BY	attachment.attachment_id";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute(array($type));
+		while ($row = $statement->fetchArray()) {
+			$config = self::getConfig();
+			$fileLocation = $this->fileSystemPath.$config['internalDataPath'].'/attachments/'.floor($row['data_id'] / 1000).'/'.$row['data_id'].'-'.$row['file_hash'].'.data';
+			
+			if (!file_exists($fileLocation)) continue;
+			
+			if ($imageSize = @getimagesize($fileLocation)) {
+				$row['isImage'] = 1;
+				$row['width'] = $imageSize[0];
+				$row['height'] = $imageSize[1];
+			}
+			else {
+				$row['isImage'] = $row['width'] = $row['height'] = 0;
+			}
+			
+			ImportHandler::getInstance()->getImporter($objectType)->import($row['attachment_id'], array(
+				'objectID' => $row['content_id'],
+				'userID' => ($row['user_id'] ?: null),
+				'filename' => $row['filename'],
+				'filesize' => $row['file_size'],
+				'fileType' => FileUtil::getMimeType($fileLocation) ?: 'application/octet-stream',
+				'isImage' => $row['isImage'],
+				'width' => $row['width'],
+				'height' => $row['height'],
+				'downloads' => $row['view_count'],
+				'uploadTime' => $row['upload_date']
+			), array('fileLocation' => $fileLocation));
 		}
 	}
 	
