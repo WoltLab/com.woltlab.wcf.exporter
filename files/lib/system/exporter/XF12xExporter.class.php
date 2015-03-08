@@ -327,17 +327,29 @@ class XF12xExporter extends AbstractExporter {
 					case 'XenForo_Authentication_Core12':
 						$password = PasswordUtil::getSaltedHash($passwordData['hash'], $passwordData['hash']);
 					break;
+					
 					case 'XenForo_Authentication_Core':
 						$password = 'xf1:'.$passwordData['hash'].':'.$passwordData['salt'];
 					break;
+					
 					case 'XenForo_Authentication_MyBb':
 						$password = 'mybb:'.$passwordData['hash'].':'.$passwordData['salt'];
 					break;
+					
 					case 'XenForo_Authentication_IPBoard':
 						$password = 'ipb3:'.$passwordData['hash'].':'.$passwordData['salt'];
 					break;
+					
 					case 'XenForo_Authentication_vBulletin':
 						$password = 'vb3:'.$passwordData['hash'].':'.$passwordData['salt'];
+					break;
+					
+					case 'XenForo_Authentication_PhpBb3':
+						$password = 'phpbb3:'.$passwordData['hash'].':';
+					break;
+					
+					case 'XenForo_Authentication_NoPassword':
+						$password = 'invalid:-:-';
 					break;
 				}
 				$passwordUpdateStatement->execute(array($password, $newUserID));
