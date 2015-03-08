@@ -1242,8 +1242,8 @@ class XF12xExporter extends AbstractExporter {
 			}
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry')->import($row['entry_id'], array(
-				'userID' => ($row['user_id'] ?: null),
-				'username' => $row['username'],
+				'userID' => $row['user_id'] ?: null,
+				'username' => $row['username'] ?: '',
 				'subject' => $row['title'],
 				'message' => self::fixBBCodes($row['message']),
 				'time' => $row['post_date'],
@@ -1281,8 +1281,8 @@ class XF12xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry.comment')->import($row['comment_id'], array(
 				'objectID' => $row['entry_id'],
-				'userID' => $row['user_id'],
-				'username' => $row['username'],
+				'userID' => $row['user_id'] ?: null,
+				'username' => $row['username'] ?: '',
 				'message' => $row['message'],
 				'time' => $row['post_date']
 			));
@@ -1315,7 +1315,7 @@ class XF12xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry.like')->import($row['like_id'], array(
 				'objectID' => $row['content_id'],
-				'objectUserID' => ($row['content_user_id'] ?: null),
+				'objectUserID' => $row['content_user_id'] ?: null,
 				'userID' => $row['like_user_id'],
 				'likeValue' => Like::LIKE,
 				'time' => $row['like_date']
