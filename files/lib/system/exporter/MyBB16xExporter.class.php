@@ -1251,6 +1251,37 @@ class MyBB16xExporter extends AbstractExporter {
 			$attachmentRegex = new Regex('\[attachment=([0-9]+)\]');
 		}
 		
+		// fix size bbcodes
+		$message = preg_replace_callback('/\[size=((?:xx?-)?(?:small|large)|medium)\]/i', function ($matches) {
+			$size = 12;
+			
+			switch ($matches[1]) {
+				case 'xx-small':
+					$size = 8;
+				break;
+				case 'x-small':
+					$size = 10;
+				break;
+				case 'small':
+					$size = 12;
+				break;
+				case 'medium':
+					$size = 14;
+				break;
+				case 'large':
+					$size = 18;
+				break;
+				case 'x-large':
+					$size = 24;
+				break;
+				case 'xx-large':
+					$size = 36;
+				break;
+			}
+				
+			return '[size='.$size.']';
+		}, $message);
+		
 		// attachment bbcodes
 		$message = $attachmentRegex->replace($message, '[attach=\\1][/attach]');
 		
