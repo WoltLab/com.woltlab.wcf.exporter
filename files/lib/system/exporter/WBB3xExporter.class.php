@@ -1085,6 +1085,7 @@ class WBB3xExporter extends AbstractExporter {
 			$threadIDs[] = $row['threadID'];
 			if ($row['isAnnouncement']) $announcementIDs[] = $row['threadID'];
 		}
+		if (empty($threadIDs)) return;
 		
 		// get assigned boards (for announcements)
 		$assignedBoards = array();
@@ -1751,6 +1752,7 @@ class WBB3xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			$entryIDs[] = $row['entryID'];
 		}
+		if (empty($entryIDs)) return;
 		
 		// get tags
 		$tags = $this->getTags('com.woltlab.wcf.user.blog.entry', $entryIDs);
@@ -1971,6 +1973,7 @@ class WBB3xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			$imageIDs[] = $row['photoID'];
 		}
+		if (empty($imageIDs)) return;
 		
 		// get tags
 		$tags = $this->getTags('com.woltlab.wcf.user.gallery.photo', $imageIDs);
