@@ -532,7 +532,7 @@ class XF12xExporter extends AbstractExporter {
 				'objectID' => $row['profile_user_id'],
 				'userID' => $row['user_id'],
 				'username' => $row['username'],
-				'message' => $row['message'],
+				'message' => self::fixComment($row['message']),
 				'time' => $row['post_date']
 			));
 		}
@@ -561,7 +561,7 @@ class XF12xExporter extends AbstractExporter {
 				'time' => $row['comment_date'],
 				'userID' => $row['user_id'],
 				'username' => $row['username'],
-				'message' => $row['message'],
+				'message' => self::fixComment($row['message']),
 			));
 		}
 	}
@@ -1245,7 +1245,7 @@ class XF12xExporter extends AbstractExporter {
 				'objectID' => $row['entry_id'],
 				'userID' => $row['user_id'] ?: null,
 				'username' => $row['username'] ?: '',
-				'message' => $row['message'],
+				'message' => self::fixComment($row['message']),
 				'time' => $row['post_date']
 			));
 		}
@@ -1513,5 +1513,14 @@ class XF12xExporter extends AbstractExporter {
 		$message = MessageUtil::stripCrap($message);
 		
 		return $message;
+	}
+	
+	private static function fixComment($message) {
+		static $mentionRegex = null;
+		if ($mentionRegex === null) {
+			$mentionRegex = new Regex('@\[\d+:(@[^\]]+)\]');
+		}
+		
+		return $mentionRegex->replace($message, "\\1");
 	}
 }
