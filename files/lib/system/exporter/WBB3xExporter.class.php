@@ -26,13 +26,13 @@ class WBB3xExporter extends AbstractExporter {
 	 * wcf installation number
 	 * @var	integer
 	 */
-	protected $dbNo = 0;
+	protected $dbNo = 1;
 	
 	/**
 	 * wbb installation number
 	 * @var	integer
 	 */
-	protected $instanceNo = 0;
+	protected $instanceNo = 1;
 	
 	/**
 	 * board cache
