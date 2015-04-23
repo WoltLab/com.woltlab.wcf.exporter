@@ -895,7 +895,7 @@ class PhpBB31xExporter extends AbstractExporter {
 				'threadsPerPage' => $board['forum_topics_per_page'] ?: 0,
 				'clicks' => $board['forum_posts_approved'],
 				'posts' => $board['forum_posts_approved'],
-				'threads' => $board['forum_topics']
+				'threads' => $board['forum_topics_approved']
 			));
 			
 			$this->exportBoardsRecursively($board['forum_id']);
