@@ -893,8 +893,8 @@ class PhpBB31xExporter extends AbstractExporter {
 				'searchable' => $board['enable_indexing'] ? 1 : 0,
 				'showSubBoards' => $board['display_subforum_list'] ? 1 : 0,
 				'threadsPerPage' => $board['forum_topics_per_page'] ?: 0,
-				'clicks' => $board['forum_posts'],
-				'posts' => $board['forum_posts'],
+				'clicks' => $board['forum_posts_approved'],
+				'posts' => $board['forum_posts_approved'],
 				'threads' => $board['forum_topics']
 			));
 			
