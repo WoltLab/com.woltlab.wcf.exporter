@@ -48,6 +48,11 @@ class PhpBB31xExporter extends AbstractExporter {
 	const BOARD_TYPE_BOARD = 1;
 	const BOARD_TYPE_CATEGORY = 0;
 	
+	const ITEM_UNAPPROVED = 0;
+	const ITEM_APPROVED = 1;
+	const ITEM_DELETED = 2;
+	const ITEM_REAPPROVE = 3;
+	
 	/**
 	 * board cache
 	 * @var	array
@@ -931,7 +936,9 @@ class PhpBB31xExporter extends AbstractExporter {
 				'views' => $row['topic_views'],
 				'isAnnouncement' => ($row['topic_type'] == self::TOPIC_TYPE_ANNOUCEMENT || $row['topic_type'] == self::TOPIC_TYPE_GLOBAL) ? 1 : 0,
 				'isSticky' => $row['topic_type'] == self::TOPIC_TYPE_STICKY ? 1 : 0,
-				'isDisabled' => 0,
+				'isDisabled' => $row['topic_visibility'] == self::ITEM_UNAPPROVED ? 1 : 0,
+				'isDeleted' => $row['topic_visibility'] == self::ITEM_DELETED ? 1 : 0,
+				'deleteTime' => $row['topic_delete_time'],
 				'isClosed' => $row['topic_status'] == self::TOPIC_STATUS_CLOSED ? 1 : 0,
 				'movedThreadID' => ($row['topic_status'] == self::TOPIC_STATUS_LINK && $row['topic_moved_id']) ? $row['topic_moved_id'] : null,
 				'movedTime' => 0,
@@ -974,7 +981,9 @@ class PhpBB31xExporter extends AbstractExporter {
 				'subject' => StringUtil::decodeHTML($row['post_subject']),
 				'message' => self::fixBBCodes(StringUtil::decodeHTML($row['post_text']), $row['bbcode_uid']),
 				'time' => $row['post_time'],
-				'isDisabled' => $row['post_approved'] ? 0 : 1,
+				'isDisabled' => $row['post_visibility'] == self::ITEM_UNAPPROVED ? 1 : 0,
+				'isDeleted' => $row['post_visibility'] == self::ITEM_DELETED ? 1 : 0,
+				'deleteTime' => $row['post_delete_time'],
 				'isClosed' => $row['post_edit_locked'] ? 1 : 0,
 				'editorID' => ($row['post_edit_user'] ?: null),
 				'editor' => $row['editorName'] ?: '',
