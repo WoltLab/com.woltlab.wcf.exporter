@@ -1229,7 +1229,8 @@ class WBB3xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.watchedThread')->import(0, array(
 				'objectID' => $row['threadID'],
-				'userID' => $row['userID']
+				'userID' => $row['userID'],
+				'notification' => $row['enableNotification']
 			));
 		}
 	}
