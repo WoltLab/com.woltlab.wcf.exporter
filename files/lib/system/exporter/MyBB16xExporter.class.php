@@ -400,10 +400,10 @@ class MyBB16xExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.option')->import($row['fid'], array(
 				'categoryName' => 'profile.personal',
 				'optionType' => $row['type'],
-				'editable' => $row['editable'] ? UserOption::EDITABILITY_ALL : UserOption::EDITABILITY_ADMINISTRATOR,
+				'editable' => ((isset($row['editable']) && $row['editable']) || (isset($row['editableby']) && $row['editableby'] == -1)) ? UserOption::EDITABILITY_ALL : UserOption::EDITABILITY_ADMINISTRATOR,
 				'required' => $row['required'],
 				'selectOptions' => $selectOptions,
-				'visible' => $row['hidden'] ? UserOption::VISIBILITY_ADMINISTRATOR | UserOption::VISIBILITY_OWNER : UserOption::VISIBILITY_ALL,
+				'visible' => ((isset($row['hidden']) && $row['hidden']) || (isset($row['profile']) && !$row['profile']) || (isset($row['viewableby']) && $row['viewableby'] != -1)) ? UserOption::VISIBILITY_ADMINISTRATOR | UserOption::VISIBILITY_OWNER : UserOption::VISIBILITY_ALL,
 				'showOrder' => $row['disporder']
 			), array('name' => $row['name']));
 		}
