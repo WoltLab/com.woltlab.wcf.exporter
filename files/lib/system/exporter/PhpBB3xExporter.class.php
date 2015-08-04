@@ -299,7 +299,7 @@ class PhpBB3xExporter extends AbstractExporter {
 		
 		while ($row = $statement->fetchArray()) {
 			$data = array(
-				'username' => $row['username'],
+				'username' => StringUtil::decodeHTML($row['username']),
 				'password' => '',
 				'email' => $row['user_email'],
 				'registrationDate' => $row['user_regdate'],
@@ -620,7 +620,7 @@ class PhpBB3xExporter extends AbstractExporter {
 				'subject' => StringUtil::decodeHTML($row['message_subject']),
 				'time' => $row['message_time'],
 				'userID' => $row['author_id'],
-				'username' => $row['username'] ?: '',
+				'username' => StringUtil::decodeHTML($row['username']) ?: '',
 				'isDraft' => $row['isDraft']
 			));
 		}
@@ -683,7 +683,7 @@ class PhpBB3xExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.message')->import($row['msg_id'], array(
 				'conversationID' => ($row['root_level'] ?: $row['msg_id']),
 				'userID' => $row['author_id'],
-				'username' => $row['username'] ?: '',
+				'username' => StringUtil::decodeHTML($row['username']) ?: '',
 				'message' => self::fixBBCodes(StringUtil::decodeHTML($row['message_text']), $row['bbcode_uid']),
 				'time' => $row['message_time'],
 				'attachments' => $row['attachments'],
@@ -725,7 +725,7 @@ class PhpBB3xExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.user')->import(0, array(
 				'conversationID' => ($row['root_level'] ?: $row['msg_id']),
 				'participantID' => $row['user_id'],
-				'username' => $row['username'] ?: '',
+				'username' => StringUtil::decodeHTML($row['username']) ?: '',
 				'hideConversation' => $row['pm_deleted'],
 				'isInvisible' => in_array('u_'.$row['user_id'], $bcc) ? 1 : 0,
 				'lastVisitTime' => $row['pm_new'] ? 0 : $row['message_time']
@@ -880,7 +880,7 @@ class PhpBB3xExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.post')->import($row['post_id'], array(
 				'threadID' => $row['topic_id'],
 				'userID' => $row['poster_id'],
-				'username' => ($row['post_username'] ?: ($row['username'] ?: '')),
+				'username' => ($row['post_username'] ?: (StringUtil::decodeHTML($row['username']) ?: '')),
 				'subject' => StringUtil::decodeHTML($row['post_subject']),
 				'message' => self::fixBBCodes(StringUtil::decodeHTML($row['post_text']), $row['bbcode_uid']),
 				'time' => $row['post_time'],
