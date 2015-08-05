@@ -889,7 +889,7 @@ class PhpBB31xExporter extends AbstractExporter {
 				'parentID' => ($board['parent_id'] ?: null),
 				'position' => $board['left_id'],
 				'boardType' => ($board['forum_type'] == self::BOARD_TYPE_LINK ? Board::TYPE_LINK : ($board['forum_type'] == self::BOARD_TYPE_CATEGORY ? Board::TYPE_CATEGORY : Board::TYPE_BOARD)),
-				'title' => $board['forum_name'],
+				'title' => StringUtil::decodeHTML($board['forum_name']),
 				'description' => $board['forum_desc'],
 				'descriptionUseHtml' => 1, // cannot be disabled
 				'externalURL' => $board['forum_link'],
