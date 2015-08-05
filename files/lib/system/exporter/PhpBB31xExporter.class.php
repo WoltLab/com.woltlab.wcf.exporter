@@ -1069,7 +1069,7 @@ class PhpBB31xExporter extends AbstractExporter {
 			WHERE		poll_start <> ?
 			ORDER BY	topic_id";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute(array('post'));
+		$statement->execute(array(0));
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll')->import($row['topic_id'], array(
 				'objectID' => $row['topic_first_post_id'],
