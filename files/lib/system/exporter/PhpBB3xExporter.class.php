@@ -834,7 +834,7 @@ class PhpBB3xExporter extends AbstractExporter {
 				'parentID' => ($board['parent_id'] ?: null),
 				'position' => $board['left_id'],
 				'boardType' => ($board['forum_type'] == self::BOARD_TYPE_LINK ? Board::TYPE_LINK : ($board['forum_type'] == self::BOARD_TYPE_CATEGORY ? Board::TYPE_CATEGORY : Board::TYPE_BOARD)),
-				'title' => $board['forum_name'],
+				'title' => StringUtil::decodeHTML($board['forum_name']),
 				'description' => $board['forum_desc'],
 				'descriptionUseHtml' => 1, // cannot be disabled
 				'externalURL' => $board['forum_link'],
@@ -1010,7 +1010,7 @@ class PhpBB3xExporter extends AbstractExporter {
 			WHERE		poll_start <> ?
 			ORDER BY	topic_id";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute(array('post'));
+		$statement->execute(array(0));
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll')->import($row['topic_id'], array(
 				'objectID' => $row['topic_first_post_id'],
