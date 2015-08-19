@@ -992,7 +992,7 @@ class PhpBB3xExporter extends AbstractExporter {
 		$sql = "SELECT	COUNT(*) AS count
 			FROM	".$this->databasePrefix."poll_options";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array());
+		$statement->execute();
 		$row = $statement->fetchArray();
 		return $row['count'];
 	}
@@ -1005,7 +1005,7 @@ class PhpBB3xExporter extends AbstractExporter {
 			FROM		".$this->databasePrefix."poll_options
 			ORDER BY	poll_option_id ASC";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute(array('post'));
+		$statement->execute();
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll.option')->import($row['topic_id'].'-'.$row['poll_option_id'], array(
 				'pollID' => $row['topic_id'],
