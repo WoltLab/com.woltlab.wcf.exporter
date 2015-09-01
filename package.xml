@@ -28,7 +28,7 @@
 		<instruction type="language">language/*.xml</instruction>
 	</instructions>
 	
-	<instructions type="update" fromversion="2.0.111">
+	<instructions type="update" fromversion="2.0.11">
 		<instruction type="file">files_update.tar</instruction>
 	</instructions>
 </package>
