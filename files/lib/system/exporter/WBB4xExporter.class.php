@@ -1374,6 +1374,8 @@ class WBB4xExporter extends AbstractExporter {
 			$entryIDs[] = $row['entryID'];
 		}
 		
+		if (empty($entryIDs)) return;
+		
 		// get tags
 		$tags = $this->getTags('com.woltlab.blog.entry', $entryIDs);
 		
@@ -1626,6 +1628,8 @@ class WBB4xExporter extends AbstractExporter {
 				));
 			}
 		}
+		
+		if (empty($imageIDs)) return;
 		
 		// fetch tags
 		$tags = $this->getTags('com.woltlab.gallery.image', $imageIDs);
