@@ -1348,7 +1348,7 @@ class WBB4xExporter extends AbstractExporter {
 			return $this->__getMaxID("blog".$this->dbNo."_blog", 'blogID');
 		}
 		
-		// version 2.0 does not support image markers
+		// version 2.0 does not support blogs
 		return 0;
 	}
 	
