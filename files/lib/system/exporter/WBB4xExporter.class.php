@@ -62,6 +62,7 @@ class WBB4xExporter extends AbstractExporter {
 		'com.woltlab.wcf.smiley.category' => 'SmileyCategories',
 		'com.woltlab.wcf.smiley' => 'Smilies',
 		
+		'com.woltlab.blog.blog' => 'Blogs',
 		'com.woltlab.blog.category' => 'BlogCategories',
 		'com.woltlab.blog.entry' => 'BlogEntries',
 		'com.woltlab.blog.entry.attachment' => 'BlogAttachments',
@@ -244,6 +245,7 @@ class WBB4xExporter extends AbstractExporter {
 		// blog
 		if ($this->getPackageVersion('com.woltlab.blog')) {
 			if (in_array('com.woltlab.blog.entry', $this->selectedData)) {
+				$queue[] = 'com.woltlab.blog.blog';
 				if (in_array('com.woltlab.blog.category', $this->selectedData)) $queue[] = 'com.woltlab.blog.category';
 				$queue[] = 'com.woltlab.blog.entry';
 				if (in_array('com.woltlab.blog.entry.attachment', $this->selectedData)) $queue[] = 'com.woltlab.blog.entry.attachment';
@@ -1338,6 +1340,46 @@ class WBB4xExporter extends AbstractExporter {
 	}
 	
 	/**
+	 * Counts blogs.
+	 */
+	public function countBlogs() {
+		if (version_compare($this->getPackageVersion('com.woltlab.blog'), '2.1.0 Alpha 1', '>=')
+			&& version_compare(\blog\system\BLOGCore::getInstance()->getPackage()->packageVersion, '2.1.0 Alpha 1', '>=')) {
+			return $this->__getMaxID("blog".$this->dbNo."_blog", 'blogID');
+		}
+		
+		// version 2.0 does not support image markers
+		return 0;
+	}
+	
+	/**
+	 * Exports blogs.
+	 */
+	public function exportBlogs($offset, $limit) {
+		$sql = "SELECT		blog.*, language.languageCode
+			FROM		blog".$this->dbNo."_blog blog
+			LEFT JOIN	wcf".$this->dbNo."_language language
+			ON		(language.languageID = blog.languageID)
+			WHERE		blogID BETWEEN ? AND ?
+			ORDER BY	blogID";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
+		while ($row = $statement->fetchArray()) {
+			$additionalData = array();
+			if ($row['languageCode']) $additionalData['languageCode'] = $row['languageCode'];
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.blog.blog')->import($row['blogID'], array(
+				'userID' => $row['userID'],
+				'username' => $row['username'],
+				'title' => $row['title'],
+				'description' => $row['description'],
+				'accessLevel' => $row['accessLevel'],
+				'isFeatured' => $row['isFeatured']
+			), $additionalData);
+		}
+	}
+	
+	/**
 	 * Counts blog categories.
 	 */
 	public function countBlogCategories() {
@@ -1362,6 +1404,9 @@ class WBB4xExporter extends AbstractExporter {
 	 * Exports blog entries.
 	 */
 	public function exportBlogEntries($offset, $limit) {
+		$sourceVersion21 = version_compare($this->getPackageVersion('com.woltlab.blog'), '2.1.0 Alpha 1', '>=');
+		$destVersion21 = version_compare(\blog\system\BLOGCore::getInstance()->getPackage()->packageVersion, '2.1.0 Alpha 1', '>=');
+		
 		// get entry ids
 		$entryIDs = array();
 		$sql = "SELECT		entryID
@@ -1411,7 +1456,7 @@ class WBB4xExporter extends AbstractExporter {
 			if (isset($tags[$row['entryID']])) $additionalData['tags'] = $tags[$row['entryID']];
 			if (isset($categories[$row['entryID']])) $additionalData['categories'] = $categories[$row['entryID']];
 			
-			ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry')->import($row['entryID'], array(
+			$data = array(
 				'userID' => $row['userID'],
 				'username' => $row['username'],
 				'subject' => $row['subject'],
@@ -1431,7 +1476,13 @@ class WBB4xExporter extends AbstractExporter {
 				'publicationDate' => $row['publicationDate'],
 				'ipAddress' => $row['ipAddress'],
 				'deleteTime' => $row['deleteTime']
-			), $additionalData);
+			);
+			
+			if ($sourceVersion21 && $destVersion21) {
+				$data['blogID'] = $row['blogID'];
+			}
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry')->import($row['entryID'], $data, $additionalData);
 		}
 	}
 	
@@ -1505,7 +1556,8 @@ class WBB4xExporter extends AbstractExporter {
 	 * @param	integer		$limit
 	 */
 	public function exportGalleryAlbums($offset, $limit) {
-		$version21 = (substr($this->getPackageVersion('com.woltlab.gallery'), 0, 3) == '2.1');
+		$sourceVersion21 = version_compare($this->getPackageVersion('com.woltlab.gallery'), '2.1.0 Alpha 1', '>=');
+		$destVersion21 = version_compare(\gallery\system\GALLERYCore::getInstance()->getPackage()->packageVersion, '2.1.0 Alpha 1', '>=');
 		
 		$sql = "SELECT		*
 			FROM		gallery".$this->dbNo."_album
@@ -1514,14 +1566,19 @@ class WBB4xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
-			ImportHandler::getInstance()->getImporter('com.woltlab.gallery.album')->import($row['albumID'], array(
+			$data = array(
 				'userID' => $row['userID'],
 				'username' => ($row['username'] ?: ''),
 				'title' => $row['title'],
 				'description' => $row['description'],
-				'lastUpdateTime' => $row['lastUpdateTime'],
-				'accessLevel' => ($version21 ? $row['accessLevel'] : 0)
-			));
+				'lastUpdateTime' => $row['lastUpdateTime']
+			);
+			
+			if ($sourceVersion21 && $destVersion21) {
+				$data['accessLevel'] = $row['accessLevel'];
+			}
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.gallery.album')->import($row['albumID'], $data);
 		}
 	}
 	
@@ -1550,7 +1607,8 @@ class WBB4xExporter extends AbstractExporter {
 	 * Exports gallery images.
 	 */
 	public function exportGalleryImages($offset, $limit) {
-		$version21 = (substr($this->getPackageVersion('com.woltlab.gallery'), 0, 3) == '2.1');
+		$sourceVersion21 = version_compare($this->getPackageVersion('com.woltlab.gallery'), '2.1.0 Alpha 1', '>=');
+		$destVersion21 = version_compare(\gallery\system\GALLERYCore::getInstance()->getPackage()->packageVersion, '2.1.0 Alpha 1', '>=');
 		
 		// build path to gallery image directories
 		$sql = "SELECT	packageDir
@@ -1614,17 +1672,16 @@ class WBB4xExporter extends AbstractExporter {
 				'exifData' => $row['exifData'],
 			);
 			
-			if ($version21) {
+			if ($sourceVersion21 && $destVersion21) {
 				$images[$row['imageID']] = array_merge($images[$row['imageID']], array(
 					'enableSmilies' => $row['enableSmilies'],
 					'enableHtml' => $row['enableHtml'],
 					'enableBBCodes' => $row['enableBBCodes'],
 					'rawExifData' => $row['rawExifData'],
-					'accessLevel' => $row['accessLevel'],
 					'hasEmbeddedObjects' => $row['hasEmbeddedObjects'],
 					'hasMarkers' => $row['hasMarkers'],
 					'showOrder' => $row['showOrder'],
-					'hasWatermark' => $row['hasWatermark']
+					'hasOriginalWatermark' => $row['hasOriginalWatermark']
 				));
 			}
 		}
@@ -1671,7 +1728,8 @@ class WBB4xExporter extends AbstractExporter {
 	 * Counts gallery image markers.
 	 */
 	public function countGalleryImageMarkers() {
-		if ((substr($this->getPackageVersion('com.woltlab.gallery'), 0, 3) == '2.1')) {
+		if (version_compare($this->getPackageVersion('com.woltlab.gallery'), '2.1.0 Alpha 1', '>=')
+			&& version_compare(\gallery\system\GALLERYCore::getInstance()->getPackage()->packageVersion, '2.1.0 Alpha 1', '>=')) {
 			return $this->__getMaxID("gallery".$this->dbNo."_image_marker", 'markerID');
 		}
 		
