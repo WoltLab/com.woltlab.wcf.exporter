@@ -1933,6 +1933,8 @@ class WBB3xExporter extends AbstractExporter {
 	 * Exports gallery albums.
 	 */
 	public function exportGalleryAlbums($offset, $limit) {
+		$destVersion21 = version_compare(\gallery\system\GALLERYCore::getInstance()->getPackage()->packageVersion, '2.1.0 Alpha 1', '>=');
+		
 		$sql = "SELECT		gallery_album.*, user_table.username
 			FROM		wcf".$this->dbNo."_user_gallery_album gallery_album
 			LEFT JOIN	wcf".$this->dbNo."_user user_table
@@ -1942,13 +1944,18 @@ class WBB3xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
-			ImportHandler::getInstance()->getImporter('com.woltlab.gallery.album')->import($row['albumID'], array(
+			$data = array(
 				'userID' => $row['ownerID'],
 				'username' => ($row['username'] ?: ''),
 				'title' => $row['title'],
 				'description' => $row['description'],
 				'lastUpdateTime' => $row['lastUpdateTime']
-			));
+			);
+			if ($destVersion21 && $row['isPrivate']) {
+				$data['accessLevel'] = 2;
+			}
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.gallery.album')->import($row['albumID'], $data);
 		}
 	}
 	
