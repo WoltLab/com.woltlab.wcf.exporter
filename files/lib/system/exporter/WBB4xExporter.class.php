@@ -76,7 +76,16 @@ class WBB4xExporter extends AbstractExporter {
 		'com.woltlab.gallery.image.comment' => 'GalleryComments',
 		'com.woltlab.gallery.image.comment.response' => 'GalleryCommentResponses',
 		'com.woltlab.gallery.image.like' => 'GalleryImageLikes',
-		'com.woltlab.gallery.image.marker' => 'GalleryImageMarkers'
+		'com.woltlab.gallery.image.marker' => 'GalleryImageMarkers',
+		
+		'com.woltlab.calendar.category' => 'CalendarCategories',
+		'com.woltlab.calendar.event' => 'CalendarEvents',
+		'com.woltlab.calendar.event.attachment' => 'CalendarAttachments',
+		'com.woltlab.calendar.event.date' => 'CalendarEventDates',
+		'com.woltlab.calendar.event.date.comment' => 'CalendarEventDateComments',
+		'com.woltlab.calendar.event.date.comment.response' => 'CalendarEventDateCommentResponses',
+		'com.woltlab.calendar.event.date.participation' => 'CalendarEventDateParticipation',
+		'com.woltlab.calendar.event.like' => 'CalendarEventLikes'
 	);
 	
 	/**
@@ -139,6 +148,13 @@ class WBB4xExporter extends AbstractExporter {
 				'com.woltlab.blog.entry.attachment',
 				'com.woltlab.blog.entry.comment',
 				'com.woltlab.blog.entry.like'
+			),
+			'com.woltlab.calendar.event' => array(
+				'com.woltlab.calendar.category',
+				'com.woltlab.calendar.event.attachment',
+				'com.woltlab.calendar.event.date.comment',
+				'com.woltlab.calendar.event.date.participation',
+				'com.woltlab.calendar.event.like'
 			),
 			'com.woltlab.wcf.smiley' => array(),
 		);
@@ -258,8 +274,7 @@ class WBB4xExporter extends AbstractExporter {
 		}
 		
 		// gallery
-		$galleryVersion = $this->getPackageVersion('com.woltlab.gallery');
-		if ($galleryVersion) {
+		if ($this->getPackageVersion('com.woltlab.gallery')) {
 			if (in_array('com.woltlab.gallery.image', $this->selectedData)) {
 				if (in_array('com.woltlab.gallery.category', $this->selectedData)) $queue[] = 'com.woltlab.gallery.category';
 				if (in_array('com.woltlab.gallery.album', $this->selectedData)) $queue[] = 'com.woltlab.gallery.album';
@@ -270,6 +285,22 @@ class WBB4xExporter extends AbstractExporter {
 				}
 				if (in_array('com.woltlab.gallery.image.like', $this->selectedData)) $queue[] = 'com.woltlab.gallery.image.like';
 				if (in_array('com.woltlab.gallery.image.marker', $this->selectedData)) $queue[] = 'com.woltlab.gallery.image.marker';
+			}
+		}
+		
+		// calendar
+		if ($this->getPackageVersion('com.woltlab.calendar')) {
+			if (in_array('com.woltlab.calendar.event', $this->selectedData)) {
+				if (in_array('com.woltlab.calendar.category', $this->selectedData)) $queue[] = 'com.woltlab.calendar.category';
+				$queue[] = 'com.woltlab.calendar.event';
+				$queue[] = 'com.woltlab.calendar.event.date';
+				if (in_array('com.woltlab.calendar.event.attachment', $this->selectedData)) $queue[] = 'com.woltlab.calendar.event.attachment';
+				if (in_array('com.woltlab.calendar.event.date.comment', $this->selectedData)) {
+					$queue[] = 'com.woltlab.calendar.event.date.comment';
+					$queue[] = 'com.woltlab.calendar.event.date.comment.response';
+				}
+				if (in_array('com.woltlab.calendar.event.like', $this->selectedData)) $queue[] = 'com.woltlab.calendar.event.like';
+				if (in_array('com.woltlab.calendar.event.date.participation', $this->selectedData)) $queue[] = 'com.woltlab.calendar.event.date.participation';
 			}
 		}
 		
@@ -1798,6 +1829,226 @@ class WBB4xExporter extends AbstractExporter {
 	 */
 	public function exportGalleryImageLikes($offset, $limit) {
 		$this->exportLikes('com.woltlab.gallery.likeableImage', 'com.woltlab.gallery.image.like', $offset, $limit);
+	}
+	
+	/**
+	 * Counts calendar events.
+	 */
+	public function countCalendarEvents() {
+		return $this->__getMaxID("calendar".$this->dbNo."_event", 'eventID');
+	}
+	
+	/**
+	 * Exports calendar events.
+	 */
+	public function exportCalendarEvents($offset, $limit) {
+		// get event ids
+		$eventIDs = array();
+		$sql = "SELECT		eventID
+			FROM		calendar".$this->dbNo."_event
+			WHERE		eventID BETWEEN ? AND ?
+			ORDER BY	eventID";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
+		while ($row = $statement->fetchArray()) {
+			$eventIDs[] = $row['eventID'];
+		}
+		
+		if (empty($eventIDs)) return;
+		
+		// get tags
+		$tags = $this->getTags('com.woltlab.calendar.event', $eventIDs);
+		
+		// get categories
+		$categories = array();
+		$conditionBuilder = new PreparedStatementConditionBuilder();
+		$conditionBuilder->add('eventID IN (?)', array($eventIDs));
+		
+		$sql = "SELECT		*
+			FROM		calendar".$this->dbNo."_event_to_category
+			".$conditionBuilder;
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute($conditionBuilder->getParameters());
+		while ($row = $statement->fetchArray()) {
+			if (!isset($categories[$row['eventID']])) $categories[$row['eventID']] = array();
+			$categories[$row['eventID']][] = $row['categoryID'];
+		}
+		
+		// get event
+		$conditionBuilder = new PreparedStatementConditionBuilder();
+		$conditionBuilder->add('event.eventID IN (?)', array($eventIDs));
+		$sql = "SELECT		event.*, language.languageCode
+			FROM		calendar".$this->dbNo."_event event
+			LEFT JOIN	wcf".$this->dbNo."_language language
+			ON		(language.languageID = event.languageID)
+			".$conditionBuilder;
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute($conditionBuilder->getParameters());
+		while ($row = $statement->fetchArray()) {
+			$additionalData = array();
+			if ($row['languageCode']) $additionalData['languageCode'] = $row['languageCode'];
+			if (isset($tags[$row['eventID']])) $additionalData['tags'] = $tags[$row['eventID']];
+			if (isset($categories[$row['eventID']])) $additionalData['categories'] = $categories[$row['eventID']];
+			
+			$data = array(
+				'userID' => $row['userID'],
+				'username' => $row['username'],
+				'subject' => $row['subject'],
+				'message' => $row['message'],
+				'time' => $row['time'],
+				'eventDate' => $row['eventDate'],
+				'eventColor' => $row['eventColor'],
+				'views' => $row['views'],
+				'enableSmilies' => $row['enableSmilies'],
+				'enableHtml' => $row['enableHtml'],
+				'enableBBCodes' => $row['enableBBCodes'],
+				'enableComments' => $row['enableComments'],
+				'showSignature' => $row['showSignature'],
+				'isDisabled' => $row['isDisabled'],
+				'isDeleted' => $row['isDeleted'],
+				'ipAddress' => $row['ipAddress'],
+				'deleteTime' => $row['deleteTime'],
+				'location' => $row['location'],
+				'latitude' => $row['latitude'],
+				'longitude' => $row['longitude'],
+				'enableParticipation' => $row['enableParticipation'],
+				'participationEndTime' => $row['participationEndTime'],
+				'maxParticipants' => $row['maxParticipants'],
+				'maxCompanions' => $row['maxCompanions'],
+				'participationIsChangeable' => $row['participationIsChangeable'],
+				'participationIsPublic' => $row['participationIsPublic']
+			);
+				
+			ImportHandler::getInstance()->getImporter('com.woltlab.calendar.event')->import($row['eventID'], $data, $additionalData);
+		}
+	}
+	
+	/**
+	 * Counts calendar event dates.
+	 */
+	public function countCalendarEventDates() {
+		return $this->__getMaxID("calendar".$this->dbNo."_event_date", 'eventDateID');
+	}
+	
+	/**
+	 * Exports calendar event dates.
+	 */
+	public function exportCalendarEventDates($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		calendar".$this->dbNo."_event_date
+			WHERE		eventDateID BETWEEN ? AND ?
+			ORDER BY	eventDateID";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.calendar.event.date')->import($row['eventDateID'], array(
+				'eventID' => $row['eventID'],
+				'startTime' => $row['startTime'],
+				'endTime' => $row['endTime'],
+				'isFullDay' => $row['isFullDay'],
+				'participants' => $row['participants']
+			));
+		}
+	}
+	
+	/**
+	 * Counts calendar event date participations.
+	 */
+	public function countCalendarEventDateParticipation() {
+		return $this->__getMaxID("calendar".$this->dbNo."_event_date_participation", 'participationID');
+	}
+	
+	/**
+	 * Exports calendar event date participations.
+	 */
+	public function exportCalendarEventDateParticipation($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		calendar".$this->dbNo."_event_date_participation
+			WHERE		participationID BETWEEN ? AND ?
+			ORDER BY	participationID";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.calendar.event.date.participation')->import($row['participationID'], array(
+				'eventDateID' => $row['eventDateID'],
+				'userID' => $row['userID'],
+				'username' => $row['username'],
+				'decision' => $row['decision'],
+				'decisionTime' => $row['decisionTime'],
+				'participants' => $row['participants'],
+				'message' => $row['message']
+			));
+		}
+	}
+	
+	/**
+	 * Counts calendar categories.
+	 */
+	public function countCalendarCategories() {
+		return $this->countCategories('com.woltlab.calendar.category');
+	}
+	
+	/**
+	 * Exports calendar categories.
+	 */
+	public function exportCalendarCategories($offset, $limit) {
+		$this->exportCategories('com.woltlab.calendar.category', 'com.woltlab.calendar.category', $offset, $limit);
+	}
+	
+	/**
+	 * Counts calendar attachments.
+	 */
+	public function countCalendarAttachments() {
+		return $this->countAttachments('com.woltlab.calendar.event');
+	}
+	
+	/**
+	 * Exports calendar attachments.
+	 */
+	public function exportCalendarAttachments($offset, $limit) {
+		$this->exportAttachments('com.woltlab.calendar.event', 'com.woltlab.calendar.event.attachment', $offset, $limit);
+	}
+	
+	/**
+	 * Counts calendar event comments.
+	 */
+	public function countCalendarEventDateComments() {
+		return $this->countComments('com.woltlab.calendar.eventDateComment');
+	}
+	
+	/**
+	 * Exports calendar event comments.
+	 */
+	public function exportCalendarEventDateComments($offset, $limit) {
+		$this->exportComments('com.woltlab.calendar.eventDateComment', 'com.woltlab.calendar.event.date.comment', $offset, $limit);
+	}
+	
+	/**
+	 * Counts calendar event comment responses.
+	 */
+	public function countCalendarEventDateCommentResponses() {
+		return $this->countCommentResponses('com.woltlab.calendar.eventDateComment');
+	}
+	
+	/**
+	 * Exports calendar event comment responses.
+	 */
+	public function exportCalendarEventDateCommentResponses($offset, $limit) {
+		$this->exportCommentResponses('com.woltlab.calendar.eventDateComment', 'com.woltlab.calendar.event.date.comment.response', $offset, $limit);
+	}
+	
+	/**
+	 * Counts calendar event likes.
+	 */
+	public function countCalendarEventLikes() {
+		return $this->countLikes('com.woltlab.calendar.likeableEvent');
+	}
+	
+	/**
+	 * Exports gallery image likes.
+	 */
+	public function exportCalendarEventLikes($offset, $limit) {
+		$this->exportLikes('com.woltlab.calendar.likeableEvent', 'com.woltlab.calendar.event.like', $offset, $limit);
 	}
 	
 	/**
