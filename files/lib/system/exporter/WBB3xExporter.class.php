@@ -2345,7 +2345,7 @@ class WBB3xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * Exports calendar event dates.
+	 * Exports calendar event date comments.
 	 */
 	public function exportCalendarEventDateComments($offset, $limit) {
 		$sql = "SELECT		startTime
@@ -2376,7 +2376,7 @@ class WBB3xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * Counts calendar event date comments.
+	 * Counts calendar event date participations.
 	 */
 	public function countCalendarEventDateParticipation() {
 		$sql = "SELECT	COUNT(*) AS count
@@ -2388,7 +2388,7 @@ class WBB3xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * Exports calendar event dates.
+	 * Exports calendar event date participations.
 	 */
 	public function exportCalendarEventDateParticipation($offset, $limit) {
 		$sql = "SELECT		startTime
