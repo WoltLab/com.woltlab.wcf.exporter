@@ -747,7 +747,7 @@ class SMF2xExporter extends AbstractExporter {
 	public function exportBoards($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."categories
-			ORDER BY	id_cat ";
+			ORDER BY	id_cat";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
@@ -812,8 +812,8 @@ class SMF2xExporter extends AbstractExporter {
 			FROM		".$this->databasePrefix."topics topic
 			LEFT JOIN	".$this->databasePrefix."messages post
 			ON		(post.id_msg = topic.id_first_msg)
-			WHERE		id_topic BETWEEN ? AND ?
-			ORDER BY	id_topic";
+			WHERE		topic.id_topic BETWEEN ? AND ?
+			ORDER BY	topic.id_topic";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
@@ -849,8 +849,8 @@ class SMF2xExporter extends AbstractExporter {
 			FROM		".$this->databasePrefix."messages message
 			LEFT JOIN	".$this->databasePrefix."members member
 			ON		(message.modified_name = member.real_name)
-			WHERE		id_msg BETWEEN ? AND ?
-			ORDER BY	id_msg";
+			WHERE		message.id_msg BETWEEN ? AND ?
+			ORDER BY	message.id_msg";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
