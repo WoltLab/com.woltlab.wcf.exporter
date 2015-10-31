@@ -1229,6 +1229,8 @@ class MyBB16xExporter extends AbstractExporter {
 		static $videoRegex = null;
 		static $quoteRegex = null;
 		static $quoteCallback = null;
+		static $imgRegex = null;
+		static $imgCallback = null;
 		static $attachmentRegex = null;
 		
 		if ($videoRegex === null) {
@@ -1246,6 +1248,22 @@ class MyBB16xExporter extends AbstractExporter {
 				$postLink = str_replace(array("\\", "'"), array("\\\\", "\'"), $postLink);
 				
 				return "[quote='".$username."','".$postLink."']";
+			});
+			$imgRegex = new Regex('\[img(?:=(\d)x\d)?(?: align=(left|right))?\](?:\r\n?|\n?)(https?://(?:[^<>"\']+?))\[/img\]');
+			$imgCallback = new Callback(function ($matches) {
+				$escapedLink = str_replace(array("\\", "'"), array("\\\\", "\'"), $matches[3]);
+				if ($matches[1] && $matches[2]) {
+					return "[img='".$escapedLink."',".$matches[2].",".$matches[1]."][/img]";
+				}
+				else if ($matches[1]) {
+					return "[img='".$escapedLink."',none,".$matches[1]."][/img]";
+				}
+				else if ($matches[2]) {
+					return "[img='".$escapedLink."',".$matches[2]."][/img]";
+				}
+				else {
+					return "[img]".$matches[3]."[/img]";
+				}
 			});
 			
 			$attachmentRegex = new Regex('\[attachment=([0-9]+)\]');
@@ -1284,6 +1302,9 @@ class MyBB16xExporter extends AbstractExporter {
 		
 		// attachment bbcodes
 		$message = $attachmentRegex->replace($message, '[attach=\\1][/attach]');
+		
+		// img bbcodes
+		$message = $imgRegex->replace($message, $imgCallback);
 		
 		// code bbcodes
 		$message = str_replace('[php]', '[code=php]', $message);
