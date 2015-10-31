@@ -616,7 +616,14 @@ class VB3or4xExporter extends AbstractExporter {
 			// get select options
 			$selectOptions = array();
 			if ($row['type'] == 'radio' || $row['type'] == 'select' || $row['type'] == 'select_multiple' || $row['type'] == 'checkbox') {
-				$selectOptions = unserialize($row['data']);
+				$selectOptions = @unserialize($row['data']);
+				
+				if (!is_array($selectOptions)) {
+					$selectOptions = @unserialize(mb_convert_encoding($row['data'], 'ISO-8859-1', 'UTF-8'));
+					$selectOptions = array_map(function ($item) {
+						return mb_convert_encoding($item, 'UTF-8', 'ISO-8859-1');
+					}, $selectOptions)
+				}
 			}
 			
 			// get option type
