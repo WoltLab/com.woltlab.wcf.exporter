@@ -26,6 +26,12 @@
 		</type>
 		
 		<type>
+			<name>com.woltlab.wcf.exporter.ipb4x</name>
+			<definitionname>com.woltlab.wcf.exporter</definitionname>
+			<classname>wcf\system\exporter\IPB4xExporter</classname>
+		</type>
+		
+		<type>
 			<name>com.woltlab.wcf.exporter.kunena3x</name>
 			<definitionname>com.woltlab.wcf.exporter</definitionname>
 			<classname>wcf\system\exporter\Kunena3xExporter</classname>
