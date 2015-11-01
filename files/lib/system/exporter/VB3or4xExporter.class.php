@@ -620,6 +620,8 @@ class VB3or4xExporter extends AbstractExporter {
 				
 				if (!is_array($selectOptions)) {
 					$selectOptions = @unserialize(mb_convert_encoding($row['data'], 'ISO-8859-1', 'UTF-8'));
+					if (!is_array($selectOptions)) continue;
+					
 					$selectOptions = array_map(function ($item) {
 						return mb_convert_encoding($item, 'UTF-8', 'ISO-8859-1');
 					}, $selectOptions)
