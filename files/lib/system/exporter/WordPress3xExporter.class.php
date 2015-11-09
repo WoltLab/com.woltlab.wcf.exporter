@@ -390,7 +390,7 @@ class WordPress3xExporter extends AbstractExporter {
 							AND post_status IN (?, ?, ?, ?, ?, ?)
 					)
 			ORDER BY	ID";
-		$statement = $this->database->prepareStatement($sql, $offset, $limit);
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array('_wp_attached_file', 'attachment', 'post', 'publish', 'pending', 'draft', 'future', 'private', 'trash'));
 		while ($row = $statement->fetchArray()) {
 			$fileLocation = $this->fileSystemPath.'wp-content/uploads/'.$row['meta_value'];
