@@ -707,7 +707,7 @@ class IPB3xExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.post')->import($row['pid'], array(
 				'threadID' => $row['topic_id'],
 				'userID' => $row['author_id'],
-				'username' => $row['author_name'],
+				'username' => ($row['author_name'] ?: ''),
 				'message' => self::fixMessage($row['post']),
 				'time' => $row['post_date'],
 				'isDeleted' => ($row['queued'] == 3 ? 1 : 0),
