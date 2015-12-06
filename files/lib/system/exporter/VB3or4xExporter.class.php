@@ -624,7 +624,7 @@ class VB3or4xExporter extends AbstractExporter {
 					
 					$selectOptions = array_map(function ($item) {
 						return mb_convert_encoding($item, 'UTF-8', 'ISO-8859-1');
-					}, $selectOptions)
+					}, $selectOptions);
 				}
 			}
 			
