@@ -1,5 +1,6 @@
 <?php
 namespace wcf\system\exporter;
+use gallery\system\GALLERYCore;
 use wcf\data\like\Like;
 use wcf\data\object\type\ObjectTypeCache;
 use wcf\data\user\option\UserOption;
@@ -1933,7 +1934,7 @@ class WBB3xExporter extends AbstractExporter {
 	 * Exports gallery albums.
 	 */
 	public function exportGalleryAlbums($offset, $limit) {
-		$destVersion21 = version_compare(\gallery\system\GALLERYCore::getInstance()->getPackage()->packageVersion, '2.1.0 Alpha 1', '>=');
+		$destVersion21 = version_compare(GALLERYCore::getInstance()->getPackage()->packageVersion, '2.1.0 Alpha 1', '>=');
 		
 		$sql = "SELECT		gallery_album.*, user_table.username
 			FROM		wcf".$this->dbNo."_user_gallery_album gallery_album

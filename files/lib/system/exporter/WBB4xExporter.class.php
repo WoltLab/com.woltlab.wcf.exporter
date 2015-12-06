@@ -1,5 +1,7 @@
 <?php
 namespace wcf\system\exporter;
+use blog\system\BLOGCore;
+use galelry\system\GALLERYCore;
 use wcf\data\object\type\ObjectTypeCache;
 use wcf\data\package\Package;
 use wcf\data\package\PackageCache;
@@ -1375,7 +1377,7 @@ class WBB4xExporter extends AbstractExporter {
 	 */
 	public function countBlogs() {
 		if (version_compare($this->getPackageVersion('com.woltlab.blog'), '2.1.0 Alpha 1', '>=')
-			&& version_compare(\blog\system\BLOGCore::getInstance()->getPackage()->packageVersion, '2.1.0 Alpha 1', '>=')) {
+			&& version_compare(BLOGCore::getInstance()->getPackage()->packageVersion, '2.1.0 Alpha 1', '>=')) {
 			return $this->__getMaxID("blog".$this->dbNo."_blog", 'blogID');
 		}
 		
@@ -1436,7 +1438,7 @@ class WBB4xExporter extends AbstractExporter {
 	 */
 	public function exportBlogEntries($offset, $limit) {
 		$sourceVersion21 = version_compare($this->getPackageVersion('com.woltlab.blog'), '2.1.0 Alpha 1', '>=');
-		$destVersion21 = version_compare(\blog\system\BLOGCore::getInstance()->getPackage()->packageVersion, '2.1.0 Alpha 1', '>=');
+		$destVersion21 = version_compare(BLOGCore::getInstance()->getPackage()->packageVersion, '2.1.0 Alpha 1', '>=');
 		
 		// get entry ids
 		$entryIDs = array();
@@ -1588,7 +1590,7 @@ class WBB4xExporter extends AbstractExporter {
 	 */
 	public function exportGalleryAlbums($offset, $limit) {
 		$sourceVersion21 = version_compare($this->getPackageVersion('com.woltlab.gallery'), '2.1.0 Alpha 1', '>=');
-		$destVersion21 = version_compare(\gallery\system\GALLERYCore::getInstance()->getPackage()->packageVersion, '2.1.0 Alpha 1', '>=');
+		$destVersion21 = version_compare(GALLERYCore::getInstance()->getPackage()->packageVersion, '2.1.0 Alpha 1', '>=');
 		
 		$sql = "SELECT		*
 			FROM		gallery".$this->dbNo."_album
@@ -1639,7 +1641,7 @@ class WBB4xExporter extends AbstractExporter {
 	 */
 	public function exportGalleryImages($offset, $limit) {
 		$sourceVersion21 = version_compare($this->getPackageVersion('com.woltlab.gallery'), '2.1.0 Alpha 1', '>=');
-		$destVersion21 = version_compare(\gallery\system\GALLERYCore::getInstance()->getPackage()->packageVersion, '2.1.0 Alpha 1', '>=');
+		$destVersion21 = version_compare(GALLERYCore::getInstance()->getPackage()->packageVersion, '2.1.0 Alpha 1', '>=');
 		
 		// build path to gallery image directories
 		$sql = "SELECT	packageDir
@@ -1760,7 +1762,7 @@ class WBB4xExporter extends AbstractExporter {
 	 */
 	public function countGalleryImageMarkers() {
 		if (version_compare($this->getPackageVersion('com.woltlab.gallery'), '2.1.0 Alpha 1', '>=')
-			&& version_compare(\gallery\system\GALLERYCore::getInstance()->getPackage()->packageVersion, '2.1.0 Alpha 1', '>=')) {
+			&& version_compare(GALLERYCore::getInstance()->getPackage()->packageVersion, '2.1.0 Alpha 1', '>=')) {
 			return $this->__getMaxID("gallery".$this->dbNo."_image_marker", 'markerID');
 		}
 		
