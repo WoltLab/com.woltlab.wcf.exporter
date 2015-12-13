@@ -1088,7 +1088,7 @@ class VB3or4xExporter extends AbstractExporter {
 				'objectID' => $row['firstpostid'],
 				'question' => $row['question'],
 				'time' => $row['dateline'],
-				'endTime' => $row['dateline'] + $row['timeout'] * 86400,
+				'endTime' => $row['timeout'] ? $row['dateline'] + $row['timeout'] * 86400 : 0,
 				'isChangeable' => 0,
 				'isPublic' => $row['public'] ? 1 : 0,
 				'sortByVotes' => 0,
