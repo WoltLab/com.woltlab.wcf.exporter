@@ -614,7 +614,7 @@ class IPB3xExporter extends AbstractExporter {
 				'parentID' => ($board['parent_id'] != -1 ? $board['parent_id'] : null),
 				'position' => $board['position'],
 				'boardType' => ($board['redirect_on'] ? Board::TYPE_LINK : ($board['sub_can_post'] ? Board::TYPE_BOARD : Board::TYPE_CATEGORY)),
-				'title' => $board['name'],
+				'title' => self::fixSubject($board['name']),
 				'description' => $board['description'],
 				'externalURL' => $board['redirect_url'],
 				'countUserPosts' => $board['inc_postcount'],
@@ -780,7 +780,7 @@ class IPB3xExporter extends AbstractExporter {
 			// import poll
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll')->import($row['pid'], array(
 				'objectID' => $row['topic_firstpost'],
-				'question' => $data[1]['question'],
+				'question' => self::fixSubject($data[1]['question']),
 				'time' => $row['start_date'],
 				'isPublic' => $row['poll_view_voters'],
 				'maxVotes' => (!empty($data[1]['multi']) ? count($data[1]['choice']) : 1),
@@ -981,7 +981,7 @@ class IPB3xExporter extends AbstractExporter {
 		$string = preg_replace('~<span style="font-size:(\d+)px;">(.*?)</span>~is', '[size=\\1]\\2[/size]', $string);
 		
 		// font color
-		$string = preg_replace('~<span style="color:(.*?);?">(.*?)</span>~is', '[color=\\1]\\2[/color]', $string);
+		$string = preg_replace('~<span style="color:([^;]*?);?">(.*?)</span>~is', '[color=\\1]\\2[/color]', $string);
 		
 		// align
 		$string = preg_replace('~<p style="text-align:(left|center|right);">(.*?)</p>~is', '[align=\\1]\\2[/align]', $string);
@@ -1026,10 +1026,11 @@ class IPB3xExporter extends AbstractExporter {
 		
 		// fix quote tags
 		$string = preg_replace('~\[quote name=\'([^\']+)\'.*?\]~si', "[quote='\\1']", $string);
+		$string = preg_replace('~\[quote name="([^\']+)".*?\]~si', "[quote='\\1']", $string);
 		
 		// fix size bbcodes
 		$string = preg_replace_callback('/\[size=\'?(\d+)\'?\]/i', function ($matches) {
-			$size = 36;
+			$size = 10;
 				
 			switch ($matches[1]) {
 				case 1:
@@ -1050,10 +1051,16 @@ class IPB3xExporter extends AbstractExporter {
 				case 6:
 					$size = 24;
 					break;
+				case 7:
+					$size = 36;
+					break;
 			}
 				
 			return '[size='.$size.']';
 		}, $string);
+		
+		// remove html comments
+		$string = preg_replace('/<\!--.*?-->/is', '', $string);
 		
 		// remove obsolete code
 		$string = str_ireplace('<p>&nbsp;</p>', '', $string);
