@@ -1,7 +1,7 @@
 <?php
 namespace wcf\system\exporter;
 use blog\system\BLOGCore;
-use galelry\system\GALLERYCore;
+use gallery\system\GALLERYCore;
 use wcf\data\object\type\ObjectTypeCache;
 use wcf\data\package\Package;
 use wcf\data\package\PackageCache;
