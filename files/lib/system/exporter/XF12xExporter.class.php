@@ -411,7 +411,7 @@ class XF12xExporter extends AbstractExporter {
 			$selectOptions = array();
 			if ($row['field_choices']) {
 				$field_choices = @unserialize($row['field_choices']);
-				if (!$field_choices) continue 2;
+				if (!$field_choices) continue;
 				foreach ($field_choices as $key => $value) {
 					$selectOptions[] = $key.':'.$value;
 				}

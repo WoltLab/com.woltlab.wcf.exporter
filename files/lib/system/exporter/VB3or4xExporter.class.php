@@ -1903,7 +1903,7 @@ class VB3or4xExporter extends AbstractExporter {
 			'[html]' => '[code=html]',
 			'[/html]' => '[/code]',
 			'[/video]' => '[/media]',
-			'[attch=config]' => '[attach]'
+			'[attach=config]' => '[attach]'
 		);
 		$message = str_ireplace(array_keys($replacements), array_values($replacements), $message);
 		
