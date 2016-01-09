@@ -378,7 +378,14 @@ class PhpBB31xExporter extends AbstractExporter {
 			
 			// update password hash
 			if ($newUserID) {
-				$passwordUpdateStatement->execute(array('phpbb3:'.$row['user_password'].':', $newUserID));
+				if (PasswordUtil::isBlowfish($row['user_password'])) {
+					$password = PasswordUtil::getSaltedHash($row['user_password'], $row['user_password']);
+				}
+				else {
+					$password = 'phpbb3:'.$row['user_password'].':';
+				}
+				
+				$passwordUpdateStatement->execute(array($password, $newUserID));
 			}
 		}
 	}
