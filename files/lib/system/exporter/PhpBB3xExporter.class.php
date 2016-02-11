@@ -9,6 +9,7 @@ use wcf\system\importer\ImportHandler;
 use wcf\system\WCF;
 use wcf\util\FileUtil;
 use wcf\util\MessageUtil;
+use wcf\util\PasswordUtil;
 use wcf\util\StringUtil;
 use wcf\util\UserUtil;
 
