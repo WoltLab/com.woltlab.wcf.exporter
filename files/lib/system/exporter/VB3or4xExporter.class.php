@@ -1280,7 +1280,7 @@ class VB3or4xExporter extends AbstractExporter {
 			
 			$i = 1;
 			foreach ($options as $key => $option) {
-				ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll.option')->import($row['pollid'].' '.$i, array(
+				ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll.option')->import($row['pollid'].'-'.$i, array(
 					'pollID' => $row['pollid'],
 					'optionValue' => $option,
 					'showOrder' => $i,
