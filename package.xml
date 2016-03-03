@@ -5,8 +5,8 @@
 		<packagename language="de">Datenimport</packagename>
 		<packagedescription>Import data from other discussion board systems.</packagedescription>
 		<packagedescription language="de">Ermöglicht den Datenimport aus anderen Forensystemen.</packagedescription>
-		<version>2.1.7</version>
-		<date>2015-12-20</date>
+		<version>2.1.8</version>
+		<date>2016-03-03</date>
 	</packageinformation>
 	
 	<authorinformation>
@@ -15,7 +15,7 @@
 	</authorinformation>
 	
 	<requiredpackages>
-		<requiredpackage minversion="2.1.9">com.woltlab.wcf</requiredpackage>
+		<requiredpackage minversion="2.1.10">com.woltlab.wcf</requiredpackage>
 	</requiredpackages>
 	
 	<excludedpackages>
@@ -34,9 +34,7 @@
 		<instruction type="language">language/*.xml</instruction>
 	</instructions>
 	
-	<instructions type="update" fromversion="2.1.6">
+	<instructions type="update" fromversion="2.1.8">
 		<instruction type="file">files_update.tar</instruction>
-		<instruction type="objectType">objectType.xml</instruction>
-		<instruction type="language">language/*.xml</instruction>
 	</instructions>
 </package>
