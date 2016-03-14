@@ -775,6 +775,7 @@ class IPB3xExporter extends AbstractExporter {
 		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			$data = @unserialize($row['choices']);
+			if (!$data) $data = @unserialize(str_replace('\"', '"', $row['choices'])); // pre ipb3.4 fallback
 			if (!$data || !isset($data[1])) continue; 
 
 			// import poll
@@ -820,6 +821,7 @@ class IPB3xExporter extends AbstractExporter {
 		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			$data = @unserialize($row['member_choices']);
+			if (!$data) $data = @unserialize(str_replace('\"', '"', $row['member_choices'])); // pre ipb3.4 fallback
 			if (!$data || !isset($data[1])) continue;
 			
 			foreach ($data[1] as $pollOptionKey) {
@@ -1009,6 +1011,7 @@ class IPB3xExporter extends AbstractExporter {
 		$string = preg_replace('~<img[^>]+src=["\']([^"\']+)["\'][^>]*/?>~is', '[img]\\1[/img]', $string);
 		
 		// quotes
+		$string = preg_replace('~<blockquote[^>]*data-author="([^"]+)"[^>]*>(.*?)</blockquote>~is', "[quote='\\1']\\2[/quote]", $string);
 		$string = preg_replace('~<blockquote[^>]*>(.*?)</blockquote>~is', '[quote]\\1[/quote]', $string);
 		
 		// code
