@@ -484,7 +484,6 @@ class WordPress3xExporter extends AbstractExporter {
 		$string = str_ireplace('<u>', '[u]', $string);
 		$string = str_ireplace('</u>', '[/u]', $string);
 		
-		
 		// font size
 		$string = preg_replace('~<span style="font-size:(\d+)px;">(.*?)</span>~is', '[size=\\1]\\2[/size]', $string);
 		
