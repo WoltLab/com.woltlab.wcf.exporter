@@ -417,7 +417,6 @@ class WordPress3xExporter extends AbstractExporter {
 	}
 	
 	private static function fixMessage($string) {
-		
 		// we wanna get rid of f*ckin html in articles, so we have to remove a lot of crap
 		// btw. I hate this stuff and I'm pretty sure a lot of ppl. could do this much better
 		// really guys, I have no idea what I'm doing
@@ -478,8 +477,7 @@ class WordPress3xExporter extends AbstractExporter {
 		$string = preg_replace('~<span style="text-decoration: underline;?">(.*?)</span>~', '[u]\\1[/u]', $string);
 		$string = str_ireplace('<u>', '[u]', $string);
 		$string = str_ireplace('</u>', '[/u]', $string);
-		
-		
+				
 		// font size
 		$string = preg_replace('~<span style="font-size:(\d+)px;">(.*?)</span>~is', '[size=\\1]\\2[/size]', $string);
 		
