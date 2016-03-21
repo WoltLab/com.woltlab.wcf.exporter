@@ -457,15 +457,15 @@ class WordPress3xExporter extends AbstractExporter {
 		$string = str_ireplace('&nbsp;', '', $string);
 		
 		// bold
-		$string = preg_replace('~(<strong)\b[^>]*?(?=\h*\/?>)~','\1', $string);
+		$string = preg_replace('~(<strong)\b[^>]*?(?=\h*\/?>)~', '\1', $string);
 		$string = str_ireplace('<strong>', '[b]', $string);
 		$string = str_ireplace('</strong>', '[/b]', $string);
 		$string = str_ireplace('<b>', '[b]', $string);
 		$string = str_ireplace('</b>', '[/b]', $string);
 		
 		// italic
-		$string = preg_replace('~(<i)\b[^>]*?(?=\h*\/?>)~','\1', $string);
-		$string = preg_replace('~(<em)\b[^>]*?(?=\h*\/?>)~','\1', $string);
+		$string = preg_replace('~(<i)\b[^>]*?(?=\h*\/?>)~', '\1', $string);
+		$string = preg_replace('~(<em)\b[^>]*?(?=\h*\/?>)~', '\1', $string);
 		$string = str_ireplace('<em>', '[i]', $string);
 		$string = str_ireplace('</em>', '[/i]', $string);
 		$string = str_ireplace('<i>', '[i]', $string);
@@ -493,22 +493,22 @@ class WordPress3xExporter extends AbstractExporter {
 		// align
 		$string = preg_replace('~<p style="text-align:(left|center|right);">(.*?)</p>~is', '[align=\\1]\\2[/align]', $string);
 		$string = preg_replace('~<p style="text-align: (left|center|right);">(.*?)</p>~is', '[align=\\1]\\2[/align]', $string);
-		$string = preg_replace('~(<p)\b[^>]*?(?=\h*\/?>)~','\1', $string);
+		$string = preg_replace('~(<p)\b[^>]*?(?=\h*\/?>)~', '\1', $string);
 		
 		// remove attributes
-		$string = preg_replace('~(<table)\b[^>]*?(?=\h*\/?>)~','\1', $string);
-		$string = preg_replace('~(<article)\b[^>]*?(?=\h*\/?>)~','\1', $string);
-		$string = preg_replace('~(<tr)\b[^>]*?(?=\h*\/?>)~','\1', $string);
-		$string = preg_replace('~(<td)\b[^>]*?(?=\h*\/?>)~','\1', $string);
-		$string = preg_replace('~(<th)\b[^>]*?(?=\h*\/?>)~','\1', $string);
-		$string = preg_replace('~(<div)\b[^>]*?(?=\h*\/?>)~','\1', $string);
-		$string = preg_replace('~(<span)\b[^>]*?(?=\h*\/?>)~','\1', $string);
-		$string = preg_replace('~(<h1)\b[^>]*?(?=\h*\/?>)~','\1', $string);
-		$string = preg_replace('~(<h2)\b[^>]*?(?=\h*\/?>)~','\1', $string);
-		$string = preg_replace('~(<h3)\b[^>]*?(?=\h*\/?>)~','\1', $string);
-		$string = preg_replace('~(<h4)\b[^>]*?(?=\h*\/?>)~','\1', $string);
-		$string = preg_replace('~(<h5)\b[^>]*?(?=\h*\/?>)~','\1', $string);
-		$string = preg_replace('~(<h6)\b[^>]*?(?=\h*\/?>)~','\1', $string);
+		$string = preg_replace('~(<table)\b[^>]*?(?=\h*\/?>)~', '\1', $string);
+		$string = preg_replace('~(<article)\b[^>]*?(?=\h*\/?>)~', '\1', $string);
+		$string = preg_replace('~(<tr)\b[^>]*?(?=\h*\/?>)~', '\1', $string);
+		$string = preg_replace('~(<td)\b[^>]*?(?=\h*\/?>)~', '\1', $string);
+		$string = preg_replace('~(<th)\b[^>]*?(?=\h*\/?>)~', '\1', $string);
+		$string = preg_replace('~(<div)\b[^>]*?(?=\h*\/?>)~', '\1', $string);
+		$string = preg_replace('~(<span)\b[^>]*?(?=\h*\/?>)~', '\1', $string);
+		$string = preg_replace('~(<h1)\b[^>]*?(?=\h*\/?>)~', '\1', $string);
+		$string = preg_replace('~(<h2)\b[^>]*?(?=\h*\/?>)~', '\1', $string);
+		$string = preg_replace('~(<h3)\b[^>]*?(?=\h*\/?>)~', '\1', $string);
+		$string = preg_replace('~(<h4)\b[^>]*?(?=\h*\/?>)~', '\1', $string);
+		$string = preg_replace('~(<h5)\b[^>]*?(?=\h*\/?>)~', '\1', $string);
+		$string = preg_replace('~(<h6)\b[^>]*?(?=\h*\/?>)~', '\1', $string);
 		
 		// get the rest of them
 		$string = preg_replace('#\s(wmode|allowfullscreen|rel|data-hovercard|data-ft|target|id|title|alt|colspan|feature|scrolling|scope|width|height|bgcolor|cellspacing|frameborder|tabindex|valign|border|cellpadding)="[^"]+"#', '', $string);
