@@ -4,8 +4,10 @@ use wbb\data\board\Board;
 use wcf\data\like\Like;
 use wcf\data\user\group\UserGroup;
 use wcf\system\database\util\PreparedStatementConditionBuilder;
+use wcf\system\exception\SystemException;
 use wcf\system\importer\ImportHandler;
 use wcf\system\WCF;
+use wcf\util\JSON;
 use wcf\util\StringUtil;
 use wcf\util\UserUtil;
 
@@ -738,15 +740,24 @@ class IPB4xExporter extends AbstractExporter {
 		$sql = "SELECT		polls.*, topics.topic_firstpost
 			FROM		".$this->databasePrefix."core_polls polls
 			LEFT JOIN	".$this->databasePrefix."forums_topics topics
-			ON		(topics.tid = polls.tid)
+			ON		(topics.poll_state = polls.pid)
 			WHERE		pid BETWEEN ? AND ?
 			ORDER BY	pid";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
-			$data = @unserialize($row['choices']);
-			if (!$data) $data = @unserialize(str_replace('\"', '"', $row['choices'])); // pre ipb3.4 fallback
-			if (!$data || !isset($data[1])) continue; 
+			if (!$row['topic_firstpost']) continue;
+			
+			try {
+				$data = JSON::decode($row['choices']);
+			}
+			catch (SystemException $e) {
+				$data = @unserialize($row['choices']); // ipb3.4 fallback
+				if (!$data) $data = @unserialize(str_replace('\"', '"', $row['choices'])); // pre ipb3.4 fallback
+			}
+			if (!$data || !isset($data[1])) {
+				continue;
+			} 
 
 			// import poll
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll')->import($row['pid'], array(
@@ -784,15 +795,22 @@ class IPB4xExporter extends AbstractExporter {
 		$sql = "SELECT		polls.*, voters.*
 			FROM		".$this->databasePrefix."core_voters voters
 			LEFT JOIN	".$this->databasePrefix."core_polls polls
-			ON		(polls.tid = voters.tid)
+			ON		(polls.pid = voters.poll)
 			WHERE		voters.vid BETWEEN ? AND ?
 			ORDER BY	voters.vid";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
-			$data = @unserialize($row['member_choices']);
-			if (!$data) $data = @unserialize(str_replace('\"', '"', $row['member_choices'])); // pre ipb3.4 fallback
+			try {
+				$data = JSON::decode($row['member_choices']);
+			}
+			catch (SystemException $e) {
+				$data = @unserialize($row['member_choices']); // ipb3.4 fallback
+				if (!$data) $data = @unserialize(str_replace('\"', '"', $row['member_choices'])); // pre ipb3.4 fallback
+			}
 			if (!$data || !isset($data[1])) continue;
+			
+			if (!is_array($data[1])) $data[1] = array($data[1]);
 			
 			foreach ($data[1] as $pollOptionKey) {
 				ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll.option.vote')->import(0, array(
