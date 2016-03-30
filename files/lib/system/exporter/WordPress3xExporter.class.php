@@ -15,7 +15,7 @@ use wcf\util\StringUtil;
  * @subpackage	system.exporter
  * @category	Community Framework
  */
-class WordPress3xBBCodeExporter extends AbstractExporter {
+class WordPress3xExporter extends AbstractExporter {
 	/**
 	 * category cache
 	 * @var	array
@@ -445,7 +445,6 @@ class WordPress3xBBCodeExporter extends AbstractExporter {
 		// read more
 		$string = str_ireplace('<!--more-->', '', $string);
 		
-
 		// strikethrough
 		$string = preg_replace('~<s[^>]*>(.*?)</s>~is', '[s]\\1[/s]', $string);
 		$string = preg_replace('~<span style="text-decoration: line-through;?">(.*?)</span>~', '[s]\\1[/s]', $string);
@@ -465,8 +464,6 @@ class WordPress3xBBCodeExporter extends AbstractExporter {
 		$string = str_ireplace('<li>', '[*]', $string);
 		$string = str_ireplace('</li>', '', $string);
 
-
-		
 		// code
 		$string = preg_replace('~<code[^>]*>(.*?)</code>~is', '[code]\\1[/code]', $string);
 		
@@ -537,7 +534,6 @@ class WordPress3xBBCodeExporter extends AbstractExporter {
 		$string = preg_replace('~(<dt)\b[^>]*?(?=\h*\/?>)~', '\1', $string);
 		$string = preg_replace('~(<dd)\b[^>]*?(?=\h*\/?>)~', '\1', $string);
 		
-
 		// get the more attributes
 		$string = preg_replace('#\s(id|size|last|target|br|type|classid|codebase|name|value|allowFullScreen|allowscriptaccess|dir|data-reactid|wmode|allowfullscreen|rel|data-hovercard|data-ft|target|title|alt|colspan|feature|scrolling|scope|width|height|bgcolor|cellspacing|frameborder|tabindex|valign|border|cellpadding|marginheight|marginwidth)="[^"]+"#', '', $string);
 		$string = preg_replace('#\s(id|size|last|target|br|type|classid|codebase|name|value|allowFullScreen|allowscriptaccess|dir|data-reactid|wmode|allowfullscreen|rel|data-hovercard|data-ft|target|title|alt|colspan|feature|scrolling|scope|width|height|bgcolor|cellspacing|frameborder|tabindex|valign|border|cellpadding|marginheight|marginwidth)=""#', '', $string);
@@ -634,11 +630,6 @@ class WordPress3xBBCodeExporter extends AbstractExporter {
 		// veoh
 		$string = preg_replace('#http(s)?://(www\.)?veoh\.com/watch/v([a-zA-Z0-9_\-]+)#i', '[media]http://www.veoh.com/watch/v\\3[/media]', $string);
 		
-
-
-
-
-
 		// souncloud
 		$string = preg_replace('#http(s)?://soundcloud.com/([a-zA-Z0-9_-]+)/(?!sets/)([a-zA-Z0-9_-]+)#i', '[media]https://soundcloud.com/\\2/\\3[/media]', $string);
 		$string = preg_replace('#http(s)?://soundcloud.com/([a-zA-Z0-9_-]+)/sets/([a-zA-Z0-9_-]+)#i', '[media]https://soundcloud.com/\\2/sets/\\3[/media]', $string);
@@ -655,7 +646,6 @@ class WordPress3xBBCodeExporter extends AbstractExporter {
 		$string = preg_replace('~<img class="align(left|right)" src="(.*?)" />~', '[img=\'\\2\',\\1][/img]', $string);
 		$string = preg_replace('~<img src="(.*?)" class="align(left|right)" />~', '[img=\'\\1\',\\2][/img]', $string);
 
-		
 		// caption (there is no import for embedded attachments yet, so we remove caption)
 		// not the best solution, but it works
 		$string = preg_replace('#\s(class)="[^"]+"#', '', $string);
@@ -675,8 +665,6 @@ class WordPress3xBBCodeExporter extends AbstractExporter {
 		
 		$string = str_ireplace('&amp;', '', $string);
 		
-
-
 		return $string;
 	}
 }
