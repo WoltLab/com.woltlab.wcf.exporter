@@ -6,16 +6,16 @@ use wcf\system\WCF;
 use wcf\util\StringUtil;
 
 /**
- * Exporter for WordPress 3.x
+ * Exporter for WordPress 3.x including BBCode Support
  * 
- * @author	Marcel Werk
- * @copyright	2001-2015 WoltLab GmbH
+ * @author	Marcel Werk, Markus Gach
+ * @copyright	2001-2015 WoltLab GmbH, 2015-2016 just </code>
  * @license	GNU Lesser General Public License <http://opensource.org/licenses/lgpl-license.php>
- * @package	com.woltlab.wcf.exporter
+ * @package	xyz.justcode.wcf.blog.exporter
  * @subpackage	system.exporter
  * @category	Community Framework
  */
-class WordPress3xExporter extends AbstractExporter {
+class WordPress3xBBCodeExporter extends AbstractExporter {
 	/**
 	 * category cache
 	 * @var	array
@@ -417,9 +417,10 @@ class WordPress3xExporter extends AbstractExporter {
 	}
 	
 	private static function fixMessage($string) {
-		// we wanna get rid of html in articles
+		// we wanna get rid of html in articles, so we have to remove a lot of crap
+		// to do: clipfish videos and caption images (see: 648-654)
 		
-		// beauty correction: table only atm
+		// beautify: table only atm
 		$tag = '(?:table)';
 		// add a single line break above block-level opening tags.
 		$string = preg_replace('!(<'.$tag.'[\s/>])!', "\n$1", $string);
@@ -444,22 +445,33 @@ class WordPress3xExporter extends AbstractExporter {
 		// read more
 		$string = str_ireplace('<!--more-->', '', $string);
 		
-		// deleted
+
+		// strikethrough
+		$string = preg_replace('~<s[^>]*>(.*?)</s>~is', '[s]\\1[/s]', $string);
+		$string = preg_replace('~<span style="text-decoration: line-through;?">(.*?)</span>~', '[s]\\1[/s]', $string);
+		
+		// del tag as strikethrough (see: https://en.wikipedia.org/wiki/BBCode)
 		$string = preg_replace('~<del[^>]*>(.*?)</del>~is', '[s]\\1[/s]', $string);
 		
 		// list
-		$string = preg_replace('~(<ul)\b[^>]*?(?=\h*\/?>)~', '\1', $string);
-		$string = preg_replace('~(<li)\b[^>]*?(?=\h*\/?>)~', '\1', $string);
-		$string = str_ireplace('<ul>', '[list]', $string);
-		$string = str_ireplace('</ul>', '[/list]', $string);
-		$string = str_ireplace('<li>', '[*]', $string);
-		$string = str_ireplace('</li>', '', $string);
+		$string = preg_replace('~(<ol)\b[^>]*?(?=\h*\/?>)~', '\1', $string);
 		$string = str_ireplace('<ol>', '[list=1]', $string);
 		$string = str_ireplace('</ol>', '[/list]', $string);
+		$string = preg_replace('~(<ul)\b[^>]*?(?=\h*\/?>)~', '\1', $string);
+
+		$string = str_ireplace('<ul>', '[list]', $string);
+		$string = str_ireplace('</ul>', '[/list]', $string);
+		$string = preg_replace('~(<li)\b[^>]*?(?=\h*\/?>)~', '\1', $string);
+		$string = str_ireplace('<li>', '[*]', $string);
+		$string = str_ireplace('</li>', '', $string);
+
+
 		
 		// code
 		$string = preg_replace('~<code[^>]*>(.*?)</code>~is', '[code]\\1[/code]', $string);
-		$string = preg_replace('~<pre[^>]*>(.*?)</pre>~is', '[code]\\1[/code]', $string);
+		
+		// pre
+		$string = preg_replace('~<pre[^>]*>(.*?)</pre>~is', '[tt]\\1[/tt]', $string);
 		
 		// non-breaking space
 		$string = str_ireplace('&nbsp;', '', $string);
@@ -484,6 +496,9 @@ class WordPress3xExporter extends AbstractExporter {
 		$string = str_ireplace('<u>', '[u]', $string);
 		$string = str_ireplace('</u>', '[/u]', $string);
 		
+		// ins tag as underline (see: https://en.wikipedia.org/wiki/BBCode)
+		$string = preg_replace('~<ins[^>]*>(.*?)</ins>~is', '[u]\\1[/u]', $string);
+		
 		// font size
 		$string = preg_replace('~<span style="font-size:(\d+)px;">(.*?)</span>~is', '[size=\\1]\\2[/size]', $string);
 		
@@ -491,14 +506,17 @@ class WordPress3xExporter extends AbstractExporter {
 		$string = preg_replace('~<span style="color:(.*?);?">(.*?)</span>~is', '[color=\\1]\\2[/color]', $string);
 		
 		// sup and sub
+		$string = preg_replace('~(<sup)\b[^>]*?(?=\h*\/?>)~', '\1', $string);
+		$string = preg_replace('~(<sub)\b[^>]*?(?=\h*\/?>)~', '\1', $string);
 		$string = preg_replace('~<sup>(.*?)</sup>~is', '[sup]\\1[/sup]', $string);
 		$string = preg_replace('~<sub>(.*?)</sub>~is', '[sub]\\1[/sub]', $string);
 		
 		// align
-		$string = preg_replace('~<p style="text-align:(left|center|right);">(.*?)</p>~is', '[align=\\1]\\2[/align]', $string);
+		$string = preg_replace('~<p style="text-align:(left|center|right|justify);">(.*?)</p>~is', '[align=\\1]\\2[/align]', $string);
 		$string = preg_replace('~(<p)\b[^>]*?(?=\h*\/?>)~', '\1', $string);
 		
 		// remove attributes
+		$string = preg_replace('~(<script)\b[^>]*?(?=\h*\/?>)~', '\1', $string);
 		$string = preg_replace('~(<table)\b[^>]*?(?=\h*\/?>)~', '\1', $string);
 		$string = preg_replace('~(<thead)\b[^>]*?(?=\h*\/?>)~', '\1', $string);
 		$string = preg_replace('~(<object)\b[^>]*?(?=\h*\/?>)~', '\1', $string);
@@ -519,8 +537,10 @@ class WordPress3xExporter extends AbstractExporter {
 		$string = preg_replace('~(<dt)\b[^>]*?(?=\h*\/?>)~', '\1', $string);
 		$string = preg_replace('~(<dd)\b[^>]*?(?=\h*\/?>)~', '\1', $string);
 		
-		// get the rest of them
-		$string = preg_replace('#\s(size|last|target|br|type|classid|codebase|name|value|allowFullScreen|allowscriptaccess|dir|data-reactid|wmode|allowfullscreen|rel|data-hovercard|data-ft|target|id|title|alt|colspan|feature|scrolling|scope|width|height|bgcolor|cellspacing|frameborder|tabindex|valign|border|cellpadding)="[^"]+"#', '', $string);
+
+		// get the more attributes
+		$string = preg_replace('#\s(id|size|last|target|br|type|classid|codebase|name|value|allowFullScreen|allowscriptaccess|dir|data-reactid|wmode|allowfullscreen|rel|data-hovercard|data-ft|target|title|alt|colspan|feature|scrolling|scope|width|height|bgcolor|cellspacing|frameborder|tabindex|valign|border|cellpadding|marginheight|marginwidth)="[^"]+"#', '', $string);
+		$string = preg_replace('#\s(id|size|last|target|br|type|classid|codebase|name|value|allowFullScreen|allowscriptaccess|dir|data-reactid|wmode|allowfullscreen|rel|data-hovercard|data-ft|target|title|alt|colspan|feature|scrolling|scope|width|height|bgcolor|cellspacing|frameborder|tabindex|valign|border|cellpadding|marginheight|marginwidth)=""#', '', $string);
 		
 		// heading elements
 		$string = str_ireplace('<h1>', '[size=24][b]', $string);
@@ -537,6 +557,8 @@ class WordPress3xExporter extends AbstractExporter {
 		$string = str_ireplace('</h6>', '[/size][/b]', $string);
 		
 		// remove obsolete code
+		$string = str_ireplace('<wbr />', '', $string);
+		$string = str_ireplace('<p>&nbsp;</p>', '', $string);
 		$string = str_ireplace('<p>', '', $string);
 		$string = str_ireplace('</p>', '', $string);
 		$string = str_ireplace('<dl>', '', $string);
@@ -568,8 +590,12 @@ class WordPress3xExporter extends AbstractExporter {
 		$string = str_ireplace('<param>', '', $string);
 		$string = str_ireplace('<param />', '', $string);
 		$string = str_ireplace('</param>', '', $string);
+		$string = str_ireplace('<script>', '', $string);
+		$string = str_ireplace('</script>', '', $string);
 		$string = str_ireplace('[column]', '', $string);
 		$string = str_ireplace('[/column]', '', $string);
+		$string = str_ireplace('[b][/b]', '', $string);
+		$string = str_ireplace('[i][/i]', '', $string);
 		
 		// tables
 		$string = str_ireplace('<table>', '[table]', $string);
@@ -584,6 +610,9 @@ class WordPress3xExporter extends AbstractExporter {
 		// media
 		$string = str_ireplace('[embed]', '[media]', $string);
 		$string = str_ireplace('[/embed]', '[/media]', $string);
+		
+		// github
+		$string = preg_replace('#https://gist.github\.com/(?P<ID>[^/]+/[0-9a-zA-Z]+)#i', '[media]https://gist.github.com/\\1[/media]', $string);
 		
 		// youtube
 		$string = preg_replace('~<embed src="http(s)?://(m|www\.)?youtube\.com/v/([a-zA-Z0-9_\-]+)(.*?)"></embed>~is', '[media]https://youtu.be/\\3[/media]', $string);
@@ -605,24 +634,37 @@ class WordPress3xExporter extends AbstractExporter {
 		// veoh
 		$string = preg_replace('#http(s)?://(www\.)?veoh\.com/watch/v([a-zA-Z0-9_\-]+)#i', '[media]http://www.veoh.com/watch/v\\3[/media]', $string);
 		
-		// souncloud 
-		$string = preg_replace('#http(s)?://(m|www\.)?soundcloud\.com/([a-z0-9_\-]+/[a-z0-9_\-]+)#i', '[media]https://soundcloud.com/\\3[/media]', $string);
-		
-		// caption
-		$string = preg_replace('#\[caption[^\]]*\](.*?)\[/caption\]#i', '\\1', $string);
+
+
+
+
+
+		// souncloud
+		$string = preg_replace('#http(s)?://soundcloud.com/([a-zA-Z0-9_-]+)/(?!sets/)([a-zA-Z0-9_-]+)#i', '[media]https://soundcloud.com/\\2/\\3[/media]', $string);
+		$string = preg_replace('#http(s)?://soundcloud.com/([a-zA-Z0-9_-]+)/sets/([a-zA-Z0-9_-]+)#i', '[media]https://soundcloud.com/\\2/sets/\\3[/media]', $string);
 		
 		// img
 		$string = preg_replace('/(class=["\'][^\'"]*)size-(full|medium|large|thumbnail)\s?/', '\\1', $string );
 		$string = preg_replace('/(class=["\'][^\'"]*)wp-image-([0-9]+)\s?/', '\\1', $string );
-		$string = preg_replace('/(class=["\'][^\'"]*)align(none|center)\s?/', '\\1', $string ); 
-		$string = preg_replace('~<img class="alignleft " src="(.*?)" />~', '[img=\'\\1\',left][/img]', $string);
-		$string = preg_replace('~<img class="alignright " src="(.*?)" />~', '[img=\'\\1\',right][/img]', $string);
-		$string = preg_replace('~<img src="(.*?)" class="alignleft " />~', '[img=\'\\1\',left][/img]', $string);
-		$string = preg_replace('~<img src="(.*?)" class="alignright " />~', '[img=\'\\1\',right][/img]', $string);
-		$string = preg_replace('~<img class="alignleft" src="(.*?)" />~', '[img=\'\\1\',left][/img]', $string);
-		$string = preg_replace('~<img class="alignright" src="(.*?)" />~', '[img=\'\\1\',right][/img]', $string);
-		$string = preg_replace('~<img src="(.*?)" class="alignleft" />~', '[img=\'\\1\',left][/img]', $string);
-		$string = preg_replace('~<img src="(.*?)" class="alignright" />~', '[img=\'\\1\',right][/img]', $string);
+		$string = preg_replace('~<img class="align(none|center) " src="(.*?)" />~', "\n [img]\\2[/img] \n", $string);
+		$string = preg_replace('~<img src="(.*?)" class="align(none|center) " />~', "\n [img]\\1[/img] \n", $string);
+		$string = preg_replace('~<img class="align(none|center)" src="(.*?)" />~', "\n [img]\\2[/img] \n", $string);
+		$string = preg_replace('~<img src="(.*?)" class="align(none|center)" />~', "\n [img]\\1[/img] \n", $string);
+		$string = preg_replace('~<img class="align(left|right) " src="(.*?)" />~', '[img=\'\\2\',\\1][/img]', $string);
+		$string = preg_replace('~<img src="(.*?)" class="align(left|right) " />~', '[img=\'\\1\',\\2][/img]', $string);
+		$string = preg_replace('~<img class="align(left|right)" src="(.*?)" />~', '[img=\'\\2\',\\1][/img]', $string);
+		$string = preg_replace('~<img src="(.*?)" class="align(left|right)" />~', '[img=\'\\1\',\\2][/img]', $string);
+
+		
+		// caption (there is no import for embedded attachments yet, so we remove caption)
+		// not the best solution, but it works
+		$string = preg_replace('#\s(class)="[^"]+"#', '', $string);
+		$string = preg_replace('#\s(class)=""#', '', $string);
+		$string = preg_replace('#\[caption align="align(none|center)"[^\]]*\]<img src="(.*?)" /> (.*?)\[/caption\]#i', "\n [img]\\2[/img] \n \\3", $string);
+		$string = preg_replace('#\[caption align="align(left|right)"[^\]]*\]<img src="(.*?)" /> (.*?)\[/caption\]#i', "[img=\\2,\\1][/img]\\3", $string);
+		$string = preg_replace('#\[caption[^\]]*\](.*?)\[/caption\]#i', '\\1', $string);
+		
+		// all other images
 		$string = preg_replace('~<img[^>]+src=["\']([^"\']+)["\'][^>]*/?>~is', '[img]\\1[/img]', $string);
 		
 		// mails
@@ -633,8 +675,8 @@ class WordPress3xExporter extends AbstractExporter {
 		
 		$string = str_ireplace('&amp;', '', $string);
 		
-		// still to do: soundcloud and youtube playlist, clipfish, github and ins
-		
+
+
 		return $string;
 	}
 }
