@@ -9,6 +9,7 @@ use wcf\system\importer\ImportHandler;
 use wcf\system\WCF;
 use wcf\util\FileUtil;
 use wcf\util\MessageUtil;
+use wcf\util\PasswordUtil;
 use wcf\util\StringUtil;
 use wcf\util\UserUtil;
 
@@ -1018,7 +1019,7 @@ class PhpBB31xExporter extends AbstractExporter {
 	 * Exports post attachments.
 	 */
 	public function exportPostAttachments($offset, $limit) {
-		return $this->exportAttachments(0, $offset, $limit);
+		$this->exportAttachments(0, $offset, $limit);
 	}
 	
 	/**
