@@ -17,7 +17,7 @@ use wcf\util\UserUtil;
  * Exporter for phpBB 3.1.x
  * 
  * @author	Tim Duesterhus
- * @copyright	2001-2015 WoltLab GmbH
+ * @copyright	2001-2016 WoltLab GmbH
  * @license	GNU Lesser General Public License <http://opensource.org/licenses/lgpl-license.php>
  * @package	com.woltlab.wcf.exporter
  * @subpackage	system.exporter
@@ -40,10 +40,10 @@ class PhpBB31xExporter extends AbstractExporter {
 	
 	const USER_TYPE_USER_IGNORE = 2;
 	
-	const AVATAR_TYPE_GALLERY = 3;
-	const AVATAR_TYPE_REMOTE = 2;
-	const AVATAR_TYPE_UPLOADED = 1;
-	const AVATAR_TYPE_NO_AVATAR = 0;
+	const AVATAR_TYPE_GALLERY = 'avatar.driver.local';
+	const AVATAR_TYPE_REMOTE = 'avatar.driver.remote';
+	const AVATAR_TYPE_UPLOADED = 'avatar.driver.upload';
+	const AVATAR_TYPE_NO_AVATAR = '';
 	
 	const BOARD_TYPE_LINK = 2;
 	const BOARD_TYPE_BOARD = 1;
