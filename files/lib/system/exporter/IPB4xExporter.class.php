@@ -241,7 +241,7 @@ class IPB4xExporter extends AbstractExporter {
 				
 			// update password hash
 			if ($newUserID) {
-				$passwordUpdateStatement->execute(array('ipb3:'.$row['members_pass_hash'].':'.$row['members_pass_salt'], $newUserID));
+				$passwordUpdateStatement->execute(array('cryptMD5:'.$row['members_pass_hash'].':'.$row['members_pass_salt'], $newUserID));
 			}
 		}
 	}
