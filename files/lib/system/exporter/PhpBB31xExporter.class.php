@@ -573,7 +573,8 @@ class PhpBB31xExporter extends AbstractExporter {
 			$statement = $this->database->prepareStatement($sql);
 			$statement->execute(array('avatar_path', 'avatar_salt', 'avatar_gallery_path'));
 			while ($row = $statement->fetchArray()) {
-				$$row['config_name'] = $row['config_value'];
+				$config_name = $row['config_name'];
+				$$config_name = $row['config_value'];
 			}
 		}
 		
