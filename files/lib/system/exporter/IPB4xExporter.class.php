@@ -38,12 +38,12 @@ class IPB4xExporter extends AbstractExporter {
 	 * board cache
 	 * @var	array
 	 */
-	protected $boardCache = array();
+	protected $boardCache = [];
 	
 	/**
 	 * @see	\wcf\system\exporter\AbstractExporter::$methods
 	 */
-	protected $methods = array(
+	protected $methods = [
 		'com.woltlab.wcf.user' => 'Users',
 		'com.woltlab.wcf.user.group' => 'UserGroups',
 		'com.woltlab.wcf.user.follower' => 'Followers',
@@ -63,30 +63,30 @@ class IPB4xExporter extends AbstractExporter {
 		'com.woltlab.wbb.poll' => 'Polls',
 		'com.woltlab.wbb.poll.option.vote' => 'PollOptionVotes',
 		'com.woltlab.wbb.like' => 'Likes'
-	);
+	];
 	
 	/**
 	 * @see	\wcf\system\exporter\IExporter::getSupportedData()
 	 */
 	public function getSupportedData() {
-		return array(
-			'com.woltlab.wcf.user' => array(
+		return [
+			'com.woltlab.wcf.user' => [
 				'com.woltlab.wcf.user.group',
 				'com.woltlab.wcf.user.avatar',
 				'com.woltlab.wcf.user.option',
 				'com.woltlab.wcf.user.comment',
 				'com.woltlab.wcf.user.follower'
-			),
-			'com.woltlab.wbb.board' => array(
+			],
+			'com.woltlab.wbb.board' => [
 				'com.woltlab.wbb.attachment',
 				'com.woltlab.wbb.poll',
 				'com.woltlab.wbb.watchedThread',
 				'com.woltlab.wbb.like'
-			),
-			'com.woltlab.wcf.conversation' => array(
+			],
+			'com.woltlab.wcf.conversation' => [
 				'com.woltlab.wcf.conversation.attachment'
-			)
-		);
+			]
+		];
 	}
 	
 	/**
@@ -115,7 +115,7 @@ class IPB4xExporter extends AbstractExporter {
 	 * @see	\wcf\system\exporter\IExporter::getQueue()
 	 */
 	public function getQueue() {
-		$queue = array();
+		$queue = [];
 		
 		// user
 		if (in_array('com.woltlab.wcf.user', $this->selectedData)) {
@@ -173,7 +173,7 @@ class IPB4xExporter extends AbstractExporter {
 	 */
 	public function exportUsers($offset, $limit) {
 		// cache profile fields
-		$profileFields = array();
+		$profileFields = [];
 		$sql = "SELECT	*
 			FROM	".$this->databasePrefix."core_pfields_data";
 		$statement = $this->database->prepareStatement($sql);
@@ -196,9 +196,9 @@ class IPB4xExporter extends AbstractExporter {
 			WHERE		members.member_id BETWEEN ? AND ?
 			ORDER BY	members.member_id";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array($offset + 1, $offset + $limit));
+		$statement->execute([$offset + 1, $offset + $limit]);
 		while ($row = $statement->fetchArray()) {
-			$data = array(
+			$data = [
 				'username' => $row['name'],
 				'password' => '',
 				'email' => $row['email'],
@@ -210,24 +210,24 @@ class IPB4xExporter extends AbstractExporter {
 				'profileHits' => $row['members_profile_views'],
 				'userTitle' => ($row['member_title'] ?: ''),
 				'lastActivityTime' => $row['last_activity']
-			);
+			];
 			
 			// get group ids
 			$groupIDs = preg_split('/,/', $row['mgroup_others'], -1, PREG_SPLIT_NO_EMPTY);
 			$groupIDs[] = $row['member_group_id'];
 			
 			// get user options
-			$options = array();
+			$options = [];
 			
 			// get birthday
 			if ($row['bday_day'] && $row['bday_month'] && $row['bday_year']) {
 				$options['birthday'] = $row['bday_year'].'-'.($row['bday_month'] < 10 ? '0' : '').$row['bday_month'].'-'.($row['bday_day'] < 10 ? '0' : '').$row['bday_day'];
 			}
 			
-			$additionalData = array(
+			$additionalData = [
 				'groupIDs' => $groupIDs,
 				'options' => $options
-			);
+			];
 				
 			// handle user options
 			foreach ($profileFields as $profileField) {
@@ -241,7 +241,7 @@ class IPB4xExporter extends AbstractExporter {
 				
 			// update password hash
 			if ($newUserID) {
-				$passwordUpdateStatement->execute(array('cryptMD5:'.$row['members_pass_hash'].':'.$row['members_pass_salt'], $newUserID));
+				$passwordUpdateStatement->execute(['cryptMD5:'.$row['members_pass_hash'].':'.$row['members_pass_salt'], $newUserID]);
 			}
 		}
 	}
@@ -268,11 +268,11 @@ class IPB4xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
-			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.option')->import($row['pf_id'], array(
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.option')->import($row['pf_id'], [
 				'categoryName' => 'profile.personal',
 				'optionType' => 'textarea',
 				'askDuringRegistration' => $row['pf_show_on_reg'],
-			), array('name' => $this->getLanguageVar('core_pfield', $row['pf_id']))); 
+			], ['name' => $this->getLanguageVar('core_pfield', $row['pf_id'])]); 
 		}
 	}
 	
@@ -292,7 +292,7 @@ class IPB4xExporter extends AbstractExporter {
 			WHERE		g_id BETWEEN ? AND ?
 			ORDER BY	g_id";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array($offset + 1, $offset + $limit));
+		$statement->execute([$offset + 1, $offset + $limit]);
 		while ($row = $statement->fetchArray()) {
 			$groupType = UserGroup::OTHER;
 			switch ($row['g_id']) {
@@ -304,11 +304,11 @@ class IPB4xExporter extends AbstractExporter {
 					break;
 			}
 			
-			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.group')->import($row['g_id'], array(
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.group')->import($row['g_id'], [
 				'groupName' => $this->getLanguageVar('core_group', $row['g_id']),
 				'groupType' => $groupType,
 				'userOnlineMarking' => (!empty($row['prefix']) ? ($row['prefix'].'%s'.$row['suffix']) : '%s')
-			));
+			]);
 		}
 	}
 	
@@ -336,16 +336,16 @@ class IPB4xExporter extends AbstractExporter {
 					AND pp_main_photo <> ''
 			ORDER BY	member_id";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array($offset + 1, $offset + $limit));
+		$statement->execute([$offset + 1, $offset + $limit]);
 		while ($row = $statement->fetchArray()) {
 			$avatarName = basename($row['pp_main_photo']);
 			$source = $this->fileSystemPath.'uploads/'.$row['pp_main_photo'];
 			$avatarExtension = pathinfo($avatarName, PATHINFO_EXTENSION);
-			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.avatar')->import($row['member_id'], array(
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.avatar')->import($row['member_id'], [
 				'avatarName' => $avatarName,
 				'avatarExtension' => $avatarExtension,
 				'userID' => $row['member_id']
-			), array('fileLocation' => $source));
+			], ['fileLocation' => $source]);
 		}
 	}
 	
@@ -367,15 +367,15 @@ class IPB4xExporter extends AbstractExporter {
 			WHERE		status_updates.status_id BETWEEN ? AND ?
 			ORDER BY	status_updates.status_id";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array($offset + 1, $offset + $limit));
+		$statement->execute([$offset + 1, $offset + $limit]);
 		while ($row = $statement->fetchArray()) {
-			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.comment')->import($row['status_id'], array(
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.comment')->import($row['status_id'], [
 				'objectID' => $row['status_member_id'],
 				'userID' => $row['status_author_id'],
 				'username' => ($row['name'] ?: ''),
 				'message' => self::fixMessage($row['status_content']),
 				'time' => $row['status_date']
-			));
+			]);
 		}
 	}
 	
@@ -397,15 +397,15 @@ class IPB4xExporter extends AbstractExporter {
 			WHERE		member_status_replies.reply_id BETWEEN ? AND ?
 			ORDER BY	member_status_replies.reply_id";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array($offset + 1, $offset + $limit));
+		$statement->execute([$offset + 1, $offset + $limit]);
 		while ($row = $statement->fetchArray()) {
-			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.comment.response')->import($row['reply_id'], array(
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.comment.response')->import($row['reply_id'], [
 				'commentID' => $row['reply_status_id'],
 				'time' => $row['reply_date'],
 				'userID' => $row['reply_member_id'],
 				'username' => ($row['name'] ?: ''),
 				'message' => self::fixMessage($row['reply_content']),
-			));
+			]);
 		}
 	}
 	
@@ -418,7 +418,7 @@ class IPB4xExporter extends AbstractExporter {
 			WHERE	follow_app = ?
 				AND follow_area = ?";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array('core', 'member'));
+		$statement->execute(['core', 'member']);
 		$row = $statement->fetchArray();
 		return $row['count'];
 	}
@@ -433,13 +433,13 @@ class IPB4xExporter extends AbstractExporter {
 					AND follow_area = ?
 			ORDER BY	follow_id";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset); 
-		$statement->execute(array('core', 'member'));
+		$statement->execute(['core', 'member']);
 		while ($row = $statement->fetchArray()) {
-			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.follower')->import(0, array(
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.follower')->import(0, [
 				'userID' => $row['follow_member_id'],
 				'followUserID' => $row['follow_rel_id'],
 				'time' => $row['follow_added']
-			));
+			]);
 		}
 	}
 	
@@ -461,15 +461,15 @@ class IPB4xExporter extends AbstractExporter {
 			WHERE		message_topics.mt_id BETWEEN ? AND ?
 			ORDER BY	message_topics.mt_id";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array($offset + 1, $offset + $limit));
+		$statement->execute([$offset + 1, $offset + $limit]);
 		while ($row = $statement->fetchArray()) {
-			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import($row['mt_id'], array(
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import($row['mt_id'], [
 				'subject' => $row['mt_title'],
 				'time' => $row['mt_date'],
 				'userID' => ($row['mt_starter_id'] ?: null),
 				'username' => ($row['mt_is_system'] ? 'System' : ($row['name'] ?: '')),
 				'isDraft' => $row['mt_is_draft']
-			));
+			]);
 		}
 	}
 	
@@ -491,15 +491,15 @@ class IPB4xExporter extends AbstractExporter {
 			WHERE		message_posts.msg_id BETWEEN ? AND ?
 			ORDER BY	message_posts.msg_id";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array($offset + 1, $offset + $limit));
+		$statement->execute([$offset + 1, $offset + $limit]);
 		while ($row = $statement->fetchArray()) {
-			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.message')->import($row['msg_id'], array(
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.message')->import($row['msg_id'], [
 				'conversationID' => $row['msg_topic_id'],
 				'userID' => ($row['msg_author_id'] ?: null),
 				'username' => ($row['name'] ?: ''),
 				'message' => self::fixMessage($row['msg_post']),
 				'time' => $row['msg_date']
-			));
+			]);
 		}
 	}
 	
@@ -521,16 +521,16 @@ class IPB4xExporter extends AbstractExporter {
 			WHERE		message_topic_user_map.map_id BETWEEN ? AND ?
 			ORDER BY	message_topic_user_map.map_id";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array($offset + 1, $offset + $limit));
+		$statement->execute([$offset + 1, $offset + $limit]);
 		while ($row = $statement->fetchArray()) {
-			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.user')->import(0, array(
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.user')->import(0, [
 				'conversationID' => $row['map_topic_id'],
 				'participantID' => $row['map_user_id'],
 				'username' => ($row['name'] ?: ''),
 				'hideConversation' => ($row['map_left_time'] ? 1 : 0),
 				'isInvisible' => 0,
 				'lastVisitTime' => $row['map_read_time']
-			));
+			]);
 		}
 	}
 	
@@ -583,7 +583,7 @@ class IPB4xExporter extends AbstractExporter {
 		if (!isset($this->boardCache[$parentID])) return;
 		
 		foreach ($this->boardCache[$parentID] as $board) {
-			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import($board['id'], array(
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import($board['id'], [
 				'parentID' => ($board['parent_id'] != -1 ? $board['parent_id'] : null),
 				'position' => $board['position'],
 				'boardType' => ($board['redirect_on'] ? Board::TYPE_LINK : ($board['sub_can_post'] ? Board::TYPE_BOARD : Board::TYPE_CATEGORY)),
@@ -595,7 +595,7 @@ class IPB4xExporter extends AbstractExporter {
 				'clicks' => $board['redirect_hits'],
 				'posts' => $board['posts'],
 				'threads' => $board['topics']
-			));
+			]);
 				
 			$this->exportBoardsRecursively($board['id']);
 		}
@@ -613,13 +613,13 @@ class IPB4xExporter extends AbstractExporter {
 	 */
 	public function exportThreads($offset, $limit) {
 		// get thread ids
-		$threadIDs = array();
+		$threadIDs = [];
 		$sql = "SELECT		tid
 			FROM		".$this->databasePrefix."forums_topics
 			WHERE		tid BETWEEN ? AND ?
 			ORDER BY	tid";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array($offset + 1, $offset + $limit));
+		$statement->execute([$offset + 1, $offset + $limit]);
 		while ($row = $statement->fetchArray()) {
 			$threadIDs[] = $row['tid'];
 		}
@@ -629,7 +629,7 @@ class IPB4xExporter extends AbstractExporter {
 				
 		// get threads
 		$conditionBuilder = new PreparedStatementConditionBuilder();
-		$conditionBuilder->add('topics.tid IN (?)', array($threadIDs));
+		$conditionBuilder->add('topics.tid IN (?)', [$threadIDs]);
 		
 		$sql = "SELECT		topics.*
 			FROM		".$this->databasePrefix."forums_topics topics
@@ -637,7 +637,7 @@ class IPB4xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute($conditionBuilder->getParameters());
 		while ($row = $statement->fetchArray()) {
-			$data = array(
+			$data = [
 				'boardID' => $row['forum_id'],
 				'topic' => $row['title'],
 				'time' => $row['start_date'],
@@ -650,8 +650,8 @@ class IPB4xExporter extends AbstractExporter {
 				'movedThreadID' => ($row['moved_to'] ? intval($row['moved_to']) : null),
 				'movedTime' => $row['moved_on'],
 				'lastPostTime' => $row['last_post']
-			);
-			$additionalData = array();
+			];
+			$additionalData = [];
 			if (isset($tags[$row['tid']])) $additionalData['tags'] = $tags[$row['tid']];
 				
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.thread')->import($row['tid'], $data, $additionalData);
@@ -674,9 +674,9 @@ class IPB4xExporter extends AbstractExporter {
 			WHERE		pid BETWEEN ? AND ?
 			ORDER BY	pid";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array($offset + 1, $offset + $limit));
+		$statement->execute([$offset + 1, $offset + $limit]);
 		while ($row = $statement->fetchArray()) {
-			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.post')->import($row['pid'], array(
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.post')->import($row['pid'], [
 				'threadID' => $row['topic_id'],
 				'userID' => $row['author_id'],
 				'username' => $row['author_name'],
@@ -689,7 +689,7 @@ class IPB4xExporter extends AbstractExporter {
 				'editReason' => $row['post_edit_reason'],
 				'ipAddress' => UserUtil::convertIPv4To6($row['ip_address']),
 				'deleteTime' => $row['pdelete_time']
-			));
+			]);
 		}
 	}
 	
@@ -702,7 +702,7 @@ class IPB4xExporter extends AbstractExporter {
 			WHERE	follow_app = ?
 				AND follow_area = ?";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array('forums', 'topic'));
+		$statement->execute(['forums', 'topic']);
 		$row = $statement->fetchArray();
 		return $row['count'];
 	}
@@ -717,12 +717,12 @@ class IPB4xExporter extends AbstractExporter {
 					AND follow_area = ?
 			ORDER BY	follow_id";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset); 
-		$statement->execute(array('forums', 'topic'));
+		$statement->execute(['forums', 'topic']);
 		while ($row = $statement->fetchArray()) {
-			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.watchedThread')->import(0, array(
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.watchedThread')->import(0, [
 				'objectID' => $row['follow_rel_id'],
 				'userID' => $row['follow_member_id']
-			));
+			]);
 		}
 	}
 	
@@ -744,7 +744,7 @@ class IPB4xExporter extends AbstractExporter {
 			WHERE		pid BETWEEN ? AND ?
 			ORDER BY	pid";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array($offset + 1, $offset + $limit));
+		$statement->execute([$offset + 1, $offset + $limit]);
 		while ($row = $statement->fetchArray()) {
 			if (!$row['topic_firstpost']) continue;
 			
@@ -760,23 +760,23 @@ class IPB4xExporter extends AbstractExporter {
 			} 
 
 			// import poll
-			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll')->import($row['pid'], array(
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll')->import($row['pid'], [
 				'objectID' => $row['topic_firstpost'],
 				'question' => $data[1]['question'],
 				'time' => $row['start_date'],
 				'isPublic' => $row['poll_view_voters'],
 				'maxVotes' => (!empty($data[1]['multi']) ? count($data[1]['choice']) : 1),
 				'votes' => $row['votes']
-			));
+			]);
 			
 			// import poll options
 			foreach ($data[1]['choice'] as $key => $choice) {
-				ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll.option')->import($row['pid'].'-'.$key, array(
+				ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll.option')->import($row['pid'].'-'.$key, [
 					'pollID' => $row['pid'],
 					'optionValue' => $choice,
 					'showOrder' => $key,
 					'votes' => $data[1]['votes'][$key]
-				));
+				]);
 			}
 		}
 	}
@@ -799,7 +799,7 @@ class IPB4xExporter extends AbstractExporter {
 			WHERE		voters.vid BETWEEN ? AND ?
 			ORDER BY	voters.vid";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array($offset + 1, $offset + $limit));
+		$statement->execute([$offset + 1, $offset + $limit]);
 		while ($row = $statement->fetchArray()) {
 			try {
 				$data = JSON::decode($row['member_choices']);
@@ -810,14 +810,14 @@ class IPB4xExporter extends AbstractExporter {
 			}
 			if (!$data || !isset($data[1])) continue;
 			
-			if (!is_array($data[1])) $data[1] = array($data[1]);
+			if (!is_array($data[1])) $data[1] = [$data[1]];
 			
 			foreach ($data[1] as $pollOptionKey) {
-				ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll.option.vote')->import(0, array(
+				ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll.option.vote')->import(0, [
 					'pollID' => $row['pid'],
 					'optionID' => $row['pid'].'-'.$pollOptionKey,
 					'userID' => $row['member_id']
-				));
+				]);
 			}
 		}
 	}
@@ -831,7 +831,7 @@ class IPB4xExporter extends AbstractExporter {
 			WHERE	app = ?
 				AND type = ?";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array('forums', 'pid'));
+		$statement->execute(['forums', 'pid']);
 		$row = $statement->fetchArray();
 		return $row['count'];
 	}
@@ -848,15 +848,15 @@ class IPB4xExporter extends AbstractExporter {
 					AND core_reputation_index.type = ?
 			ORDER BY	core_reputation_index.id";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute(array('forums', 'pid'));
+		$statement->execute(['forums', 'pid']);
 		while ($row = $statement->fetchArray()) {
-			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.like')->import(0, array(
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.like')->import(0, [
 				'objectID' => $row['type_id'],
 				'objectUserID' => ($row['author_id'] ?: null),
 				'userID' => $row['member_id'],
 				'likeValue' => Like::LIKE,
 				'time' => $row['rep_date']
-			));
+			]);
 		}
 	}
 	
@@ -880,7 +880,7 @@ class IPB4xExporter extends AbstractExporter {
 			WHERE	location_key = ?
 				AND id2 IS NOT NULL";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array($type));
+		$statement->execute([$type]);
 		$row = $statement->fetchArray();
 		return $row['count'];
 	}
@@ -894,11 +894,11 @@ class IPB4xExporter extends AbstractExporter {
 					AND core_attachments_map.id2 IS NOT NULL
 			ORDER BY	core_attachments_map.attachment_id";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute(array($type));
+		$statement->execute([$type]);
 		while ($row = $statement->fetchArray()) {
 			$fileLocation = $this->fileSystemPath.'uploads/'.$row['attach_location'];
 
-			ImportHandler::getInstance()->getImporter($objectType)->import($row['attach_id'], array(
+			ImportHandler::getInstance()->getImporter($objectType)->import($row['attach_id'], [
 				'objectID' => $row['id2'],
 				'userID' => ($row['attach_member_id'] ?: null),
 				'filename' => $row['attach_file'],
@@ -906,16 +906,16 @@ class IPB4xExporter extends AbstractExporter {
 				'isImage' => $row['attach_is_image'],
 				'downloads' => $row['attach_hits'],
 				'uploadTime' => $row['attach_date'],
-			), array('fileLocation' => $fileLocation));
+			], ['fileLocation' => $fileLocation]);
 		}
 	}
 	
 	private function getTags($app, $area, array $objectIDs) {
-		$tags = array();
+		$tags = [];
 		$conditionBuilder = new PreparedStatementConditionBuilder();
-		$conditionBuilder->add('tag_meta_app = ?', array($app));
-		$conditionBuilder->add('tag_meta_area = ?', array($area));
-		$conditionBuilder->add('tag_meta_id IN (?)', array($objectIDs));
+		$conditionBuilder->add('tag_meta_app = ?', [$app]);
+		$conditionBuilder->add('tag_meta_area = ?', [$area]);
+		$conditionBuilder->add('tag_meta_id IN (?)', [$objectIDs]);
 		
 		// get taggable id
 		$sql = "SELECT		tag_meta_id, tag_text
@@ -924,7 +924,7 @@ class IPB4xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute($conditionBuilder->getParameters());
 		while ($row = $statement->fetchArray()) {
-			if (!isset($tags[$row['tag_meta_id']])) $tags[$row['tag_meta_id']] = array();
+			if (!isset($tags[$row['tag_meta_id']])) $tags[$row['tag_meta_id']] = [];
 			$tags[$row['tag_meta_id']][] = $row['tag_text'];
 		}
 		
@@ -938,7 +938,7 @@ class IPB4xExporter extends AbstractExporter {
 				FROM	".$this->databasePrefix."core_sys_lang
 				WHERE	lang_default = ?";
 			$statement = $this->database->prepareStatement($sql);
-			$statement->execute(array(1));
+			$statement->execute([1]);
 			$row = $statement->fetchArray();
 			if ($row !== false) {
 				$this->defaultLanguageID = $row['lang_id'];
@@ -960,7 +960,7 @@ class IPB4xExporter extends AbstractExporter {
 					AND word_key = ?";
 			$this->languageStatement = $this->database->prepareStatement($sql, 1);
 		}
-		$this->languageStatement->execute(array($this->getDefaultLanguageID(), $prefix . '_' . $id . ($suffix ? ('_' . $suffix) : '')));
+		$this->languageStatement->execute([$this->getDefaultLanguageID(), $prefix . '_' . $id . ($suffix ? ('_' . $suffix) : '')]);
 		$row = $this->languageStatement->fetchArray();
 		if ($row !== false) {
 			return $row['word_custom'];

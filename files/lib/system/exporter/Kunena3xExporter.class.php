@@ -26,12 +26,12 @@ class Kunena3xExporter extends AbstractExporter {
 	 * board cache
 	 * @var	array
 	 */
-	protected $boardCache = array();
+	protected $boardCache = [];
 	
 	/**
 	 * @see	\wcf\system\exporter\AbstractExporter::$methods
 	 */
-	protected $methods = array(
+	protected $methods = [
 		'com.woltlab.wcf.user' => 'Users',
 		'com.woltlab.wcf.user.group' => 'UserGroups',
 		'com.woltlab.wcf.user.rank' => 'UserRanks',
@@ -40,38 +40,38 @@ class Kunena3xExporter extends AbstractExporter {
 		'com.woltlab.wbb.thread' => 'Threads',
 		'com.woltlab.wbb.post' => 'Posts',
 		'com.woltlab.wbb.attachment' => 'Attachments'
-	);
+	];
 	
 	/**
 	 * @see	\wcf\system\exporter\AbstractExporter::$limits
 	 */
-	protected $limits = array(
+	protected $limits = [
 		'com.woltlab.wcf.user' => 200,
 		'com.woltlab.wbb.thread' => 200,
 		'com.woltlab.wbb.attachment' => 100
-	);
+	];
 	
 	/**
 	 * @see	\wcf\system\exporter\IExporter::getSupportedData()
 	 */
 	public function getSupportedData() {
-		return array(
-			'com.woltlab.wcf.user' => array(
+		return [
+			'com.woltlab.wcf.user' => [
 				'com.woltlab.wcf.user.group',
 				'com.woltlab.wcf.user.avatar',
 				'com.woltlab.wcf.user.rank'
-			),
-			'com.woltlab.wbb.board' => array(
+			],
+			'com.woltlab.wbb.board' => [
 				'com.woltlab.wbb.attachment'
-			)
-		);
+			]
+		];
 	}
 	
 	/**
 	 * @see	\wcf\system\exporter\IExporter::getQueue()
 	 */
 	public function getQueue() {
-		$queue = array();
+		$queue = [];
 		
 		// user
 		if (in_array('com.woltlab.wcf.user', $this->selectedData)) {
@@ -133,7 +133,7 @@ class Kunena3xExporter extends AbstractExporter {
 			WHERE		id BETWEEN ? AND ?
 			ORDER BY	id";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array($offset + 1, $offset + $limit));
+		$statement->execute([$offset + 1, $offset + $limit]);
 		while ($row = $statement->fetchArray()) {
 			switch ($row['id']) {
 				case 1:
@@ -150,10 +150,10 @@ class Kunena3xExporter extends AbstractExporter {
 					break;
 			}
 				
-			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.group')->import($row['id'], array(
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.group')->import($row['id'], [
 				'groupName' => $row['title'],
 				'groupType' => $groupType
-			));
+			]);
 		}
 	}
 	
@@ -195,7 +195,7 @@ class Kunena3xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
-			$data = array(
+			$data = [
 				'username' => $row['username'],
 				'password' => StringUtil::getRandomID(),
 				'email' => $row['email'],
@@ -203,22 +203,22 @@ class Kunena3xExporter extends AbstractExporter {
 				'registrationDate' => @strtotime($row['registerDate']),
 				'lastActivityTime' => @strtotime($row['lastvisitDate']),
 				'signature' => self::fixBBCodes($row['signature'])
-			);
+			];
 
 			// get user options
-			$options = array(
+			$options = [
 				'location' => $row['location'],
 				'birthday' => $row['birthdate'],
 				'icq' => $row['icq'],
 				'skype' => $row['skype'],
 				'homepage' => $row['websiteurl'],
 				'gender' => $row['gender']
-			);
+			];
 				
-			$additionalData = array(
+			$additionalData = [
 				'groupIDs' => explode(',', $row['groupIDs']),
 				'options' => $options
-			);
+			];
 				
 			// import user
 			$newUserID = ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user')->import($row['userid'], $data, $additionalData);
@@ -236,7 +236,7 @@ class Kunena3xExporter extends AbstractExporter {
 					$password = 'phpass:'.$row['password'];
 				}
 				
-				$passwordUpdateStatement->execute(array($password, $newUserID));
+				$passwordUpdateStatement->execute([$password, $newUserID]);
 			}
 		}
 	}
@@ -249,7 +249,7 @@ class Kunena3xExporter extends AbstractExporter {
 			FROM	".$this->databasePrefix."kunena_ranks
 			WHERE	rank_special = ?";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array(0));
+		$statement->execute([0]);
 		$row = $statement->fetchArray();
 		return $row['count'];
 	}
@@ -263,16 +263,16 @@ class Kunena3xExporter extends AbstractExporter {
 			WHERE		rank_special = ?
 			ORDER BY	rank_id";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute(array(0));
+		$statement->execute([0]);
 		while ($row = $statement->fetchArray()) {
-			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.rank')->import($row['rank_id'], array(
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.rank')->import($row['rank_id'], [
 				'groupID' => 2, // 2 = registered users
 				'requiredPoints' => $row['rank_min'] * 5,
 				'rankTitle' => $row['rank_title'],
 				'rankImage' => $row['rank_image'],
 				'repeatImage' => 0,
 				'requiredGender' => 0 // neutral
-			));
+			]);
 		}
 	}
 	
@@ -302,11 +302,11 @@ class Kunena3xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			$filepath = $this->fileSystemPath . 'media/kunena/avatars/' . $row['avatar'];
 			if (file_exists($filepath)) {
-				ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.avatar')->import(0, array(
+				ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.avatar')->import(0, [
 					'avatarName' => basename($filepath),
 					'avatarExtension' => pathinfo($filepath, PATHINFO_EXTENSION),
 					'userID' => $row['userid']
-				), array('fileLocation' => $filepath));
+				], ['fileLocation' => $filepath]);
 			}
 		}
 	}
@@ -346,14 +346,14 @@ class Kunena3xExporter extends AbstractExporter {
 		if (!isset($this->boardCache[$parentID])) return;
 		
 		foreach ($this->boardCache[$parentID] as $board) {
-			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import($board['id'], array(
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import($board['id'], [
 				'parentID' => ($board['parent_id'] ?: null),
 				'position' => $board['ordering'],
 				'boardType' => ($board['parent_id'] ? 0 : 1),
 				'title' => $board['name'],
 				'description' => $board['description'],
 				'isClosed' => $board['locked'] ? 1 : 0
-			));
+			]);
 			
 			$this->exportBoardsRecursively($board['id']);
 		}
@@ -376,9 +376,9 @@ class Kunena3xExporter extends AbstractExporter {
 			WHERE		id BETWEEN ? AND ?
 			ORDER BY	id";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array($offset + 1, $offset + $limit));
+		$statement->execute([$offset + 1, $offset + $limit]);
 		while ($row = $statement->fetchArray()) {
-			$data = array(
+			$data = [
 				'boardID' => $row['category_id'],
 				'topic' => $row['subject'],
 				'time' => $row['first_post_time'],
@@ -388,7 +388,7 @@ class Kunena3xExporter extends AbstractExporter {
 				'isSticky' => $row['ordering'] == 1 ? 1 : 0,
 				'isClosed' => $row['locked'] == 1 ? 1 : 0,
 				'movedThreadID' => ($row['moved_id'] ? $row['moved_id'] : null)
-			);
+			];
 				
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.thread')->import($row['id'], $data);
 		}
@@ -412,9 +412,9 @@ class Kunena3xExporter extends AbstractExporter {
 			WHERE		id BETWEEN ? AND ?
 			ORDER BY	id";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array($offset + 1, $offset + $limit));
+		$statement->execute([$offset + 1, $offset + $limit]);
 		while ($row = $statement->fetchArray()) {
-			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.post')->import($row['id'], array(
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.post')->import($row['id'], [
 				'threadID' => $row['thread'],
 				'userID' => $row['userid'],
 				'username' => $row['name'],
@@ -424,7 +424,7 @@ class Kunena3xExporter extends AbstractExporter {
 				'ipAddress' => UserUtil::convertIPv4To6($row['ip']),
 				'isClosed' => ($row['locked'] ? 1 : 0),
 				'editorID' => null
-			));
+			]);
 		}
 	}
 	
@@ -444,21 +444,21 @@ class Kunena3xExporter extends AbstractExporter {
 			WHERE		id BETWEEN ? AND ?
 			ORDER BY	id";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array($offset + 1, $offset + $limit));
+		$statement->execute([$offset + 1, $offset + $limit]);
 		while ($row = $statement->fetchArray()) {
 			$fileLocation = FileUtil::addTrailingSlash($this->fileSystemPath . $row['folder']) . $row['filename'];
 				
 			$isImage = 0;
 			if ($row['filetype'] == 'image/jpeg' || $row['filetype'] == 'image/png' || $row['filetype'] == 'image/gif') $isImage = 1;
 				
-			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.attachment')->import($row['id'], array(
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.attachment')->import($row['id'], [
 				'objectID' => $row['mesid'],
 				'userID' => ($row['userid'] ?: null),
 				'filename' => $row['filename'],
 				'filesize' => $row['size'],
 				'fileType' => $row['filetype'],
 				'isImage' => $isImage
-			), array('fileLocation' => $fileLocation));
+			], ['fileLocation' => $fileLocation]);
 		}
 	}
 	
@@ -469,22 +469,22 @@ class Kunena3xExporter extends AbstractExporter {
 		if ($quoteRegex === null) {
 			$quoteRegex = new Regex('\[quote="(.*?)" post=(\d+)\]', Regex::CASE_INSENSITIVE);
 			$quoteCallback = new Callback(function ($matches) {
-				$username = str_replace(array("\\", "'"), array("\\\\", "\'"), $matches[1]);
+				$username = str_replace(["\\", "'"], ["\\\\", "\'"], $matches[1]);
 				$postID = $matches[2];
 				
-				$postLink = LinkHandler::getInstance()->getLink('Thread', array(
+				$postLink = LinkHandler::getInstance()->getLink('Thread', [
 					'application' => 'wbb',
 					'postID' => $postID,
 					'forceFrontend' => true
-				)).'#post'.$postID;
-				$postLink = str_replace(array("\\", "'"), array("\\\\", "\'"), $postLink);
+					]).'#post'.$postID;
+				$postLink = str_replace(["\\", "'"], ["\\\\", "\'"], $postLink);
 				
 				return "[quote='".$username."','".$postLink."']";
 			});
 		}
 		
 		// use proper WCF 2 bbcode
-		$replacements = array(
+		$replacements = [
 			'[left]' => '[align=left]',
 			'[/left]' => '[/align]',
 			'[right]' => '[align=right]',
@@ -494,7 +494,7 @@ class Kunena3xExporter extends AbstractExporter {
 			'[/video]' => '[/media]',
 			'[attachment' => '[attach',
 			'[/attachment]' => '[/attach]'
-		);
+		];
 		$message = str_ireplace(array_keys($replacements), array_values($replacements), $message);
 		
 		// fix size bbcodes

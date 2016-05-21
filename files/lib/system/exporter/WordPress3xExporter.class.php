@@ -20,39 +20,39 @@ class WordPress3xExporter extends AbstractExporter {
 	 * category cache
 	 * @var	array
 	 */
-	protected $categoryCache = array();
+	protected $categoryCache = [];
 	
 	/**
 	 * @see	\wcf\system\exporter\AbstractExporter::$methods
 	 */
-	protected $methods = array(
+	protected $methods = [
 		'com.woltlab.wcf.user' => 'Users',
 		'com.woltlab.blog.category' => 'BlogCategories',
 		'com.woltlab.blog.entry' => 'BlogEntries',
 		'com.woltlab.blog.entry.comment' => 'BlogComments',
 		'com.woltlab.blog.entry.attachment' => 'BlogAttachments'
-	);
+	];
 	
 	/**
 	 * @see	\wcf\system\exporter\IExporter::getSupportedData()
 	 */
 	public function getSupportedData() {
-		return array(
-			'com.woltlab.wcf.user' => array(
-			),
-			'com.woltlab.blog.entry' => array(
+		return [
+			'com.woltlab.wcf.user' => [
+			],
+			'com.woltlab.blog.entry' => [
 				'com.woltlab.blog.category',
 				'com.woltlab.blog.entry.comment',
 				'com.woltlab.blog.entry.attachment'
-			)
-		);
+			]
+		];
 	}
 	
 	/**
 	 * @see	\wcf\system\exporter\IExporter::getQueue()
 	 */
 	public function getQueue() {
-		$queue = array();
+		$queue = [];
 		
 		// user
 		if (in_array('com.woltlab.wcf.user', $this->selectedData)) {
@@ -122,21 +122,21 @@ class WordPress3xExporter extends AbstractExporter {
 			WHERE		ID BETWEEN ? AND ?
 			ORDER BY	ID";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array($offset + 1, $offset + $limit));
+		$statement->execute([$offset + 1, $offset + $limit]);
 		while ($row = $statement->fetchArray()) {
-			$data = array(
+			$data = [
 				'username' => $row['user_login'],
 				'password' => '',
 				'email' => $row['user_email'],
 				'registrationDate' => @strtotime($row['user_registered'])
-			);
+			];
 			
 			// import user
 			$newUserID = ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user')->import($row['ID'], $data);
 			
 			// update password hash
 			if ($newUserID) {
-				$passwordUpdateStatement->execute(array('phpass:'.$row['user_pass'].':', $newUserID));
+				$passwordUpdateStatement->execute(['phpass:'.$row['user_pass'].':', $newUserID]);
 			}
 		}
 	}
@@ -149,7 +149,7 @@ class WordPress3xExporter extends AbstractExporter {
 			FROM	".$this->databasePrefix."term_taxonomy
 			WHERE	taxonomy = ?";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array('category'));
+		$statement->execute(['category']);
 		$row = $statement->fetchArray();
 		return ($row['count'] ? 1 : 0);
 	}
@@ -165,7 +165,7 @@ class WordPress3xExporter extends AbstractExporter {
 			WHERE		term_taxonomy.taxonomy = ?
 			ORDER BY	term_taxonomy.parent, term_taxonomy.term_id";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array('category'));
+		$statement->execute(['category']);
 		while ($row = $statement->fetchArray()) {
 			$this->categoryCache[$row['parent']][] = $row;
 		}
@@ -180,11 +180,11 @@ class WordPress3xExporter extends AbstractExporter {
 		if (!isset($this->categoryCache[$parentID])) return;
 		
 		foreach ($this->categoryCache[$parentID] as $category) {
-			ImportHandler::getInstance()->getImporter('com.woltlab.blog.category')->import($category['term_id'], array(
+			ImportHandler::getInstance()->getImporter('com.woltlab.blog.category')->import($category['term_id'], [
 				'title' => StringUtil::decodeHTML($category['name']),
 				'parentCategoryID' => $category['parent'],
 				'showOrder' => 0
-			));
+			]);
 				
 			$this->exportBlogCategoriesRecursively($category['term_id']);
 		}
@@ -198,7 +198,7 @@ class WordPress3xExporter extends AbstractExporter {
 			FROM	".$this->databasePrefix."posts
 			WHERE	post_type = ?";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array('post'));
+		$statement->execute(['post']);
 		$row = $statement->fetchArray();
 		return $row['count'];
 	}
@@ -208,24 +208,24 @@ class WordPress3xExporter extends AbstractExporter {
 	 */
 	public function exportBlogEntries($offset, $limit) {
 		// get entry ids
-		$entryIDs = array();
+		$entryIDs = [];
 		$sql = "SELECT		ID
 			FROM		".$this->databasePrefix."posts
 			WHERE		post_type = ?
 					AND post_status IN (?, ?, ?, ?, ?, ?)
 			ORDER BY	ID";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute(array('post', 'publish', 'pending', 'draft', 'future', 'private', 'trash'));
+		$statement->execute(['post', 'publish', 'pending', 'draft', 'future', 'private', 'trash']);
 		while ($row = $statement->fetchArray()) {
 			$entryIDs[] = $row['ID'];
 		}
 		
 		// get tags
-		$tags = array();
+		$tags = [];
 		$conditionBuilder = new PreparedStatementConditionBuilder();
 		$conditionBuilder->add('term_taxonomy.term_taxonomy_id = term_relationships.term_taxonomy_id');
-		$conditionBuilder->add('term_relationships.object_id IN (?)', array($entryIDs));
-		$conditionBuilder->add('term_taxonomy.taxonomy = ?', array('post_tag'));
+		$conditionBuilder->add('term_relationships.object_id IN (?)', [$entryIDs]);
+		$conditionBuilder->add('term_taxonomy.taxonomy = ?', ['post_tag']);
 		$conditionBuilder->add('term.term_id IS NOT NULL');
 		$sql = "SELECT		term.name, term_relationships.object_id
 			FROM		".$this->databasePrefix."term_relationships term_relationships,
@@ -236,16 +236,16 @@ class WordPress3xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute($conditionBuilder->getParameters());
 		while ($row = $statement->fetchArray()) {
-			if (!isset($tags[$row['object_id']])) $tags[$row['object_id']] = array();
+			if (!isset($tags[$row['object_id']])) $tags[$row['object_id']] = [];
 			$tags[$row['object_id']][] = $row['name'];
 		}
 		
 		// get categories
-		$categories = array();
+		$categories = [];
 		$conditionBuilder = new PreparedStatementConditionBuilder();
 		$conditionBuilder->add('term_taxonomy.term_taxonomy_id = term_relationships.term_taxonomy_id');
-		$conditionBuilder->add('term_relationships.object_id IN (?)', array($entryIDs));
-		$conditionBuilder->add('term_taxonomy.taxonomy = ?', array('category'));
+		$conditionBuilder->add('term_relationships.object_id IN (?)', [$entryIDs]);
+		$conditionBuilder->add('term_taxonomy.taxonomy = ?', ['category']);
 		$sql = "SELECT		term_taxonomy.term_id, term_relationships.object_id
 			FROM		".$this->databasePrefix."term_relationships term_relationships,
 					".$this->databasePrefix."term_taxonomy term_taxonomy
@@ -253,13 +253,13 @@ class WordPress3xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute($conditionBuilder->getParameters());
 		while ($row = $statement->fetchArray()) {
-			if (!isset($categories[$row['object_id']])) $categories[$row['object_id']] = array();
+			if (!isset($categories[$row['object_id']])) $categories[$row['object_id']] = [];
 			$categories[$row['object_id']][] = $row['term_id'];
 		}
 		
 		// get entries
 		$conditionBuilder = new PreparedStatementConditionBuilder();
-		$conditionBuilder->add('post.ID IN (?)', array($entryIDs));
+		$conditionBuilder->add('post.ID IN (?)', [$entryIDs]);
 		
 		$sql = "SELECT		post.*, user.user_login
 			FROM		".$this->databasePrefix."posts post
@@ -269,14 +269,14 @@ class WordPress3xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute($conditionBuilder->getParameters());
 		while ($row = $statement->fetchArray()) {
-			$additionalData = array();
+			$additionalData = [];
 			if (isset($tags[$row['ID']])) $additionalData['tags'] = $tags[$row['ID']];
 			if (isset($categories[$row['ID']])) $additionalData['categories'] = $categories[$row['ID']];
 			
 			$time = @strtotime($row['post_date_gmt']);
 			if (!$time) $time = @strtotime($row['post_date']);
 			
-			ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry')->import($row['ID'], array(
+			ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry')->import($row['ID'], [
 				'userID' => ($row['post_author'] ?: null),
 				'username' => ($row['user_login'] ?: ''),
 				'subject' => $row['post_title'],
@@ -288,7 +288,7 @@ class WordPress3xExporter extends AbstractExporter {
 				'enableBBCodes' => 0,
 				'isPublished' => ($row['post_status'] == 'publish' ? 1 : 0),
 				'isDeleted' => ($row['post_status'] == 'trash' ? 1 : 0)
-			), $additionalData);
+			], $additionalData);
 		}
 	}
 	
@@ -300,7 +300,7 @@ class WordPress3xExporter extends AbstractExporter {
 			FROM	".$this->databasePrefix."comments
 			WHERE	comment_approved = ?";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array(1));
+		$statement->execute([1]);
 		$row = $statement->fetchArray();
 		return $row['count'];
 	}
@@ -319,32 +319,32 @@ class WordPress3xExporter extends AbstractExporter {
 			WHERE	comment_approved = ?
 			ORDER BY	comment_parent, comment_ID";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute(array(1));
+		$statement->execute([1]);
 		while ($row = $statement->fetchArray()) {
 			if (!$row['comment_parent']) {
-				ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry.comment')->import($row['comment_ID'], array(
+				ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry.comment')->import($row['comment_ID'], [
 					'objectID' => $row['comment_post_ID'],
 					'userID' => ($row['user_id'] ?: null),
 					'username' => $row['comment_author'],
 					'message' => StringUtil::decodeHTML($row['comment_content']),
 					'time' => @strtotime($row['comment_date_gmt'])
-				));
+				]);
 			}
 			else {
 				$parentID = $row['comment_parent'];
 				
 				do {
-					$parentCommentStatement->execute(array($parentID));
+					$parentCommentStatement->execute([$parentID]);
 					$row2 = $parentCommentStatement->fetchArray();
 					
 					if (!$row2['comment_parent']) {
-						ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry.comment.response')->import($row['comment_ID'], array(
+						ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry.comment.response')->import($row['comment_ID'], [
 							'commentID' => $row2['comment_ID'],
 							'userID' => ($row['user_id'] ?: null),
 							'username' => $row['comment_author'],
 							'message' => StringUtil::decodeHTML($row['comment_content']),
 							'time' => @strtotime($row['comment_date_gmt'])
-						));
+						]);
 						break;
 					}
 					$parentID = $row2['comment_parent'];
@@ -369,7 +369,7 @@ class WordPress3xExporter extends AbstractExporter {
 							AND post_status IN (?, ?, ?, ?, ?, ?)
 					)";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array('attachment', 'post', 'publish', 'pending', 'draft', 'future', 'private', 'trash'));
+		$statement->execute(['attachment', 'post', 'publish', 'pending', 'draft', 'future', 'private', 'trash']);
 		$row = $statement->fetchArray();
 		return $row['count'];
 	}
@@ -391,7 +391,7 @@ class WordPress3xExporter extends AbstractExporter {
 					)
 			ORDER BY	ID";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute(array('_wp_attached_file', 'attachment', 'post', 'publish', 'pending', 'draft', 'future', 'private', 'trash'));
+		$statement->execute(['_wp_attached_file', 'attachment', 'post', 'publish', 'pending', 'draft', 'future', 'private', 'trash']);
 		while ($row = $statement->fetchArray()) {
 			$fileLocation = $this->fileSystemPath.'wp-content/uploads/'.$row['meta_value'];
 			
@@ -401,7 +401,7 @@ class WordPress3xExporter extends AbstractExporter {
 			$time = @strtotime($row['post_date_gmt']);
 			if (!$time) $time = @strtotime($row['post_date']);
 			
-			ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry.attachment')->import($row['meta_id'], array(
+			ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry.attachment')->import($row['meta_id'], [
 				'objectID' => $row['post_parent'],
 				'userID' => ($row['post_author'] ?: null),
 				'filename' => basename($fileLocation),
@@ -412,7 +412,7 @@ class WordPress3xExporter extends AbstractExporter {
 				'lastDownloadTime' => 0,
 				'uploadTime' => $time,
 				'showOrder' => 0
-			), array('fileLocation' => $fileLocation));
+			], ['fileLocation' => $fileLocation]);
 		}
 	}
 	
