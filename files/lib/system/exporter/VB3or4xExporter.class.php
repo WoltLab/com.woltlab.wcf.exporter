@@ -302,6 +302,9 @@ class VB3or4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports user groups.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportUserGroups($offset, $limit) {
 		$sql = "SELECT		*
@@ -340,6 +343,9 @@ class VB3or4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports users.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportUsers($offset, $limit) {
 		// cache user options
@@ -434,6 +440,9 @@ class VB3or4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports user ranks.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportUserRanks($offset, $limit) {
 		$sql = "(
@@ -474,6 +483,9 @@ class VB3or4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports followers.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportFollowers($offset, $limit) {
 		$sql = "SELECT		userid, buddylist
@@ -502,6 +514,9 @@ class VB3or4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports guestbook entries.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportGuestbookEntries($offset, $limit) {
 		$sql = "SELECT		*
@@ -535,6 +550,10 @@ class VB3or4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports user avatars.
+	 * 
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 * @throws	\Exception
 	 */
 	public function exportUserAvatars($offset, $limit) {
 		$sql = "SELECT		customavatar.*, user.avatarrevision
@@ -590,6 +609,9 @@ class VB3or4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports user options.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportUserOptions($offset, $limit) {
 		$sql = "SELECT	*
@@ -719,6 +741,9 @@ class VB3or4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports conversation folders.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportConversationFolders($offset, $limit) {
 		$sql = "SELECT		userid, pmfolders
@@ -755,12 +780,14 @@ class VB3or4xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * Creates a conversation id out of the old parentpmid
-	 * and the participants.
+	 * Creates a conversation id out of the old parentpmid and the participants.
 	 * 
-	 * This ensures that only the actual receivers of a pm
-	 * are able to see it after import, while minimizing the
-	 * number of conversations.
+	 * This ensures that only the actual receivers of a pm are able to see it
+	 * after import, while minimizing the number of conversations.
+	 *
+	 * @param	integer		$parentpmid
+	 * @param	integer[]	$participants
+	 * @return	string
 	 */
 	private function getConversationID($parentpmid, array $participants) {
 		$conversationID = $parentpmid;
@@ -780,6 +807,9 @@ class VB3or4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports conversations.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportConversations($offset, $limit) {
 		$sql = "SELECT		pm.*, text.*,
@@ -821,6 +851,9 @@ class VB3or4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports conversation messages.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportConversationMessages($offset, $limit) {
 		$sql = "SELECT		pmtext.*,
@@ -870,6 +903,9 @@ class VB3or4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports conversation recipients.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportConversationUsers($offset, $limit) {
 		$sql = "SELECT		pm.*, user.username, pmtext.touserarray, pmtext.dateline, pmtext.fromuserid,
@@ -922,6 +958,9 @@ class VB3or4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports boards.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportBoards($offset, $limit) {
 		$sql = "SELECT		*
@@ -938,6 +977,8 @@ class VB3or4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports the boards recursively.
+	 *
+	 * @param	integer		$parentID
 	 */
 	protected function exportBoardsRecursively($parentID = -1) {
 		if (!isset($this->boardCache[$parentID])) return;
@@ -987,6 +1028,9 @@ class VB3or4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports threads.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportThreads($offset, $limit) {
 		$sql = "SELECT		thread.*,
@@ -1040,6 +1084,9 @@ class VB3or4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports posts.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportPosts($offset, $limit) {
 		$sql = "SELECT		post.*,
@@ -1114,6 +1161,10 @@ class VB3or4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports post attachments.
+	 * 
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 * @throws	\Exception
 	 */
 	public function exportPostAttachments($offset, $limit) {
 		try {
@@ -1203,6 +1254,9 @@ class VB3or4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports watched threads.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportWatchedThreads($offset, $limit) {
 		$sql = "SELECT		*
@@ -1233,6 +1287,9 @@ class VB3or4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports polls.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportPolls($offset, $limit) {
 		$sql = "SELECT		poll.*, thread.firstpostid
@@ -1267,6 +1324,9 @@ class VB3or4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports poll options.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportPollOptions($offset, $limit) {
 		$sql = "SELECT		*
@@ -1301,6 +1361,9 @@ class VB3or4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports poll option votes.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportPollOptionVotes($offset, $limit) {
 		$sql = "SELECT		*
@@ -1327,6 +1390,9 @@ class VB3or4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports likes.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportLikes($offset, $limit) {
 		$sql = "SELECT		*
@@ -1361,6 +1427,9 @@ class VB3or4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports labels.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportLabels($offset, $limit) {
 		if (!$offset) {
@@ -1407,6 +1476,9 @@ class VB3or4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports ACLs.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportACLs($offset, $limit) {
 		$mapping = [
@@ -1458,6 +1530,9 @@ class VB3or4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports smilies.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportSmilies($offset, $limit) {
 		$sql = "SELECT		*
@@ -1492,6 +1567,9 @@ class VB3or4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports smiley categories.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportSmileyCategories($offset, $limit) {
 		$sql = "SELECT		*
@@ -1523,6 +1601,9 @@ class VB3or4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports gallery albums.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportGalleryAlbums($offset, $limit) {
 		$sql = "SELECT		album.*, user.username
@@ -1567,6 +1648,10 @@ class VB3or4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports gallery images.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 * @throws	\Exception
 	 */
 	public function exportGalleryImages($offset, $limit) {
 		try {
@@ -1674,6 +1759,9 @@ class VB3or4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports gallery comments.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportGalleryComments($offset, $limit) {
 		$sql = "SELECT		comment.*, user.username
@@ -1709,6 +1797,9 @@ class VB3or4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports calendar categories.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportCalendarCategories($offset, $limit) {
 		$sql = "SELECT		*
@@ -1735,6 +1826,9 @@ class VB3or4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports calendar events.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportCalendarEvents($offset, $limit) {
 		$sql = "SELECT		event.*, user.username
@@ -1850,6 +1944,12 @@ class VB3or4xExporter extends AbstractExporter {
 		}
 	}
 	
+	/**
+	 * Returns the value of the given option in the imported board.
+	 *
+	 * @param	string		$optionName
+	 * @return	mixed
+	 */
 	private function readOption($optionName) {
 		static $optionCache = [];
 		
@@ -1867,6 +1967,12 @@ class VB3or4xExporter extends AbstractExporter {
 		return $optionCache[$optionName];
 	}
 	
+	/**
+	 * Returns message with fixed BBCodes as used in WCF.
+	 *
+	 * @param	string		$message
+	 * @return	string
+	 */
 	private static function fixBBCodes($message) {
 		static $quoteRegex = null;
 		static $quoteCallback = null;

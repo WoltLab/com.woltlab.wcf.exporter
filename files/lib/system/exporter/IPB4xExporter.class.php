@@ -170,6 +170,9 @@ class IPB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports users.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportUsers($offset, $limit) {
 		// cache profile fields
@@ -260,6 +263,9 @@ class IPB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports user options.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportUserOptions($offset, $limit) {
 		$sql = "SELECT		*
@@ -285,6 +291,9 @@ class IPB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports user groups.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportUserGroups($offset, $limit) {
 		$sql = "SELECT		*
@@ -328,6 +337,9 @@ class IPB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports user avatars.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportUserAvatars($offset, $limit) {
 		$sql = "SELECT		*
@@ -358,6 +370,9 @@ class IPB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports status updates.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportStatusUpdates($offset, $limit) {
 		$sql = "SELECT		status_updates.*, members.name
@@ -388,6 +403,9 @@ class IPB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports status replies.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportStatusReplies($offset, $limit) {
 		$sql = "SELECT		member_status_replies.*, members.name
@@ -425,6 +443,9 @@ class IPB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports followers.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportFollowers($offset, $limit) {
 		$sql = "SELECT		*
@@ -452,6 +473,9 @@ class IPB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports conversations.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportConversations($offset, $limit) {
 		$sql = "SELECT		message_topics.*, members.name
@@ -482,6 +506,9 @@ class IPB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports conversation messages.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportConversationMessages($offset, $limit) {
 		$sql = "SELECT		message_posts.*, members.name
@@ -512,6 +539,9 @@ class IPB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports conversation recipients.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportConversationUsers($offset, $limit) {
 		$sql = "SELECT		message_topic_user_map.*, members.name
@@ -543,6 +573,9 @@ class IPB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports conversation attachments.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportConversationAttachments($offset, $limit) {
 		$this->exportAttachments('core_Messaging', 'com.woltlab.wcf.conversation.attachment', $offset, $limit);
@@ -562,6 +595,9 @@ class IPB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports boards.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportBoards($offset, $limit) {
 		$sql = "SELECT		*
@@ -578,6 +614,8 @@ class IPB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports the boards recursively.
+	 * 
+	 * @param	integer		$parentID
 	 */
 	protected function exportBoardsRecursively($parentID = -1) {
 		if (!isset($this->boardCache[$parentID])) return;
@@ -596,7 +634,7 @@ class IPB4xExporter extends AbstractExporter {
 				'posts' => $board['posts'],
 				'threads' => $board['topics']
 			]);
-				
+			
 			$this->exportBoardsRecursively($board['id']);
 		}
 	}
@@ -610,6 +648,9 @@ class IPB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports threads.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportThreads($offset, $limit) {
 		// get thread ids
@@ -667,6 +708,9 @@ class IPB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports posts.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportPosts($offset, $limit) {
 		$sql = "SELECT		*
@@ -709,6 +753,9 @@ class IPB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports watched threads.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportWatchedThreads($offset, $limit) {
 		$sql = "SELECT		*
@@ -735,6 +782,9 @@ class IPB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports polls.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportPolls($offset, $limit) {
 		$sql = "SELECT		polls.*, topics.topic_firstpost
@@ -790,6 +840,9 @@ class IPB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports poll option votes.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportPollOptionVotes($offset, $limit) {
 		$sql = "SELECT		polls.*, voters.*
@@ -838,6 +891,9 @@ class IPB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports likes.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportLikes($offset, $limit) {
 		$sql = "SELECT		core_reputation_index.*, forums_posts.author_id
@@ -869,11 +925,20 @@ class IPB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports post attachments.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportPostAttachments($offset, $limit) {
 		$this->exportAttachments('forums_Forums', 'com.woltlab.wbb.attachment', $offset, $limit);
 	}
 	
+	/**
+	 * Returns the number of attachments of the given type.
+	 * 
+	 * @param	string		$type
+	 * @return	integer
+	 */
 	private function countAttachments($type) {
 		$sql = "SELECT	COUNT(*) AS count
 			FROM	".$this->databasePrefix."core_attachments_map
@@ -885,6 +950,14 @@ class IPB4xExporter extends AbstractExporter {
 		return $row['count'];
 	}
 	
+	/**
+	 * Exports attachments.
+	 * 
+	 * @param	string		$type
+	 * @param	string		$objectType
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
 	private function exportAttachments($type, $objectType, $offset, $limit) {
 		$sql = "SELECT		core_attachments.*, core_attachments_map.id2
 			FROM		".$this->databasePrefix."core_attachments_map core_attachments_map
@@ -897,7 +970,7 @@ class IPB4xExporter extends AbstractExporter {
 		$statement->execute([$type]);
 		while ($row = $statement->fetchArray()) {
 			$fileLocation = $this->fileSystemPath.'uploads/'.$row['attach_location'];
-
+			
 			ImportHandler::getInstance()->getImporter($objectType)->import($row['attach_id'], [
 				'objectID' => $row['id2'],
 				'userID' => ($row['attach_member_id'] ?: null),
@@ -910,6 +983,14 @@ class IPB4xExporter extends AbstractExporter {
 		}
 	}
 	
+	/**
+	 * Returns the data of tags.
+	 * 
+	 * @param	string		$app
+	 * @param	string		$area
+	 * @param	integer[]	$objectIDs
+	 * @return	string[][]
+	 */
 	private function getTags($app, $area, array $objectIDs) {
 		$tags = [];
 		$conditionBuilder = new PreparedStatementConditionBuilder();
@@ -931,7 +1012,11 @@ class IPB4xExporter extends AbstractExporter {
 		return $tags;
 	}
 	
-	
+	/**
+	 * Returns the id of the default language in the imported board.
+	 * 
+	 * @return	integer
+	 */
 	private function getDefaultLanguageID() {
 		if ($this->defaultLanguageID === null) {
 			$sql = "SELECT	lang_id
@@ -952,6 +1037,14 @@ class IPB4xExporter extends AbstractExporter {
 		
 	}
 	
+	/**
+	 * Returns the value of a language variable.
+	 * 
+	 * @param	string		$prefix
+	 * @param	integer		$id
+	 * @param	string		$suffix
+	 * @return	string
+	 */
 	private function getLanguageVar($prefix, $id, $suffix = '') {
 		if ($this->languageStatement === null) {
 			$sql = "SELECT	word_custom
@@ -969,6 +1062,12 @@ class IPB4xExporter extends AbstractExporter {
 		return '';
 	}
 	
+	/**
+	 * Returns message with fixed formatting as used in WCF.
+	 *
+	 * @param	string		$string
+	 * @return	string
+	 */
 	private static function fixMessage($string) {
 		// align
 		$string = preg_replace('~<p style="text-align:(left|center|right);">(.*?)</p>~is', "[align=\\1]\\2[/align]\n\n", $string);

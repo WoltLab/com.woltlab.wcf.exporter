@@ -126,6 +126,9 @@ class Kunena3xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports user groups.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportUserGroups($offset, $limit) {
 		$sql = "SELECT		*
@@ -173,6 +176,9 @@ class Kunena3xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports users.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportUsers($offset, $limit) {
 		// prepare password update
@@ -256,6 +262,9 @@ class Kunena3xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports user ranks.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportUserRanks($offset, $limit) {
 		$sql = "SELECT		*
@@ -291,6 +300,9 @@ class Kunena3xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports user avatars.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportUserAvatars($offset, $limit) {
 		$sql = "SELECT		userid, avatar
@@ -325,6 +337,9 @@ class Kunena3xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports boards.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportBoards($offset, $limit) {
 		$sql = "SELECT		*
@@ -341,6 +356,8 @@ class Kunena3xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports the boards recursively.
+	 *
+	 * @param	integer		$parentID
 	 */
 	protected function exportBoardsRecursively($parentID = 0) {
 		if (!isset($this->boardCache[$parentID])) return;
@@ -369,6 +386,9 @@ class Kunena3xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports threads.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportThreads($offset, $limit) {
 		$sql = "SELECT		kunena_topics.*
@@ -403,6 +423,9 @@ class Kunena3xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports posts.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportPosts($offset, $limit) {
 		$sql = "SELECT		*
@@ -437,6 +460,9 @@ class Kunena3xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports attachments.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportAttachments($offset, $limit) {
 		$sql = "SELECT		*
@@ -462,6 +488,12 @@ class Kunena3xExporter extends AbstractExporter {
 		}
 	}
 	
+	/**
+	 * Returns message with fixed BBCodes as used in WCF.
+	 * 
+	 * @param	string		$message
+	 * @return	string
+	 */
 	private static function fixBBCodes($message) {
 		static $quoteRegex = null;
 		static $quoteCallback = null;

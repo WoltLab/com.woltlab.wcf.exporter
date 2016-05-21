@@ -221,6 +221,9 @@ class XF12xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports user groups.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportUserGroups($offset, $limit) {
 		$sql = "SELECT		*
@@ -247,6 +250,9 @@ class XF12xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports users.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportUsers($offset, $limit) {
 		// prepare password update
@@ -377,6 +383,9 @@ class XF12xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports user options.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportUserOptions($offset, $limit) {
 		$condition = new PreparedStatementConditionBuilder();
@@ -451,6 +460,9 @@ class XF12xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports user ranks.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportUserRanks($offset, $limit) {
 		try {
@@ -493,6 +505,9 @@ class XF12xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports followers.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportFollowers($offset, $limit) {
 		$sql = "SELECT		*
@@ -518,6 +533,9 @@ class XF12xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports wall entries.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportWallEntries($offset, $limit) {
 		$sql = "SELECT		*
@@ -546,6 +564,9 @@ class XF12xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports wall responses.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportWallResponses($offset, $limit) {
 		$sql = "SELECT		*
@@ -580,6 +601,9 @@ class XF12xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports user avatars.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportUserAvatars($offset, $limit) {
 		$sql = "SELECT		user_id
@@ -622,6 +646,9 @@ class XF12xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports conversation folders.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportConversationFolders($offset, $limit) {
 		$sql = "SELECT		user_id
@@ -646,6 +673,9 @@ class XF12xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports conversations.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportConversations($offset, $limit) {
 		$sql = "SELECT		*
@@ -676,6 +706,9 @@ class XF12xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports conversation messages.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportConversationMessages($offset, $limit) {
 		$sql = "SELECT		message_table.*, INET_NTOA(ip_table.ip) AS ip
@@ -712,6 +745,9 @@ class XF12xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports conversation recipients.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportConversationUsers($offset, $limit) {
 		$sql = "SELECT		recipient_table.*, user_table.username, cuser_table.is_starred
@@ -751,6 +787,9 @@ class XF12xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports boards.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportBoards($offset, $limit) {
 		$sql = "SELECT		node.node_id AS nodeID, node.*, forum.*, link_forum.*
@@ -792,6 +831,9 @@ class XF12xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports threads.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportThreads($offset, $limit) {
 		$sql = "SELECT		*
@@ -831,6 +873,9 @@ class XF12xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports posts.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportPosts($offset, $limit) {
 		$sql = "SELECT		post.*, user.username AS editor, INET_NTOA(ip.ip) AS ip, thread.title
@@ -874,6 +919,9 @@ class XF12xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports post attachments.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportPostAttachments($offset, $limit) {
 		$this->exportAttachments('post', 'com.woltlab.wbb.attachment', $offset, $limit);
@@ -893,6 +941,9 @@ class XF12xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports watched threads.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportWatchedThreads($offset, $limit) {
 		$sql = "SELECT		*
@@ -923,6 +974,9 @@ class XF12xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports polls.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportPolls($offset, $limit) {
 		$sql = "SELECT		poll.*, thread.first_post_id,
@@ -961,6 +1015,9 @@ class XF12xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports poll options.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportPollOptions($offset, $limit) {
 		$sql = "SELECT		*
@@ -992,6 +1049,9 @@ class XF12xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports poll option votes.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportPollOptionVotes($offset, $limit) {
 		$sql = "SELECT		*
@@ -1022,6 +1082,9 @@ class XF12xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports labels.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportLabels($offset, $limit) {
 		$objectType = ObjectTypeCache::getInstance()->getObjectTypeByName('com.woltlab.wcf.label.objectType', 'com.woltlab.wbb.board');
@@ -1066,6 +1129,9 @@ class XF12xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports ACLs.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportACLs($offset, $limit) {
 		static $mapping = [
@@ -1129,6 +1195,9 @@ class XF12xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports blog categories.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportBlogCategories($offset, $limit) {
 		$sql = "SELECT		*
@@ -1168,6 +1237,9 @@ class XF12xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports blog entries.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportBlogEntries($offset, $limit) {
 		$sql = "(
@@ -1230,6 +1302,9 @@ class XF12xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports blog comments.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportBlogComments($offset, $limit) {
 		$sql = "SELECT		comment.*, user.username
@@ -1265,6 +1340,9 @@ class XF12xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports blog entry likes.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportBlogEntryLikes($offset, $limit) {
 		$sql = "SELECT		*
@@ -1284,14 +1362,31 @@ class XF12xExporter extends AbstractExporter {
 		}
 	}
 	
+	/**
+	 * Returns the number of blog attachments.
+	 * 
+	 * @return	integer
+	 */
 	public function countBlogAttachments() {
 		return $this->countAttachments('xfa_blog_entry');
 	}
 	
+	/**
+	 * Exports blog attachments.
+	 * 
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
 	public function exportBlogAttachments($offset, $limit) {
 		$this->exportAttachments('xfa_blog_entry', 'com.woltlab.blog.entry.attachment', $offset, $limit);
 	}
 	
+	/**
+	 * Returns the number of attachments.
+	 * 
+	 * @param	string		$type
+	 * @return	integer
+	 */
 	public function countAttachments($type) {
 		$sql = "SELECT	COUNT(*) AS count
 		FROM	xf_attachment
@@ -1302,6 +1397,14 @@ class XF12xExporter extends AbstractExporter {
 		return $row['count'];
 	}
 	
+	/**
+	 * Exports attachments.
+	 * 
+	 * @param	string		$type
+	 * @param	string		$objectType
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
 	public function exportAttachments($type, $objectType, $offset, $limit) {
 		$sql = "SELECT		attachment.*, data.*
 		FROM		xf_attachment attachment
@@ -1341,6 +1444,11 @@ class XF12xExporter extends AbstractExporter {
 		}
 	}
 	
+	/**
+	 * Returns the configuration data of the imported board.
+	 * 
+	 * @return	array
+	 */
 	public function getConfig() {
 		$config = [
 			'db' => [
@@ -1401,6 +1509,12 @@ class XF12xExporter extends AbstractExporter {
 		return $config;
 	}
 	
+	/**
+	 * Returns message with fixed BBCodes as used in WCF.
+	 *
+	 * @param	string		$message
+	 * @return	string
+	 */
 	private static function fixBBCodes($message) {
 		static $mediaRegex = null;
 		static $mediaCallback = null;
@@ -1514,6 +1628,12 @@ class XF12xExporter extends AbstractExporter {
 		return $message;
 	}
 	
+	/**
+	 * Returns comment text with fixed formatting as used in WCF.
+	 * 
+	 * @param	string		$message
+	 * @return	string
+	 */
 	private static function fixComment($message) {
 		static $mentionRegex = null;
 		if ($mentionRegex === null) {

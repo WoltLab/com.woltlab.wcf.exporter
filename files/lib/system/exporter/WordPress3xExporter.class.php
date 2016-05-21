@@ -108,6 +108,9 @@ class WordPress3xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports users.
+	 * 
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportUsers($offset, $limit) {
 		// prepare password update
@@ -156,6 +159,9 @@ class WordPress3xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports categories.
+	 * 
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportBlogCategories($offset, $limit) {
 		$sql = "SELECT		term_taxonomy.*, term.name
@@ -175,6 +181,8 @@ class WordPress3xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports the categories recursively.
+	 * 
+	 * @param	integer		$parentID
 	 */
 	protected function exportBlogCategoriesRecursively($parentID = 0) {
 		if (!isset($this->categoryCache[$parentID])) return;
@@ -205,6 +213,9 @@ class WordPress3xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports blog entries.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportBlogEntries($offset, $limit) {
 		// get entry ids
@@ -307,6 +318,9 @@ class WordPress3xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports blog comments.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportBlogComments($offset, $limit) {
 		$sql = "SELECT	comment_ID, comment_parent
@@ -376,6 +390,9 @@ class WordPress3xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports blog attachments.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportBlogAttachments($offset, $limit) {
 		$sql = "SELECT		posts.*, postmeta.*
@@ -416,6 +433,12 @@ class WordPress3xExporter extends AbstractExporter {
 		}
 	}
 	
+	/**
+	 * Returns message with fixed syntax as used in WCF.
+	 * 
+	 * @param	string		$string
+	 * @return	string
+	 */
 	private static function fixMessage($string) {
 		$string = str_replace("\n", "<br />\n", StringUtil::unifyNewlines($string));
 		

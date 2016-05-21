@@ -199,6 +199,9 @@ class WBB2xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports user groups.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportUserGroups($offset, $limit) {
 		$sql = "SELECT		*
@@ -238,6 +241,9 @@ class WBB2xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports users.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportUsers($offset, $limit) {
 		// cache profile fields
@@ -333,6 +339,9 @@ class WBB2xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports user ranks.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportUserRanks($offset, $limit) {
 		$sql = "SELECT		*
@@ -365,6 +374,9 @@ class WBB2xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports user avatars.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportUserAvatars($offset, $limit) {
 		$sql = "SELECT		*
@@ -399,6 +411,9 @@ class WBB2xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports user options.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportUserOptions($offset, $limit) {
 		$sql = "SELECT		*
@@ -450,6 +465,9 @@ class WBB2xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports conversation folders.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportConversationFolders($offset, $limit) {
 		$sql = "SELECT		*
@@ -474,6 +492,9 @@ class WBB2xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports conversations.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportConversations($offset, $limit) {
 		$sql = "SELECT		pm.*, user_table.username
@@ -522,6 +543,9 @@ class WBB2xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports conversation recipients.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportConversationUsers($offset, $limit) {
 		$sql = "SELECT		*
@@ -550,6 +574,9 @@ class WBB2xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports conversation attachments.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportConversationAttachments($offset, $limit) {
 		$this->exportAttachments('privatemessageid', 'com.woltlab.wcf.conversation.attachment', $offset, $limit);
@@ -569,6 +596,9 @@ class WBB2xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports boards.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportBoards($offset, $limit) {
 		$sql = "SELECT		*
@@ -585,6 +615,8 @@ class WBB2xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports the boards recursively.
+	 *
+	 * @param	integer		$parentID
 	 */
 	protected function exportBoardsRecursively($parentID = 0) {
 		if (!isset($this->boardCache[$parentID])) return;
@@ -615,6 +647,9 @@ class WBB2xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports threads.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportThreads($offset, $limit) {
 		// get global prefixes
@@ -728,6 +763,9 @@ class WBB2xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports posts.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportPosts($offset, $limit) {
 		$sql = "SELECT		*
@@ -768,6 +806,9 @@ class WBB2xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports post attachments.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportPostAttachments($offset, $limit) {
 		$this->exportAttachments('postid', 'com.woltlab.wbb.attachment', $offset, $limit);
@@ -787,6 +828,9 @@ class WBB2xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports watched threads.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportWatchedThreads($offset, $limit) {
 		$sql = "SELECT		*
@@ -816,6 +860,9 @@ class WBB2xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports polls.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportPolls($offset, $limit) {
 		// prepare statements
@@ -875,6 +922,9 @@ class WBB2xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports poll options.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportPollOptions($offset, $limit) {
 		$sql = "SELECT		*
@@ -884,9 +934,9 @@ class WBB2xExporter extends AbstractExporter {
 		$statement->execute([]);
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll.option')->import($row['polloptionid'], [
-			'pollID' => $row['pollid'],
-			'optionValue' => $row['polloption'],
-			'votes' => $row['votes']
+				'pollID' => $row['pollid'],
+				'optionValue' => $row['polloption'],
+				'votes' => $row['votes']
 			]);
 		}
 	}
@@ -906,6 +956,9 @@ class WBB2xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports labels.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportLabels($offset, $limit) {
 		$prefixMap = [];
@@ -995,6 +1048,9 @@ class WBB2xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports ACLs.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportACLs($offset, $limit) {
 		$sql = "SELECT		*
@@ -1032,6 +1088,9 @@ class WBB2xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports smilies.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportSmilies($offset, $limit) {
 		$sql = "SELECT		*
@@ -1056,6 +1115,12 @@ class WBB2xExporter extends AbstractExporter {
 		}
 	}
 	
+	/**
+	 * Returns the number of attachments.
+	 * 
+	 * @param	integer		$indexName
+	 * @return	integer
+	 */
 	private function countAttachments($indexName) {
 		$sql = "SELECT	COUNT(*) AS count
 			FROM	".$this->databasePrefix."attachments
@@ -1066,6 +1131,14 @@ class WBB2xExporter extends AbstractExporter {
 		return $row['count'];
 	}
 	
+	/**
+	 * Exports attachments.
+	 * 
+	 * @param	integer		$indexName
+	 * @param	string		$objectType
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
 	private function exportAttachments($indexName, $objectType, $offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."attachments
@@ -1095,6 +1168,12 @@ class WBB2xExporter extends AbstractExporter {
 		}
 	}
 	
+	/**
+	 * Returns message with BBCodes as used in WCF.
+	 *
+	 * @param	string		$text
+	 * @return	string
+	 */
 	private static function fixBBCodes($text) {
 		$text = str_ireplace('[center]', '[align=center]', $text);
 		$text = str_ireplace('[/center]', '[/align]', $text);

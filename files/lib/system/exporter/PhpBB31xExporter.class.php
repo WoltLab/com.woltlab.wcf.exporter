@@ -219,6 +219,9 @@ class PhpBB31xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports user groups.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportUserGroups($offset, $limit) {
 		$sql = "SELECT		*
@@ -269,6 +272,9 @@ class PhpBB31xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports users.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportUsers($offset, $limit) {
 		// cache profile fields
@@ -405,6 +411,9 @@ class PhpBB31xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports user options.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportUserOptions($offset, $limit) {
 		$condition = new PreparedStatementConditionBuilder();
@@ -494,6 +503,9 @@ class PhpBB31xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports user ranks.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportUserRanks($offset, $limit) {
 		$sql = "SELECT		*
@@ -530,6 +542,9 @@ class PhpBB31xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports followers.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportFollowers($offset, $limit) {
 		$sql = "SELECT		*
@@ -562,6 +577,9 @@ class PhpBB31xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports user avatars.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportUserAvatars($offset, $limit) {
 		static $avatar_salt = null, $avatar_path = null, $avatar_gallery_path = null;
@@ -616,6 +634,9 @@ class PhpBB31xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports conversation folders.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportConversationFolders($offset, $limit) {
 		$sql = "SELECT		*
@@ -632,12 +653,14 @@ class PhpBB31xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * Creates a conversation id out of the old rootLevel
-	 * and the participants.
+	 * Creates a conversation id out of the old rootLevel and the participants.
 	 * 
-	 * This ensures that only the actual receivers of a pm
-	 * are able to see it after import, while minimizing the
-	 * number of conversations.
+	 * This ensures that only the actual receivers of a pm are able to see it
+	 * after import, while minimizing the number of conversations.
+	 *
+	 * @param	integer		$rootLevel
+	 * @param	integer[]	$participants
+	 * @return	string
 	 */
 	private function getConversationID($rootLevel, array $participants) {
 		$conversationID = $rootLevel;
@@ -662,6 +685,9 @@ class PhpBB31xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports conversations.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportConversations($offset, $limit) {
 		$sql = "(
@@ -732,6 +758,9 @@ class PhpBB31xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports conversation messages.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportConversationMessages($offset, $limit) {
 		$sql = "(
@@ -811,6 +840,9 @@ class PhpBB31xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports conversation recipients.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportConversationUsers($offset, $limit) {
 		$sql = "SELECT		to_table.*, msg_table.root_level, msg_table.author_id, msg_table.bcc_address, user_table.username, msg_table.message_time,
@@ -853,6 +885,9 @@ class PhpBB31xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports conversation attachments.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportConversationAttachments($offset, $limit) {
 		return $this->exportAttachments(1, $offset, $limit);
@@ -872,6 +907,9 @@ class PhpBB31xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports boards.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportBoards($offset, $limit) {
 		$sql = "SELECT		*
@@ -888,6 +926,8 @@ class PhpBB31xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports the boards recursively.
+	 * 
+	 * @param	integer		$parentID
 	 */
 	protected function exportBoardsRecursively($parentID = 0) {
 		if (!isset($this->boardCache[$parentID])) return;
@@ -924,6 +964,9 @@ class PhpBB31xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports threads.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportThreads($offset, $limit) {
 		$boardIDs = array_keys(BoardCache::getInstance()->getBoards());
@@ -968,6 +1011,9 @@ class PhpBB31xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports posts.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportPosts($offset, $limit) {
 		$sql = "SELECT		post_table.*, user_table.username, editor.username AS editorName,
@@ -1017,6 +1063,9 @@ class PhpBB31xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports post attachments.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportPostAttachments($offset, $limit) {
 		$this->exportAttachments(0, $offset, $limit);
@@ -1036,6 +1085,9 @@ class PhpBB31xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports watched threads.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportWatchedThreads($offset, $limit) {
 		// TODO: This is untested. I cannot find the button to watch a topic.
@@ -1069,6 +1121,9 @@ class PhpBB31xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports polls.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportPolls($offset, $limit) {
 		$sql = "SELECT		topic_id, topic_first_post_id, poll_title, poll_start, poll_length, poll_max_options, poll_vote_change,
@@ -1106,6 +1161,9 @@ class PhpBB31xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports poll options.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportPollOptions($offset, $limit) {
 		$sql = "SELECT		*
@@ -1138,6 +1196,9 @@ class PhpBB31xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports poll option votes.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportPollOptionVotes($offset, $limit) {
 		$sql = "SELECT		*
@@ -1169,6 +1230,9 @@ class PhpBB31xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports ACLs.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportACLs($offset, $limit) {
 		$sql = "SELECT		*
@@ -1318,6 +1382,9 @@ class PhpBB31xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports smilies.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportSmilies($offset, $limit) {
 		$sql = "SELECT		MIN(smiley_id) AS smiley_id,
@@ -1346,6 +1413,12 @@ class PhpBB31xExporter extends AbstractExporter {
 		}
 	}
 	
+	/**
+	 * Returns the number of attachments.
+	 * 
+	 * @param	integer		$conversation
+	 * @return	integer
+	 */
 	protected function countAttachments($conversation) {
 		$sql = "SELECT	COUNT(*) AS count
 			FROM	".$this->databasePrefix."attachments
@@ -1356,6 +1429,13 @@ class PhpBB31xExporter extends AbstractExporter {
 		return $row['count'];
 	}
 	
+	/**
+	 * Exports attachments.
+	 * 
+	 * @param	integer		$conversation
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
 	protected function exportAttachments($conversation, $offset, $limit) {
 		static $upload_path = null;
 		if ($upload_path === null) {
@@ -1394,6 +1474,13 @@ class PhpBB31xExporter extends AbstractExporter {
 		}
 	}
 	
+	/**
+	 * Returns message with fixed BBCodes as used in WCF.
+	 *
+	 * @param	string		$text
+	 * @param	string		$uid
+	 * @return	string
+	 */
 	protected static function fixBBCodes($text, $uid) {
 		// fix closing list tags
 		$text = preg_replace('~\[/list:(u|o)~i', '[/list', $text);

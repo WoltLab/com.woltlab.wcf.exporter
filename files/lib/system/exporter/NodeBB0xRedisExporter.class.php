@@ -153,6 +153,10 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 	
 	/**
 	 * Exports users.
+	 * 
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 * @throws	SystemException
 	 */
 	public function exportUsers($offset, $limit) {
 		// prepare password update
@@ -223,6 +227,10 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 	
 	/**
 	 * Exports boards.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 * @throws	SystemException
 	 */
 	public function exportBoards($offset, $limit) {
 		$boardIDs = $this->database->zrange('categories:cid', 0, -1);
@@ -240,6 +248,8 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 	
 	/**
 	 * Exports the boards recursively.
+	 * 
+	 * @param	integer		$parentID
 	 */
 	protected function exportBoardsRecursively($parentID = 0) {
 		if (!isset($this->boardCache[$parentID])) return;
@@ -267,6 +277,10 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 	
 	/**
 	 * Exports threads.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 * @throws	SystemException
 	 */
 	public function exportThreads($offset, $limit) {
 		$threadIDs = $this->database->zrange('topics:tid', $offset, $offset + $limit);
@@ -307,6 +321,10 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 	
 	/**
 	 * Exports posts.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 * @throws	SystemException
 	 */
 	public function exportPosts($offset, $limit) {
 		$postIDs = $this->database->zrange('posts:pid', $offset, $offset + $limit);
@@ -345,6 +363,10 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 	
 	/**
 	 * Exports likes.
+	 * 
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 * @throws	SystemException
 	 */
 	public function exportLikes($offset, $limit) {
 		$userIDs = $this->database->zrange('users:joindate', $offset, $offset + $limit);
@@ -390,6 +412,10 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 	
 	/**
 	 * Exports followers.
+	 * 
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 * @throws	SystemException
 	 */
 	public function exportFollowers($offset, $limit) {
 		$userIDs = $this->database->zrange('users:joindate', $offset, $offset + $limit);
@@ -419,6 +445,10 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 	
 	/**
 	 * Exports conversations.
+	 * 
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 * @throws	SystemException
 	 */
 	public function exportConversations($offset, $limit) {
 		$userIDs = $this->database->zrange('users:joindate', $offset, $offset + $limit);
@@ -475,6 +505,9 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 	
 	/**
 	 * Exports conversation messages.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportConversationMessages($offset, $limit) {
 		for ($i = 1; $i <= $limit; $i++) {
@@ -497,6 +530,12 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 		}
 	}
 	
+	/**
+	 * Returns message with markdown being convered into BBCodes.
+	 * 
+	 * @param	string		$message
+	 * @return	string
+	 */
 	protected static function convertMarkdown($message) {
 		static $parsedown = null;
 		static $codeRegex = null;

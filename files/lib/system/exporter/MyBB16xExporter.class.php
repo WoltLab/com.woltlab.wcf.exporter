@@ -201,6 +201,9 @@ class MyBB16xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports user groups.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportUserGroups($offset, $limit) {
 		$sql = "SELECT		*
@@ -241,6 +244,9 @@ class MyBB16xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports users.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportUsers($offset, $limit) {
 		// cache profile fields
@@ -360,6 +366,9 @@ class MyBB16xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports user options.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportUserOptions($offset, $limit) {
 		$conditionBuilder = new PreparedStatementConditionBuilder();
@@ -424,6 +433,9 @@ class MyBB16xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports user ranks.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportUserRanks($offset, $limit) {
 		$sql = "(
@@ -467,6 +479,9 @@ class MyBB16xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports followers.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportFollowers($offset, $limit) {
 		$sql = "SELECT		uid, buddylist
@@ -503,6 +518,9 @@ class MyBB16xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports user avatars.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportUserAvatars($offset, $limit) {
 		$sql = "SELECT		uid, avatar, avatardimensions, avatartype
@@ -536,6 +554,9 @@ class MyBB16xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports conversation folders.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportConversationFolders($offset, $limit) {
 		$sql = "SELECT		uid, pmfolders
@@ -572,6 +593,9 @@ class MyBB16xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports conversations.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportConversations($offset, $limit) {
 		$sql = "SELECT		message_table.*, user_table.username
@@ -618,6 +642,9 @@ class MyBB16xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports conversation recipients.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportConversationUsers($offset, $limit) {
 		$sql = "SELECT		message_table.*, user_table.username
@@ -655,6 +682,9 @@ class MyBB16xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports boards.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportBoards($offset, $limit) {
 		$sql = "SELECT		*
@@ -671,6 +701,8 @@ class MyBB16xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports the boards recursively.
+	 *
+	 * @param	integer		$parentID
 	 */
 	protected function exportBoardsRecursively($parentID = 0) {
 		if (!isset($this->boardCache[$parentID])) return;
@@ -704,6 +736,9 @@ class MyBB16xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports threads.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportThreads($offset, $limit) {
 		$sql = "SELECT		*
@@ -743,6 +778,9 @@ class MyBB16xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports posts.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportPosts($offset, $limit) {
 		$sql = "SELECT		post_table.*, user_table.username AS editor
@@ -782,6 +820,9 @@ class MyBB16xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports post attachments.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportPostAttachments($offset, $limit) {
 		static $uploadsPath = null;
@@ -838,6 +879,9 @@ class MyBB16xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports watched threads.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportWatchedThreads($offset, $limit) {
 		$sql = "SELECT		*
@@ -864,6 +908,9 @@ class MyBB16xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports polls.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportPolls($offset, $limit) {
 		$sql = "SELECT		poll_table.*, thread_table.firstpost
@@ -897,6 +944,9 @@ class MyBB16xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports poll options.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportPollOptions($offset, $limit) {
 		$sql = "SELECT		pid, options, votes
@@ -935,6 +985,9 @@ class MyBB16xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports poll option votes.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportPollOptionVotes($offset, $limit) {
 		$sql = "SELECT		*
@@ -969,6 +1022,9 @@ class MyBB16xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports likes.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportLikes($offset, $limit) {
 		$sql = "SELECT		*
@@ -1004,6 +1060,9 @@ class MyBB16xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports labels.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportLabels($offset, $limit) {
 		$prefixMap = [];
@@ -1065,6 +1124,9 @@ class MyBB16xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports ACLs.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportACLs($offset, $limit) {
 		// get ids
@@ -1207,6 +1269,9 @@ class MyBB16xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports smilies.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportSmilies($offset, $limit) {
 		$sql = "SELECT		*
@@ -1225,6 +1290,12 @@ class MyBB16xExporter extends AbstractExporter {
 		}
 	}
 	
+	/**
+	 * Returns message with BBCodes as used in WCF.
+	 * 
+	 * @param	string		$message
+	 * @return	string
+	 */
 	private static function fixBBCodes($message) {
 		static $videoRegex = null;
 		static $quoteRegex = null;

@@ -330,6 +330,9 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports user groups.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportUserGroups($offset, $limit) {
 		$sql = "SELECT		*
@@ -358,6 +361,9 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports users.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportUsers($offset, $limit) {
 		// cache existing user options
@@ -469,6 +475,9 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports user ranks.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportUserRanks($offset, $limit) {
 		$sql = "SELECT		*
@@ -498,6 +507,9 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports followers.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportFollowers($offset, $limit) {
 		$sql = "SELECT		*
@@ -524,6 +536,9 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports profile comments.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportProfileComments($offset, $limit) {
 		$this->exportComments('com.woltlab.wcf.user.profileComment', 'com.woltlab.wcf.user.comment', $offset, $limit);
@@ -538,6 +553,9 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports profile comment responses.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportProfileCommentResponses($offset, $limit) {
 		$this->exportCommentResponses('com.woltlab.wcf.user.profileComment', 'com.woltlab.wcf.user.comment.response', $offset, $limit);
@@ -552,6 +570,9 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports user avatars.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportUserAvatars($offset, $limit) {
 		$sql = "SELECT		*
@@ -596,6 +617,9 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports user options.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportUserOptions($offset, $limit) {
 		// get existing option names
@@ -647,6 +671,9 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports conversation labels.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportConversationLabels($offset, $limit) {
 		$sql = "SELECT		*
@@ -673,6 +700,9 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports conversations.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportConversations($offset, $limit) {
 		$sql = "SELECT		*
@@ -704,6 +734,9 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports conversation messages.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportConversationMessages($offset, $limit) {
 		$sql = "SELECT		*
@@ -743,6 +776,9 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports conversation recipients.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportConversationUsers($offset, $limit) {
 		$conversationIDs = $userID = $rows = [];
@@ -795,6 +831,9 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports conversation attachments.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportConversationAttachments($offset, $limit) {
 		$this->exportAttachments('com.woltlab.wcf.conversation.message', 'com.woltlab.wcf.conversation.attachment', $offset, $limit);
@@ -814,6 +853,9 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports boards.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportBoards($offset, $limit) {
 		$sql = "SELECT		*
@@ -830,6 +872,8 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports the boards recursively.
+	 *
+	 * @param	integer		$parentID
 	 */
 	protected function exportBoardsRecursively($parentID = null) {
 		if (!isset($this->boardCache[$parentID])) return;
@@ -876,6 +920,9 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports threads.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportThreads($offset, $limit) {
 		// get thread ids
@@ -966,6 +1013,9 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports posts.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportPosts($offset, $limit) {
 		$sql = "SELECT		*
@@ -1010,6 +1060,9 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports post attachments.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportPostAttachments($offset, $limit) {
 		$this->exportAttachments('com.woltlab.wbb.post', 'com.woltlab.wbb.attachment', $offset, $limit);
@@ -1030,6 +1083,9 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports watched threads.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportWatchedThreads($offset, $limit) {
 		$sql = "SELECT		*
@@ -1062,6 +1118,9 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports polls.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportPolls($offset, $limit) {
 		$sql = "SELECT		*
@@ -1105,6 +1164,9 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports poll options.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportPollOptions($offset, $limit) {
 		$sql = "SELECT		*
@@ -1146,6 +1208,9 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports poll option votes.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportPollOptionVotes($offset, $limit) {
 		$sql = "SELECT		*
@@ -1176,6 +1241,9 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports likes.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportPostLikes($offset, $limit) {
 		$this->exportLikes('com.woltlab.wbb.likeablePost', 'com.woltlab.wbb.like', $offset, $limit);
@@ -1195,6 +1263,9 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports labels.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportLabels($offset, $limit) {
 		// get labels array($this->getObjectTypeID('com.woltlab.wcf.label.object', 'com.woltlab.wbb.thread'))
@@ -1267,6 +1338,9 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports ACLs.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportACLs($offset, $limit) {
 		$objectTypeID = $this->getObjectTypeID('com.woltlab.wcf.acl', 'com.woltlab.wbb.board');
@@ -1317,6 +1391,9 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports smilies.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportSmilies($offset, $limit) {
 		$sql = "SELECT		*
@@ -1352,11 +1429,14 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports smiley categories.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportSmileyCategories($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		wcf".$this->dbNo."_category
-			WHERE		objectTypeID = ?		
+			WHERE		objectTypeID = ?
 			ORDER BY	categoryID";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute([$this->getObjectTypeID('com.woltlab.wcf.category', 'com.woltlab.wcf.bbcode.smiley')]);
@@ -1387,6 +1467,9 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports blogs.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportBlogs($offset, $limit) {
 		$sql = "SELECT		blog.*, language.languageCode
@@ -1421,6 +1504,9 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports blog categories.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportBlogCategories($offset, $limit) {
 		$this->exportCategories('com.woltlab.blog.category', 'com.woltlab.blog.category', $offset, $limit);
@@ -1435,6 +1521,9 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports blog entries.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportBlogEntries($offset, $limit) {
 		$sourceVersion21 = version_compare($this->getPackageVersion('com.woltlab.blog'), '2.1.0 Alpha 1', '>=');
@@ -1528,6 +1617,9 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports blog attachments.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportBlogAttachments($offset, $limit) {
 		$this->exportAttachments('om.woltlab.blog.entry', 'com.woltlab.blog.entry.attachment', $offset, $limit);
@@ -1542,6 +1634,9 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports blog comments.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportBlogComments($offset, $limit) {
 		$this->exportComments('com.woltlab.blog.entryComment', 'com.woltlab.blog.entry.comment', $offset, $limit);
@@ -1556,6 +1651,9 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports blog comment responses.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportBlogCommentResponses($offset, $limit) {
 		$this->exportCommentResponses('com.woltlab.blog.entryComment', 'com.woltlab.blog.entry.comment.response', $offset, $limit);
@@ -1570,6 +1668,9 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports blog entry likes.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportBlogEntryLikes($offset, $limit) {
 		$this->exportLikes('com.woltlab.blog.likeableEntry', 'com.woltlab.blog.entry.like', $offset, $limit);
@@ -1624,6 +1725,9 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports gallery categories.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportGalleryCategories($offset, $limit) {
 		$this->exportCategories('com.woltlab.gallery.category', 'com.woltlab.gallery.category', $offset, $limit);
@@ -1638,6 +1742,9 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports gallery images.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportGalleryImages($offset, $limit) {
 		$sourceVersion21 = version_compare($this->getPackageVersion('com.woltlab.gallery'), '2.1.0 Alpha 1', '>=');
@@ -1770,6 +1877,9 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports gallery image markers.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportGalleryImageMarkers($offset, $limit) {
 		$sql = "SELECT		*
@@ -1798,6 +1908,9 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports gallery comments.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportGalleryComments($offset, $limit) {
 		$this->exportComments('com.woltlab.gallery.imageComment', 'com.woltlab.gallery.image.comment', $offset, $limit);
@@ -1812,6 +1925,9 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports gallery comment responses.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportGalleryCommentResponses($offset, $limit) {
 		$this->exportCommentResponses('com.woltlab.gallery.imageComment', 'com.woltlab.gallery.image.comment.response', $offset, $limit);
@@ -1826,6 +1942,9 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports gallery image likes.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportGalleryImageLikes($offset, $limit) {
 		$this->exportLikes('com.woltlab.gallery.likeableImage', 'com.woltlab.gallery.image.like', $offset, $limit);
@@ -1840,6 +1959,9 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports calendar events.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportCalendarEvents($offset, $limit) {
 		// get event ids
@@ -1932,6 +2054,9 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports calendar event dates.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportCalendarEventDates($offset, $limit) {
 		$sql = "SELECT		*
@@ -1960,6 +2085,9 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports calendar event date participations.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportCalendarEventDateParticipation($offset, $limit) {
 		$sql = "SELECT		*
@@ -1990,6 +2118,9 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports calendar categories.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportCalendarCategories($offset, $limit) {
 		$this->exportCategories('com.woltlab.calendar.category', 'com.woltlab.calendar.category', $offset, $limit);
@@ -2004,6 +2135,9 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports calendar attachments.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportCalendarAttachments($offset, $limit) {
 		$this->exportAttachments('com.woltlab.calendar.event', 'com.woltlab.calendar.event.attachment', $offset, $limit);
@@ -2018,6 +2152,9 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports calendar event comments.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportCalendarEventDateComments($offset, $limit) {
 		$this->exportComments('com.woltlab.calendar.eventDateComment', 'com.woltlab.calendar.event.date.comment', $offset, $limit);
@@ -2032,6 +2169,9 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports calendar event comment responses.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportCalendarEventDateCommentResponses($offset, $limit) {
 		$this->exportCommentResponses('com.woltlab.calendar.eventDateComment', 'com.woltlab.calendar.event.date.comment.response', $offset, $limit);
@@ -2046,6 +2186,9 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports gallery image likes.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportCalendarEventLikes($offset, $limit) {
 		$this->exportLikes('com.woltlab.calendar.likeableEvent', 'com.woltlab.calendar.event.like', $offset, $limit);
@@ -2053,6 +2196,8 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Counts comments.
+	 *
+	 * @param	integer		$objectType
 	 */
 	private function countComments($objectType) {
 		$sql = "SELECT	COUNT(*) AS count
@@ -2066,6 +2211,11 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports comments.
+	 * 
+	 * @param	string		$objectType
+	 * @param	string		$importer
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	private function exportComments($objectType, $importer, $offset, $limit) {
 		$sql = "SELECT		*
@@ -2087,6 +2237,8 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Counts comment responses.
+	 *
+	 * @param	string		$objectType
 	 */
 	private function countCommentResponses($objectType) {
 		$sql = "SELECT	COUNT(*) AS count
@@ -2100,6 +2252,11 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports profile Comment responses.
+	 *
+	 * @param	string		$objectType
+	 * @param	string		$importer
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	private function exportCommentResponses($objectType, $importer, $offset, $limit) {
 		$sql = "SELECT		*
@@ -2121,6 +2278,8 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Counts likes.
+	 *
+	 * @param	string		$objectType
 	 */
 	private function countLikes($objectType) {
 		$sql = "SELECT	COUNT(*) AS count
@@ -2134,6 +2293,11 @@ class WBB4xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports likes.
+	 *
+	 * @param	string		$objectType
+	 * @param	string		$importer
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	private function exportLikes($objectType, $importer, $offset, $limit) {
 		$sql = "SELECT		*
@@ -2153,6 +2317,12 @@ class WBB4xExporter extends AbstractExporter {
 		}
 	}
 	
+	/**
+	 * Returns the number of attachments.
+	 * 
+	 * @param	string		$objectType
+	 * @return	integer
+	 */
 	private function countAttachments($objectType) {
 		$sql = "SELECT	COUNT(*) AS count
 			FROM	wcf".$this->dbNo."_attachment
@@ -2164,6 +2334,14 @@ class WBB4xExporter extends AbstractExporter {
 		return $row['count'];
 	}
 	
+	/**
+	 * Exports attachments.
+	 * 
+	 * @param	string		$objectType
+	 * @param	string		$importer
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
 	private function exportAttachments($objectType, $importer, $offset, $limit) {
 		$sql = "SELECT		*
 			FROM		wcf".$this->dbNo."_attachment
@@ -2212,6 +2390,13 @@ class WBB4xExporter extends AbstractExporter {
 		return $optionsNames;
 	}
 	
+	/**
+	 * Returns the version of a package in the imported system or `false` if the package is
+	 * not installed in the imported system.
+	 *
+	 * @param	string		$name
+	 * @return	string|boolean
+	 */
 	private function getPackageVersion($name) {
 		$sql = "SELECT	packageVersion
 			FROM	wcf".$this->dbNo."_package
@@ -2224,6 +2409,13 @@ class WBB4xExporter extends AbstractExporter {
 		return false;
 	}
 	
+	/**
+	 * Returns tags to import.
+	 *
+	 * @param	string		$objectType
+	 * @param	integer[]	$objectIDs
+	 * @return	string[][]
+	 */
 	private function getTags($objectType, array $objectIDs) {
 		$tags = [];
 		$conditionBuilder = new PreparedStatementConditionBuilder();
@@ -2245,6 +2437,13 @@ class WBB4xExporter extends AbstractExporter {
 		return $tags;
 	}
 	
+	/**
+	 * Returns the ids of labels to import.
+	 * 
+	 * @param	string		$objectType
+	 * @param	integer[]	$objectIDs
+	 * @return	integer[][]
+	 */
 	private function getLabels($objectType, array $objectIDs) {
 		$labels = [];
 		$conditionBuilder = new PreparedStatementConditionBuilder();
@@ -2264,6 +2463,14 @@ class WBB4xExporter extends AbstractExporter {
 		return $labels;
 	}
 	
+	/**
+	 * Returns the id of an object type in the imported system or null if no such
+	 * object type exists.
+	 * 
+	 * @param	string		$definitionName
+	 * @param	string		$objectTypeName
+	 * @return	integer|null
+	 */
 	private function getObjectTypeID($definitionName, $objectTypeName) {
 		$sql = "SELECT	objectTypeID
 			FROM	wcf".$this->dbNo."_object_type
@@ -2279,6 +2486,12 @@ class WBB4xExporter extends AbstractExporter {
 		return null;
 	}
 	
+	/**
+	 * Returns the number of categories.
+	 * 
+	 * @param	string		$objectType
+	 * @return	integer
+	 */
 	private function countCategories($objectType) {
 		$sql = "SELECT	COUNT(*)
 			FROM	wcf".$this->dbNo."_category
@@ -2289,6 +2502,14 @@ class WBB4xExporter extends AbstractExporter {
 		return $statement->fetchColumn();
 	}
 	
+	/**
+	 * Exports categories.
+	 * 
+	 * @param	string		$objectType
+	 * @param	string		$importer
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
 	private function exportCategories($objectType, $importer, $offset, $limit) {
 		$sql = "SELECT		*
 			FROM		wcf".$this->dbNo."_category

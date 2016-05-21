@@ -197,6 +197,9 @@ class SMF2xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports user groups.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportUserGroups($offset, $limit) {
 		// import everyone, guests and users pseudogroups
@@ -236,6 +239,9 @@ class SMF2xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports users.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportUsers($offset, $limit) {
 		// cache profile fields
@@ -367,6 +373,9 @@ class SMF2xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports user options.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportUserOptions($offset, $limit) {
 		$sql = "SELECT		*
@@ -438,6 +447,9 @@ class SMF2xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports user ranks.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportUserRanks($offset, $limit) {
 		$sql = "SELECT		*
@@ -473,6 +485,9 @@ class SMF2xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports followers.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportFollowers($offset, $limit) {
 		$sql = "SELECT		id_member, buddy_list
@@ -507,6 +522,9 @@ class SMF2xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports user avatars.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportUserAvatars($offset, $limit) {
 		$sql = "(
@@ -557,6 +575,9 @@ class SMF2xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports conversation folders.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportConversationFolders($offset, $limit) {
 		$sql = "SELECT		id_member, message_labels
@@ -579,12 +600,14 @@ class SMF2xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * Creates a conversation id out of the old pmHead
-	 * and the participants.
+	 * Creates a conversation id out of the old pmHead and the participants.
 	 * 
-	 * This ensures that only the actual receivers of a pm
-	 * are able to see it after import, while minimizing the
-	 * number of conversations.
+	 * This ensures that only the actual receivers of a pm are able to see it
+	 * after import, while minimizing the number of conversations.
+	 *
+	 * @param	integer		$pmHead
+	 * @param	integer[]	$participants
+	 * @return	string
 	 */
 	private function getConversationID($pmHead, array $participants) {
 		$conversationID = $pmHead;
@@ -604,6 +627,9 @@ class SMF2xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports conversations.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportConversations($offset, $limit) {
 		$sql = "SELECT		pm.*,
@@ -643,6 +669,9 @@ class SMF2xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports conversation messages.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportConversationMessages($offset, $limit) {
 		$sql = "SELECT		pm.*,
@@ -690,6 +719,9 @@ class SMF2xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports conversation recipients.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportConversationUsers($offset, $limit) {
 		$sql = "SELECT		recipients.*, pm.id_pm_head, members.member_name, pm.msgtime, pm.id_member_from,
@@ -743,6 +775,9 @@ class SMF2xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports boards.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportBoards($offset, $limit) {
 		$sql = "SELECT		*
@@ -773,6 +808,8 @@ class SMF2xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports the boards recursively.
+	 *
+	 * @param	integer		$parentID
 	 */
 	protected function exportBoardsRecursively($parentID = 0) {
 		if (!isset($this->boardCache[$parentID])) return;
@@ -805,6 +842,9 @@ class SMF2xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports threads.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportThreads($offset, $limit) {
 		// get threads
@@ -843,6 +883,9 @@ class SMF2xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports posts.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportPosts($offset, $limit) {
 		$sql = "SELECT		message.*, member.id_member AS editorID
@@ -892,6 +935,9 @@ class SMF2xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports post attachments.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportPostAttachments($offset, $limit) {
 		$sql = "SELECT		attachment.*, message.id_member, message.poster_time
@@ -946,6 +992,9 @@ class SMF2xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports watched threads.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportWatchedThreads($offset, $limit) {
 		$sql = "SELECT		*
@@ -977,6 +1026,9 @@ class SMF2xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports polls.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportPolls($offset, $limit) {
 		$sql = "SELECT		poll.*, topic.id_first_msg,
@@ -1014,6 +1066,9 @@ class SMF2xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports poll options.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportPollOptions($offset, $limit) {
 		$sql = "SELECT		*
@@ -1046,6 +1101,9 @@ class SMF2xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports poll option votes.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportPollOptionVotes($offset, $limit) {
 		$sql = "SELECT		*
@@ -1072,6 +1130,9 @@ class SMF2xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports ACLs.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportACLs($offset, $limit) {
 		// TODO: try to split this into several requests
@@ -1255,6 +1316,9 @@ class SMF2xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports smilies.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportSmilies($offset, $limit) {
 		$sql = "SELECT		MIN(id_smiley) AS id_smiley,
@@ -1283,6 +1347,12 @@ class SMF2xExporter extends AbstractExporter {
 		}
 	}
 	
+	/**
+	 * Returns the value of the given option in the imported board.
+	 *
+	 * @param	string		$optionName
+	 * @return	mixed
+	 */
 	private function readOption($optionName) {
 		static $optionCache = [];
 		
@@ -1300,6 +1370,12 @@ class SMF2xExporter extends AbstractExporter {
 		return $optionCache[$optionName];
 	}
 	
+	/**
+	 * Returns message with fixed BBCodes as used in WCF.
+	 * 
+	 * @param	string		$message
+	 * @return	string
+	 */
 	private static function fixBBCodes($message) {
 		static $sizeRegex = null;
 		static $quoteRegex = null;

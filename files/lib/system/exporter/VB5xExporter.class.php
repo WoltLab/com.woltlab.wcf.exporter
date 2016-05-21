@@ -212,6 +212,9 @@ class VB5xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports user groups.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportUserGroups($offset, $limit) {
 		$sql = "SELECT		*
@@ -252,6 +255,9 @@ class VB5xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports users.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportUsers($offset, $limit) {
 		// prepare password update
@@ -319,6 +325,10 @@ class VB5xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports user avatars.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 * @throws	\Exception
 	 */
 	public function exportUserAvatars($offset, $limit) {
 		$sql = "SELECT		customavatar.*, user.avatarrevision
@@ -380,6 +390,9 @@ class VB5xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports boards.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportBoards($offset, $limit) {
 		$sql = "SELECT		node.*
@@ -400,6 +413,8 @@ class VB5xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports the boards recursively.
+	 *
+	 * @param	integer		$parentID
 	 */
 	protected function exportBoardsRecursively($parentID = 0) {
 		if (!isset($this->boardCache[$parentID])) return;
@@ -429,6 +444,9 @@ class VB5xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports threads.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportThreads($offset, $limit) {
 		$sql = "SELECT		child.*, view.count AS views
@@ -477,6 +495,9 @@ class VB5xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports posts.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportPosts($offset, $limit) {
 		$sql = "SELECT		child.*, IF(parent.contenttypeid = child.contenttypeid, 0, 1) AS isFirstPost, text.*
@@ -528,6 +549,10 @@ class VB5xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports post attachments.
+	 * 
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 * @throws	\Exception
 	 */
 	public function exportPostAttachments($offset, $limit) {
 		$sql = "SELECT		child.*, attach.*, filedata.*
@@ -610,6 +635,9 @@ class VB5xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports polls.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportPolls($offset, $limit) {
 		$sql = "SELECT		*
@@ -642,6 +670,9 @@ class VB5xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports poll options.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportPollOptions($offset, $limit) {
 		$sql = "SELECT		polloption.*, poll.pollid
@@ -671,6 +702,9 @@ class VB5xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports poll option votes.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportPollOptionVotes($offset, $limit) {
 		$sql = "SELECT		*
@@ -688,6 +722,12 @@ class VB5xExporter extends AbstractExporter {
 		}
 	}
 	
+	/**
+	 * Returns the value of the given option in the imported board.
+	 * 
+	 * @param	string		$optionName
+	 * @return	mixed
+	 */
 	private function readOption($optionName) {
 		static $optionCache = [];
 		
@@ -705,6 +745,12 @@ class VB5xExporter extends AbstractExporter {
 		return $optionCache[$optionName];
 	}
 	
+	/**
+	 * Returns message with fixed BBCodes as used in WCF.
+	 *
+	 * @param	string		$message
+	 * @return	string
+	 */
 	private static function fixBBCodes($message) {
 		static $quoteRegex = null;
 		static $quoteCallback = null;
