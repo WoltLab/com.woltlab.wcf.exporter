@@ -41,7 +41,7 @@ class MyBB16xExporter extends AbstractExporter {
 	protected $boardCache = [];
 	
 	/**
-	 * @see	\wcf\system\exporter\AbstractExporter::$methods
+	 * @inheritDoc
 	 */
 	protected $methods = [
 		'com.woltlab.wcf.user' => 'Users',
@@ -70,7 +70,7 @@ class MyBB16xExporter extends AbstractExporter {
 	];
 	
 	/**
-	 * @see	\wcf\system\exporter\AbstractExporter::$limits
+	 * @inheritDoc
 	 */
 	protected $limits = [
 		'com.woltlab.wcf.user' => 200,
@@ -79,7 +79,7 @@ class MyBB16xExporter extends AbstractExporter {
 	];
 	
 	/**
-	 * @see	\wcf\system\exporter\IExporter::getSupportedData()
+	 * @inheritDoc
 	 */
 	public function getSupportedData() {
 		return [
@@ -106,7 +106,7 @@ class MyBB16xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see	\wcf\system\exporter\IExporter::validateDatabaseAccess()
+	 * @inheritDoc
 	 */
 	public function validateDatabaseAccess() {
 		parent::validateDatabaseAccess();
@@ -123,7 +123,7 @@ class MyBB16xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see	\wcf\system\exporter\IExporter::validateFileAccess()
+	 * @inheritDoc
 	 */
 	public function validateFileAccess() {
 		if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData) || in_array('com.woltlab.wbb.attachment', $this->selectedData) || in_array('com.woltlab.wcf.smiley', $this->selectedData)) {
@@ -134,7 +134,7 @@ class MyBB16xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see	\wcf\system\exporter\IExporter::getQueue()
+	 * @inheritDoc
 	 */
 	public function getQueue() {
 		$queue = [];
@@ -186,7 +186,7 @@ class MyBB16xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see	\wcf\system\exporter\IExporter::getDefaultDatabasePrefix()
+	 * @inheritDoc
 	 */
 	public function getDefaultDatabasePrefix() {
 		return 'mybb_';

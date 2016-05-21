@@ -27,7 +27,7 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 	protected $boardCache = [];
 	
 	/**
-	 * @see	\wcf\system\exporter\AbstractExporter::$methods
+	 * @inheritDoc
 	 */
 	protected $methods = [
 		'com.woltlab.wcf.user' => 'Users',
@@ -42,14 +42,14 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 	];
 	
 	/**
-	 * @see	\wcf\system\exporter\AbstractExporter::$limits
+	 * @inheritDoc
 	 */
 	protected $limits = [
 		'com.woltlab.wcf.user' => 100
 	];
 	
 	/**
-	 * @see	\wcf\system\exporter\IExporter::init()
+	 * @inheritDoc
 	 */
 	public function init() {
 		$host = $this->databaseHost;
@@ -77,7 +77,7 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see	\wcf\system\exporter\IExporter::getSupportedData()
+	 * @inheritDoc
 	 */
 	public function getSupportedData() {
 		$supportedData = [
@@ -95,7 +95,7 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see	\wcf\system\exporter\IExporter::validateDatabaseAccess()
+	 * @inheritDoc
 	 */
 	public function validateDatabaseAccess() {
 		parent::validateDatabaseAccess();
@@ -107,14 +107,14 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see	\wcf\system\exporter\IExporter::validateFileAccess()
+	 * @inheritDoc
 	 */
 	public function validateFileAccess() {
 		return true;
 	}
 	
 	/**
-	 * @see	\wcf\system\exporter\IExporter::getQueue()
+	 * @inheritDoc
 	 */
 	public function getQueue() {
 		$queue = [];

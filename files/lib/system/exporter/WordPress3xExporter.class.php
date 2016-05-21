@@ -23,7 +23,7 @@ class WordPress3xExporter extends AbstractExporter {
 	protected $categoryCache = [];
 	
 	/**
-	 * @see	\wcf\system\exporter\AbstractExporter::$methods
+	 * @inheritDoc
 	 */
 	protected $methods = [
 		'com.woltlab.wcf.user' => 'Users',
@@ -34,7 +34,7 @@ class WordPress3xExporter extends AbstractExporter {
 	];
 	
 	/**
-	 * @see	\wcf\system\exporter\IExporter::getSupportedData()
+	 * @inheritDoc
 	 */
 	public function getSupportedData() {
 		return [
@@ -49,7 +49,7 @@ class WordPress3xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see	\wcf\system\exporter\IExporter::getQueue()
+	 * @inheritDoc
 	 */
 	public function getQueue() {
 		$queue = [];
@@ -71,7 +71,7 @@ class WordPress3xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see	\wcf\system\exporter\IExporter::validateDatabaseAccess()
+	 * @inheritDoc
 	 */
 	public function validateDatabaseAccess() {
 		parent::validateDatabaseAccess();
@@ -82,7 +82,7 @@ class WordPress3xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see	\wcf\system\exporter\IExporter::validateFileAccess()
+	 * @inheritDoc
 	 */
 	public function validateFileAccess() {
 		if (in_array('com.woltlab.blog.entry.attachment', $this->selectedData)) {
@@ -93,7 +93,7 @@ class WordPress3xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see	\wcf\system\exporter\IExporter::getDefaultDatabasePrefix()
+	 * @inheritDoc
 	 */
 	public function getDefaultDatabasePrefix() {
 		return 'wp_';

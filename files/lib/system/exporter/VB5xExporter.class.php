@@ -44,7 +44,7 @@ class VB5xExporter extends AbstractExporter {
 	protected $boardCache = [];
 	
 	/**
-	 * @see	\wcf\system\exporter\AbstractExporter::$methods
+	 * @inheritDoc
 	 */
 	protected $methods = [
 		'com.woltlab.wcf.user' => 'Users',
@@ -76,7 +76,7 @@ class VB5xExporter extends AbstractExporter {
 	];
 	
 	/**
-	 * @see	\wcf\system\exporter\AbstractExporter::$limits
+	 * @inheritDoc
 	 */
 	protected $limits = [
 		'com.woltlab.wcf.user' => 100,
@@ -88,7 +88,7 @@ class VB5xExporter extends AbstractExporter {
 	];
 	
 	/**
-	 * @see	\wcf\system\exporter\IExporter::getSupportedData()
+	 * @inheritDoc
 	 */
 	public function getSupportedData() {
 		return [
@@ -116,7 +116,7 @@ class VB5xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see	\wcf\system\exporter\IExporter::validateDatabaseAccess()
+	 * @inheritDoc
 	 */
 	public function validateDatabaseAccess() {
 		parent::validateDatabaseAccess();
@@ -127,7 +127,7 @@ class VB5xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see	\wcf\system\exporter\IExporter::validateFileAccess()
+	 * @inheritDoc
 	 */
 	public function validateFileAccess() {
 		if (in_array('com.woltlab.wcf.smiley', $this->selectedData)) {
@@ -152,7 +152,7 @@ class VB5xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see	\wcf\system\exporter\IExporter::getQueue()
+	 * @inheritDoc
 	 */
 	public function getQueue() {
 		$queue = [];
