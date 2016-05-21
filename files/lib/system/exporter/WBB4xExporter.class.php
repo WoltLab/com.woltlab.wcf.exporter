@@ -797,7 +797,7 @@ class WBB4xExporter extends AbstractExporter {
 	 * Exports conversation attachments.
 	 */
 	public function exportConversationAttachments($offset, $limit) {
-		$this->exportAttachments('com.woltlab.wcf.conversation.attachment', $offset, $limit);
+		$this->exportAttachments('com.woltlab.wcf.conversation.message', 'com.woltlab.wcf.conversation.attachment', $offset, $limit);
 	}
 	
 	/**
