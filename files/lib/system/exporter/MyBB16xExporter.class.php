@@ -589,7 +589,7 @@ class MyBB16xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			$row['isDraft'] = $row['folder'] == 3 ? 1 : 0;
 			
-			$conversationID = ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import($row['fromid'].'-'.$row['dateline'], [
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import($row['fromid'].'-'.$row['dateline'], [
 				'subject' => $row['subject'],
 				'time' => $row['dateline'],
 				'userID' => $row['fromid'],

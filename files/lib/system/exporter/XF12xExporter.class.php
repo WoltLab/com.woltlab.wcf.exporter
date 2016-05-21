@@ -311,8 +311,7 @@ class XF12xExporter extends AbstractExporter {
 			}
 			
 			$languageCode = '';
-			$countryCode = '';
-			if ($row['language_code']) list($languageCode, $countryCode) = explode('-', $row['language_code'], 2);
+			if ($row['language_code']) list($languageCode, ) = explode('-', $row['language_code'], 2);
 			
 			$additionalData = [
 				'groupIDs' => explode(',', $row['secondary_group_ids'].','.$row['user_group_id']),

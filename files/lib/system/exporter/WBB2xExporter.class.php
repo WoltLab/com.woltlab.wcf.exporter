@@ -485,7 +485,7 @@ class WBB2xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute([$offset + 1, $offset + $limit]);
 		while ($row = $statement->fetchArray()) {
-			$conversationID = ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import($row['privatemessageid'], [
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import($row['privatemessageid'], [
 				'subject' => $row['subject'],
 				'time' => $row['sendtime'],
 				'userID' => $row['senderid'],

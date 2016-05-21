@@ -228,7 +228,6 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 		$boardIDs = $this->database->zrange('categories:cid', 0, -1);
 		if (!$boardIDs) throw new SystemException('Could not fetch boardIDs');
 		
-		$imported = [];
 		foreach ($boardIDs as $boardID) {
 			$row = $this->database->hgetall('category:'.$boardID);
 			if (!$row) throw new SystemException('Invalid board');

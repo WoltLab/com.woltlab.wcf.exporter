@@ -379,7 +379,6 @@ class PhpBB3xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute([5]);
 		while ($row = $statement->fetchArray()) {
-			$selectOptions = '';
 			switch ($row['field_type']) {
 				case 1:
 					$type = 'integer';

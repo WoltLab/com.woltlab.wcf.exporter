@@ -424,7 +424,6 @@ class PhpBB31xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(array_merge(['profilefields.type.dropdown'], $condition->getParameters()));
 		while ($row = $statement->fetchArray()) {
-			$selectOptions = '';
 			switch ($row['field_type']) {
 				case 'profilefields.type.int':
 					$type = 'integer';
@@ -456,10 +455,10 @@ class PhpBB31xExporter extends AbstractExporter {
 					$outputClass = 'wcf\system\option\user\SelectOptionsUserOptionOutput';
 				break;
 				case 'profilefields.type.googleplus':
-				$outputClass = 'wcf\system\option\user\GooglePlusUserOptionOutput';
+					$outputClass = 'wcf\system\option\user\GooglePlusUserOptionOutput';
 				break;
 				case 'profilefields.type.url':
-				$outputClass = 'wcf\system\option\user\URLUserOptionOutput';
+					$outputClass = 'wcf\system\option\user\URLUserOptionOutput';
 				break;
 				default:
 					$outputClass = '';
