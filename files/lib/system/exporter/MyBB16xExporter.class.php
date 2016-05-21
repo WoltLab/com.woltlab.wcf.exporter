@@ -1144,6 +1144,7 @@ class MyBB16xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
+			/** @noinspection PhpVariableVariableInspection */
 			${$row['type']}[] = $row['id'];
 		}
 		

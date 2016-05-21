@@ -528,6 +528,7 @@ class PhpBB3xExporter extends AbstractExporter {
 			$statement->execute(['avatar_path', 'avatar_salt', 'avatar_gallery_path']);
 			while ($row = $statement->fetchArray()) {
 				$config_name = $row['config_name'];
+				/** @noinspection PhpVariableVariableInspection */
 				$$config_name = $row['config_value'];
 			}
 		}
@@ -1378,6 +1379,7 @@ class PhpBB3xExporter extends AbstractExporter {
 			$statement = $this->database->prepareStatement($sql);
 			$statement->execute(['upload_path']);
 			while ($row = $statement->fetchArray()) {
+				/** @noinspection PhpVariableVariableInspection */
 				$$row['config_name'] = $row['config_value'];
 			}
 		}
