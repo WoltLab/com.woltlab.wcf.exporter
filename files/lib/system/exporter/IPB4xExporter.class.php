@@ -1106,7 +1106,7 @@ class IPB4xExporter extends AbstractExporter {
 		$string = str_ireplace('</u>', '[/u]', $string);
 		
 		// font color
-		$string = preg_replace('~<span style="color:(.*?);?">(.*?)</span>~is', '[color=\\1]\\2[/color]', $string);
+		$string = preg_replace('~<span style="color:\s*((?:#(?:[0-9a-f]{3}|[0-9a-f]{6})|[a-z]+));?">(.*?)</span>~is', '[color=\\1]\\2[/color]', $string);
 		
 		// font size
 		$string = preg_replace('~<span style="font-size:(\d+)px;">(.*?)</span>~is', '[size=\\1]\\2[/size]', $string);
