@@ -543,7 +543,6 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 		static $urlRegex = null;
 		
 		if ($parsedown === null) {
-			require_once(WCF_DIR.'lib/system/api/parsedown/Parsedown.php');
 			$parsedown = new \Parsedown();
 			
 			$codeRegex = new Regex('<pre><code class="language-([a-z]+)">');
