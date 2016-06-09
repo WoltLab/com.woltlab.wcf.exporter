@@ -117,7 +117,7 @@ class XoborExporter extends AbstractExporter {
 		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			$data = array(
-				'username' => $row['name'],
+				'username' => StringUtil::decodeHTML($row['name']),
 				'password' => '',
 				'email' => $row['mail'],
 				'registrationDate' => strtotime($row['reged']),
@@ -169,7 +169,7 @@ class XoborExporter extends AbstractExporter {
 				'parentID' => ($board['zuid'] ?: null),
 				'position' => $board['sort'],
 				'boardType' => ($board['iscat'] ? Board::TYPE_CATEGORY : Board::TYPE_BOARD),
-				'title' => $board['title'],
+				'title' => StringUtil::decodeHTML($board['title']),
 				'description' => $board['text']
 			));
 			
@@ -197,10 +197,10 @@ class XoborExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			$data = array(
 				'boardID' => $row['forum'],
-				'topic' => $row['title'],
+				'topic' => StringUtil::decodeHTML($row['title']),
 				'time' => $row['created'],
 				'userID' => $row['userid'],
-				'username' => $row['name'],
+				'username' => StringUtil::decodeHTML($row['name']),
 				'views' => $row['hits'],
 				'isSticky' => $row['header'] ? 1 : 0
 			);
@@ -230,19 +230,26 @@ class XoborExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.post')->import($row['id'], array(
 				'threadID' => $row['thread'],
 				'userID' => $row['userid'],
-				'username' => $row['username'],
-				'subject' => $row['title'],
+				'username' => StringUtil::decodeHTML($row['username']),
+				'subject' => StringUtil::decodeHTML($row['title']),
 				'message' => $row['text'],
 				'time' => strtotime($row['writetime']),
 				'editorID' => null,
 				'enableHtml' => 1,
 				'isClosed' => 1,
-				'ipAddress' => UserUtil::convertIPv4To6($row['signature'])
+				'ipAddress' => UserUtil::convertIPv4To6($row['useraddr'])
 			));
 		}
 	}
 	
 	private static function fixMessage($string) {
-		return $string;
+		$string = strtr($string, array(
+			'[center]' => '[align=center]',
+			'[/center]' => '[/align]',
+			'[big]' => '[size=18]',
+			'[/big]' => '[/size]'
+		));
+		
+		return StringUtil::decodeHTML($string);
 	}
 }
