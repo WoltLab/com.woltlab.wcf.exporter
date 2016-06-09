@@ -32,6 +32,9 @@ class XoborExporter extends AbstractExporter {
 	 */
 	protected $methods = array(
 		'com.woltlab.wcf.user' => 'Users',
+		'com.woltlab.wbb.board' => 'Boards',
+		'com.woltlab.wbb.thread' => 'Threads',
+		'com.woltlab.wbb.post' => 'Posts',
 	);
 	
 	/**
@@ -49,6 +52,8 @@ class XoborExporter extends AbstractExporter {
 	public function getSupportedData() {
 		return array(
 			'com.woltlab.wcf.user' => array(
+			),
+			'com.woltlab.wbb.board' => array(
 			),
 		);
 	}
@@ -68,10 +73,6 @@ class XoborExporter extends AbstractExporter {
 	 * @see	\wcf\system\exporter\IExporter::validateFileAccess()
 	 */
 	public function validateFileAccess() {
-		if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData) || in_array('com.woltlab.wbb.attachment', $this->selectedData) || in_array('com.woltlab.wcf.conversation.attachment', $this->selectedData)) {
-			return false;
-		}
-		
 		return true;
 	}
 	
@@ -84,6 +85,13 @@ class XoborExporter extends AbstractExporter {
 		// user
 		if (in_array('com.woltlab.wcf.user', $this->selectedData)) {
 			$queue[] = 'com.woltlab.wcf.user'; 
+		}
+		
+		// board
+		if (in_array('com.woltlab.wbb.board', $this->selectedData)) {
+			$queue[] = 'com.woltlab.wbb.board';
+			$queue[] = 'com.woltlab.wbb.thread';
+			$queue[] = 'com.woltlab.wbb.post';
 		}
 		
 		return $queue;
@@ -119,6 +127,118 @@ class XoborExporter extends AbstractExporter {
 			
 			// import user
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user')->import($row['id'], $data, array());
+		}
+	}
+	
+	/**
+	 * Counts boards.
+	 */
+	public function countBoards() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	forum_foren";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return ($row['count'] ? 1 : 0);
+	}
+	
+	/**
+	 * Exports boards.
+	 */
+	public function exportBoards($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		forum_foren
+			ORDER BY	zuid, sort, id";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			$this->boardCache[$row['zuid']][] = $row;
+		}
+		
+		$this->exportBoardsRecursively();
+	}
+	
+	/**
+	 * Exports the boards recursively.
+	 */
+	protected function exportBoardsRecursively($parentID = 0) {
+		if (!isset($this->boardCache[$parentID])) return;
+		
+		foreach ($this->boardCache[$parentID] as $board) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import($board['id'], array(
+				'parentID' => ($board['zuid'] ?: null),
+				'position' => $board['sort'],
+				'boardType' => ($board['iscat'] ? Board::TYPE_CATEGORY : Board::TYPE_BOARD),
+				'title' => $board['title'],
+				'description' => $board['text']
+			));
+			
+			$this->exportBoardsRecursively($board['id']);
+		}
+	}
+	
+	/**
+	 * Counts threads.
+	 */
+	public function countThreads() {
+		return $this->__getMaxID("forum_threads", 'id');
+	}
+	
+	/**
+	 * Exports threads.
+	 */
+	public function exportThreads($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		forum_threads
+			WHERE		id BETWEEN ? AND ?
+			ORDER BY	id";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
+		while ($row = $statement->fetchArray()) {
+			$data = array(
+				'boardID' => $row['forum'],
+				'topic' => $row['title'],
+				'time' => $row['created'],
+				'userID' => $row['userid'],
+				'username' => $row['name'],
+				'views' => $row['hits'],
+				'isSticky' => $row['header'] ? 1 : 0
+			);
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.thread')->import($row['id'], $data, array());
+		}
+	}
+	
+	/**
+	 * Counts posts.
+	 */
+	public function countPosts() {
+		return $this->__getMaxID("forum_posts", 'id');
+	}
+	
+	/**
+	 * Exports posts.
+	 */
+	public function exportPosts($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		forum_posts
+			WHERE		id BETWEEN ? AND ?
+			ORDER BY	id";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array($offset + 1, $offset + $limit));
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.post')->import($row['id'], array(
+				'threadID' => $row['thread'],
+				'userID' => $row['userid'],
+				'username' => $row['username'],
+				'subject' => $row['title'],
+				'message' => $row['text'],
+				'time' => strtotime($row['writetime']),
+				'editorID' => null,
+				'enableHtml' => 1,
+				'isClosed' => 1,
+				'ipAddress' => UserUtil::convertIPv4To6($row['signature'])
+			));
 		}
 	}
 	
