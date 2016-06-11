@@ -125,8 +125,31 @@ class XoborExporter extends AbstractExporter {
 				'lastActivityTime' => $row['online']
 			);
 			
+			// get user options
+			$options = array(
+				'birthday' => $row['birthday'],
+				'occupation' => $row['occupation'],
+				'homepage' => $row['homepage'],
+				'icq' => $row['icq'],
+				'hobbies' => $row['hobby'],
+				'aboutMe' => $row['story_editable'],
+				'location' => $row['ploc']
+			);
+			switch ($row['gender']) {
+				case 'm':
+					$options['gender'] = UserProfile::GENDER_MALE;
+				break;
+				case 'f':
+					$options['gender'] = UserProfile::GENDER_FEMALE;
+				break;
+			}
+			
+			$additionalData = array(
+				'options' => $options
+			);
+			
 			// import user
-			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user')->import($row['id'], $data, array());
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user')->import($row['id'], $data, $additionalData);
 		}
 	}
 	
