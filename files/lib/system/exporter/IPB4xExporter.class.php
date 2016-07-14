@@ -649,7 +649,7 @@ class IPB4xExporter extends AbstractExporter {
 				'isClosed' => ($row['state'] == 'close' ? 1 : 0),
 				'movedThreadID' => ($row['moved_to'] ? intval($row['moved_to']) : null),
 				'movedTime' => $row['moved_on'],
-				'lastPostTime' => $row['last_post']
+				'lastPostTime' => ($row['last_post'] ?: 0)
 			);
 			$additionalData = array();
 			if (isset($tags[$row['tid']])) $additionalData['tags'] = $tags[$row['tid']];
