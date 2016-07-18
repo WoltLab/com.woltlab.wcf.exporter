@@ -531,10 +531,7 @@ class VB5xExporter extends AbstractExporter {
 				'lastEditTime' => 0,
 				'editCount' => 0,
 				'editReason' => '',
-				'enableSmilies' => $row['allowsmilie'],
 				'enableHtml' => (isset($row['htmlState']) && $row['htmlState'] != 'off' ? 1 : 0),
-				'enableBBCodes' => 1,
-				'showSignature' => $row['showsignature'],
 				'ipAddress' => UserUtil::convertIPv4To6($row['ipaddress'])
 			]);
 		}

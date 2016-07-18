@@ -321,9 +321,6 @@ class PhpBB31xExporter extends AbstractExporter {
 				'banReason' => $row['banReason'],
 				'registrationIpAddress' => UserUtil::convertIPv4To6($row['user_ip']),
 				'signature' => self::fixBBCodes(StringUtil::decodeHTML($row['user_sig']), $row['user_sig_bbcode_uid']),
-				'signatureEnableBBCodes' => ($row['user_sig_bbcode_uid'] ? (mb_strpos($row['user_sig'], $row['user_sig_bbcode_uid']) !== false ? 1 : 0) : 1),
-				'signatureEnableHtml' => 0,
-				'signatureEnableSmilies' => preg_match('/<!-- s.*? -->/', $row['user_sig']),
 				'lastActivityTime' => $row['user_lastvisit']
 			];
 			
@@ -818,11 +815,7 @@ class PhpBB31xExporter extends AbstractExporter {
 				'username' => StringUtil::decodeHTML($row['username']) ?: '',
 				'message' => self::fixBBCodes(StringUtil::decodeHTML($row['message_text']), $row['bbcode_uid']),
 				'time' => $row['message_time'],
-				'attachments' => $row['attachments'],
-				'enableSmilies' => $row['enable_smilies'],
-				'enableHtml' => 0,
-				'enableBBCodes' => $row['enable_bbcode'],
-				'showSignature' => $row['enable_sig']
+				'attachments' => $row['attachments']
 			]);
 		}
 	}
@@ -1046,10 +1039,7 @@ class PhpBB31xExporter extends AbstractExporter {
 				'editCount' => $row['post_edit_count'],
 				'editReason' => (!empty($row['post_edit_reason']) ? $row['post_edit_reason'] : ''),
 				'attachments' => $row['attachments'],
-				'enableSmilies' => $row['enable_smilies'],
 				'enableHtml' => 0,
-				'enableBBCodes' => $row['enable_bbcode'],
-				'showSignature' => $row['enable_sig'],
 				'ipAddress' => UserUtil::convertIPv4To6($row['poster_ip'])
 			]);
 		}

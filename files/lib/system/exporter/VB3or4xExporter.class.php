@@ -880,11 +880,7 @@ class VB3or4xExporter extends AbstractExporter {
 				'userID' => $row['fromuserid'],
 				'username' => StringUtil::decodeHTML($row['fromusername']),
 				'message' => self::fixBBCodes($row['message']),
-				'time' => $row['dateline'],
-				'enableSmilies' => $row['allowsmilie'],
-				'enableHtml' => 0,
-				'enableBBCodes' => 1,
-				'showSignature' => $row['showsignature']
+				'time' => $row['dateline']
 			]);
 		}
 	}
@@ -1129,10 +1125,7 @@ class VB3or4xExporter extends AbstractExporter {
 				'editCount' => ($row['editCount'] && $row['editCount'] > 0 ? $row['editCount'] : 0),
 				'editReason' => $row['editReason'] ?: '',
 				'attachments' => $row['attach'],
-				'enableSmilies' => $row['allowsmilie'],
 				'enableHtml' => (isset($row['htmlState']) && $row['htmlState'] != 'off' ? 1 : 0),
-				'enableBBCodes' => 1,
-				'showSignature' => $row['showsignature'],
 				'ipAddress' => UserUtil::convertIPv4To6($row['ipaddress'])
 			]);
 		}
@@ -1933,7 +1926,6 @@ class VB3or4xExporter extends AbstractExporter {
 				'subject' => $row['title'],
 				'message' => self::fixBBCodes($row['event']),
 				'time' => $row['dateline'],
-				'enableSmilies' => $row['allowsmilies'],
 				'eventDate' => serialize($eventDateData)
 			];
 			

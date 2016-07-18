@@ -288,9 +288,7 @@ class WBB2xExporter extends AbstractExporter {
 				'userTitle' => $row['title'],
 				'disableSignature' => $row['disablesignature'],
 				'banned' => $row['blocked'],
-				'signatureEnableSmilies' => $row['allowsigsmilies'],
 				'signatureEnableHtml' => $row['allowsightml'],
-				'signatureEnableBBCodes' => $row['allowsigbbcode'],
 				'registrationIpAddress' => (!empty($row['reg_ipaddress']) ? $row['reg_ipaddress'] : '')
 			];
 			
@@ -521,10 +519,7 @@ class WBB2xExporter extends AbstractExporter {
 				'message' => self::fixBBCodes($row['message']),
 				'time' => $row['sendtime'],
 				'attachments' => $row['attachments'],
-				'enableSmilies' => $row['allowsmilies'],
-				'enableHtml' => $row['allowhtml'],
-				'enableBBCodes' => $row['allowbbcode'],
-				'showSignature' => $row['showsignature']
+				'enableHtml' => $row['allowhtml']
 			]);
 		}
 	}
@@ -788,10 +783,7 @@ class WBB2xExporter extends AbstractExporter {
 				'lastEditTime' => $row['edittime'],
 				'editCount' => $row['editcount'],
 				'attachments' => $row['attachments'],
-				'enableSmilies' => $row['allowsmilies'],
 				'enableHtml' => $row['allowhtml'],
-				'enableBBCodes' => $row['allowbbcode'],
-				'showSignature' => $row['showsignature'],
 				'ipAddress' => UserUtil::convertIPv4To6($row['ipaddress'])
 			]);
 		}

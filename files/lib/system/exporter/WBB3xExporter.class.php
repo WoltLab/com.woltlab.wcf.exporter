@@ -434,9 +434,7 @@ class WBB3xExporter extends AbstractExporter {
 				'disableAvatarReason' => (!empty($row['disableAvatarReason']) ? $row['disableAvatarReason'] : ''),
 				'enableGravatar' => ((!empty($row['gravatar']) && $row['gravatar'] == $row['email']) ? 1 : 0),
 				'signature' => $row['signature'],
-				'signatureEnableBBCodes' => $row['enableSignatureBBCodes'],
 				'signatureEnableHtml' => $row['enableSignatureHtml'],
-				'signatureEnableSmilies' => $row['enableSignatureSmilies'],
 				'disableSignature' => $row['disableSignature'],
 				'disableSignatureReason' => $row['disableSignatureReason'],
 				'profileHits' => $row['profileHits'],
@@ -905,10 +903,7 @@ class WBB3xExporter extends AbstractExporter {
 				'message' => self::fixBBCodes($row['message']),
 				'time' => $row['time'],
 				'attachments' => $row['attachments'],
-				'enableSmilies' => $row['enableSmilies'],
-				'enableHtml' => $row['enableHtml'],
-				'enableBBCodes' => $row['enableBBCodes'],
-				'showSignature' => $row['showSignature']
+				'enableHtml' => $row['enableHtml']
 			]);
 		}
 	}
@@ -1234,10 +1229,7 @@ class WBB3xExporter extends AbstractExporter {
 				'editCount' => $row['editCount'],
 				'editReason' => (!empty($row['editReason']) ? $row['editReason'] : ''),
 				'attachments' => $row['attachments'],
-				'enableSmilies' => $row['enableSmilies'],
 				'enableHtml' => $row['enableHtml'],
-				'enableBBCodes' => $row['enableBBCodes'],
-				'showSignature' => $row['showSignature'],
 				'ipAddress' => UserUtil::convertIPv4To6($row['ipAddress']),
 				'deleteTime' => $row['deleteTime']
 			]);
@@ -1891,9 +1883,7 @@ class WBB3xExporter extends AbstractExporter {
 				'time' => $row['time'],
 				'attachments' => $row['attachments'],
 				'comments' => $row['comments'],
-				'enableSmilies' => $row['enableSmilies'],
 				'enableHtml' => $row['enableHtml'],
-				'enableBBCodes' => $row['enableBBCodes'],
 				'views' => $row['views'],
 				'isPublished' => $row['isPublished'],
 				'publicationDate' => $row['publishingDate']
@@ -2388,10 +2378,7 @@ class WBB3xExporter extends AbstractExporter {
 				'time' => $row['time'],
 				'ipAddress' => $row['ipAddress'],
 				'attachments' => $row['attachments'],
-				'enableSmilies' => $row['enableSmilies'],
 				'enableHtml' => $row['enableHtml'],
-				'enableBBCodes' => $row['enableBBCodes'],
-				'showSignature' => $row['showSignature'],
 				'eventDate' => serialize($eventDateData)
 			];
 			if ($row['participationID']) {

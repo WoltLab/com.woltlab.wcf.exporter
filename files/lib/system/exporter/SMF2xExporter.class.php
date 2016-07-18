@@ -316,9 +316,6 @@ class SMF2xExporter extends AbstractExporter {
 				'activationCode' => $row['validation_code'] ? UserRegistrationUtil::getActivationCode() : 0, // smf's codes are strings
 				'registrationIpAddress' => $row['member_ip'], // member_ip2 is HTTP_X_FORWARDED_FOR
 				'signature' => $row['signature'],
-				'signatureEnableBBCodes' => 1,
-				'signatureEnableHtml' => 0,
-				'signatureEnableSmilies' => 1,
 				'userTitle' => StringUtil::decodeHTML($row['usertitle']),
 				'lastActivityTime' => $row['last_login']
 			];
@@ -696,11 +693,7 @@ class SMF2xExporter extends AbstractExporter {
 				'username' => $row['from_name'],
 				'message' => self::fixBBCodes($row['body']),
 				'time' => $row['msgtime'],
-				'attachments' => 0, // not supported
-				'enableSmilies' => 1,
-				'enableHtml' => 0,
-				'enableBBCodes' => 1,
-				'showSignature' => 1
+				'attachments' => 0 // not supported
 			]);
 		}
 	}
@@ -910,10 +903,7 @@ class SMF2xExporter extends AbstractExporter {
 				'lastEditTime' => $row['modified_time'],
 				'editCount' => $row['modified_time'] ? 1 : 0,
 				'editReason' => (!empty($row['editReason']) ? $row['editReason'] : ''),
-				'enableSmilies' => $row['smileys_enabled'],
 				'enableHtml' => 0,
-				'enableBBCodes' => 1,
-				'showSignature' => 1,
 				'ipAddress' => UserUtil::convertIPv4To6($row['poster_ip'])
 			]);
 		}

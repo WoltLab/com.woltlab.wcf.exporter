@@ -429,9 +429,7 @@ class WBB4xExporter extends AbstractExporter {
 				'disableAvatarReason' => $row['disableAvatarReason'],
 				'enableGravatar' => $row['enableGravatar'],
 				'signature' => $row['signature'],
-				'signatureEnableBBCodes' => $row['signatureEnableBBCodes'],
 				'signatureEnableHtml' => $row['signatureEnableHtml'],
-				'signatureEnableSmilies' => $row['signatureEnableSmilies'],
 				'disableSignature' => $row['disableSignature'],
 				'disableSignatureReason' => $row['disableSignatureReason'],
 				'profileHits' => $row['profileHits'],
@@ -753,10 +751,7 @@ class WBB4xExporter extends AbstractExporter {
 				'message' => $row['message'],
 				'time' => $row['time'],
 				'attachments' => $row['attachments'],
-				'enableSmilies' => $row['enableSmilies'],
 				'enableHtml' => $row['enableHtml'],
-				'enableBBCodes' => $row['enableBBCodes'],
-				'showSignature' => $row['showSignature'],
 				'ipAddress' => $row['ipAddress']
 			]);
 		}
@@ -1041,10 +1036,7 @@ class WBB4xExporter extends AbstractExporter {
 				'editCount' => $row['editCount'],
 				'editReason' => $row['editReason'],
 				'attachments' => $row['attachments'],
-				'enableSmilies' => $row['enableSmilies'],
 				'enableHtml' => $row['enableHtml'],
-				'enableBBCodes' => $row['enableBBCodes'],
-				'showSignature' => $row['showSignature'],
 				'ipAddress' => $row['ipAddress'],
 				'deleteTime' => $row['deleteTime']
 			]);
@@ -1587,11 +1579,8 @@ class WBB4xExporter extends AbstractExporter {
 				'attachments' => $row['attachments'],
 				'comments' => $row['comments'],
 				'views' => $row['views'],
-				'enableSmilies' => $row['enableSmilies'],
 				'enableHtml' => $row['enableHtml'],
-				'enableBBCodes' => $row['enableBBCodes'],
-				'enableComments' => $row['enableBBCodes'],
-				'showSignature' => $row['showSignature'],
+				'enableComments' => $row['enableComments'],
 				'isDisabled' => $row['isDisabled'],
 				'isDeleted' => $row['isDeleted'],
 				'isPublished' => $row['isPublished'],
@@ -1812,9 +1801,7 @@ class WBB4xExporter extends AbstractExporter {
 			
 			if ($sourceVersion21 && $destVersion21) {
 				$images[$row['imageID']] = array_merge($images[$row['imageID']], [
-					'enableSmilies' => $row['enableSmilies'],
 					'enableHtml' => $row['enableHtml'],
-					'enableBBCodes' => $row['enableBBCodes'],
 					'rawExifData' => $row['rawExifData'],
 					'hasEmbeddedObjects' => $row['hasEmbeddedObjects'],
 					'hasMarkers' => $row['hasMarkers'],
@@ -2021,11 +2008,8 @@ class WBB4xExporter extends AbstractExporter {
 				'eventDate' => $row['eventDate'],
 				'eventColor' => $row['eventColor'],
 				'views' => $row['views'],
-				'enableSmilies' => $row['enableSmilies'],
 				'enableHtml' => $row['enableHtml'],
-				'enableBBCodes' => $row['enableBBCodes'],
 				'enableComments' => $row['enableComments'],
-				'showSignature' => $row['showSignature'],
 				'isDisabled' => $row['isDisabled'],
 				'isDeleted' => $row['isDeleted'],
 				'ipAddress' => $row['ipAddress'],

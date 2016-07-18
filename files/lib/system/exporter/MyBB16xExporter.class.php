@@ -297,9 +297,6 @@ class MyBB16xExporter extends AbstractExporter {
 				'oldUsername' => '',
 				'registrationIpAddress' => UserUtil::convertIPv4To6($row['regip']),
 				'signature' => $row['signature'],
-				'signatureEnableBBCodes' => 1,
-				'signatureEnableHtml' => 0,
-				'signatureEnableSmilies' => 1,
 				'disableSignature' => $row['suspendsignature'],
 				'disableSignatureReason' => '',
 				'userTitle' => $row['usertitle'],
@@ -626,9 +623,7 @@ class MyBB16xExporter extends AbstractExporter {
 				'userID' => $row['fromid'],
 				'username' => $row['username'] ?: '',
 				'message' => self::fixBBCodes($row['message']),
-				'time' => $row['dateline'],
-				'enableSmilies' => $row['smilieoff'] ? 0 : 1,
-				'showSignature' => $row['includesig'] ? 1 : 0
+				'time' => $row['dateline']
 			]);
 		}
 	}
@@ -804,8 +799,6 @@ class MyBB16xExporter extends AbstractExporter {
 				'editor' => $row['editor'] ?: '',
 				'lastEditTime' => $row['edittime'],
 				'editCount' => $row['editor'] ? 1 : 0,
-				'enableSmilies' => $row['smilieoff'] ? 0 : 1,
-				'showSignature' => $row['includesig'],
 				'ipAddress' => UserUtil::convertIPv4To6($row['ipaddress'])
 			]);
 		}
