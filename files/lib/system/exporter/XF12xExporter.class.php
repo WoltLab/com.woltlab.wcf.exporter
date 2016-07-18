@@ -290,9 +290,6 @@ class XF12xExporter extends AbstractExporter {
 				'banReason' => '',
 				'registrationIpAddress' => $row['ip'] ? UserUtil::convertIPv4To6($row['ip']) : '',
 				'signature' => self::fixBBCodes($row['signature']),
-				'signatureEnableBBCodes' => 1,
-				'signatureEnableHtml' => 0,
-				'signatureEnableSmilies' => 1,
 				'lastActivityTime' => $row['last_activity']
 			];
 			$options = [
@@ -903,8 +900,6 @@ class XF12xExporter extends AbstractExporter {
 				'editor' => $row['editor'] ?: '',
 				'lastEditTime' => $row['last_edit_date'],
 				'editCount' => $row['editor'] ? $row['edit_count'] : 0,
-				'enableSmilies' => 1,
-				'showSignature' => 1,
 				'ipAddress' => $row['ip'] ? UserUtil::convertIPv4To6($row['ip']) : ''
 			]);
 		}

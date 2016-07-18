@@ -521,11 +521,7 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 				'username' => $this->database->hget('user:'.$message['fromuid'], 'username'),
 				'message' => self::convertMarkdown($message['content']),
 				'time' => intval($message['timestamp'] / 1000),
-				'attachments' => 0,
-				'enableSmilies' => 1,
-				'enableHtml' => 0,
-				'enableBBCodes' => 0,
-				'showSignature' => 0
+				'attachments' => 0
 			]);
 		}
 	}

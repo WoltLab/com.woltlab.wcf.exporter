@@ -294,9 +294,7 @@ class WordPress3xExporter extends AbstractExporter {
 				'message' => self::fixMessage($row['post_content']),
 				'time' => $time,
 				'comments' => $row['comment_count'],
-				'enableSmilies' => 0,
 				'enableHtml' => 1,
-				'enableBBCodes' => 0,
 				'isPublished' => ($row['post_status'] == 'publish' ? 1 : 0),
 				'isDeleted' => ($row['post_status'] == 'trash' ? 1 : 0)
 			], $additionalData);
