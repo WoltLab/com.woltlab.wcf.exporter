@@ -1501,7 +1501,7 @@ class WBB4xExporter extends AbstractExporter {
 				'enableSmilies' => $row['enableSmilies'],
 				'enableHtml' => $row['enableHtml'],
 				'enableBBCodes' => $row['enableBBCodes'],
-				'enableComments' => $row['enableBBCodes'],
+				'enableComments' => $row['enableComments'],
 				'showSignature' => $row['showSignature'],
 				'isDisabled' => $row['isDisabled'],
 				'isDeleted' => $row['isDeleted'],
