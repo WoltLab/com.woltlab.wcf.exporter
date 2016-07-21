@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <package name="com.woltlab.wcf.exporter" xmlns="http://www.woltlab.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.woltlab.com http://www.woltlab.com/XSD/maelstrom/package.xsd">
 	<packageinformation>
-		<packagename>Importer</packagename>
-		<packagename language="de">Datenimport</packagename>
+		<packagename>WoltLab Suite Core: Importer</packagename>
 		<packagedescription>Import data from other discussion board systems.</packagedescription>
 		<packagedescription language="de">Ermöglicht den Datenimport aus anderen Forensystemen.</packagedescription>
 		<version>3.0.0 Alpha 1</version>
