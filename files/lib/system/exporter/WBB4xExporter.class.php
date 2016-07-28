@@ -586,9 +586,7 @@ class WBB4xExporter extends AbstractExporter {
 				'width' => $row['width'],
 				'height' => $row['height'],
 				'userID' => $row['userID'],
-				'fileHash' => $row['fileHash'],
-				'cropX' => $row['cropX'],
-				'cropY' => $row['cropY']
+				'fileHash' => $row['fileHash']
 			], ['fileLocation' => $this->fileSystemPath . 'images/avatars/' . substr($row['fileHash'], 0, 2) . '/' . $row['avatarID'] . '-' . $row['fileHash'] . '.' . $row['avatarExtension']]);
 		}
 	}
