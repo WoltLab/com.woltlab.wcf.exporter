@@ -289,17 +289,17 @@ class WBB2xExporter extends AbstractExporter {
 				'disableSignature' => $row['disablesignature'],
 				'banned' => $row['blocked'],
 				'signatureEnableHtml' => $row['allowsightml'],
-				'registrationIpAddress' => (!empty($row['reg_ipaddress']) ? $row['reg_ipaddress'] : '')
+				'registrationIpAddress' => !empty($row['reg_ipaddress']) ? $row['reg_ipaddress'] : ''
 			];
 			
 			$options = [
 				'birthday' => $row['birthday'],
 				'gender' => $row['gender'],
 				'homepage' => $row['homepage'],
-				'icq' => ($row['icq'] ? $row['icq'] : ''),
-				'location' => (!empty($row['field1']) ? $row['field1'] : ''),
-				'hobbies' => (!empty($row['field2']) ? $row['field2'] : ''),
-				'occupation' => (!empty($row['field3']) ? $row['field3'] : ''),
+				'icq' => $row['icq'] ? $row['icq'] : '',
+				'location' => !empty($row['field1']) ? $row['field1'] : '',
+				'hobbies' => !empty($row['field2']) ? $row['field2'] : '',
+				'occupation' => !empty($row['field3']) ? $row['field3'] : '',
 			];
 			
 			foreach ($profileFields as $profileFieldID) {
@@ -441,7 +441,7 @@ class WBB2xExporter extends AbstractExporter {
 				'categoryName' => 'profile.personal',
 				'optionType' => $optionType,
 				'required' => $row['required'],
-				'visible' => ($row['hidden'] ? 0 : UserOption::VISIBILITY_ALL),
+				'visible' => $row['hidden'] ? 0 : UserOption::VISIBILITY_ALL,
 				'showOrder' => $row['fieldorder'],
 				'selectOptions' => $row['fieldoptions'],
 				'editable' => UserOption::EDITABILITY_ALL
@@ -508,14 +508,14 @@ class WBB2xExporter extends AbstractExporter {
 				'subject' => $row['subject'],
 				'time' => $row['sendtime'],
 				'userID' => $row['senderid'],
-				'username' => ($row['username'] ?: '')
+				'username' => $row['username'] ?: ''
 			]);
 			
 			// import message
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.message')->import($row['privatemessageid'], [
 				'conversationID' => $row['privatemessageid'],
 				'userID' => $row['senderid'],
-				'username' => ($row['username'] ?: ''),
+				'username' => $row['username'] ?: '',
 				'message' => self::fixBBCodes($row['message']),
 				'time' => $row['sendtime'],
 				'attachments' => $row['attachments'],
@@ -556,7 +556,7 @@ class WBB2xExporter extends AbstractExporter {
 				'hideConversation' => $row['deletepm'],
 				'isInvisible' => $row['blindcopy'],
 				'lastVisitTime' => $row['view']
-			], ['labelIDs' => ($row['folderid'] ? [$row['folderid']] : [])]);
+			], ['labelIDs' => $row['folderid'] ? [$row['folderid']] : []]);
 		}
 	}
 	
@@ -618,9 +618,9 @@ class WBB2xExporter extends AbstractExporter {
 		
 		foreach ($this->boardCache[$parentID] as $board) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import($board['boardid'], [
-				'parentID' => ($board['parentid'] ?: null),
+				'parentID' => $board['parentid'] ?: null,
 				'position' => $board['boardorder'],
-				'boardType' => (!$board['isboard'] ? 1 : (!empty($board['externalurl']) ? 2 : 0)),
+				'boardType' => !$board['isboard'] ? 1 : (!empty($board['externalurl']) ? 2 : 0),
 				'title' => $board['title'],
 				'description' => $board['description'],
 				'externalURL' => $board['externalurl'],
@@ -738,7 +738,7 @@ class WBB2xExporter extends AbstractExporter {
 				'isSticky' => intval($row['important'] == 1),
 				'isDisabled' => intval(!$row['visible']),
 				'isClosed' => intval($row['closed'] == 1),
-				'movedThreadID' => ($row['closed'] == 3 ? $row['pollid'] : null),
+				'movedThreadID' => ($row['closed'] == 3) ? $row['pollid'] : null,
 				'lastPostTime' => $row['lastposttime']
 			];
 			$additionalData = [];
@@ -778,7 +778,7 @@ class WBB2xExporter extends AbstractExporter {
 				'message' => self::fixBBCodes($row['message']),
 				'time' => $row['posttime'],
 				'isDisabled' => intval(!$row['visible']),
-				'editorID' => ($row['editorid'] ?: null),
+				'editorID' => $row['editorid'] ?: null,
 				'editor' => $row['editor'],
 				'lastEditTime' => $row['edittime'],
 				'editCount' => $row['editcount'],
@@ -893,7 +893,7 @@ class WBB2xExporter extends AbstractExporter {
 				'objectID' => $postID,
 				'question' => $row['question'],
 				'time' => $row['starttime'],
-				'endTime' => ($row['timeout'] ? $row['starttime'] + $row['timeout'] * 86400 : 0),
+				'endTime' => $row['timeout'] ? $row['starttime'] + $row['timeout'] * 86400 : 0,
 				'maxVotes' => $row['choicecount'],
 				'votes' => $votes
 			]);
@@ -1148,7 +1148,7 @@ class WBB2xExporter extends AbstractExporter {
 			
 			ImportHandler::getInstance()->getImporter($objectType)->import($row['attachmentid'], [
 				'objectID' => $row[$indexName],
-				'userID' => ($row['userid'] ?: null),
+				'userID' => $row['userid'] ?: null,
 				'filename' => $row['attachmentname'].'.'.$row['attachmentextension'],
 				'filesize' => $row['attachmentsize'],
 				'fileType' => $fileType,

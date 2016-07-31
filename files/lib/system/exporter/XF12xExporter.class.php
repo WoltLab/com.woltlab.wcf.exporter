@@ -235,7 +235,7 @@ class XF12xExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.group')->import($row['user_group_id'], [
 				'groupName' => $row['title'],
 				'groupType' => UserGroup::OTHER,
-				'userOnlineMarking' => ($row['username_css'] ? '<span style="'.str_replace(["\n", "\r"], '', $row['username_css']).'">%s</span>' : '%s'),
+				'userOnlineMarking' => $row['username_css'] ? '<span style="'.str_replace(["\n", "\r"], '', $row['username_css']).'">%s</span>' : '%s',
 				'priority' => $row['display_style_priority']
 			]);
 		}
@@ -762,10 +762,10 @@ class XF12xExporter extends AbstractExporter {
 				'conversationID' => $row['conversation_id'],
 				'participantID' => $row['user_id'],
 				'username' => $row['username'] ?: '',
-				'hideConversation' => ($row['recipient_state'] == 'deleted_ignored' ? Conversation::STATE_LEFT : ($row['recipient_state'] == 'deleted' ? Conversation::STATE_HIDDEN : Conversation::STATE_DEFAULT)),
+				'hideConversation' => $row['recipient_state'] == 'deleted_ignored' ? Conversation::STATE_LEFT : ($row['recipient_state'] == 'deleted' ? Conversation::STATE_HIDDEN : Conversation::STATE_DEFAULT),
 				'isInvisible' => 0,
 				'lastVisitTime' => $row['last_read_date']
-			], ['labelIDs' => ($row['is_starred'] ? [$row['user_id']] : [])]);
+			], ['labelIDs' => $row['is_starred'] ? [$row['user_id']] : []]);
 		}
 	}
 	
@@ -802,9 +802,9 @@ class XF12xExporter extends AbstractExporter {
 		
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import($row['nodeID'], [
-				'parentID' => ($row['parent_node_id'] ?: null),
+				'parentID' => $row['parent_node_id'] ?: null,
 				'position' => $row['lft'],
-				'boardType' => ($row['node_type_id'] == 'Category' ? Board::TYPE_CATEGORY : ($row['node_type_id'] == 'Forum' ? Board::TYPE_BOARD : Board::TYPE_LINK)),
+				'boardType' => $row['node_type_id'] == 'Category' ? Board::TYPE_CATEGORY : ($row['node_type_id'] == 'Forum' ? Board::TYPE_BOARD : Board::TYPE_LINK),
 				'title' => $row['title'],
 				'description' => $row['description'],
 				'descriptionUseHtml' => 1, // cannot be disabled
@@ -896,7 +896,7 @@ class XF12xExporter extends AbstractExporter {
 				'message' => self::fixBBCodes($row['message']),
 				'time' => $row['post_date'],
 				'isDisabled' => $row['message_state'] == 'moderated' ? 1 : 0,
-				'editorID' => ($row['last_edit_user_id'] ?: null),
+				'editorID' => $row['last_edit_user_id'] ?: null,
 				'editor' => $row['editor'] ?: '',
 				'lastEditTime' => $row['last_edit_date'],
 				'editCount' => $row['editor'] ? $row['edit_count'] : 0,
@@ -1165,7 +1165,7 @@ class XF12xExporter extends AbstractExporter {
 			foreach ($mapping[$row['permission_id']] as $permission) {
 				ImportHandler::getInstance()->getImporter('com.woltlab.wbb.acl')->import(0, [
 					'objectID' => $row['content_id'],
-					($row['user_id'] ? 'userID' : 'groupID') => $row['user_id'] ?: $row['user_group_id'],
+					$row['user_id'] ? 'userID' : 'groupID' => $row['user_id'] ?: $row['user_group_id'],
 					'optionValue' => $row['permission_value'] == 'content_allow' ? 1 : 0
 				], [
 					'optionName' => $permission
@@ -1426,7 +1426,7 @@ class XF12xExporter extends AbstractExporter {
 			
 			ImportHandler::getInstance()->getImporter($objectType)->import($row['attachment_id'], [
 				'objectID' => $row['content_id'],
-				'userID' => ($row['user_id'] ?: null),
+				'userID' => $row['user_id'] ?: null,
 				'filename' => $row['filename'],
 				'filesize' => $row['file_size'],
 				'fileType' => FileUtil::getMimeType($fileLocation) ?: 'application/octet-stream',

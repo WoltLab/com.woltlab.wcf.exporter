@@ -421,7 +421,7 @@ class VB5xExporter extends AbstractExporter {
 		
 		foreach ($this->boardCache[$parentID] as $board) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import($board['nodeid'], [
-				'parentID' => ($board['parentid'] ?: null),
+				'parentID' => $board['parentid'] ?: null,
 				'position' => $board['displayorder'] ?: 0,
 				'boardType' => Board::TYPE_BOARD,
 				'title' => $board['title'],
@@ -531,7 +531,7 @@ class VB5xExporter extends AbstractExporter {
 				'lastEditTime' => 0,
 				'editCount' => 0,
 				'editReason' => '',
-				'enableHtml' => (isset($row['htmlState']) && $row['htmlState'] != 'off' ? 1 : 0),
+				'enableHtml' => (isset($row['htmlState']) && $row['htmlState'] != 'off') ? 1 : 0,
 				'ipAddress' => UserUtil::convertIPv4To6($row['ipaddress'])
 			]);
 		}
@@ -601,16 +601,16 @@ class VB5xExporter extends AbstractExporter {
 				
 				ImportHandler::getInstance()->getImporter('com.woltlab.wbb.attachment')->import($row['nodeid'], [
 					'objectID' => $row['parentid'],
-					'userID' => ($row['userid'] ?: null),
+					'userID' => $row['userid'] ?: null,
 					'filename' => $row['filename'],
-					'filesize' => (isset($row['filesize']) ? $row['filesize'] : filesize($file)),
+					'filesize' => isset($row['filesize']) ? $row['filesize'] : filesize($file),
 					'fileType' => FileUtil::getMimeType($file),
 					'isImage' => $row['isImage'],
 					'width' => $row['width'],
 					'height' => $row['height'],
 					'downloads' => $row['counter'],
 					'uploadTime' => $row['dateline'],
-					'showOrder' => (isset($row['displayOrder']) ? $row['displayOrder'] : 0)
+					'showOrder' => isset($row['displayOrder']) ? $row['displayOrder'] : 0
 				], ['fileLocation' => $file]);
 				
 				if ($this->readOption('attachfile') == self::ATTACHFILE_DATABASE) unlink($file);

@@ -311,7 +311,7 @@ class SMF2xExporter extends AbstractExporter {
 				'password' => '',
 				'email' => $row['email_address'],
 				'registrationDate' => $row['date_registered'],
-				'banned' => ($row['ban_time'] && $row['banExpire'] === null ? 1 : 0), // only permabans are imported
+				'banned' => ($row['ban_time'] && $row['banExpire'] === null) ? 1 : 0, // only permabans are imported
 				'banReason' => $row['banReason'],
 				'activationCode' => $row['validation_code'] ? UserRegistrationUtil::getActivationCode() : 0, // smf's codes are strings
 				'registrationIpAddress' => $row['member_ip'], // member_ip2 is HTTP_X_FORWARDED_FOR
@@ -809,7 +809,7 @@ class SMF2xExporter extends AbstractExporter {
 		
 		foreach ($this->boardCache[$parentID] as $board) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import($board['id_board'], [
-				'parentID' => ($board['id_parent'] ?: 'cat-'.$board['id_cat']),
+				'parentID' => $board['id_parent'] ?: 'cat-'.$board['id_cat'],
 				'position' => $board['board_order'],
 				'boardType' => $board['redirect'] ? Board::TYPE_LINK : Board::TYPE_BOARD,
 				'title' => str_replace('&amp;', '&', $board['name']),
@@ -898,11 +898,11 @@ class SMF2xExporter extends AbstractExporter {
 				'message' => self::fixBBCodes($row['body']),
 				'time' => $row['poster_time'],
 				'isDisabled' => $row['approved'] ? 0 : 1,
-				'editorID' => ($row['editorID'] ?: null),
+				'editorID' => $row['editorID'] ?: null,
 				'editor' => $row['modified_name'],
 				'lastEditTime' => $row['modified_time'],
 				'editCount' => $row['modified_time'] ? 1 : 0,
-				'editReason' => (!empty($row['editReason']) ? $row['editReason'] : ''),
+				'editReason' => !empty($row['editReason']) ? $row['editReason'] : '',
 				'enableHtml' => 0,
 				'ipAddress' => UserUtil::convertIPv4To6($row['poster_ip'])
 			]);
@@ -953,7 +953,7 @@ class SMF2xExporter extends AbstractExporter {
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.attachment')->import($row['id_attach'], [
 				'objectID' => $row['id_msg'],
-				'userID' => ($row['id_member'] ?: null),
+				'userID' => $row['id_member'] ?: null,
 				'filename' => $row['filename'],
 				'filesize' => $row['size'],
 				'fileType' => $row['mime_type'],

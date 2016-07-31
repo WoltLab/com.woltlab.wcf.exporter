@@ -346,8 +346,8 @@ class WBB4xExporter extends AbstractExporter {
 				'groupDescription' => $row['groupDescription'],
 				'groupType' => $row['groupType'],
 				'priority' => $row['priority'],
-				'userOnlineMarking' => (!empty($row['userOnlineMarking']) ? $row['userOnlineMarking'] : ''),
-				'showOnTeamPage' => (!empty($row['showOnTeamPage']) ? $row['showOnTeamPage'] : 0)
+				'userOnlineMarking' => !empty($row['userOnlineMarking']) ? $row['userOnlineMarking'] : '',
+				'showOnTeamPage' => !empty($row['showOnTeamPage']) ? $row['showOnTeamPage'] : 0
 			]);
 		}
 	}
@@ -654,7 +654,7 @@ class WBB4xExporter extends AbstractExporter {
 				'editable' => $row['editable'],
 				'visible' => $row['visible'],
 				'showOrder' => $row['showOrder']
-			], ['name' => ($row['name'] ?: $row['optionName'])]);
+			], ['name' => $row['name'] ?: $row['optionName']]);
 		}
 	}
 	
@@ -811,7 +811,7 @@ class WBB4xExporter extends AbstractExporter {
 				'hideConversation' => $row['hideConversation'],
 				'isInvisible' => $row['isInvisible'],
 				'lastVisitTime' => $row['lastVisitTime']
-			], ['labelIDs' => (isset($labels[$row['conversationID']][$row['participantID']]) ? $labels[$row['conversationID']][$row['participantID']] : [])]);
+			], ['labelIDs' => isset($labels[$row['conversationID']][$row['participantID']]) ? $labels[$row['conversationID']][$row['participantID']] : []]);
 		}
 	}
 	
@@ -1298,7 +1298,7 @@ class WBB4xExporter extends AbstractExporter {
 				// import label group
 				ImportHandler::getInstance()->getImporter('com.woltlab.wcf.label.group')->import($labelGroup['groupID'], [
 					'groupName' => $labelGroup['groupName']
-				], ['objects' => [$objectType->objectTypeID => (!empty($boardIDs[$labelGroup['groupID']]) ? $boardIDs[$labelGroup['groupID']] : [])]]);
+				], ['objects' => [$objectType->objectTypeID => !empty($boardIDs[$labelGroup['groupID']]) ? $boardIDs[$labelGroup['groupID']] : []]]);
 				
 				// import labels
 				if (!empty($labels[$labelGroup['groupID']])) {
@@ -1689,7 +1689,7 @@ class WBB4xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			$data = [
 				'userID' => $row['userID'],
-				'username' => ($row['username'] ?: ''),
+				'username' => $row['username'] ?: '',
 				'title' => $row['title'],
 				'description' => $row['description'],
 				'lastUpdateTime' => $row['lastUpdateTime']
@@ -1833,7 +1833,7 @@ class WBB4xExporter extends AbstractExporter {
 		
 		foreach ($images as $imageID => $imageData) {
 			$additionalData = [
-				'fileLocation' => $imageFilePath .'/userImages/' . substr($imageData['fileHash'], 0, 2) . '/' . ($imageID) . '-' . $imageData['fileHash'] . '.' . $imageData['fileExtension']
+				'fileLocation' => $imageFilePath .'/userImages/' . substr($imageData['fileHash'], 0, 2) . '/' . $imageID . '-' . $imageData['fileHash'] . '.' . $imageData['fileExtension']
 			];
 			
 			if (isset($categories[$imageID])) {
@@ -2337,7 +2337,7 @@ class WBB4xExporter extends AbstractExporter {
 			
 			ImportHandler::getInstance()->getImporter($importer)->import($row['attachmentID'], [
 				'objectID' => $row['objectID'],
-				'userID' => ($row['userID'] ?: null),
+				'userID' => $row['userID'] ?: null,
 				'filename' => $row['filename'],
 				'filesize' => $row['filesize'],
 				'fileType' => $row['fileType'],

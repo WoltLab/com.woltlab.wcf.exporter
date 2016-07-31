@@ -205,7 +205,7 @@ class Kunena3xExporter extends AbstractExporter {
 				'username' => $row['username'],
 				'password' => StringUtil::getRandomID(),
 				'email' => $row['email'],
-				'banned' => ($row['banned'] ? 1 : 0),
+				'banned' => $row['banned'] ? 1 : 0,
 				'registrationDate' => @strtotime($row['registerDate']),
 				'lastActivityTime' => @strtotime($row['lastvisitDate']),
 				'signature' => self::fixBBCodes($row['signature'])
@@ -364,9 +364,9 @@ class Kunena3xExporter extends AbstractExporter {
 		
 		foreach ($this->boardCache[$parentID] as $board) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import($board['id'], [
-				'parentID' => ($board['parent_id'] ?: null),
+				'parentID' => $board['parent_id'] ?: null,
 				'position' => $board['ordering'],
-				'boardType' => ($board['parent_id'] ? 0 : 1),
+				'boardType' => $board['parent_id'] ? 0 : 1,
 				'title' => $board['name'],
 				'description' => $board['description'],
 				'isClosed' => $board['locked'] ? 1 : 0
@@ -403,11 +403,11 @@ class Kunena3xExporter extends AbstractExporter {
 				'topic' => $row['subject'],
 				'time' => $row['first_post_time'],
 				'userID' => $row['first_post_userid'],
-				'username' => ($row['first_post_guest_name'] ?: ''),
+				'username' => $row['first_post_guest_name'] ?: '',
 				'views' => $row['hits'],
 				'isSticky' => $row['ordering'] == 1 ? 1 : 0,
 				'isClosed' => $row['locked'] == 1 ? 1 : 0,
-				'movedThreadID' => ($row['moved_id'] ? $row['moved_id'] : null)
+				'movedThreadID' => $row['moved_id'] ? $row['moved_id'] : null
 			];
 				
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.thread')->import($row['id'], $data);
@@ -445,7 +445,7 @@ class Kunena3xExporter extends AbstractExporter {
 				'message' => self::fixBBCodes($row['message']),
 				'time' => $row['time'],
 				'ipAddress' => UserUtil::convertIPv4To6($row['ip']),
-				'isClosed' => ($row['locked'] ? 1 : 0),
+				'isClosed' => $row['locked'] ? 1 : 0,
 				'editorID' => null
 			]);
 		}
@@ -479,7 +479,7 @@ class Kunena3xExporter extends AbstractExporter {
 				
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.attachment')->import($row['id'], [
 				'objectID' => $row['mesid'],
-				'userID' => ($row['userid'] ?: null),
+				'userID' => $row['userid'] ?: null,
 				'filename' => $row['filename'],
 				'filesize' => $row['size'],
 				'fileType' => $row['filetype'],

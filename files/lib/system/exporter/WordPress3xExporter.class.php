@@ -288,15 +288,15 @@ class WordPress3xExporter extends AbstractExporter {
 			if (!$time) $time = @strtotime($row['post_date']);
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry')->import($row['ID'], [
-				'userID' => ($row['post_author'] ?: null),
-				'username' => ($row['user_login'] ?: ''),
+				'userID' => $row['post_author'] ?: null,
+				'username' => $row['user_login'] ?: '',
 				'subject' => $row['post_title'],
 				'message' => self::fixMessage($row['post_content']),
 				'time' => $time,
 				'comments' => $row['comment_count'],
 				'enableHtml' => 1,
-				'isPublished' => ($row['post_status'] == 'publish' ? 1 : 0),
-				'isDeleted' => ($row['post_status'] == 'trash' ? 1 : 0)
+				'isPublished' => ($row['post_status'] == 'publish') ? 1 : 0,
+				'isDeleted' => ($row['post_status'] == 'trash') ? 1 : 0
 			], $additionalData);
 		}
 	}
@@ -336,7 +336,7 @@ class WordPress3xExporter extends AbstractExporter {
 			if (!$row['comment_parent']) {
 				ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry.comment')->import($row['comment_ID'], [
 					'objectID' => $row['comment_post_ID'],
-					'userID' => ($row['user_id'] ?: null),
+					'userID' => $row['user_id'] ?: null,
 					'username' => $row['comment_author'],
 					'message' => StringUtil::decodeHTML($row['comment_content']),
 					'time' => @strtotime($row['comment_date_gmt'])
@@ -352,7 +352,7 @@ class WordPress3xExporter extends AbstractExporter {
 					if (!$row2['comment_parent']) {
 						ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry.comment.response')->import($row['comment_ID'], [
 							'commentID' => $row2['comment_ID'],
-							'userID' => ($row['user_id'] ?: null),
+							'userID' => $row['user_id'] ?: null,
 							'username' => $row['comment_author'],
 							'message' => StringUtil::decodeHTML($row['comment_content']),
 							'time' => @strtotime($row['comment_date_gmt'])
@@ -418,7 +418,7 @@ class WordPress3xExporter extends AbstractExporter {
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry.attachment')->import($row['meta_id'], [
 				'objectID' => $row['post_parent'],
-				'userID' => ($row['post_author'] ?: null),
+				'userID' => $row['post_author'] ?: null,
 				'filename' => basename($fileLocation),
 				'filesize' => filesize($fileLocation),
 				'fileType' => $row['post_mime_type'],

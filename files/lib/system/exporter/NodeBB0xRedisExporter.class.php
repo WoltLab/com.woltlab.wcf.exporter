@@ -256,7 +256,7 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 		
 		foreach ($this->boardCache[$parentID] as $board) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import($board['cid'], [
-				'parentID' => ($board['parentCid'] ?: null),
+				'parentID' => $board['parentCid'] ?: null,
 				'position' => $board['order'] ?: 0,
 				'boardType' => $board['link'] ? Board::TYPE_LINK : Board::TYPE_BOARD,
 				'title' => $board['name'],
@@ -344,7 +344,7 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 				'time' => intval($row['timestamp'] / 1000),
 				'isDeleted' => $row['deleted'],
 				'deleteTime' => TIME_NOW,
-				'editorID' => ($row['editor'] ?: null),
+				'editorID' => $row['editor'] ?: null,
 				'editor' => $this->database->hget('user:'.$row['editor'], 'username'),
 				'lastEditTime' => intval($row['edited'] / 1000),
 				'editCount' => $row['edited'] ? 1 : 0

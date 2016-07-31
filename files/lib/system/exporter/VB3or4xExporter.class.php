@@ -936,7 +936,7 @@ class VB3or4xExporter extends AbstractExporter {
 				'hideConversation' => 0, // there is no trash
 				'isInvisible' => (isset($recipients['bcc']) && isset($recipients['bcc'][$row['userid']])) ? 1 : 0,
 				'lastVisitTime' => $row['messageread'] ? $row['dateline'] : 0
-			], ['labelIDs' => ($row['folderid'] > 0 ? [$row['userid'].'-'.$row['folderid']] : [])]);
+			], ['labelIDs' => ($row['folderid'] > 0) ? [$row['userid'].'-'.$row['folderid']] : []]);
 		}
 	}
 	
@@ -991,9 +991,9 @@ class VB3or4xExporter extends AbstractExporter {
 		};
 		foreach ($this->boardCache[$parentID] as $board) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import($board['forumid'], [
-				'parentID' => ($board['parentid'] != -1 ? $board['parentid'] : null),
+				'parentID' => $board['parentid'] != -1 ? $board['parentid'] : null,
 				'position' => $board['displayorder'],
-				'boardType' => ($board['link'] ? Board::TYPE_LINK : ($board['options'] & self::FORUMOPTIONS_CANCONTAINTHREADS ? Board::TYPE_BOARD : Board::TYPE_CATEGORY)),
+				'boardType' => $board['link'] ? Board::TYPE_LINK : ($board['options'] & self::FORUMOPTIONS_CANCONTAINTHREADS ? Board::TYPE_BOARD : Board::TYPE_CATEGORY),
 				'title' => StringUtil::decodeHTML($board['title_clean']),
 				'description' => StringUtil::decodeHTML($board['description_clean']),
 				'descriptionUseHtml' => 0,
@@ -1054,7 +1054,7 @@ class VB3or4xExporter extends AbstractExporter {
 				'isDisabled' => $row['visible'] == 1 ? 0 : 1, // visible = 2 is deleted
 				'isClosed' => $row['open'] == 1 ? 0 : 1, // open = 10 is redirect
 				'isDeleted' => $row['visible'] == 2 ? 1 : 0,
-				'movedThreadID' => ($row['open'] == 10 && $row['pollid'] ? $row['pollid'] : null), // target thread is saved in pollid...
+				'movedThreadID' => ($row['open'] == 10 && $row['pollid']) ? $row['pollid'] : null, // target thread is saved in pollid...
 				'movedTime' => 0,
 				'isDone' => 0,
 				'deleteTime' => $row['deleteTime'] ?: 0,
@@ -1119,13 +1119,13 @@ class VB3or4xExporter extends AbstractExporter {
 				'isDeleted' => $row['visible'] == 2 ? 1 : 0,
 				'isDisabled' => $row['visible'] == 0 ? 1 : 0,
 				'isClosed' => 0,
-				'editorID' => ($row['editorID'] ?: null),
+				'editorID' => $row['editorID'] ?: null,
 				'editor' => $row['editor'] ?: '',
 				'lastEditTime' => $row['lastEditTime'] ?: 0,
-				'editCount' => ($row['editCount'] && $row['editCount'] > 0 ? $row['editCount'] : 0),
+				'editCount' => $row['editCount'] && $row['editCount'] > 0 ? $row['editCount'] : 0,
 				'editReason' => $row['editReason'] ?: '',
 				'attachments' => $row['attach'],
-				'enableHtml' => (isset($row['htmlState']) && $row['htmlState'] != 'off' ? 1 : 0),
+				'enableHtml' => isset($row['htmlState']) && $row['htmlState'] != 'off' ? 1 : 0,
 				'ipAddress' => UserUtil::convertIPv4To6($row['ipaddress'])
 			]);
 		}
@@ -1216,16 +1216,16 @@ class VB3or4xExporter extends AbstractExporter {
 				
 				ImportHandler::getInstance()->getImporter('com.woltlab.wbb.attachment')->import($row['attachmentid'], [
 					'objectID' => $row['postid'],
-					'userID' => ($row['userid'] ?: null),
+					'userID' => $row['userid'] ?: null,
 					'filename' => $row['filename'],
-					'filesize' => (isset($row['filesize']) ? $row['filesize'] : filesize($file)),
+					'filesize' => isset($row['filesize']) ? $row['filesize'] : filesize($file),
 					'fileType' => FileUtil::getMimeType($file),
 					'isImage' => $row['isImage'],
 					'width' => $row['width'],
 					'height' => $row['height'],
 					'downloads' => $row['counter'],
 					'uploadTime' => $row['dateline'],
-					'showOrder' => (isset($row['displayOrder']) ? $row['displayOrder'] : 0)
+					'showOrder' => isset($row['displayOrder']) ? $row['displayOrder'] : 0
 				], ['fileLocation' => $file]);
 				
 				if ($this->readOption('attachfile') == self::ATTACHFILE_DATABASE) unlink($file);
@@ -1397,9 +1397,9 @@ class VB3or4xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.like')->import(0, [
 				'objectID' => $row['postid'],
-				'objectUserID' => ($row['userid'] ?: null),
+				'objectUserID' => $row['userid'] ?: null,
 				'userID' => $row['whoadded'],
-				'likeValue' => ($row['reputation'] > 0 ? Like::LIKE : Like::DISLIKE),
+				'likeValue' => ($row['reputation'] > 0) ? Like::LIKE : Like::DISLIKE,
 				'time' => $row['dateline']
 			]);
 		}
@@ -1720,9 +1720,9 @@ class VB3or4xExporter extends AbstractExporter {
 				];
 				
 				ImportHandler::getInstance()->getImporter('com.woltlab.gallery.image')->import((isset($row['pictureid']) ? $row['pictureid'] : $row['filedataid']), [
-					'userID' => ($row['userid'] ?: null),
+					'userID' => $row['userid'] ?: null,
 					'username' => StringUtil::decodeHTML($row['username'] ?: ''),
-					'albumID' => ($row['albumid'] ?: null),
+					'albumID' => $row['albumid'] ?: null,
 					'title' => StringUtil::decodeHTML($row['caption']),
 					'description' => '',
 					'filename' => StringUtil::decodeHTML(isset($row['filename']) ? $row['filename'] : ''),
@@ -1767,8 +1767,8 @@ class VB3or4xExporter extends AbstractExporter {
 		$statement->execute([$offset + 1, $offset + $limit]);
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.gallery.image.comment')->import($row['commentid'], [
-				'objectID' => (isset($row['pictureid']) ? $row['pictureid'] : $row['filedataid']),
-				'userID' => ($row['postuserid'] ?: null),
+				'objectID' => isset($row['pictureid']) ? $row['pictureid'] : $row['filedataid'],
+				'userID' => $row['postuserid'] ?: null,
 				'username' => StringUtil::decodeHTML($row['username'] ?: ''),
 				'message' => $row['pagetext'],
 				'time' => $row['dateline']
@@ -1921,7 +1921,7 @@ class VB3or4xExporter extends AbstractExporter {
 			}
 			
 			$data = [
-				'userID' => ($row['userid'] ?: null),
+				'userID' => $row['userid'] ?: null,
 				'username' => $row['username'],
 				'subject' => $row['title'],
 				'message' => self::fixBBCodes($row['event']),

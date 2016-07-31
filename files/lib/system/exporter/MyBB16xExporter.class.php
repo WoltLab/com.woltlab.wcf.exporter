@@ -659,7 +659,7 @@ class MyBB16xExporter extends AbstractExporter {
 				'hideConversation' => $row['deletetime'] ? 1 : 0,
 				'isInvisible' => (isset($recipients['bcc']) && in_array($row['uid'], $recipients['bcc'])) ? 1 : 0,
 				'lastVisitTime' => $row['readtime']
-			], ['labelIDs' => ($row['folder'] > 4 ? [$row['folder']] : [])]);
+			], ['labelIDs' => ($row['folder'] > 4) ? [$row['folder']] : []]);
 		}
 	}
 	
@@ -704,9 +704,9 @@ class MyBB16xExporter extends AbstractExporter {
 		
 		foreach ($this->boardCache[$parentID] as $board) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import($board['fid'], [
-				'parentID' => ($board['pid'] ?: null),
+				'parentID' => $board['pid'] ?: null,
 				'position' => $board['disporder'],
-				'boardType' => ($board['linkto'] ? Board::TYPE_LINK : ($board['type'] == 'c' ? Board::TYPE_CATEGORY : Board::TYPE_BOARD)),
+				'boardType' => $board['linkto'] ? Board::TYPE_LINK : ($board['type'] == 'c' ? Board::TYPE_CATEGORY : Board::TYPE_BOARD),
 				'title' => $board['name'],
 				'description' => $board['description'],
 				'descriptionUseHtml' => 1, // cannot be disabled
@@ -795,7 +795,7 @@ class MyBB16xExporter extends AbstractExporter {
 				'message' => self::fixBBCodes($row['message']),
 				'time' => $row['dateline'],
 				'isDisabled' => $row['visible'] ? 0 : 1,
-				'editorID' => ($row['edituid'] ?: null),
+				'editorID' => $row['edituid'] ?: null,
 				'editor' => $row['editor'] ?: '',
 				'lastEditTime' => $row['edittime'],
 				'editCount' => $row['editor'] ? 1 : 0,
@@ -850,7 +850,7 @@ class MyBB16xExporter extends AbstractExporter {
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.attachment')->import($row['aid'], [
 				'objectID' => $row['pid'],
-				'userID' => ($row['uid'] ?: null),
+				'userID' => $row['uid'] ?: null,
 				'filename' => $row['filename'],
 				'filesize' => $row['filesize'],
 				'fileType' => $row['filetype'],
@@ -1031,9 +1031,9 @@ class MyBB16xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.like')->import($row['rid'], [
 				'objectID' => $row['pid'],
-				'objectUserID' => ($row['uid'] ?: null),
+				'objectUserID' => $row['uid'] ?: null,
 				'userID' => $row['adduid'],
-				'likeValue' => ($row['reputation'] > 0 ? Like::LIKE : Like::DISLIKE),
+				'likeValue' => ($row['reputation'] > 0) ? Like::LIKE : Like::DISLIKE,
 				'time' => $row['dateline']
 			]);
 		}
@@ -1188,7 +1188,7 @@ class MyBB16xExporter extends AbstractExporter {
 					foreach ($permissions as $permission) {
 						ImportHandler::getInstance()->getImporter('com.woltlab.wbb.acl')->import(0, [
 							'objectID' => $row['fid'],
-							($row['isgroup'] ? 'groupID' : 'userID') => $row['id'],
+							$row['isgroup'] ? 'groupID' : 'userID' => $row['id'],
 							'optionValue' => $row[$mybbPermission]
 						], [
 							'optionName' => $permission

@@ -206,12 +206,12 @@ class IPB4xExporter extends AbstractExporter {
 				'password' => '',
 				'email' => $row['email'],
 				'registrationDate' => $row['joined'],
-				'banned' => ($row['temp_ban'] == -1 ? 1 : 0),
+				'banned' => $row['temp_ban'] == -1 ? 1 : 0,
 				'registrationIpAddress' => UserUtil::convertIPv4To6($row['ip_address']),
-				'enableGravatar' => ((!empty($row['pp_gravatar']) && $row['pp_gravatar'] == $row['email']) ? 1 : 0),
+				'enableGravatar' => (!empty($row['pp_gravatar']) && $row['pp_gravatar'] == $row['email']) ? 1 : 0,
 				'signature' => self::fixMessage($row['signature']),
 				'profileHits' => $row['members_profile_views'],
-				'userTitle' => ($row['member_title'] ?: ''),
+				'userTitle' => $row['member_title'] ?: '',
 				'lastActivityTime' => $row['last_activity']
 			];
 			
@@ -316,7 +316,7 @@ class IPB4xExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.group')->import($row['g_id'], [
 				'groupName' => $this->getLanguageVar('core_group', $row['g_id']),
 				'groupType' => $groupType,
-				'userOnlineMarking' => (!empty($row['prefix']) ? ($row['prefix'].'%s'.$row['suffix']) : '%s')
+				'userOnlineMarking' => !empty($row['prefix']) ? ($row['prefix'].'%s'.$row['suffix']) : '%s'
 			]);
 		}
 	}
@@ -387,7 +387,7 @@ class IPB4xExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.comment')->import($row['status_id'], [
 				'objectID' => $row['status_member_id'],
 				'userID' => $row['status_author_id'],
-				'username' => ($row['name'] ?: ''),
+				'username' => $row['name'] ?: '',
 				'message' => self::fixMessage($row['status_content']),
 				'time' => $row['status_date']
 			]);
@@ -421,7 +421,7 @@ class IPB4xExporter extends AbstractExporter {
 				'commentID' => $row['reply_status_id'],
 				'time' => $row['reply_date'],
 				'userID' => $row['reply_member_id'],
-				'username' => ($row['name'] ?: ''),
+				'username' => $row['name'] ?: '',
 				'message' => self::fixMessage($row['reply_content']),
 			]);
 		}
@@ -490,8 +490,8 @@ class IPB4xExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import($row['mt_id'], [
 				'subject' => $row['mt_title'],
 				'time' => $row['mt_date'],
-				'userID' => ($row['mt_starter_id'] ?: null),
-				'username' => ($row['mt_is_system'] ? 'System' : ($row['name'] ?: '')),
+				'userID' => $row['mt_starter_id'] ?: null,
+				'username' => $row['mt_is_system'] ? 'System' : ($row['name'] ?: ''),
 				'isDraft' => $row['mt_is_draft']
 			]);
 		}
@@ -522,8 +522,8 @@ class IPB4xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.message')->import($row['msg_id'], [
 				'conversationID' => $row['msg_topic_id'],
-				'userID' => ($row['msg_author_id'] ?: null),
-				'username' => ($row['name'] ?: ''),
+				'userID' => $row['msg_author_id'] ?: null,
+				'username' => $row['name'] ?: '',
 				'message' => self::fixMessage($row['msg_post']),
 				'time' => $row['msg_date']
 			]);
@@ -556,8 +556,8 @@ class IPB4xExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.user')->import(0, [
 				'conversationID' => $row['map_topic_id'],
 				'participantID' => $row['map_user_id'],
-				'username' => ($row['name'] ?: ''),
-				'hideConversation' => ($row['map_left_time'] ? 1 : 0),
+				'username' => $row['name'] ?: '',
+				'hideConversation' => $row['map_left_time'] ? 1 : 0,
 				'isInvisible' => 0,
 				'lastVisitTime' => $row['map_read_time']
 			]);
@@ -622,13 +622,13 @@ class IPB4xExporter extends AbstractExporter {
 		
 		foreach ($this->boardCache[$parentID] as $board) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import($board['id'], [
-				'parentID' => ($board['parent_id'] != -1 ? $board['parent_id'] : null),
+				'parentID' => $board['parent_id'] != -1 ? $board['parent_id'] : null,
 				'position' => $board['position'],
-				'boardType' => ($board['redirect_on'] ? Board::TYPE_LINK : ($board['sub_can_post'] ? Board::TYPE_BOARD : Board::TYPE_CATEGORY)),
+				'boardType' => $board['redirect_on'] ? Board::TYPE_LINK : ($board['sub_can_post'] ? Board::TYPE_BOARD : Board::TYPE_CATEGORY),
 				'title' => $this->getLanguageVar('forums_forum', $board['id']),
 				'description' => $this->getLanguageVar('forums_forum', $board['id'], 'desc'),
 				'descriptionUseHtml' => 1,
-				'externalURL' => ($board['redirect_url'] ?: ''),
+				'externalURL' => $board['redirect_url'] ?: '',
 				'countUserPosts' => $board['inc_postcount'],
 				'clicks' => $board['redirect_hits'],
 				'posts' => $board['posts'],
@@ -686,9 +686,9 @@ class IPB4xExporter extends AbstractExporter {
 				'username' => $row['starter_name'],
 				'views' => $row['views'],
 				'isSticky' => $row['pinned'],
-				'isDisabled' => ($row['approved'] == 0 ? 1 : 0),
-				'isClosed' => ($row['state'] == 'close' ? 1 : 0),
-				'movedThreadID' => ($row['moved_to'] ? intval($row['moved_to']) : null),
+				'isDisabled' => $row['approved'] == 0 ? 1 : 0,
+				'isClosed' => $row['state'] == 'close' ? 1 : 0,
+				'movedThreadID' => $row['moved_to'] ? intval($row['moved_to']) : null,
 				'movedTime' => $row['moved_on'],
 				'lastPostTime' => $row['last_post']
 			];
@@ -726,9 +726,9 @@ class IPB4xExporter extends AbstractExporter {
 				'username' => $row['author_name'],
 				'message' => self::fixMessage($row['post']),
 				'time' => $row['post_date'],
-				'isDeleted' => ($row['queued'] == 3 ? 1 : 0),
-				'isDisabled' => ($row['queued'] == 2 ? 1 : 0),
-				'lastEditTime' => ($row['edit_time'] ?: 0),
+				'isDeleted' => ($row['queued'] == 3) ? 1 : 0,
+				'isDisabled' => ($row['queued'] == 2) ? 1 : 0,
+				'lastEditTime' => $row['edit_time'] ?: 0,
 				'editorID' => null,
 				'editReason' => $row['post_edit_reason'],
 				'ipAddress' => UserUtil::convertIPv4To6($row['ip_address']),
@@ -815,7 +815,7 @@ class IPB4xExporter extends AbstractExporter {
 				'question' => $data[1]['question'],
 				'time' => $row['start_date'],
 				'isPublic' => $row['poll_view_voters'],
-				'maxVotes' => (!empty($data[1]['multi']) ? count($data[1]['choice']) : 1),
+				'maxVotes' => !empty($data[1]['multi']) ? count($data[1]['choice']) : 1,
 				'votes' => $row['votes']
 			]);
 			
@@ -908,7 +908,7 @@ class IPB4xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.like')->import(0, [
 				'objectID' => $row['type_id'],
-				'objectUserID' => ($row['author_id'] ?: null),
+				'objectUserID' => $row['author_id'] ?: null,
 				'userID' => $row['member_id'],
 				'likeValue' => Like::LIKE,
 				'time' => $row['rep_date']
@@ -973,7 +973,7 @@ class IPB4xExporter extends AbstractExporter {
 			
 			ImportHandler::getInstance()->getImporter($objectType)->import($row['attach_id'], [
 				'objectID' => $row['id2'],
-				'userID' => ($row['attach_member_id'] ?: null),
+				'userID' => $row['attach_member_id'] ?: null,
 				'filename' => $row['attach_file'],
 				'filesize' => $row['attach_filesize'],
 				'isImage' => $row['attach_is_image'],

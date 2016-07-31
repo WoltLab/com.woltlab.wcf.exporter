@@ -327,8 +327,8 @@ class WBB3xExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.group')->import($row['groupID'], [
 				'groupName' => $row['groupName'],
 				'groupType' => $row['groupType'],
-				'userOnlineMarking' => (!empty($row['userOnlineMarking']) ? $row['userOnlineMarking'] : ''),
-				'showOnTeamPage' => (!empty($row['showOnTeamPage']) ? $row['showOnTeamPage'] : 0)
+				'userOnlineMarking' => !empty($row['userOnlineMarking']) ? $row['userOnlineMarking'] : '',
+				'showOnTeamPage' => !empty($row['showOnTeamPage']) ? $row['showOnTeamPage'] : 0
 			]);
 		}
 	}
@@ -431,8 +431,8 @@ class WBB3xExporter extends AbstractExporter {
 				'oldUsername' => $row['oldUsername'],
 				'registrationIpAddress' => UserUtil::convertIPv4To6($row['registrationIpAddress']),
 				'disableAvatar' => $row['disableAvatar'],
-				'disableAvatarReason' => (!empty($row['disableAvatarReason']) ? $row['disableAvatarReason'] : ''),
-				'enableGravatar' => ((!empty($row['gravatar']) && $row['gravatar'] == $row['email']) ? 1 : 0),
+				'disableAvatarReason' => !empty($row['disableAvatarReason']) ? $row['disableAvatarReason'] : '',
+				'enableGravatar' => (!empty($row['gravatar']) && $row['gravatar'] == $row['email']) ? 1 : 0,
 				'signature' => $row['signature'],
 				'signatureEnableHtml' => $row['enableSignatureHtml'],
 				'disableSignature' => $row['disableSignature'],
@@ -526,7 +526,7 @@ class WBB3xExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.follower')->import(0, [
 				'userID' => $row['userID'],
 				'followUserID' => $row['whiteUserID'],
-				'time' => (!empty($row['time']) ? $row['time'] : 0)
+				'time' => !empty($row['time']) ? $row['time'] : 0
 			]);
 		}
 	}
@@ -754,13 +754,13 @@ class WBB3xExporter extends AbstractExporter {
 				'validationPattern' => $row['validationPattern'],
 				'selectOptions' => $row['selectOptions'],
 				'required' => $row['required'],
-				'askDuringRegistration' => (!empty($row['askDuringRegistration']) ? 1 : 0),
+				'askDuringRegistration' => !empty($row['askDuringRegistration']) ? 1 : 0,
 				'searchable' => $row['searchable'],
 				'isDisabled' => $row['disabled'],
 				'editable' => $editable,
 				'visible' => $visible,
 				'showOrder' => $row['showOrder']
-			], ['name' => ($row['name'] ?: $row['optionName'])]);
+			], ['name' => $row['name'] ?: $row['optionName']]);
 		}
 	}
 	
@@ -957,7 +957,7 @@ class WBB3xExporter extends AbstractExporter {
 				'hideConversation' => $row['isDeleted'],
 				'isInvisible' => $row['isBlindCopy'],
 				'lastVisitTime' => $row['isViewed']
-			], ['labelIDs' => ($row['folderID'] ? [$row['folderID']] : [])]);
+			], ['labelIDs' => $row['folderID'] ? [$row['folderID']] : []]);
 		}
 	}
 	
@@ -1023,8 +1023,8 @@ class WBB3xExporter extends AbstractExporter {
 			if (!in_array($board['sortField'], self::$availableThreadSortFields)) $board['sortField'] = 'lastPostTime';
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import($board['boardID'], [
-				'parentID' => ($board['parentID'] ?: null),
-				'position' => ($board['position'] ?: 0),
+				'parentID' => $board['parentID'] ?: null,
+				'position' => $board['position'] ?: 0,
 				'boardType' => $board['boardType'],
 				'title' => $board['title'],
 				'description' => $board['description'],
@@ -1033,18 +1033,18 @@ class WBB3xExporter extends AbstractExporter {
 				'time' => $board['time'],
 				'countUserPosts' => $board['countUserPosts'],
 				'daysPrune' => $board['daysPrune'],
-				'enableMarkingAsDone' => (!empty($board['enableMarkingAsDone']) ? $board['enableMarkingAsDone'] : 0),
-				'ignorable' => (!empty($board['ignorable']) ? $board['ignorable'] : 0),
+				'enableMarkingAsDone' => !empty($board['enableMarkingAsDone']) ? $board['enableMarkingAsDone'] : 0,
+				'ignorable' => !empty($board['ignorable']) ? $board['ignorable'] : 0,
 				'isClosed' => $board['isClosed'],
 				'isInvisible' => $board['isInvisible'],
-				'postSortOrder' => (!empty($board['postSortOrder']) ? $board['postSortOrder'] : ''),
-				'postsPerPage' => (!empty($board['postsPerPage']) ? $board['postsPerPage'] : 0),
-				'searchable' => (!empty($board['searchable']) ? $board['searchable'] : 0),
-				'searchableForSimilarThreads' => (!empty($board['searchableForSimilarThreads']) ? $board['searchableForSimilarThreads'] : 0),
+				'postSortOrder' => !empty($board['postSortOrder']) ? $board['postSortOrder'] : '',
+				'postsPerPage' => !empty($board['postsPerPage']) ? $board['postsPerPage'] : 0,
+				'searchable' => !empty($board['searchable']) ? $board['searchable'] : 0,
+				'searchableForSimilarThreads' => !empty($board['searchableForSimilarThreads']) ? $board['searchableForSimilarThreads'] : 0,
 				'showSubBoards' => $board['showSubBoards'],
 				'sortField' => $board['sortField'],
 				'sortOrder' => $board['sortOrder'],
-				'threadsPerPage' => (!empty($board['threadsPerPage']) ? $board['threadsPerPage'] : 0),
+				'threadsPerPage' => !empty($board['threadsPerPage']) ? $board['threadsPerPage'] : 0,
 				'clicks' => $board['clicks'],
 				'posts' => $board['posts'],
 				'threads' => $board['threads']
@@ -1176,9 +1176,9 @@ class WBB3xExporter extends AbstractExporter {
 				'isDisabled' => $row['isDisabled'],
 				'isClosed' => $row['isClosed'],
 				'isDeleted' => $row['isDeleted'],
-				'movedThreadID' => ($row['movedThreadID'] ?: null),
-				'movedTime' => (!empty($row['movedTime']) ? $row['movedTime'] : 0),
-				'isDone' => (!empty($row['isDone']) ? $row['isDone'] : 0),
+				'movedThreadID' => $row['movedThreadID'] ?: null,
+				'movedTime' => !empty($row['movedTime']) ? $row['movedTime'] : 0,
+				'isDone' => !empty($row['isDone']) ? $row['isDone'] : 0,
 				'deleteTime' => $row['deleteTime'],
 				'lastPostTime' => $row['lastPostTime']
 			];
@@ -1223,11 +1223,11 @@ class WBB3xExporter extends AbstractExporter {
 				'isDeleted' => $row['isDeleted'],
 				'isDisabled' => $row['isDisabled'],
 				'isClosed' => $row['isClosed'],
-				'editorID' => ($row['editorID'] ?: null),
+				'editorID' => $row['editorID'] ?: null,
 				'editor' => $row['editor'],
 				'lastEditTime' => $row['lastEditTime'],
 				'editCount' => $row['editCount'],
-				'editReason' => (!empty($row['editReason']) ? $row['editReason'] : ''),
+				'editReason' => !empty($row['editReason']) ? $row['editReason'] : '',
 				'attachments' => $row['attachments'],
 				'enableHtml' => $row['enableHtml'],
 				'ipAddress' => UserUtil::convertIPv4To6($row['ipAddress']),
@@ -1319,9 +1319,9 @@ class WBB3xExporter extends AbstractExporter {
 				'objectID' => $row['messageID'],
 				'question' => $row['question'],
 				'time' => $row['time'],
-				'endTime' => ($row['endTime'] > 2147483647 ? 2147483647 : $row['endTime']),
-				'isChangeable' => ($row['votesNotChangeable'] ? 0 : 1),
-				'isPublic' => (!empty($row['isPublic']) ? $row['isPublic'] : 0),
+				'endTime' => $row['endTime'] > 2147483647 ? 2147483647 : $row['endTime'],
+				'isChangeable' => $row['votesNotChangeable'] ? 0 : 1,
+				'isPublic' => !empty($row['isPublic']) ? $row['isPublic'] : 0,
 				'sortByVotes' => $row['sortByResult'],
 				'maxVotes' => $row['choiceCount'],
 				'votes' => $row['votes']
@@ -1454,9 +1454,9 @@ class WBB3xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.like')->import(0, [
 				'objectID' => $row['firstPostID'],
-				'objectUserID' => ($row['objectUserID'] ?: null),
+				'objectUserID' => $row['objectUserID'] ?: null,
 				'userID' => $row['userID'],
-				'likeValue' => ($row['rating'] > 3 ? Like::LIKE : Like::DISLIKE),
+				'likeValue' => ($row['rating'] > 3) ? Like::LIKE : Like::DISLIKE,
 				'time' => $row['time']
 			]);
 		}
@@ -1737,7 +1737,7 @@ class WBB3xExporter extends AbstractExporter {
 				'smileyTitle' => $row['smileyTitle'],
 				'smileyCode' => $row['smileyCode'],
 				'showOrder' => $row['showOrder'],
-				'categoryID' => (!empty($row['smileyCategoryID']) ? $row['smileyCategoryID'] : null)
+				'categoryID' => !empty($row['smileyCategoryID']) ? $row['smileyCategoryID'] : null
 			], ['fileLocation' => $fileLocation]);
 		}
 	}
@@ -1876,7 +1876,7 @@ class WBB3xExporter extends AbstractExporter {
 			if (isset($categories[$row['entryID']])) $additionalData['categories'] = $categories[$row['entryID']];
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry')->import($row['entryID'], [
-				'userID' => ($row['userID'] ?: null),
+				'userID' => $row['userID'] ?: null,
 				'username' => $row['username'],
 				'subject' => $row['subject'],
 				'message' => self::fixBBCodes($row['message']),
@@ -1974,9 +1974,9 @@ class WBB3xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry.like')->import(0, [
 				'objectID' => $row['objectID'],
-				'objectUserID' => ($row['objectUserID'] ?: null),
+				'objectUserID' => $row['objectUserID'] ?: null,
 				'userID' => $row['userID'],
-				'likeValue' => ($row['rating'] > 3 ? Like::LIKE : Like::DISLIKE)
+				'likeValue' => ($row['rating'] > 3) ? Like::LIKE : Like::DISLIKE
 			]);
 		}
 	}
@@ -2041,7 +2041,7 @@ class WBB3xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			$data = [
 				'userID' => $row['ownerID'],
-				'username' => ($row['username'] ?: ''),
+				'username' => $row['username'] ?: '',
 				'title' => $row['title'],
 				'description' => $row['description'],
 				'lastUpdateTime' => $row['lastUpdateTime']
@@ -2119,9 +2119,9 @@ class WBB3xExporter extends AbstractExporter {
 			if (isset($categories[$row['photoID']])) $additionalData['categories'] = array_unique($categories[$row['photoID']]);
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.gallery.image')->import($row['photoID'], [
-				'userID' => ($row['ownerID'] ?: null),
+				'userID' => $row['ownerID'] ?: null,
 				'username' => $row['username'],
-				'albumID' => ($row['albumID'] ?: null),
+				'albumID' => $row['albumID'] ?: null,
 				'title' => $row['title'],
 				'description' => $row['description'],
 				'filename' => $row['filename'],
@@ -2164,7 +2164,7 @@ class WBB3xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.gallery.image.comment')->import($row['commentID'], [
 				'objectID' => $row['photoID'],
-				'userID' => ($row['userID'] ?: null),
+				'userID' => $row['userID'] ?: null,
 				'username' => $row['username'],
 				'message' => $row['comment'],
 				'time' => $row['time']
@@ -2207,9 +2207,9 @@ class WBB3xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.gallery.image.like')->import(0, [
 				'objectID' => $row['objectID'],
-				'objectUserID' => ($row['objectUserID'] ?: null),
+				'objectUserID' => $row['objectUserID'] ?: null,
 				'userID' => $row['userID'],
-				'likeValue' => ($row['rating'] > 3 ? Like::LIKE : Like::DISLIKE)
+				'likeValue' => ($row['rating'] > 3) ? Like::LIKE : Like::DISLIKE
 			]);
 		}
 	}
@@ -2352,9 +2352,9 @@ class WBB3xExporter extends AbstractExporter {
 				'endTime' => $oldEventDateData['endTime'],
 				'isFullDay' => $oldEventDateData['isFullDay'],
 				'timezone' => 'UTC',
-				'firstDayOfWeek' => (isset($oldEventDateData['wkst']) ? $oldEventDateData['wkst'] : 1),
+				'firstDayOfWeek' => isset($oldEventDateData['wkst']) ? $oldEventDateData['wkst'] : 1,
 				'repeatType' => $repeatType,
-				'repeatInterval' => (isset($oldEventDateData['repeatInterval']) ? $oldEventDateData['repeatInterval'] : 1),
+				'repeatInterval' => isset($oldEventDateData['repeatInterval']) ? $oldEventDateData['repeatInterval'] : 1,
 				'repeatWeeklyByDay' => $repeatWeeklyByDay,
 				'repeatMonthlyByMonthDay' => $repeatMonthlyByMonthDay,
 				'repeatMonthlyDayOffset' => $repeatMonthlyDayOffset,
@@ -2369,7 +2369,7 @@ class WBB3xExporter extends AbstractExporter {
 			];
 			
 			$data = [
-				'userID' => ($row['userID'] ?: null),
+				'userID' => $row['userID'] ?: null,
 				'username' => $row['username'],
 				'location' => $row['location'],
 				'enableComments' => $row['enableComments'],
@@ -2594,8 +2594,8 @@ class WBB3xExporter extends AbstractExporter {
 			$fileLocation = $this->fileSystemPath.'attachments/attachment-'.$row['attachmentID'];
 			
 			ImportHandler::getInstance()->getImporter($objectType)->import($row['attachmentID'], [
-				'objectID' => (!empty($row['containerID']) ? $row['containerID'] : $row['messageID']),
-				'userID' => ($row['userID'] ?: null),
+				'objectID' => !empty($row['containerID']) ? $row['containerID'] : $row['messageID'],
+				'userID' => $row['userID'] ?: null,
 				'filename' => $row['attachmentName'],
 				'filesize' => $row['attachmentSize'],
 				'fileType' => $row['fileType'],
@@ -2603,7 +2603,7 @@ class WBB3xExporter extends AbstractExporter {
 				'downloads' => $row['downloads'],
 				'lastDownloadTime' => $row['lastDownloadTime'],
 				'uploadTime' => $row['uploadTime'],
-				'showOrder' => (!empty($row['showOrder']) ? $row['showOrder'] : 0)
+				'showOrder' => !empty($row['showOrder']) ? $row['showOrder'] : 0
 			], ['fileLocation' => $fileLocation]);
 		}
 	}

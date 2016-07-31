@@ -250,7 +250,7 @@ class PhpBB31xExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.group')->import($row['group_id'], [
 				'groupName' => $row['group_name'],
 				'groupType' => $groupType,
-				'userOnlineMarking' => ($row['group_colour'] ? '<span style="color: #'.$row['group_colour'].'">%s</span>' : '%s'),
+				'userOnlineMarking' => $row['group_colour'] ? '<span style="color: #'.$row['group_colour'].'">%s</span>' : '%s',
 				'showOnTeamPage' => $row['group_legend']
 			]);
 		}
@@ -866,7 +866,7 @@ class PhpBB31xExporter extends AbstractExporter {
 				'hideConversation' => $row['pm_deleted'],
 				'isInvisible' => in_array('u_'.$row['user_id'], $bcc) ? 1 : 0,
 				'lastVisitTime' => $row['pm_new'] ? 0 : $row['message_time']
-			], ['labelIDs' => ($row['folder_id'] > 0 ? [$row['folder_id']] : [])]);
+			], ['labelIDs' => $row['folder_id'] > 0 ? [$row['folder_id']] : []]);
 		}
 	}
 	
@@ -928,9 +928,9 @@ class PhpBB31xExporter extends AbstractExporter {
 		
 		foreach ($this->boardCache[$parentID] as $board) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import($board['forum_id'], [
-				'parentID' => ($board['parent_id'] ?: null),
+				'parentID' => $board['parent_id'] ?: null,
 				'position' => $board['left_id'],
-				'boardType' => ($board['forum_type'] == self::BOARD_TYPE_LINK ? Board::TYPE_LINK : ($board['forum_type'] == self::BOARD_TYPE_CATEGORY ? Board::TYPE_CATEGORY : Board::TYPE_BOARD)),
+				'boardType' => $board['forum_type'] == self::BOARD_TYPE_LINK ? Board::TYPE_LINK : ($board['forum_type'] == self::BOARD_TYPE_CATEGORY ? Board::TYPE_CATEGORY : Board::TYPE_BOARD),
 				'title' => StringUtil::decodeHTML($board['forum_name']),
 				'description' => $board['forum_desc'],
 				'descriptionUseHtml' => 1, // cannot be disabled
@@ -1025,7 +1025,7 @@ class PhpBB31xExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.post')->import($row['post_id'], [
 				'threadID' => $row['topic_id'],
 				'userID' => $row['poster_id'],
-				'username' => ($row['post_username'] ?: (StringUtil::decodeHTML($row['username']) ?: '')),
+				'username' => $row['post_username'] ?: (StringUtil::decodeHTML($row['username']) ?: ''),
 				'subject' => StringUtil::decodeHTML($row['post_subject']),
 				'message' => self::fixBBCodes(StringUtil::decodeHTML($row['post_text']), $row['bbcode_uid']),
 				'time' => $row['post_time'],
@@ -1033,11 +1033,11 @@ class PhpBB31xExporter extends AbstractExporter {
 				'isDeleted' => $row['post_visibility'] == self::ITEM_DELETED ? 1 : 0,
 				'deleteTime' => $row['post_delete_time'],
 				'isClosed' => $row['post_edit_locked'] ? 1 : 0,
-				'editorID' => ($row['post_edit_user'] ?: null),
+				'editorID' => $row['post_edit_user'] ?: null,
 				'editor' => $row['editorName'] ?: '',
 				'lastEditTime' => $row['post_edit_time'],
 				'editCount' => $row['post_edit_count'],
-				'editReason' => (!empty($row['post_edit_reason']) ? $row['post_edit_reason'] : ''),
+				'editReason' => !empty($row['post_edit_reason']) ? $row['post_edit_reason'] : '',
 				'attachments' => $row['attachments'],
 				'enableHtml' => 0,
 				'ipAddress' => UserUtil::convertIPv4To6($row['poster_ip'])
@@ -1130,7 +1130,7 @@ class PhpBB31xExporter extends AbstractExporter {
 				'question' => $row['poll_title'],
 				'time' => $row['poll_start'],
 				'endTime' => $row['poll_length'] ? $row['poll_start'] + $row['poll_length'] : 0,
-				'isChangeable' => ($row['poll_vote_change'] ? 1 : 0),
+				'isChangeable' => $row['poll_vote_change'] ? 1 : 0,
 				'isPublic' => 0,
 				'maxVotes' => $row['poll_max_options'],
 				'votes' => $row['poll_votes']
@@ -1455,7 +1455,7 @@ class PhpBB31xExporter extends AbstractExporter {
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.'.($conversation ? 'wcf.conversation' : 'wbb').'.attachment')->import(0, [ // TODO: support inline attachments
 				'objectID' => $row['post_msg_id'],
-				'userID' => ($row['poster_id'] ?: null),
+				'userID' => $row['poster_id'] ?: null,
 				'filename' => $row['real_filename'],
 				'filesize' => $row['filesize'],
 				'fileType' => $row['mimetype'],
