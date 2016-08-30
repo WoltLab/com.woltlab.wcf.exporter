@@ -649,6 +649,7 @@ class IPB3xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			$threadIDs[] = $row['tid'];
 		}
+		if (empty($threadIDs)) return;
 		
 		// get tags
 		$tags = $this->getTags('forums', 'topics', $threadIDs);
