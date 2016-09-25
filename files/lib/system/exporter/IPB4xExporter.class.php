@@ -24,15 +24,15 @@ use wcf\util\UserUtil;
 class IPB4xExporter extends AbstractExporter {
 	/**
 	 * language statement
-	 * @var \wcf\system\database\statement\PreparedStatement
+	 * @var	\wcf\system\database\statement\PreparedStatement
 	 */
-	private $languageStatement = null;
+	private $languageStatement;
 	
 	/**
 	 * ipb default language
-	 * @var integer
+	 * @var	integer
 	 */
-	private $defaultLanguageID = null;
+	private $defaultLanguageID;
 	
 	/**
 	 * board cache
