@@ -451,24 +451,22 @@ class WordPress3xExporter extends AbstractExporter {
 			} 
 			
 			$alignment = 'none';
-			if (strpos($matches[1], 'alignleft')) {
+			if (strpos($matches[1], 'alignleft') !== false) {
 				$alignment = 'left';
 			}
-			else if (strpos($matches[1], 'alignright')) {
+			else if (strpos($matches[1], 'alignright') !== false) {
 				$alignment = 'right';
 			}
 			
-			$size = null;
-			if (strpos($matches[1], 'size-thumbnail')) {
+			$size = 'original';
+			if (strpos($matches[1], 'size-thumbnail') !== false) {
 				$size = 'small';
 			}
-			else {
-				if (strpos($matches[1], 'size-medium')) {
-					$size = 'medium';
-				}
-				else if (strpos($matches[1], 'size-large')) {
-					$size = 'large';
-				}
+			else if (strpos($matches[1], 'size-medium') !== false) {
+				$size = 'medium';
+			}
+			else if (strpos($matches[1], 'size-large') !== false) {
+				$size = 'large';
 			}
 			
 			$data = [$mediaID, $size, $alignment];
