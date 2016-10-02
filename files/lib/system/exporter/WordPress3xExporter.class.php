@@ -19,21 +19,33 @@ use wcf\util\StringUtil;
 class WordPress3xExporter extends AbstractExporter {
 	/**
 	 * category cache
-	 *
-	 * @var        array
+	 * @var	array
 	 */
 	protected $categoryCache = [];
 	
 	/**
 	 * @inheritDoc
 	 */
-	protected $methods = ['com.woltlab.wcf.user' => 'Users', 'com.woltlab.wcf.article.category' => 'BlogCategories', 'com.woltlab.wcf.article' => 'BlogEntries', 'com.woltlab.wcf.article.comment' => 'BlogComments', 'com.woltlab.wcf.media' => 'BlogAttachments'];
+	protected $methods = [
+		'com.woltlab.wcf.user' => 'Users',
+		'com.woltlab.wcf.article.category' => 'BlogCategories',
+		'com.woltlab.wcf.article' => 'BlogEntries',
+		'com.woltlab.wcf.article.comment' => 'BlogComments',
+		'com.woltlab.wcf.media' => 'BlogAttachments'
+	];
 	
 	/**
 	 * @inheritDoc
 	 */
 	public function getSupportedData() {
-		return ['com.woltlab.wcf.user' => [], 'com.woltlab.wcf.article' => ['com.woltlab.wcf.article.category', 'com.woltlab.wcf.article.comment', 'com.woltlab.wcf.media']];
+		return [
+			'com.woltlab.wcf.user' => [],
+			'com.woltlab.wcf.article' => [
+				'com.woltlab.wcf.article.category',
+				'com.woltlab.wcf.article.comment',
+				'com.woltlab.wcf.media'
+			]
+		];
 	}
 	
 	/**
@@ -74,7 +86,9 @@ class WordPress3xExporter extends AbstractExporter {
 	 */
 	public function validateFileAccess() {
 		if (in_array('com.woltlab.wcf.media', $this->selectedData)) {
-			if (empty($this->fileSystemPath) || (!@file_exists($this->fileSystemPath . 'wp-trackback.php'))) return false;
+			if (empty($this->fileSystemPath) || (!@file_exists($this->fileSystemPath . 'wp-trackback.php'))) {
+				return false;
+			}
 		}
 		
 		return true;
@@ -97,8 +111,8 @@ class WordPress3xExporter extends AbstractExporter {
 	/**
 	 * Exports users.
 	 *
-	 * @param        integer $offset
-	 * @param        integer $limit
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportUsers($offset, $limit) {
 		// prepare password update
@@ -115,7 +129,12 @@ class WordPress3xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute([$offset + 1, $offset + $limit]);
 		while ($row = $statement->fetchArray()) {
-			$data = ['username' => $row['user_login'], 'password' => '', 'email' => $row['user_email'], 'registrationDate' => @strtotime($row['user_registered'])];
+			$data = [
+				'username' => $row['user_login'],
+				'password' => '',
+				'email' => $row['user_email'],
+				'registrationDate' => @strtotime($row['user_registered'])
+			];
 			
 			// import user
 			$newUserID = ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user')->import($row['ID'], $data);
@@ -143,8 +162,8 @@ class WordPress3xExporter extends AbstractExporter {
 	/**
 	 * Exports categories.
 	 *
-	 * @param        integer $offset
-	 * @param        integer $limit
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportBlogCategories($offset, $limit) {
 		$sql = "SELECT		term_taxonomy.*, term.name
@@ -165,13 +184,17 @@ class WordPress3xExporter extends AbstractExporter {
 	/**
 	 * Exports the categories recursively.
 	 *
-	 * @param        integer $parentID
+	 * @param	integer		$parentID
 	 */
 	protected function exportBlogCategoriesRecursively($parentID = 0) {
 		if (!isset($this->categoryCache[$parentID])) return;
 		
 		foreach ($this->categoryCache[$parentID] as $category) {
-			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.article.category')->import($category['term_id'], ['title' => StringUtil::decodeHTML($category['name']), 'parentCategoryID' => $category['parent'], 'showOrder' => 0]);
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.article.category')->import($category['term_id'], [
+				'title' => StringUtil::decodeHTML($category['name']),
+				'parentCategoryID' => $category['parent'],
+				'showOrder' => 0
+			]);
 			
 			$this->exportBlogCategoriesRecursively($category['term_id']);
 		}
@@ -193,8 +216,8 @@ class WordPress3xExporter extends AbstractExporter {
 	/**
 	 * Exports blog entries.
 	 *
-	 * @param        integer $offset
-	 * @param        integer $limit
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportBlogEntries($offset, $limit) {
 		// get entry ids
@@ -262,9 +285,22 @@ class WordPress3xExporter extends AbstractExporter {
 			$time = @strtotime($row['post_date_gmt']);
 			if (!$time) $time = @strtotime($row['post_date']);
 			
-			$additionalData = ['contents' => [0 => ['title' => $row['post_title'], 'content' => self::fixMessage($row['post_content']), 'tags' => (isset($tags[$row['ID']]) ? $tags[$row['ID']] : [])]]];
+			$additionalData = [
+				'contents' => [
+					0 => [
+						'title' => $row['post_title'],
+						'content' => self::fixMessage($row['post_content']),
+						'tags' => (isset($tags[$row['ID']]) ? $tags[$row['ID']] : [])]
+				]
+			];
 			
-			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.article')->import($row['ID'], ['userID' => $row['post_author'] ?: null, 'username' => $row['user_login'] ?: '', 'time' => $time, 'categoryID' => (isset($categories[$row['ID']]) ? reset($categories[$row['ID']]) : null), 'comments' => $row['comment_count'], 'publicationStatus' => ($row['post_status'] == 'publish') ? Article::PUBLISHED : Article::UNPUBLISHED], $additionalData);
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.article')->import($row['ID'], [
+				'userID' => $row['post_author'] ?: null,
+				'username' => $row['user_login'] ?: '',
+				'time' => $time, 'categoryID' => (isset($categories[$row['ID']]) ? reset($categories[$row['ID']]) : null),
+				'comments' => $row['comment_count'],
+				'publicationStatus' => $row['post_status'] == 'publish' ? Article::PUBLISHED : Article::UNPUBLISHED
+			], $additionalData);
 		}
 	}
 	
@@ -284,8 +320,8 @@ class WordPress3xExporter extends AbstractExporter {
 	/**
 	 * Exports blog comments.
 	 *
-	 * @param        integer $offset
-	 * @param        integer $limit
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportBlogComments($offset, $limit) {
 		$sql = "SELECT	comment_ID, comment_parent
@@ -301,8 +337,14 @@ class WordPress3xExporter extends AbstractExporter {
 		$statement->execute([1]);
 		while ($row = $statement->fetchArray()) {
 			if (!$row['comment_parent']) {
-				ImportHandler::getInstance()->getImporter('com.woltlab.wcf.article.comment')->import($row['comment_ID'], ['userID' => $row['user_id'] ?: null, 'username' => $row['comment_author'], 'message' => StringUtil::decodeHTML($row['comment_content']), 'time' => @strtotime($row['comment_date_gmt'])], ['articleID' => $row['comment_post_ID']]);
-			} else {
+				ImportHandler::getInstance()->getImporter('com.woltlab.wcf.article.comment')->import($row['comment_ID'], [
+					'userID' => $row['user_id'] ?: null,
+					'username' => $row['comment_author'],
+					'message' => StringUtil::decodeHTML($row['comment_content']),
+					'time' => @strtotime($row['comment_date_gmt'])
+				], ['articleID' => $row['comment_post_ID']]);
+			}
+			else {
 				$parentID = $row['comment_parent'];
 				
 				do {
@@ -310,7 +352,13 @@ class WordPress3xExporter extends AbstractExporter {
 					$row2 = $parentCommentStatement->fetchArray();
 					
 					if (!$row2['comment_parent']) {
-						ImportHandler::getInstance()->getImporter('com.woltlab.wcf.article.comment.response')->import($row['comment_ID'], ['commentID' => $row2['comment_ID'], 'userID' => $row['user_id'] ?: null, 'username' => $row['comment_author'], 'message' => StringUtil::decodeHTML($row['comment_content']), 'time' => @strtotime($row['comment_date_gmt'])]);
+						ImportHandler::getInstance()->getImporter('com.woltlab.wcf.article.comment.response')->import($row['comment_ID'], [
+							'commentID' => $row2['comment_ID'],
+							'userID' => $row['user_id'] ?: null,
+							'username' => $row['comment_author'],
+							'message' => StringUtil::decodeHTML($row['comment_content']),
+							'time' => @strtotime($row['comment_date_gmt'])
+						]);
 						break;
 					}
 					$parentID = $row2['comment_parent'];
@@ -329,7 +377,7 @@ class WordPress3xExporter extends AbstractExporter {
 			WHERE		post_type = ?
 					AND post_parent IN (
 						SELECT	ID
-						FROM	" . $this->databasePrefix . "posts	
+						FROM	" . $this->databasePrefix . "posts
 						WHERE	post_type = ?
 							AND post_status IN (?, ?, ?, ?, ?, ?)
 					)";
@@ -342,8 +390,8 @@ class WordPress3xExporter extends AbstractExporter {
 	/**
 	 * Exports blog attachments.
 	 *
-	 * @param        integer $offset
-	 * @param        integer $limit
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportBlogAttachments($offset, $limit) {
 		$sql = "SELECT		posts.*, postmeta.*
@@ -372,15 +420,25 @@ class WordPress3xExporter extends AbstractExporter {
 			$time = @strtotime($row['post_date_gmt']);
 			if (!$time) $time = @strtotime($row['post_date']);
 			
-			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.media')->import($row['ID'], ['filename' => basename($fileLocation), 'filesize' => filesize($fileLocation), 'fileType' => $row['post_mime_type'], 'fileHash' => md5_file($fileLocation), 'uploadTime' => $time, 'userID' => $row['post_author'] ?: null, 'isImage' => $isImage, 'width' => $width, 'height' => $height], ['fileLocation' => $fileLocation, 'contents' => []]);
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.media')->import($row['ID'], [
+				'filename' => basename($fileLocation),
+				'filesize' => filesize($fileLocation),
+				'fileType' => $row['post_mime_type'],
+				'fileHash' => md5_file($fileLocation),
+				'uploadTime' => $time,
+				'userID' => $row['post_author'] ?: null,
+				'isImage' => $isImage,
+				'width' => $width,
+				'height' => $height
+			], ['fileLocation' => $fileLocation, 'contents' => []]);
 		}
 	}
 	
 	/**
 	 * Returns message with fixed syntax as used in WCF.
 	 *
-	 * @param        string $string
-	 * @return        string
+	 * @param	string		$string
+	 * @return	string
 	 */
 	private static function fixMessage($string) {
 		$string = str_replace("\n", "<br />\n", StringUtil::unifyNewlines($string));
@@ -391,19 +449,26 @@ class WordPress3xExporter extends AbstractExporter {
 			if (!$mediaID) {
 				return $matches[0];
 			} 
-				
+			
 			$alignment = 'none';
 			if (strpos($matches[1], 'alignleft')) {
 				$alignment = 'left';
-			} else if (strpos($matches[1], 'alignright')) $alignment = 'right';
+			}
+			else if (strpos($matches[1], 'alignright')) {
+				$alignment = 'right';
+			}
 			
 			$size = null;
 			if (strpos($matches[1], 'size-thumbnail')) {
 				$size = 'small';
-			} else {
+			}
+			else {
 				if (strpos($matches[1], 'size-medium')) {
 					$size = 'medium';
-				} else if (strpos($matches[1], 'size-large')) $size = 'large';
+				}
+				else if (strpos($matches[1], 'size-large')) {
+					$size = 'large';
+				}
 			}
 			
 			$data = [$mediaID, $size, $alignment];
