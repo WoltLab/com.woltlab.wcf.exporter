@@ -410,6 +410,7 @@ class WordPress3xExporter extends AbstractExporter {
 		$statement->execute(['_wp_attached_file', 'attachment', 'post', 'publish', 'pending', 'draft', 'future', 'private', 'trash']);
 		while ($row = $statement->fetchArray()) {
 			$fileLocation = $this->fileSystemPath . 'wp-content/uploads/' . $row['meta_value'];
+			if (!file_exists($fileLocation)) continue;
 			
 			$isImage = $width = $height = 0;
 			if ($row['post_mime_type'] == 'image/jpeg' || $row['post_mime_type'] == 'image/png' || $row['post_mime_type'] == 'image/gif') $isImage = 1;
