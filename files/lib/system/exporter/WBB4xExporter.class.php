@@ -9,6 +9,7 @@ use wcf\system\database\util\PreparedStatementConditionBuilder;
 use wcf\system\importer\ImportHandler;
 use wcf\system\WCF;
 use wcf\util\FileUtil;
+use wcf\util\StringUtil;
 
 /**
  * Exporter for Burning Board 4.x
@@ -641,9 +642,15 @@ class WBB4xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute($conditionBuilder->getParameters());
 		while ($row = $statement->fetchArray()) {
+			$optionType = StringUtil::firstCharToUpperCase($row['optionType']);
+			$className = 'wcf\system\option\\'.$optionType.'OptionType';
+			if (!class_exists($className)) {
+				$optionType = 'textarea';
+			}
+			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.option')->import($row['optionID'], [
 				'categoryName' => $row['categoryName'],
-				'optionType' => $row['optionType'],
+				'optionType' => $optionType,
 				'defaultValue' => $row['defaultValue'],
 				'validationPattern' => $row['validationPattern'],
 				'selectOptions' => $row['selectOptions'],
