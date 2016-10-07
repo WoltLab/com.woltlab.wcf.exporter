@@ -415,7 +415,10 @@ class WordPress3xExporter extends AbstractExporter {
 			$isImage = $width = $height = 0;
 			if ($row['post_mime_type'] == 'image/jpeg' || $row['post_mime_type'] == 'image/png' || $row['post_mime_type'] == 'image/gif') $isImage = 1;
 			if ($isImage) {
-				list($width, $height) = getimagesize($fileLocation);
+				$imageData = @getimagesize($fileLocation);
+				if ($imageData === false) continue;
+				$width = $imageData[0];
+				$height = $imageData[1];
 			}
 			
 			$time = @strtotime($row['post_date_gmt']);
