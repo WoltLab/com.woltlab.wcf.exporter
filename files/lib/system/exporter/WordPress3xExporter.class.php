@@ -26,6 +26,13 @@ class WordPress3xExporter extends AbstractExporter {
 	/**
 	 * @inheritDoc
 	 */
+	protected $limits = [
+		'com.woltlab.wcf.media' => 50
+	];
+	
+	/**
+	 * @inheritDoc
+	 */
 	protected $methods = [
 		'com.woltlab.wcf.user' => 'Users',
 		'com.woltlab.wcf.article.category' => 'BlogCategories',
