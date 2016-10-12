@@ -1,20 +1,13 @@
 <?php
 namespace wcf\system\exporter;
 use wbb\data\board\Board;
-use wbb\data\board\BoardCache;
-use wcf\data\like\Like;
-use wcf\data\object\type\ObjectTypeCache;
 use wcf\data\user\group\UserGroup;
-use wcf\data\user\option\UserOption;
-use wcf\system\database\util\PreparedStatementConditionBuilder;
 use wcf\system\database\DatabaseException;
-use wcf\system\exception\SystemException;
 use wcf\system\importer\ImportHandler;
 use wcf\system\request\LinkHandler;
 use wcf\system\Callback;
 use wcf\system\Regex;
 use wcf\system\WCF;
-use wcf\util\ArrayUtil;
 use wcf\util\FileUtil;
 use wcf\util\MessageUtil;
 use wcf\util\PasswordUtil;
@@ -26,7 +19,7 @@ use wcf\util\UserUtil;
  * Exporter for vBulletin 5.x
  * 
  * @author	Tim Duesterhus
- * @copyright	2001-2015 WoltLab GmbH
+ * @copyright	2001-2016 WoltLab GmbH
  * @license	GNU Lesser General Public License <http://opensource.org/licenses/lgpl-license.php>
  * @package	com.woltlab.wcf.exporter
  * @subpackage	system.exporter
@@ -41,12 +34,12 @@ class VB5xExporter extends AbstractExporter {
 	 * board cache
 	 * @var	array
 	 */
-	protected $boardCache = array();
+	protected $boardCache = [];
 	
 	/**
-	 * @see	\wcf\system\exporter\AbstractExporter::$methods
+	 * @inheritDoc
 	 */
-	protected $methods = array(
+	protected $methods = [
 		'com.woltlab.wcf.user' => 'Users',
 		'com.woltlab.wcf.user.group' => 'UserGroups',
 		'com.woltlab.wcf.user.rank' => 'UserRanks',
@@ -73,50 +66,50 @@ class VB5xExporter extends AbstractExporter {
 		'com.woltlab.wbb.acl' => 'ACLs',
 		'com.woltlab.wcf.smiley.category' => 'SmileyCategories',
 		'com.woltlab.wcf.smiley' => 'Smilies',
-	);
+	];
 	
 	/**
-	 * @see	\wcf\system\exporter\AbstractExporter::$limits
+	 * @inheritDoc
 	 */
-	protected $limits = array(
+	protected $limits = [
 		'com.woltlab.wcf.user' => 100,
 		'com.woltlab.wcf.user.avatar' => 100,
 		'com.woltlab.wcf.conversation.attachment' => 100,
 		'com.woltlab.wbb.thread' => 200,
 		'com.woltlab.wbb.attachment' => 100,
 		'com.woltlab.wbb.acl' => 50
-	);
+	];
 	
 	/**
-	 * @see	\wcf\system\exporter\IExporter::getSupportedData()
+	 * @inheritDoc
 	 */
 	public function getSupportedData() {
-		return array(
-			'com.woltlab.wcf.user' => array(
+		return [
+			'com.woltlab.wcf.user' => [
 				'com.woltlab.wcf.user.group',
 				'com.woltlab.wcf.user.avatar',
 			/*	'com.woltlab.wcf.user.option',*/
 			/*	'com.woltlab.wcf.user.comment',
 				'com.woltlab.wcf.user.follower',
 				'com.woltlab.wcf.user.rank'*/
-			),
-			'com.woltlab.wbb.board' => array(
+			],
+			'com.woltlab.wbb.board' => [
 				/*'com.woltlab.wbb.acl',*/
 				'com.woltlab.wbb.attachment',
 				'com.woltlab.wbb.poll',
 			/*	'com.woltlab.wbb.watchedThread',
 				'com.woltlab.wbb.like',
 				'com.woltlab.wcf.label'*/
-			),
+			],
 		/*	'com.woltlab.wcf.conversation' => array(
 				'com.woltlab.wcf.conversation.label'
 			),
 			'com.woltlab.wcf.smiley' => array()*/
-		);
+		];
 	}
 	
 	/**
-	 * @see	\wcf\system\exporter\IExporter::validateDatabaseAccess()
+	 * @inheritDoc
 	 */
 	public function validateDatabaseAccess() {
 		parent::validateDatabaseAccess();
@@ -127,7 +120,7 @@ class VB5xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see	\wcf\system\exporter\IExporter::validateFileAccess()
+	 * @inheritDoc
 	 */
 	public function validateFileAccess() {
 		if (in_array('com.woltlab.wcf.smiley', $this->selectedData)) {
@@ -152,10 +145,10 @@ class VB5xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see	\wcf\system\exporter\IExporter::getQueue()
+	 * @inheritDoc
 	 */
 	public function getQueue() {
-		$queue = array();
+		$queue = [];
 		
 		// user
 		if (in_array('com.woltlab.wcf.user', $this->selectedData)) {
@@ -219,6 +212,9 @@ class VB5xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports user groups.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportUserGroups($offset, $limit) {
 		$sql = "SELECT		*
@@ -226,7 +222,7 @@ class VB5xExporter extends AbstractExporter {
 			WHERE		usergroupid BETWEEN ? AND ?
 			ORDER BY	usergroupid";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array($offset + 1, $offset + $limit));
+		$statement->execute([$offset + 1, $offset + $limit]);
 		while ($row = $statement->fetchArray()) {
 			switch ($row['systemgroupid']) {
 				case 1:
@@ -240,12 +236,12 @@ class VB5xExporter extends AbstractExporter {
 				break;
 			}
 				
-			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.group')->import($row['usergroupid'], array(
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.group')->import($row['usergroupid'], [
 				'groupName' => $row['title'],
 				'groupDescription' => $row['description'],
 				'groupType' => $groupType,
 				'userOnlineMarking' => $row['opentag'].'%s'.$row['closetag']
-			));
+			]);
 		}
 	}
 	
@@ -259,6 +255,9 @@ class VB5xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports users.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportUsers($offset, $limit) {
 		// prepare password update
@@ -279,9 +278,9 @@ class VB5xExporter extends AbstractExporter {
 			WHERE		user_table.userid BETWEEN ? AND ?
 			ORDER BY	user_table.userid";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array($offset + 1, $offset + $limit));
+		$statement->execute([$offset + 1, $offset + $limit]);
 		while ($row = $statement->fetchArray()) {
-			$data = array(
+			$data = [
 				'username' => $row['username'],
 				'password' => '',
 				'email' => $row['email'],
@@ -294,11 +293,11 @@ class VB5xExporter extends AbstractExporter {
 				'signature' => $row['signature'],
 				'userTitle' => ($row['customtitle'] != 0) ? $row['usertitle'] : '',
 				'lastActivityTime' => $row['lastactivity']
-			);
-			$additionalData = array(
+			];
+			$additionalData = [
 				'groupIDs' => explode(',', $row['membergroupids'].','.$row['usergroupid']),
-				'options' => array()
-			);
+				'options' => []
+			];
 			
 			// import user
 			$newUserID = ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user')->import($row['userid'], $data, $additionalData);
@@ -312,7 +311,7 @@ class VB5xExporter extends AbstractExporter {
 					$password = 'vb5:'.implode(':', explode(' ', $row['token'], 2));
 				}
 				
-				$passwordUpdateStatement->execute(array($password, $newUserID));
+				$passwordUpdateStatement->execute([$password, $newUserID]);
 			}
 		}
 	}
@@ -326,6 +325,10 @@ class VB5xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports user avatars.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 * @throws	\Exception
 	 */
 	public function exportUserAvatars($offset, $limit) {
 		$sql = "SELECT		customavatar.*, user.avatarrevision
@@ -335,7 +338,7 @@ class VB5xExporter extends AbstractExporter {
 			WHERE		customavatar.userid BETWEEN ? AND ?
 			ORDER BY	customavatar.userid";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array($offset + 1, $offset + $limit));
+		$statement->execute([$offset + 1, $offset + $limit]);
 		while ($row = $statement->fetchArray()) {
 			$file = null;
 			
@@ -351,13 +354,13 @@ class VB5xExporter extends AbstractExporter {
 					file_put_contents($file, $row['filedata']);
 				}
 				
-				ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.avatar')->import($row['userid'], array(
+				ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.avatar')->import($row['userid'], [
 					'avatarName' => $row['filename'],
 					'avatarExtension' => pathinfo($row['filename'], PATHINFO_EXTENSION),
 					'width' => $row['width'],
 					'height' => $row['height'],
 					'userID' => $row['userid']
-				), array('fileLocation' => $file));
+				], ['fileLocation' => $file]);
 				
 				if (!$this->readOption('usefileavatar')) unlink($file);
 			}
@@ -380,13 +383,16 @@ class VB5xExporter extends AbstractExporter {
 			INNER JOIN	(SELECT contenttypeid FROM ".$this->databasePrefix."contenttype WHERE class = ?) x
 			ON		x.contenttypeid = node.contenttypeid";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array('Channel'));
+		$statement->execute(['Channel']);
 		$row = $statement->fetchArray();
 		return ($row['count'] ? 1 : 0);
 	}
 	
 	/**
 	 * Exports boards.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportBoards($offset, $limit) {
 		$sql = "SELECT		node.*
@@ -397,7 +403,7 @@ class VB5xExporter extends AbstractExporter {
 			
 			ORDER BY	nodeid";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array('Channel'));
+		$statement->execute(['Channel']);
 		while ($row = $statement->fetchArray()) {
 			$this->boardCache[$row['parentid']][] = $row;
 		}
@@ -407,13 +413,15 @@ class VB5xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports the boards recursively.
+	 *
+	 * @param	integer		$parentID
 	 */
 	protected function exportBoardsRecursively($parentID = 0) {
 		if (!isset($this->boardCache[$parentID])) return;
 		
 		foreach ($this->boardCache[$parentID] as $board) {
-			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import($board['nodeid'], array(
-				'parentID' => ($board['parentid'] ?: null),
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import($board['nodeid'], [
+				'parentID' => $board['parentid'] ?: null,
 				'position' => $board['displayorder'] ?: 0,
 				'boardType' => Board::TYPE_BOARD,
 				'title' => $board['title'],
@@ -421,7 +429,7 @@ class VB5xExporter extends AbstractExporter {
 				'descriptionUseHtml' => 0,
 				'enableMarkingAsDone' => 0,
 				'ignorable' => 1
-			));
+			]);
 			
 			$this->exportBoardsRecursively($board['nodeid']);
 		}
@@ -436,6 +444,9 @@ class VB5xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports threads.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportThreads($offset, $limit) {
 		$sql = "SELECT		child.*, view.count AS views
@@ -453,9 +464,9 @@ class VB5xExporter extends AbstractExporter {
 			WHERE		child.nodeid BETWEEN ? AND ?
 			ORDER BY	child.nodeid ASC";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array('Channel', 'Text', 'Poll', $offset + 1, $offset + $limit));
+		$statement->execute(['Channel', 'Text', 'Poll', $offset + 1, $offset + $limit]);
 		while ($row = $statement->fetchArray()) {
-			$data = array(
+			$data = [
 				'boardID' => $row['parentid'],
 				'topic' => StringUtil::decodeHTML($row['title']),
 				'time' => $row['created'],
@@ -468,8 +479,8 @@ class VB5xExporter extends AbstractExporter {
 				'isClosed' => $row['open'] ? 0 : 1,
 				'isDeleted' => $row['deleteuserid'] !== null ? 1 : 0,
 				'deleteTime' => $row['deleteuserid'] !== null ? TIME_NOW : 0
-			);
-			$additionalData = array();
+			];
+			$additionalData = [];
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.thread')->import($row['nodeid'], $data, $additionalData);
 		}
@@ -484,6 +495,9 @@ class VB5xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports posts.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportPosts($offset, $limit) {
 		$sql = "SELECT		child.*, IF(parent.contenttypeid = child.contenttypeid, 0, 1) AS isFirstPost, text.*
@@ -499,9 +513,9 @@ class VB5xExporter extends AbstractExporter {
 			WHERE		child.nodeid BETWEEN ? AND ?
 			ORDER BY	child.nodeid ASC";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array('Text', 'Poll', $offset + 1, $offset + $limit));
+		$statement->execute(['Text', 'Poll', $offset + 1, $offset + $limit]);
 		while ($row = $statement->fetchArray()) {
-			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.post')->import($row['nodeid'], array(
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.post')->import($row['nodeid'], [
 				'threadID' => $row['isFirstPost'] ? $row['nodeid'] : $row['parentid'],
 				'userID' => $row['userid'],
 				'username' => $row['authorname'],
@@ -517,12 +531,9 @@ class VB5xExporter extends AbstractExporter {
 				'lastEditTime' => 0,
 				'editCount' => 0,
 				'editReason' => '',
-				'enableSmilies' => $row['allowsmilie'],
-				'enableHtml' => (isset($row['htmlState']) && $row['htmlState'] != 'off' ? 1 : 0),
-				'enableBBCodes' => 1,
-				'showSignature' => $row['showsignature'],
+				'enableHtml' => (isset($row['htmlState']) && $row['htmlState'] != 'off') ? 1 : 0,
 				'ipAddress' => UserUtil::convertIPv4To6($row['ipaddress'])
-			));
+			]);
 		}
 	}
 	
@@ -535,6 +546,10 @@ class VB5xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports post attachments.
+	 * 
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 * @throws	\Exception
 	 */
 	public function exportPostAttachments($offset, $limit) {
 		$sql = "SELECT		child.*, attach.*, filedata.*
@@ -561,7 +576,7 @@ class VB5xExporter extends AbstractExporter {
 		
 		// Text in a Text or Poll should be a post
 		// Text in a Channel should be a thread
-		$statement->execute(array('Text', 'Poll', 'Channel', 'Text', 'Attach', $offset + 1, $offset + $limit));
+		$statement->execute(['Text', 'Poll', 'Channel', 'Text', 'Attach', $offset + 1, $offset + $limit]);
 		while ($row = $statement->fetchArray()) {
 			$file = null;
 			
@@ -584,19 +599,19 @@ class VB5xExporter extends AbstractExporter {
 					$row['isImage'] = $row['width'] = $row['height'] = 0;
 				}
 				
-				ImportHandler::getInstance()->getImporter('com.woltlab.wbb.attachment')->import($row['nodeid'], array(
+				ImportHandler::getInstance()->getImporter('com.woltlab.wbb.attachment')->import($row['nodeid'], [
 					'objectID' => $row['parentid'],
-					'userID' => ($row['userid'] ?: null),
+					'userID' => $row['userid'] ?: null,
 					'filename' => $row['filename'],
-					'filesize' => (isset($row['filesize']) ? $row['filesize'] : filesize($file)),
+					'filesize' => isset($row['filesize']) ? $row['filesize'] : filesize($file),
 					'fileType' => FileUtil::getMimeType($file),
 					'isImage' => $row['isImage'],
 					'width' => $row['width'],
 					'height' => $row['height'],
 					'downloads' => $row['counter'],
 					'uploadTime' => $row['dateline'],
-					'showOrder' => (isset($row['displayOrder']) ? $row['displayOrder'] : 0)
-				), array('fileLocation' => $file));
+					'showOrder' => isset($row['displayOrder']) ? $row['displayOrder'] : 0
+				], ['fileLocation' => $file]);
 				
 				if ($this->readOption('attachfile') == self::ATTACHFILE_DATABASE) unlink($file);
 			}
@@ -617,6 +632,9 @@ class VB5xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports polls.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportPolls($offset, $limit) {
 		$sql = "SELECT		*
@@ -624,9 +642,9 @@ class VB5xExporter extends AbstractExporter {
 			WHERE		pollid BETWEEN ? AND ?
 			ORDER BY	pollid";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array($offset + 1, $offset + $limit));
+		$statement->execute([$offset + 1, $offset + $limit]);
 		while ($row = $statement->fetchArray()) {
-			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll')->import($row['pollid'], array(
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll')->import($row['pollid'], [
 				'objectID' => $row['nodeid'],
 				'question' => $row['question'],
 				'time' => $row['dateline'],
@@ -636,7 +654,7 @@ class VB5xExporter extends AbstractExporter {
 				'sortByVotes' => 0,
 				'maxVotes' => $row['multiple'] ? $row['numberoptions'] : 1,
 				'votes' => $row['votes']
-			));
+			]);
 		}
 	}
 	
@@ -649,6 +667,9 @@ class VB5xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports poll options.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportPollOptions($offset, $limit) {
 		$sql = "SELECT		polloption.*, poll.pollid
@@ -658,13 +679,13 @@ class VB5xExporter extends AbstractExporter {
 			WHERE		polloption.polloptionid BETWEEN ? AND ?
 			ORDER BY	polloption.polloptionid";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array($offset + 1, $offset + $limit));
+		$statement->execute([$offset + 1, $offset + $limit]);
 		while ($row = $statement->fetchArray()) {
-			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll.option')->import($row['polloptionid'], array(
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll.option')->import($row['polloptionid'], [
 				'pollID' => $row['pollid'],
 				'optionValue' => $row['title'],
 				'votes' => $row['votes']
-			));
+			]);
 		}
 	}
 	
@@ -678,6 +699,9 @@ class VB5xExporter extends AbstractExporter {
 	
 	/**
 	 * Exports poll option votes.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportPollOptionVotes($offset, $limit) {
 		$sql = "SELECT		*
@@ -685,25 +709,31 @@ class VB5xExporter extends AbstractExporter {
 			WHERE		pollvoteid BETWEEN ? AND ?
 			ORDER BY	pollvoteid";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array($offset + 1, $offset + $limit));
+		$statement->execute([$offset + 1, $offset + $limit]);
 		while ($row = $statement->fetchArray()) {
-			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll.option.vote')->import(0, array(
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll.option.vote')->import(0, [
 				'pollID' => $row['pollid'],
 				'optionID' => $row['polloptionid'],
 				'userID' => $row['userid']
-			));
+			]);
 		}
 	}
 	
+	/**
+	 * Returns the value of the given option in the imported board.
+	 * 
+	 * @param	string		$optionName
+	 * @return	mixed
+	 */
 	private function readOption($optionName) {
-		static $optionCache = array();
+		static $optionCache = [];
 		
 		if (!isset($optionCache[$optionName])) {
 			$sql = "SELECT	value
 				FROM	".$this->databasePrefix."setting
 				WHERE	varname = ?";
 			$statement = $this->database->prepareStatement($sql);
-			$statement->execute(array($optionName));
+			$statement->execute([$optionName]);
 			$row = $statement->fetchArray();
 			
 			$optionCache[$optionName] = $row['value'];
@@ -712,6 +742,12 @@ class VB5xExporter extends AbstractExporter {
 		return $optionCache[$optionName];
 	}
 	
+	/**
+	 * Returns message with fixed BBCodes as used in WCF.
+	 *
+	 * @param	string		$message
+	 * @return	string
+	 */
 	private static function fixBBCodes($message) {
 		static $quoteRegex = null;
 		static $quoteCallback = null;
@@ -721,15 +757,15 @@ class VB5xExporter extends AbstractExporter {
 		if ($quoteRegex === null) {
 			$quoteRegex = new Regex('\[quote=(.*?);n(\d+)\]', Regex::CASE_INSENSITIVE);
 			$quoteCallback = new Callback(function ($matches) {
-				$username = str_replace(array("\\", "'"), array("\\\\", "\'"), $matches[1]);
+				$username = str_replace(["\\", "'"], ["\\\\", "\'"], $matches[1]);
 				$postID = $matches[2];
 				
-				$postLink = LinkHandler::getInstance()->getLink('Thread', array(
+				$postLink = LinkHandler::getInstance()->getLink('Thread', [
 						'application' => 'wbb',
 						'postID' => $postID,
 						'forceFrontend' => true
-				)).'#post'.$postID;
-				$postLink = str_replace(array("\\", "'"), array("\\\\", "\'"), $postLink);
+					]).'#post'.$postID;
+				$postLink = str_replace(["\\", "'"], ["\\\\", "\'"], $postLink);
 				
 				return "[quote='".$username."','".$postLink."']";
 			});
@@ -739,7 +775,7 @@ class VB5xExporter extends AbstractExporter {
 		}
 		
 		// use proper WCF 2 bbcode
-		$replacements = array(
+		$replacements = [
 			'[left]' => '[align=left]',
 			'[/left]' => '[/align]',
 			'[right]' => '[align=right]',
@@ -751,7 +787,7 @@ class VB5xExporter extends AbstractExporter {
 			'[html]' => '[code=html]',
 			'[/html]' => '[/code]',
 			'[/video]' => '[/media]'
-		);
+		];
 		$message = str_ireplace(array_keys($replacements), array_values($replacements), $message);
 		
 		// quotes

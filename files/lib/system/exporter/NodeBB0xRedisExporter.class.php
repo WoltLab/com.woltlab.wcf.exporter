@@ -13,7 +13,7 @@ use wcf\util\StringUtil;
  * Exporter for NodeBB (Redis).
  * 
  * @author	Tim Duesterhus
- * @copyright	2001-2015 WoltLab GmbH
+ * @copyright	2001-2016 WoltLab GmbH
  * @license	GNU Lesser General Public License <http://opensource.org/licenses/lgpl-license.php>
  * @package	com.woltlab.wcf.exporter
  * @subpackage	system.exporter
@@ -24,12 +24,12 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 	 * board cache
 	 * @var	array
 	 */
-	protected $boardCache = array();
+	protected $boardCache = [];
 	
 	/**
-	 * @see	\wcf\system\exporter\AbstractExporter::$methods
+	 * @inheritDoc
 	 */
-	protected $methods = array(
+	protected $methods = [
 		'com.woltlab.wcf.user' => 'Users',
 		'com.woltlab.wcf.user.follower' => 'Followers',
 		'com.woltlab.wcf.conversation' => 'Conversations',
@@ -39,17 +39,17 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 		'com.woltlab.wbb.thread' => 'Threads',
 		'com.woltlab.wbb.post' => 'Posts',
 		'com.woltlab.wbb.like' => 'Likes',
-	);
+	];
 	
 	/**
-	 * @see	\wcf\system\exporter\AbstractExporter::$limits
+	 * @inheritDoc
 	 */
-	protected $limits = array(
+	protected $limits = [
 		'com.woltlab.wcf.user' => 100
-	);
+	];
 	
 	/**
-	 * @see	\wcf\system\exporter\IExporter::init()
+	 * @inheritDoc
 	 */
 	public function init() {
 		$host = $this->databaseHost;
@@ -77,25 +77,25 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see	\wcf\system\exporter\IExporter::getSupportedData()
+	 * @inheritDoc
 	 */
 	public function getSupportedData() {
-		$supportedData = array(
-			'com.woltlab.wcf.user' => array(
+		$supportedData = [
+			'com.woltlab.wcf.user' => [
 				'com.woltlab.wcf.user.follower',
-			),
-			'com.woltlab.wcf.conversation' => array(
-			),
-			'com.woltlab.wbb.board' => array(
+			],
+			'com.woltlab.wcf.conversation' => [
+			],
+			'com.woltlab.wbb.board' => [
 				'com.woltlab.wbb.like',
-			),
-		);
+			],
+		];
 		
 		return $supportedData;
 	}
 	
 	/**
-	 * @see	\wcf\system\exporter\IExporter::validateDatabaseAccess()
+	 * @inheritDoc
 	 */
 	public function validateDatabaseAccess() {
 		parent::validateDatabaseAccess();
@@ -107,17 +107,17 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * @see	\wcf\system\exporter\IExporter::validateFileAccess()
+	 * @inheritDoc
 	 */
 	public function validateFileAccess() {
 		return true;
 	}
 	
 	/**
-	 * @see	\wcf\system\exporter\IExporter::getQueue()
+	 * @inheritDoc
 	 */
 	public function getQueue() {
-		$queue = array();
+		$queue = [];
 		
 		// user
 		if (in_array('com.woltlab.wcf.user', $this->selectedData)) {
@@ -153,6 +153,10 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 	
 	/**
 	 * Exports users.
+	 * 
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 * @throws	SystemException
 	 */
 	public function exportUsers($offset, $limit) {
 		// prepare password update
@@ -168,7 +172,7 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 			$row = $this->database->hgetall('user:'.$userID);
 			if (!$row) throw new SystemException('Invalid user');
 			
-			$data = array(
+			$data = [
 				'username' => $row['username'],
 				'password' => '',
 				'email' => $row['email'],
@@ -177,7 +181,7 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 				'banReason' => '',
 				'lastActivityTime' => intval($row['lastonline'] / 1000),
 				'signature' => self::convertMarkdown($row['signature']),
-			);
+			];
 			
 			static $gravatarRegex = null;
 			if ($gravatarRegex === null) {
@@ -194,22 +198,22 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 			
 			$birthday = \DateTime::createFromFormat('m/d/Y', StringUtil::decodeHTML($row['birthday']));
 			// get user options
-			$options = array(
+			$options = [
 				'birthday' => $birthday ? $birthday->format('Y-m-d') : '',
 				'homepage' => StringUtil::decodeHTML($row['website']),
 				'location' => StringUtil::decodeHTML($row['location']),
-			);
+			];
 			
-			$additionalData = array(
+			$additionalData = [
 				'options' => $options
-			);
+			];
 			
 			$newUserID = ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user')->import($row['uid'], $data, $additionalData);
 			
 			// update password hash
 			if ($newUserID) {
 				$password = PasswordUtil::getSaltedHash($row['password'], $row['password']);
-				$passwordUpdateStatement->execute(array($password, $newUserID));
+				$passwordUpdateStatement->execute([$password, $newUserID]);
 			}
 		}
 	}
@@ -223,12 +227,15 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 	
 	/**
 	 * Exports boards.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 * @throws	SystemException
 	 */
 	public function exportBoards($offset, $limit) {
 		$boardIDs = $this->database->zrange('categories:cid', 0, -1);
 		if (!$boardIDs) throw new SystemException('Could not fetch boardIDs');
 		
-		$imported = array();
 		foreach ($boardIDs as $boardID) {
 			$row = $this->database->hgetall('category:'.$boardID);
 			if (!$row) throw new SystemException('Invalid board');
@@ -241,19 +248,21 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 	
 	/**
 	 * Exports the boards recursively.
+	 * 
+	 * @param	integer		$parentID
 	 */
 	protected function exportBoardsRecursively($parentID = 0) {
 		if (!isset($this->boardCache[$parentID])) return;
 		
 		foreach ($this->boardCache[$parentID] as $board) {
-			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import($board['cid'], array(
-				'parentID' => ($board['parentCid'] ?: null),
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import($board['cid'], [
+				'parentID' => $board['parentCid'] ?: null,
 				'position' => $board['order'] ?: 0,
 				'boardType' => $board['link'] ? Board::TYPE_LINK : Board::TYPE_BOARD,
 				'title' => $board['name'],
 				'description' => $board['description'],
 				'externalURL' => $board['link']
-			));
+			]);
 			
 			$this->exportBoardsRecursively($board['cid']);
 		}
@@ -268,6 +277,10 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 	
 	/**
 	 * Exports threads.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 * @throws	SystemException
 	 */
 	public function exportThreads($offset, $limit) {
 		$threadIDs = $this->database->zrange('topics:tid', $offset, $offset + $limit);
@@ -277,7 +290,7 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 			$row = $this->database->hgetall('topic:'.$threadID);
 			if (!$row) throw new SystemException('Invalid thread');
 			
-			$data = array(
+			$data = [
 				'boardID' => $row['cid'],
 				'topic' => $row['title'],
 				'time' => intval($row['timestamp'] / 1000),
@@ -289,11 +302,11 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 				'isClosed' => $row['locked'],
 				'isDeleted' => $row['deleted'],
 				'deleteTime' => TIME_NOW,
-			);
+			];
 			
-			$additionalData = array(
-				'tags' => $this->database->smembers('topic:'.$threadID.':tags') ?: array()
-			);
+			$additionalData = [
+				'tags' => $this->database->smembers('topic:'.$threadID.':tags') ?: []
+			];
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.thread')->import($row['tid'], $data, $additionalData);
 		}
@@ -308,6 +321,10 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 	
 	/**
 	 * Exports posts.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 * @throws	SystemException
 	 */
 	public function exportPosts($offset, $limit) {
 		$postIDs = $this->database->zrange('posts:pid', $offset, $offset + $limit);
@@ -318,7 +335,7 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 			if (!$row) throw new SystemException('Invalid post');
 			
 			// TODO: ip address
-			$data = array(
+			$data = [
 				'threadID' => $row['tid'],
 				'userID' => $row['uid'],
 				'username' => $this->database->hget('user:'.$row['uid'], 'username'),
@@ -327,11 +344,11 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 				'time' => intval($row['timestamp'] / 1000),
 				'isDeleted' => $row['deleted'],
 				'deleteTime' => TIME_NOW,
-				'editorID' => ($row['editor'] ?: null),
+				'editorID' => $row['editor'] ?: null,
 				'editor' => $this->database->hget('user:'.$row['editor'], 'username'),
 				'lastEditTime' => intval($row['edited'] / 1000),
 				'editCount' => $row['edited'] ? 1 : 0
-			);
+			];
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.post')->import($row['pid'], $data);
 		}
@@ -346,6 +363,10 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 	
 	/**
 	 * Exports likes.
+	 * 
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 * @throws	SystemException
 	 */
 	public function exportLikes($offset, $limit) {
 		$userIDs = $this->database->zrange('users:joindate', $offset, $offset + $limit);
@@ -356,13 +377,13 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 			
 			if ($likes) {
 				foreach ($likes as $postID) {
-					ImportHandler::getInstance()->getImporter('com.woltlab.wbb.like')->import(0, array(
+					ImportHandler::getInstance()->getImporter('com.woltlab.wbb.like')->import(0, [
 						'objectID' => $postID,
 						'objectUserID' => $this->database->hget('post:'.$postID, 'uid') ?: null,
 						'userID' => $userID,
 						'likeValue' => Like::LIKE,
 						'time' => intval($this->database->zscore('uid:'.$userID.':upvote', $postID) / 1000)
-					));
+					]);
 				}
 			}
 			
@@ -370,13 +391,13 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 			
 			if ($dislikes) {
 				foreach ($dislikes as $postID) {
-					ImportHandler::getInstance()->getImporter('com.woltlab.wbb.like')->import(0, array(
+					ImportHandler::getInstance()->getImporter('com.woltlab.wbb.like')->import(0, [
 						'objectID' => $postID,
 						'objectUserID' => $this->database->hget('post:'.$postID, 'uid') ?: null,
 						'userID' => $userID,
 						'likeValue' => Like::DISLIKE,
 						'time' => intval($this->database->zscore('uid:'.$userID.':downvote', $postID) / 1000)
-					));
+					]);
 				}
 			}
 		}
@@ -391,6 +412,10 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 	
 	/**
 	 * Exports followers.
+	 * 
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 * @throws	SystemException
 	 */
 	public function exportFollowers($offset, $limit) {
 		$userIDs = $this->database->zrange('users:joindate', $offset, $offset + $limit);
@@ -401,11 +426,11 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 			
 			if ($followed) {
 				foreach ($followed as $followUserID) {
-					ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.follower')->import(0, array(
+					ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.follower')->import(0, [
 						'userID' => $userID,
 						'followUserID' => $followUserID,
 						'time' => intval($this->database->zscore('following:'.$userID, $followUserID) / 1000)
-					));
+					]);
 				}
 			}
 		}
@@ -420,6 +445,10 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 	
 	/**
 	 * Exports conversations.
+	 * 
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 * @throws	SystemException
 	 */
 	public function exportConversations($offset, $limit) {
 		$userIDs = $this->database->zrange('users:joindate', $offset, $offset + $limit);
@@ -435,33 +464,33 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 					if (!$firstMessageID) throw new SystemException('Could not find first message of conversation');
 					
 					$firstMessage = $this->database->hgetall('message:'.$firstMessageID[0]);
-					ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import($conversationID, array(
+					ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import($conversationID, [
 						'subject' => $this->database->hget('user:'.$userID, 'username').' - '.$this->database->hget('user:'.$chat, 'username'),
 						'time' => intval($firstMessage['timestamp'] / 1000),
 						'userID' => $userID,
 						'username' => $this->database->hget('user:'.$firstMessage['fromuid'], 'username'),
 						'isDraft' => 0
-					));
+					]);
 					
 					// participant a
-					ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.user')->import(0, array(
+					ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.user')->import(0, [
 						'conversationID' => $conversationID,
 						'participantID' => $userID,
 						'username' => $this->database->hget('user:'.$userID, 'username'),
 						'hideConversation' => 0,
 						'isInvisible' => 0,
 						'lastVisitTime' => 0
-					));
+					]);
 					
 					// participant b
-					ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.user')->import(0, array(
+					ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.user')->import(0, [
 						'conversationID' => $conversationID,
 						'participantID' => $chat,
 						'username' => $this->database->hget('user:'.$chat, 'username'),
 						'hideConversation' => 0,
 						'isInvisible' => 0,
 						'lastVisitTime' => 0
-					));
+					]);
 				}
 			}
 		}
@@ -476,6 +505,9 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 	
 	/**
 	 * Exports conversation messages.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportConversationMessages($offset, $limit) {
 		for ($i = 1; $i <= $limit; $i++) {
@@ -483,21 +515,23 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 			if (!$message) continue;
 			$conversationID = min($message['fromuid'], $message['touid']).':to:'.max($message['fromuid'], $message['touid']);
 			
-			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.message')->import($offset + $i, array(
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.message')->import($offset + $i, [
 				'conversationID' => $conversationID,
 				'userID' => $message['fromuid'],
 				'username' => $this->database->hget('user:'.$message['fromuid'], 'username'),
 				'message' => self::convertMarkdown($message['content']),
 				'time' => intval($message['timestamp'] / 1000),
-				'attachments' => 0,
-				'enableSmilies' => 1,
-				'enableHtml' => 0,
-				'enableBBCodes' => 0,
-				'showSignature' => 0
-			));
+				'attachments' => 0
+			]);
 		}
 	}
 	
+	/**
+	 * Returns message with markdown being convered into BBCodes.
+	 * 
+	 * @param	string		$message
+	 * @return	string
+	 */
 	protected static function convertMarkdown($message) {
 		static $parsedown = null;
 		static $codeRegex = null;
@@ -505,7 +539,6 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 		static $urlRegex = null;
 		
 		if ($parsedown === null) {
-			require_once(WCF_DIR.'lib/system/api/parsedown/Parsedown.php');
 			$parsedown = new \Parsedown();
 			
 			$codeRegex = new Regex('<pre><code class="language-([a-z]+)">');
@@ -516,7 +549,7 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 		$out = $parsedown->text($message);
 		$out = $codeRegex->replace($out, '[code=\1]');
 
-		$out = strtr($out, array(
+		$out = strtr($out, [
 			'<p>' => '',
 			'</p>' => '',
 			'<br />' => '',
@@ -539,7 +572,7 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 			'</blockquote>' => '[/quote]',
 			
 			'</a>' => '[/url]'
-		));
+		]);
 		
 		$out = $imgRegex->replace($out, '[img]\1[/img]');
 		$out = $urlRegex->replace($out, '[url=\1]');
