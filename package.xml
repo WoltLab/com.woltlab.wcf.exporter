@@ -5,8 +5,8 @@
 		<packagename language="de">Datenimport</packagename>
 		<packagedescription>Import data from other discussion board systems.</packagedescription>
 		<packagedescription language="de">Ermöglicht den Datenimport aus anderen Forensystemen.</packagedescription>
-		<version>2.0.12</version>
-		<date>2015-09-02</date>
+		<version>2.0.13</version>
+		<date>2016-10-17</date>
 	</packageinformation>
 	
 	<authorinformation>
@@ -28,7 +28,7 @@
 		<instruction type="language">language/*.xml</instruction>
 	</instructions>
 	
-	<instructions type="update" fromversion="2.0.11">
+	<instructions type="update" fromversion="2.0.12">
 		<instruction type="file">files_update.tar</instruction>
 	</instructions>
 </package>
