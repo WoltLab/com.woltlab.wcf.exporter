@@ -2011,7 +2011,6 @@ class WBB4xExporter extends AbstractExporter {
 				'message' => $row['message'],
 				'time' => $row['time'],
 				'eventDate' => $row['eventDate'],
-				'eventColor' => $row['eventColor'],
 				'views' => $row['views'],
 				'enableHtml' => $row['enableHtml'],
 				'enableComments' => $row['enableComments'],
