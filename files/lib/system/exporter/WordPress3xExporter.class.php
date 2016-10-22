@@ -281,7 +281,8 @@ class WordPress3xExporter extends AbstractExporter {
 		$conditionBuilder = new PreparedStatementConditionBuilder();
 		$conditionBuilder->add('post.ID IN (?)', [$entryIDs]);
 		
-		$sql = "SELECT		post.*, user.user_login
+		$sql = "SELECT		post.*, user.user_login,
+					(SELECT meta_value FROM " . $this->databasePrefix . "postmeta WHERE post_id = post.ID AND meta_key = '_thumbnail_id' LIMIT 1) AS imageID
 			FROM		" . $this->databasePrefix . "posts post
 			LEFT JOIN	" . $this->databasePrefix . "users user
 			ON		(user.ID = post.post_author)
@@ -297,7 +298,9 @@ class WordPress3xExporter extends AbstractExporter {
 					0 => [
 						'title' => $row['post_title'],
 						'content' => self::fixMessage($row['post_content']),
-						'tags' => (isset($tags[$row['ID']]) ? $tags[$row['ID']] : [])]
+						'tags' => (isset($tags[$row['ID']]) ? $tags[$row['ID']] : []),
+						'imageID' => ($row['imageID'] ?: null)
+					]
 				]
 			];
 			
