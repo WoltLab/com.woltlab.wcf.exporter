@@ -1069,6 +1069,18 @@ class IPB4xExporter extends AbstractExporter {
 	 * @return	string
 	 */
 	private static function fixMessage($string) {
+		$string = StringUtil::unifyNewlines($string);
+		
+		// remove newlines, but preserve them in code blocks
+		$codes = [];
+		$string = preg_replace_callback('~<pre[^>]*>(.*?)</pre>~is', function($content) use (&$codes) {
+			$i = count($codes);
+			$codes[$i] = $content[1];
+			
+			return '@@@WCF_CODE_BLOCK_' . $i . '@@@';
+		}, $string);
+		$string = str_replace("\n", '', $string);
+		
 		// align
 		$string = preg_replace('~<p style="text-align:(left|center|right);">(.*?)</p>~is', "[align=\\1]\\2[/align]\n\n", $string);
 		
@@ -1119,17 +1131,19 @@ class IPB4xExporter extends AbstractExporter {
 		// embedded attachments
 		$string = preg_replace('~<a class="ipsAttachLink" (?:rel="[^"]*" )?href="[^"]*id=(\d+)[^"]*".*?</a>~i', '[attach]\\1[/attach]', $string);
 		$string = preg_replace('~<a.*?><img data-fileid="(\d+)".*?</a>~i', '[attach]\\1[/attach]', $string);
-			
+		
 		// urls
 		$string = preg_replace('~<a.*?href=(?:"|\')mailto:([^"]*)(?:"|\')>(.*?)</a>~is', '[email=\'\\1\']\\2[/email]', $string);
-		$string = preg_replace('~<a.*?href=(?:"|\')([^"]*)(?:"|\')>(.*?)</a>~is', '[url=\'\\1\']\\2[/url]', $string);
+		$string = preg_replace('~<a.*?href=(?:"|\')([^"\']*)(?:"|\')>(.*?)</a>~is', '[url=\'\\1\']\\2[/url]', $string);
 		
 		// quotes
 		$string = preg_replace('~<blockquote[^>]*data-author="([^"]+)"[^>]*>(.*?)</blockquote>~is', "[quote='\\1']\\2[/quote]", $string);
 		$string = preg_replace('~<blockquote[^>]*>(.*?)</blockquote>~is', '[quote]\\1[/quote]', $string);
 		
 		// code
-		$string = preg_replace('~<pre[^>]*>(.*?)</pre>~is', '[code]\\1[/code]', $string);
+		for ($i = 0, $length = count($codes); $i < $length; $i++) {
+			$string = str_replace('@@@WCF_CODE_BLOCK_' . $i . '@@@', '[code]' . $codes[$i] . '[/code]', $string);
+		}
 		
 		// smileys
 		$string = preg_replace('~<img title="([^"]*)" alt="[^"]*" src="<fileStore.core_Emoticons>[^"]*">~is', '\\1', $string);
