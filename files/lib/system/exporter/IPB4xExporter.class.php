@@ -1118,7 +1118,26 @@ class IPB4xExporter extends AbstractExporter {
 		$string = str_ireplace('</u>', '[/u]', $string);
 		
 		// font color
-		$string = preg_replace('~<span style="color:\s*((?:#(?:[0-9a-f]{3}|[0-9a-f]{6})|[a-z]+));?">(.*?)</span>~is', '[color=\\1]\\2[/color]', $string);
+		$string = preg_replace_callback('~<span style="color:\s*([^";]+);?">(.*?)</span>~is', function($matches) {
+			if (preg_match('~^rgb\((\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\)$~', $matches[1], $rgbMatches)) {
+				$r = dechex($rgbMatches[1]);
+				if (strlen($r) < 2) $r = '0' . $r;
+				$g = dechex($rgbMatches[2]);
+				if (strlen($g) < 2) $g = '0' . $g;
+				$b = dechex($rgbMatches[3]);
+				if (strlen($b) < 2) $b = '0'.$b;
+				
+				$color = '#' . $r . $g . $b;
+			}
+			else if (preg_match('~^(?:#(?:[0-9a-f]{3}|[0-9a-f]{6})|[a-z]+)$~', $matches[1])) {
+				$color = $matches[1];
+			}
+			else {
+				return $matches[0];
+			}
+			
+			return '[color=' . $color . ']' . $matches[2] . '[/color]';
+		}, $string);
 		
 		// font size
 		$string = preg_replace('~<span style="font-size:(\d+)px;">(.*?)</span>~is', '[size=\\1]\\2[/size]', $string);
