@@ -1032,6 +1032,18 @@ class IPB3xExporter extends AbstractExporter {
 	 * @return	string
 	 */
 	private static function fixMessage($string) {
+		$string = StringUtil::unifyNewlines($string);
+		
+		// remove newlines, but preserve them in code blocks
+		$codes = [];
+		$string = preg_replace_callback('~<pre[^>]*>(.*?)</pre>~is', function($content) use (&$codes) {
+			$i = count($codes);
+			$codes[$i] = $content[1];
+			
+			return '@@@WCF_CODE_BLOCK_' . $i . '@@@';
+		}, $string);
+		$string = str_replace("\n", '', $string);
+		
 		// <br /> to newline
 		$string = str_ireplace('<br />', "\n", $string);
 		$string = str_ireplace('<br>', "\n", $string);
@@ -1071,7 +1083,26 @@ class IPB3xExporter extends AbstractExporter {
 		$string = preg_replace('~<span style="font-size:(\d+)px;">(.*?)</span>~is', '[size=\\1]\\2[/size]', $string);
 		
 		// font color
-		$string = preg_replace('~<span style="color:([^;]*?);?">(.*?)</span>~is', '[color=\\1]\\2[/color]', $string);
+		$string = preg_replace_callback('~<span style="color:\s*([^";]+);?">(.*?)</span>~is', function($matches) {
+			if (preg_match('~^rgb\((\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\)$~', $matches[1], $rgbMatches)) {
+				$r = dechex($rgbMatches[1]);
+				if (strlen($r) < 2) $r = '0' . $r;
+				$g = dechex($rgbMatches[2]);
+				if (strlen($g) < 2) $g = '0' . $g;
+				$b = dechex($rgbMatches[3]);
+				if (strlen($b) < 2) $b = '0'.$b;
+				
+				$color = '#' . $r . $g . $b;
+			}
+			else if (preg_match('~^(?:#(?:[0-9a-f]{3}|[0-9a-f]{6})|[a-z]+)$~', $matches[1])) {
+				$color = $matches[1];
+			}
+			else {
+				return $matches[0];
+			}
+			
+			return '[color=' . $color . ']' . $matches[2] . '[/color]';
+		}, $string);
 		
 		// align
 		$string = preg_replace('~<p style="text-align:(left|center|right);">(.*?)</p>~is', '[align=\\1]\\2[/align]', $string);
@@ -1090,7 +1121,7 @@ class IPB3xExporter extends AbstractExporter {
 		$string = preg_replace('~<a.*?href=(?:"|\')mailto:([^"]*)(?:"|\')>(.*?)</a>~is', '[email=\'\\1\']\\2[/email]', $string);
 		
 		// urls
-		$string = preg_replace('~<a.*?href=(?:"|\')([^"]*)(?:"|\')>(.*?)</a>~is', '[url=\'\\1\']\\2[/url]', $string);
+		$string = preg_replace('~<a.*?href=(?:"|\')([^"\']*)(?:"|\')>(.*?)</a>~is', '[url=\'\\1\']\\2[/url]', $string);
 		
 		// smileys
 		$string = preg_replace('~<img src=\'[^\']+\' class=\'bbc_emoticon\' alt=\'([^\']+)\' ?/?>~is', '\\1', $string);
@@ -1103,7 +1134,9 @@ class IPB3xExporter extends AbstractExporter {
 		$string = preg_replace('~<blockquote[^>]*>(.*?)</blockquote>~is', '[quote]\\1[/quote]', $string);
 		
 		// code
-		$string = preg_replace('~<pre[^>]*>(.*?)</pre>~is', '[code]\\1[/code]', $string);
+		for ($i = 0, $length = count($codes); $i < $length; $i++) {
+			$string = str_replace('@@@WCF_CODE_BLOCK_' . $i . '@@@', '[code]' . $codes[$i] . '[/code]', $string);
+		}
 		
 		// embedded attachments
 		$string = preg_replace('~\[attachment=(\d+):[^\]]*\]~i', '[attach]\\1[/attach]', $string);
