@@ -30,4 +30,9 @@
 	<instructions type="update" fromversion="3.0.0 Beta 3">
 		<instruction type="file">files_update.tar</instruction>
 	</instructions>
+	
+	<instructions type="update" fromversion="2.1.11">
+		<instruction type="file" />
+		<instruction type="language" />
+	</instructions>
 </package>
