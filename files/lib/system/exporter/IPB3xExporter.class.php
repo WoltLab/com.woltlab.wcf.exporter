@@ -1047,6 +1047,7 @@ class IPB3xExporter extends AbstractExporter {
 		// <br /> to newline
 		$string = str_ireplace('<br />', "\n", $string);
 		$string = str_ireplace('<br>', "\n", $string);
+		$string = str_ireplace('</p>', "\n", $string);
 		
 		// decode html entities
 		$string = StringUtil::decodeHTML($string);
@@ -1118,10 +1119,10 @@ class IPB3xExporter extends AbstractExporter {
 		$string = str_ireplace('</li>', '', $string);
 		
 		// mails
-		$string = preg_replace('~<a.*?href=(?:"|\')mailto:([^"]*)(?:"|\')>(.*?)</a>~is', '[email=\'\\1\']\\2[/email]', $string);
+		$string = preg_replace('~<a.*?href=(?:"|\')mailto:([^"]*)(?:"|\').*?>(.*?)</a>~is', '[email=\'\\1\']\\2[/email]', $string);
 		
 		// urls
-		$string = preg_replace('~<a.*?href=(?:"|\')([^"\']*)(?:"|\')>(.*?)</a>~is', '[url=\'\\1\']\\2[/url]', $string);
+		$string = preg_replace('~<a.*?href=(?:"|\')([^"\']*)(?:"|\').*?>(.*?)</a>~is', '[url=\'\\1\']\\2[/url]', $string);
 		
 		// smileys
 		$string = preg_replace('~<img src=\'[^\']+\' class=\'bbc_emoticon\' alt=\'([^\']+)\' ?/?>~is', '\\1', $string);

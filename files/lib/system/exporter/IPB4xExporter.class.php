@@ -1152,8 +1152,8 @@ class IPB4xExporter extends AbstractExporter {
 		$string = preg_replace('~<a.*?><img data-fileid="(\d+)".*?</a>~i', '[attach]\\1[/attach]', $string);
 		
 		// urls
-		$string = preg_replace('~<a.*?href=(?:"|\')mailto:([^"]*)(?:"|\')>(.*?)</a>~is', '[email=\'\\1\']\\2[/email]', $string);
-		$string = preg_replace('~<a.*?href=(?:"|\')([^"\']*)(?:"|\')>(.*?)</a>~is', '[url=\'\\1\']\\2[/url]', $string);
+		$string = preg_replace('~<a.*?href=(?:"|\')mailto:([^"]*)(?:"|\').*?>(.*?)</a>~is', '[email=\'\\1\']\\2[/email]', $string);
+		$string = preg_replace('~<a.*?href=(?:"|\')([^"\']*)(?:"|\').*?>(.*?)</a>~is', '[url=\'\\1\']\\2[/url]', $string);
 		
 		// quotes
 		$string = preg_replace('~<blockquote[^>]*data-author="([^"]+)"[^>]*>(.*?)</blockquote>~is', "[quote='\\1']\\2[/quote]", $string);
