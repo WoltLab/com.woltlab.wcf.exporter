@@ -198,7 +198,7 @@ class IPB3xExporter extends AbstractExporter {
 		$statement->execute([$offset + 1, $offset + $limit]);
 		while ($row = $statement->fetchArray()) {
 			$data = [
-				'username' => $row['name'],
+				'username' => self::fixSubject($row['name']),
 				'password' => '',
 				'email' => $row['email'],
 				'registrationDate' => $row['joined'],
@@ -422,7 +422,7 @@ class IPB3xExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.comment')->import($row['status_id'], [
 				'objectID' => $row['status_member_id'],
 				'userID' => $row['status_author_id'],
-				'username' => $row['name'] ?: '',
+				'username' => $row['name'] ? self::fixSubject($row['name']) : '',
 				'message' => self::fixStatusUpdate($row['status_content']),
 				'time' => $row['status_date']
 			]);
@@ -456,7 +456,7 @@ class IPB3xExporter extends AbstractExporter {
 				'commentID' => $row['reply_status_id'],
 				'time' => $row['reply_date'],
 				'userID' => $row['reply_member_id'],
-				'username' => $row['name'] ?: '',
+				'username' => $row['name'] ? self::fixSubject($row['name']) : '',
 				'message' => self::fixStatusUpdate($row['reply_content']),
 			]);
 		}
@@ -518,7 +518,7 @@ class IPB3xExporter extends AbstractExporter {
 				'subject' => self::fixSubject($row['mt_title']),
 				'time' => $row['mt_date'],
 				'userID' => $row['mt_starter_id'] ?: null,
-				'username' => $row['mt_is_system'] ? 'System' : ($row['name'] ?: ''),
+				'username' => $row['mt_is_system'] ? 'System' : ($row['name'] ? self::fixSubject($row['name']) : ''),
 				'isDraft' => $row['mt_is_draft']
 			]);
 		}
@@ -550,7 +550,7 @@ class IPB3xExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.message')->import($row['msg_id'], [
 				'conversationID' => $row['msg_topic_id'],
 				'userID' => $row['msg_author_id'] ?: null,
-				'username' => $row['name'] ?: '',
+				'username' => $row['name'] ? self::fixSubject($row['name']) : '',
 				'message' => self::fixMessage($row['msg_post']),
 				'time' => $row['msg_date']
 			]);
@@ -583,7 +583,7 @@ class IPB3xExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.user')->import(0, [
 				'conversationID' => $row['map_topic_id'],
 				'participantID' => $row['map_user_id'],
-				'username' => $row['name'] ?: '',
+				'username' => $row['name'] ? self::fixSubject($row['name']) : '',
 				'hideConversation' => $row['map_left_time'] ? 1 : 0,
 				'isInvisible' => 0,
 				'lastVisitTime' => $row['map_read_time']
@@ -710,7 +710,7 @@ class IPB3xExporter extends AbstractExporter {
 				'topic' => self::fixSubject($row['title']),
 				'time' => $row['start_date'],
 				'userID' => $row['starter_id'],
-				'username' => $row['starter_name'],
+				'username' => self::fixSubject($row['starter_name']),
 				'views' => $row['views'],
 				'isSticky' => $row['pinned'],
 				'isDisabled' => $row['approved'] == 0 ? 1 : 0,
@@ -752,7 +752,7 @@ class IPB3xExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.post')->import($row['pid'], [
 				'threadID' => $row['topic_id'],
 				'userID' => $row['author_id'],
-				'username' => $row['author_name'] ?: '',
+				'username' => $row['author_name'] ? self::fixSubject($row['author_name']) : '',
 				'message' => self::fixMessage($row['post']),
 				'time' => $row['post_date'],
 				'isDeleted' => $row['queued'] == 3 ? 1 : 0,
