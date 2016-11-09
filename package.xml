@@ -32,7 +32,7 @@
 	</instructions>
 	
 	<instructions type="update" fromversion="2.1.11">
-		<instruction type="file" />
-		<instruction type="language" />
+		<instruction type="file">files.tar</instruction>
+		<instruction type="language">language/*.xml</instruction>
 	</instructions>
 </package>
