@@ -272,26 +272,27 @@ class MyBB16xExporter extends AbstractExporter {
 		
 		// get users
 		$sql = "SELECT		userfields_table.*, user_table.*, activation_table.code AS activationCode, activation_table.type AS activationType,
-					activation_table.misc AS newEmail, ban_table.reason AS banReason
+					activation_table.misc AS newEmail, ban_table.reason AS banReason, ban_table.lifted AS banExpires
 			FROM		".$this->databasePrefix."users user_table
 			LEFT JOIN	".$this->databasePrefix."awaitingactivation activation_table
 			ON		user_table.uid = activation_table.uid
 			LEFT JOIN	".$this->databasePrefix."userfields userfields_table
 			ON		user_table.uid = userfields_table.ufid
 			LEFT JOIN	".$this->databasePrefix."banned ban_table
-			ON		user_table.uid = ban_table.uid AND ban_table.lifted <> ?
+			ON		user_table.uid = ban_table.uid
 			WHERE		user_table.uid BETWEEN ? AND ?
 			ORDER BY	user_table.uid";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute([0, $offset + 1, $offset + $limit]);
+		$statement->execute([$offset + 1, $offset + $limit]);
 		while ($row = $statement->fetchArray()) {
 			$data = [
 				'username' => $row['username'],
 				'password' => '',
 				'email' => $row['email'],
 				'registrationDate' => $row['regdate'],
-				'banned' => $row['banReason'] === null ? 0 : 1,
+				'banned' => $row['banExpires'] === null ? 0 : 1,
 				'banReason' => $row['banReason'],
+				'banExpires' => $row['banExpires'] ?: 0,
 				($row['activationType'] == 'e' ? 're' : '').'activationCode' => $row['activationCode'] ? UserRegistrationUtil::getActivationCode() : 0, // mybb's codes are strings
 				'newEmail' => $row['newEmail'] ?: '',
 				'oldUsername' => '',
