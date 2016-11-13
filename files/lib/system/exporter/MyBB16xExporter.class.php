@@ -296,7 +296,7 @@ class MyBB16xExporter extends AbstractExporter {
 				'newEmail' => $row['newEmail'] ?: '',
 				'oldUsername' => '',
 				'registrationIpAddress' => UserUtil::convertIPv4To6($row['regip']),
-				'signature' => $row['signature'],
+				'signature' => self::fixBBCodes($row['signature']),
 				'disableSignature' => $row['suspendsignature'],
 				'disableSignatureReason' => '',
 				'userTitle' => $row['usertitle'],
