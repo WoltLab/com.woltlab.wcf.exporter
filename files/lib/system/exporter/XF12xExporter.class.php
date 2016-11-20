@@ -10,7 +10,6 @@ use wcf\system\database\util\PreparedStatementConditionBuilder;
 use wcf\system\exception\SystemException;
 use wcf\system\importer\ImportHandler;
 use wcf\system\request\LinkHandler;
-use wcf\system\Callback;
 use wcf\system\Regex;
 use wcf\system\WCF;
 use wcf\util\FileUtil;
@@ -1520,7 +1519,7 @@ class XF12xExporter extends AbstractExporter {
 		
 		if ($mediaRegex === null) {
 			$mediaRegex = new Regex('\[media=(youtube|vimeo|dailymotion)\]([a-zA-Z0-9_-]+)', Regex::CASE_INSENSITIVE);
-			$mediaCallback = new Callback(function ($matches) {
+			$mediaCallback = function ($matches) {
 				switch ($matches[1]) {
 					case 'youtube':
 						$url = 'https://www.youtube.com/watch?v='.$matches[2];
@@ -1534,10 +1533,10 @@ class XF12xExporter extends AbstractExporter {
 				}
 				
 				return '[media]'.$url;
-			});
+			};
 			
 			$userRegex = new Regex('\[user=(\d+)\](.*?)\[/user\]', Regex::CASE_INSENSITIVE);
-			$userCallback = new Callback(function ($matches) {
+			$userCallback = function ($matches) {
 				$userLink = LinkHandler::getInstance()->getLink('User', [
 					'userID' => $matches[1],
 					'forceFrontend' => true
@@ -1546,10 +1545,10 @@ class XF12xExporter extends AbstractExporter {
 				$userLink = str_replace(["\\", "'"], ["\\\\", "\'"], $userLink);
 				
 				return "[url='".$userLink."']".$matches[2]."[/url]";
-			});
+			};
 			
 			$quoteRegex = new Regex('\[quote=("?)(?P<username>[^,\]\n]*)(?:, post: (?P<postID>\d+)(?:, member: \d+)?)?\1\]', Regex::CASE_INSENSITIVE);
-			$quoteCallback = new Callback(function ($matches) {
+			$quoteCallback = function ($matches) {
 				if (isset($matches['username']) && $matches['username']) {
 					$username = str_replace(["\\", "'"], ["\\\\", "\'"], $matches['username']);
 					
@@ -1567,7 +1566,7 @@ class XF12xExporter extends AbstractExporter {
 					return "[quote='".$username."']";
 				}
 				return "[quote]";
-			});
+			};
 		}
 		
 		$message = $mediaRegex->replace($message, $mediaCallback);

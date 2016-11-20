@@ -3,7 +3,6 @@ namespace wcf\system\exporter;
 use wcf\data\user\group\UserGroup;
 use wcf\system\importer\ImportHandler;
 use wcf\system\request\LinkHandler;
-use wcf\system\Callback;
 use wcf\system\Regex;
 use wcf\util\FileUtil;
 use wcf\util\PasswordUtil;
@@ -500,7 +499,7 @@ class Kunena3xExporter extends AbstractExporter {
 		
 		if ($quoteRegex === null) {
 			$quoteRegex = new Regex('\[quote="(.*?)" post=(\d+)\]', Regex::CASE_INSENSITIVE);
-			$quoteCallback = new Callback(function ($matches) {
+			$quoteCallback = function ($matches) {
 				$username = str_replace(["\\", "'"], ["\\\\", "\'"], $matches[1]);
 				$postID = $matches[2];
 				
@@ -512,7 +511,7 @@ class Kunena3xExporter extends AbstractExporter {
 				$postLink = str_replace(["\\", "'"], ["\\\\", "\'"], $postLink);
 				
 				return "[quote='".$username."','".$postLink."']";
-			});
+			};
 		}
 		
 		// use proper WCF 2 bbcode

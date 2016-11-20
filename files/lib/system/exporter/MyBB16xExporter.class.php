@@ -11,7 +11,6 @@ use wcf\system\database\util\PreparedStatementConditionBuilder;
 use wcf\system\database\DatabaseException;
 use wcf\system\importer\ImportHandler;
 use wcf\system\request\LinkHandler;
-use wcf\system\Callback;
 use wcf\system\Regex;
 use wcf\system\WCF;
 use wcf\util\ArrayUtil;
@@ -1304,7 +1303,7 @@ class MyBB16xExporter extends AbstractExporter {
 		if ($videoRegex === null) {
 			$videoRegex = new Regex('\[video=[a-z]+\]');
 			$quoteRegex = new Regex('\[quote=\'(.*?)\' pid=\'(\d+)\' dateline=\'\d+\'\]');
-			$quoteCallback = new Callback(function ($matches) {
+			$quoteCallback = function ($matches) {
 				$username = str_replace(["\\", "'"], ["\\\\", "\'"], $matches[1]);
 				$postID = $matches[2];
 				
@@ -1316,9 +1315,9 @@ class MyBB16xExporter extends AbstractExporter {
 				$postLink = str_replace(["\\", "'"], ["\\\\", "\'"], $postLink);
 				
 				return "[quote='".$username."','".$postLink."']";
-			});
+			};
 			$imgRegex = new Regex('\[img(?:=(\d)x\d)?(?: align=(left|right))?\](?:\r\n?|\n?)(https?://(?:[^<>"\']+?))\[/img\]');
-			$imgCallback = new Callback(function ($matches) {
+			$imgCallback = function ($matches) {
 				$escapedLink = str_replace(["\\", "'"], ["\\\\", "\'"], $matches[3]);
 				if ($matches[1] && $matches[2]) {
 					return "[img='".$escapedLink."',".$matches[2].",".$matches[1]."][/img]";
@@ -1332,7 +1331,7 @@ class MyBB16xExporter extends AbstractExporter {
 				else {
 					return "[img]".$matches[3]."[/img]";
 				}
-			});
+			};
 			
 			$attachmentRegex = new Regex('\[attachment=([0-9]+)\]');
 		}

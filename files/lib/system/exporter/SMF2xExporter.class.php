@@ -7,7 +7,6 @@ use wcf\system\database\util\PreparedStatementConditionBuilder;
 use wcf\system\database\DatabaseException;
 use wcf\system\importer\ImportHandler;
 use wcf\system\request\LinkHandler;
-use wcf\system\Callback;
 use wcf\system\Regex;
 use wcf\system\WCF;
 use wcf\util\ArrayUtil;
@@ -1373,7 +1372,7 @@ class SMF2xExporter extends AbstractExporter {
 		
 		if ($sizeRegex === null) {
 			$quoteRegex = new Regex('\[quote author=(.*?) link=topic=\d+\.msg(\d+)#msg\\2 date=\d+\]');
-			$quoteCallback = new Callback(function ($matches) {
+			$quoteCallback = function ($matches) {
 				$username = str_replace(["\\", "'"], ["\\\\", "\'"], $matches[1]);
 				$postID = $matches[2];
 				
@@ -1385,7 +1384,7 @@ class SMF2xExporter extends AbstractExporter {
 				$postLink = str_replace(["\\", "'"], ["\\\\", "\'"], $postLink);
 				
 				return "[quote='".$username."','".$postLink."']";
-			});
+			};
 			
 			$sizeRegex = new Regex('\[size=(8|10|12|14|18|24|34)pt\]');
 		}

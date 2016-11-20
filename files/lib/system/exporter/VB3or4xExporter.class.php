@@ -9,7 +9,6 @@ use wcf\data\user\option\UserOption;
 use wcf\system\database\DatabaseException;
 use wcf\system\importer\ImportHandler;
 use wcf\system\request\LinkHandler;
-use wcf\system\Callback;
 use wcf\system\Regex;
 use wcf\system\WCF;
 use wcf\util\ArrayUtil;
@@ -1972,7 +1971,7 @@ class VB3or4xExporter extends AbstractExporter {
 		
 		if ($quoteRegex === null) {
 			$quoteRegex = new Regex('\[quote=(.*?);(\d+)\]', Regex::CASE_INSENSITIVE);
-			$quoteCallback = new Callback(function ($matches) {
+			$quoteCallback = function ($matches) {
 				$username = str_replace(["\\", "'"], ["\\\\", "\'"], $matches[1]);
 				$postID = $matches[2];
 				
@@ -1984,7 +1983,7 @@ class VB3or4xExporter extends AbstractExporter {
 				$postLink = str_replace(["\\", "'"], ["\\\\", "\'"], $postLink);
 				
 				return "[quote='".$username."','".$postLink."']";
-			});
+			};
 			$mediaRegex = new Regex('\[video=([a-z]+);([a-z0-9-_]+)\]', Regex::CASE_INSENSITIVE);
 		}
 		
