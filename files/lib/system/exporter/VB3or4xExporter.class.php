@@ -1118,6 +1118,8 @@ class VB3or4xExporter extends AbstractExporter {
 			$options = explode('|||', $row['options']);
 			$votes = explode('|||', $row['votes']);
 			
+			if (count($options) != count($votes)) continue;
+			
 			$i = 1;
 			foreach ($options as $key => $option) {
 				ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll.option')->import($row['pollid'].'-'.$i, array(
