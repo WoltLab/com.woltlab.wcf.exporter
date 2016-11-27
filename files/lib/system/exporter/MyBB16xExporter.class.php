@@ -118,7 +118,7 @@ class MyBB16xExporter extends AbstractExporter {
 		$row = $statement->fetchArray();
 		$data = unserialize($row['cache']);
 		
-		if ($data['version_code'] < 1600) throw new DatabaseException('Cannot import MyBB 1.4.x or less', $this->database);
+		if ($data['version_code'] < 1800) throw new DatabaseException('Cannot import MyBB 1.6.x or less', $this->database);
 	}
 	
 	/**
@@ -270,11 +270,8 @@ class MyBB16xExporter extends AbstractExporter {
 		$passwordUpdateStatement = WCF::getDB()->prepareStatement($sql);
 		
 		// get users
-		$sql = "SELECT		userfields_table.*, user_table.*, activation_table.code AS activationCode, activation_table.type AS activationType,
-					activation_table.misc AS newEmail, ban_table.reason AS banReason, ban_table.lifted AS banExpires
+		$sql = "SELECT		userfields_table.*, user_table.*, ban_table.reason AS banReason, ban_table.lifted AS banExpires
 			FROM		".$this->databasePrefix."users user_table
-			LEFT JOIN	".$this->databasePrefix."awaitingactivation activation_table
-			ON		user_table.uid = activation_table.uid
 			LEFT JOIN	".$this->databasePrefix."userfields userfields_table
 			ON		user_table.uid = userfields_table.ufid
 			LEFT JOIN	".$this->databasePrefix."banned ban_table
@@ -292,8 +289,7 @@ class MyBB16xExporter extends AbstractExporter {
 				'banned' => $row['banExpires'] === null ? 0 : 1,
 				'banReason' => $row['banReason'],
 				'banExpires' => $row['banExpires'] ?: 0,
-				($row['activationType'] == 'e' ? 're' : '').'activationCode' => $row['activationCode'] ? UserRegistrationUtil::getActivationCode() : 0, // mybb's codes are strings
-				'newEmail' => $row['newEmail'] ?: '',
+				'activationCode' => $row['usergroup'] == 5 ? UserRegistrationUtil::getActivationCode() : 0,
 				'oldUsername' => '',
 				'registrationIpAddress' => UserUtil::convertIPv4To6($row['regip']),
 				'signature' => self::fixBBCodes($row['signature']),
