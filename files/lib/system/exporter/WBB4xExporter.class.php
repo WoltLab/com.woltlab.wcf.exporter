@@ -1616,7 +1616,7 @@ class WBB4xExporter extends AbstractExporter {
 	 * @param	integer		$limit
 	 */
 	public function exportBlogAttachments($offset, $limit) {
-		$this->exportAttachments('om.woltlab.blog.entry', 'com.woltlab.blog.entry.attachment', $offset, $limit);
+		$this->exportAttachments('com.woltlab.blog.entry', 'com.woltlab.blog.entry.attachment', $offset, $limit);
 	}
 	
 	/**
