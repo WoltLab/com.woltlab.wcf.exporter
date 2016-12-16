@@ -21,7 +21,7 @@ use wcf\util\UserRegistrationUtil;
 use wcf\util\UserUtil;
 
 /**
- * Exporter for MyBB 1.6.x
+ * Exporter for MyBB 1.8.x
  * 
  * @author	Tim Duesterhus
  * @copyright	2001-2016 WoltLab GmbH
