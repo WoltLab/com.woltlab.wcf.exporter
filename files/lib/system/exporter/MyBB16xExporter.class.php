@@ -1295,6 +1295,8 @@ class MyBB16xExporter extends AbstractExporter {
 		static $imgRegex = null;
 		static $imgCallback = null;
 		static $attachmentRegex = null;
+		static $fontRegex = null;
+		static $fontCallback = null;
 		
 		if ($videoRegex === null) {
 			$videoRegex = new Regex('\[video=[a-z]+\]');
@@ -1330,6 +1332,11 @@ class MyBB16xExporter extends AbstractExporter {
 			};
 			
 			$attachmentRegex = new Regex('\[attachment=([0-9]+)\]');
+
+			$fontRegex = new Regex('\[font=([^\]]+)\]');
+			$fontCallback = function ($matches) {
+				return '[font="'.str_replace(['"', "'"], '', $matches[1]).'"]';
+			};
 		}
 		
 		// fix size bbcodes
@@ -1368,6 +1375,9 @@ class MyBB16xExporter extends AbstractExporter {
 		
 		// img bbcodes
 		$message = $imgRegex->replace($message, $imgCallback);
+		
+		// font bbcodes
+		$message = $fontRegex->replace($message, $fontCallback);
 		
 		// code bbcodes
 		$message = str_replace('[php]', '[code=php]', $message);
