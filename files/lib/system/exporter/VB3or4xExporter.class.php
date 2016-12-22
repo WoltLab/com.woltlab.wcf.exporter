@@ -376,7 +376,7 @@ class VB3or4xExporter extends AbstractExporter {
 				'activationCode' => $row['activationType'] !== null && $row['activationType'] == 0 && $row['emailchange'] == 0 ? UserRegistrationUtil::getActivationCode() : 0, // vB's codes are strings
 				'oldUsername' => '',
 				'registrationIpAddress' => UserUtil::convertIPv4To6($row['ipaddress']), // TODO: check whether this is the registration IP
-				'signature' => $row['signature'],
+				'signature' => self::fixBBCodes($row['signature']),
 				'userTitle' => ($row['customtitle'] != 0) ? $row['usertitle'] : '',
 				'lastActivityTime' => $row['lastactivity']
 			);
