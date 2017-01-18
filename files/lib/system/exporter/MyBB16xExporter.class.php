@@ -1044,7 +1044,7 @@ class MyBB16xExporter extends AbstractExporter {
 		$sql = "SELECT	COUNT(*) AS count
 			FROM	".$this->databasePrefix."threadprefixes";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute([0]);
+		$statement->execute();
 		$row = $statement->fetchArray();
 		return $row['count'];
 	}
