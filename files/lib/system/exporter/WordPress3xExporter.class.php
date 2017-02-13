@@ -307,7 +307,8 @@ class WordPress3xExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.article')->import($row['ID'], [
 				'userID' => $row['post_author'] ?: null,
 				'username' => $row['user_login'] ?: '',
-				'time' => $time, 'categoryID' => (isset($categories[$row['ID']]) ? reset($categories[$row['ID']]) : null),
+				'time' => $time,
+				'categoryID' => (isset($categories[$row['ID']]) ? reset($categories[$row['ID']]) : null),
 				'comments' => $row['comment_count'],
 				'publicationStatus' => $row['post_status'] == 'publish' ? Article::PUBLISHED : Article::UNPUBLISHED
 			], $additionalData);
