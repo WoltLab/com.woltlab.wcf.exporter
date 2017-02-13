@@ -292,6 +292,7 @@ class WordPress3xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			$time = @strtotime($row['post_date_gmt']);
 			if (!$time) $time = @strtotime($row['post_date']);
+			if ($time < 0) $time = TIME_NOW;
 			
 			$additionalData = [
 				'contents' => [
