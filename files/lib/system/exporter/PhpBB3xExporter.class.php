@@ -1300,7 +1300,8 @@ class PhpBB3xExporter extends AbstractExporter {
 			$statement = $this->database->prepareStatement($sql);
 			$statement->execute(array('upload_path'));
 			while ($row = $statement->fetchArray()) {
-				$$row['config_name'] = $row['config_value'];
+				$config_name = $row['config_name'];
+				$$config_name = $row['config_value'];
 			}
 		}
 		
