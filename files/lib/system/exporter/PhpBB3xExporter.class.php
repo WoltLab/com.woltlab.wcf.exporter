@@ -373,7 +373,7 @@ class PhpBB3xExporter extends AbstractExporter {
 						SELECT	GROUP_CONCAT(('_' || lang.option_id || ':' || lang.lang_value) SEPARATOR '\n')
 						FROM		".$this->databasePrefix."profile_fields_lang lang
 						WHERE		lang.field_id = fields.field_id
-							AND	lang.field_type = 5
+							AND	lang.field_type = ?
 							AND	lang.lang_id = (SELECT MIN(lang_id) FROM ".$this->databasePrefix."profile_fields_lang)
 					) AS selectOptions
 			FROM		".$this->databasePrefix."profile_fields fields
