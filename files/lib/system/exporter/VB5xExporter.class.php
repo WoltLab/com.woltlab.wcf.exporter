@@ -612,25 +612,27 @@ class VB5xExporter extends AbstractExporter {
 	 * Counts polls.
 	 */
 	public function countPolls() {
-		return $this->__getMaxID($this->databasePrefix."poll", 'pollid');
+		return $this->__getMaxID($this->databasePrefix."poll", 'nodeid');
 	}
 	
 	/**
 	 * Exports polls.
 	 */
 	public function exportPolls($offset, $limit) {
-		$sql = "SELECT		*
-			FROM		".$this->databasePrefix."poll
-			WHERE		pollid BETWEEN ? AND ?
-			ORDER BY	pollid";
+		$sql = "SELECT		poll.*, node.title, node.created
+			FROM		".$this->databasePrefix."poll poll
+			INNER JOIN	".$this->databasePrefix."node node
+			ON		poll.nodeid = node.nodeid
+			WHERE		poll.nodeid BETWEEN ? AND ?
+			ORDER BY	poll.nodeid";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
-			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll')->import($row['pollid'], array(
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll')->import($row['nodeid'], array(
 				'objectID' => $row['nodeid'],
-				'question' => $row['question'],
-				'time' => $row['dateline'],
-				'endTime' => $row['dateline'] + $row['timeout'] * 86400,
+				'question' => $row['title'],
+				'time' => $row['created'],
+				'endTime' => $row['created'] + $row['timeout'] * 86400,
 				'isChangeable' => 0,
 				'isPublic' => $row['public'] ? 1 : 0,
 				'sortByVotes' => 0,
