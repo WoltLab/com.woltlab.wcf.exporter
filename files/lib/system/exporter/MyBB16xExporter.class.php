@@ -17,6 +17,7 @@ use wcf\util\ArrayUtil;
 use wcf\util\FileUtil;
 use wcf\util\MessageUtil;
 use wcf\util\StringUtil;
+use wcf\util\Url;
 use wcf\util\UserRegistrationUtil;
 use wcf\util\UserUtil;
 
@@ -525,7 +526,7 @@ class MyBB16xExporter extends AbstractExporter {
 		$statement->execute(['', 'upload', 'gallery']);
 		
 		while ($row = $statement->fetchArray()) {
-			$path = parse_url($row['avatar']);
+			$path = Url::parse($row['avatar']);
 			list($width, $height) = explode('|', $row['avatardimensions']);
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.avatar')->import(0, [
