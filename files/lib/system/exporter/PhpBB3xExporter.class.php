@@ -1372,6 +1372,12 @@ class PhpBB3xExporter extends AbstractExporter {
 			return '[code'.$matches[1].']'.$content.'[/code]';
 		}, $text);
 		
+		// fix quotes
+		$text = preg_replace_callback('[quote="([^"]+?)"]', function ($matches) {
+			$username = str_replace(array("\\", "'"), array("\\\\", "\'"), $matches[1]);
+			return "[quote='".$username."']";
+		}, $text);
+		
 		// convert attachments
 		$text = preg_replace('~\[attachment=(\d+)\]<!-- ia\\1 -->.*?<!-- ia\\1 -->\[/attachment\]~', '', $text); // TODO: not supported right now
 		
