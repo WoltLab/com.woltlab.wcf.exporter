@@ -687,6 +687,8 @@ class WBB2xExporter extends AbstractExporter {
 			}
 		}
 		
+		if (empty($threadIDs)) return;
+		
 		// get threads
 		$conditionBuilder = new PreparedStatementConditionBuilder();
 		$conditionBuilder->add('threadid IN (?)', array($threadIDs));
@@ -809,7 +811,7 @@ class WBB2xExporter extends AbstractExporter {
 		$sql = "SELECT	COUNT(*) AS count
 			FROM	".$this->databasePrefix."polls";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array('post'));
+		$statement->execute();
 		$row = $statement->fetchArray();
 		return $row['count'];
 	}
@@ -834,7 +836,7 @@ class WBB2xExporter extends AbstractExporter {
 			FROM		".$this->databasePrefix."polls poll
 			ORDER BY	pollid";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute(array('post'));
+		$statement->execute();
 		while ($row = $statement->fetchArray()) {
 			$postID = null;
 			$votes = 0;
