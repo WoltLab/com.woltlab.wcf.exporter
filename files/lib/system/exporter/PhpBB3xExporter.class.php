@@ -1450,7 +1450,7 @@ class PhpBB3xExporter extends AbstractExporter {
 		}, $text);
 		
 		// fix quotes
-		$text = preg_replace_callback('[quote="([^"]+?)"]', function ($matches) {
+		$text = preg_replace_callback('~\[quote="([^"]+?)"\]~', function ($matches) {
 			$username = str_replace(array("\\", "'"), array("\\\\", "\'"), $matches[1]);
 			return "[quote='".$username."']";
 		}, $text);
