@@ -7,6 +7,7 @@ use wcf\data\package\Package;
 use wcf\data\package\PackageCache;
 use wcf\system\database\util\PreparedStatementConditionBuilder;
 use wcf\system\importer\ImportHandler;
+use wcf\system\language\LanguageFactory;
 use wcf\system\WCF;
 use wcf\util\FileUtil;
 use wcf\util\StringUtil;
@@ -341,15 +342,35 @@ class WBB4xExporter extends AbstractExporter {
 			ORDER BY	groupID";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
+		
+		$groups = [];
+		$i18nValues = [];
 		while ($row = $statement->fetchArray()) {
-			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.group')->import($row['groupID'], [
+			$groups[$row['groupID']] = [
 				'groupName' => $row['groupName'],
 				'groupDescription' => $row['groupDescription'],
 				'groupType' => $row['groupType'],
 				'priority' => $row['priority'],
 				'userOnlineMarking' => !empty($row['userOnlineMarking']) ? $row['userOnlineMarking'] : '',
 				'showOnTeamPage' => !empty($row['showOnTeamPage']) ? $row['showOnTeamPage'] : 0
-			]);
+			];
+			
+			if (strpos($row['groupName'], 'wcf.acp.group.group') === 0) {
+				$i18nValues[] = $row['groupName'];
+			}
+			if (strpos($row['groupDescription'], 'wcf.acp.group.groupDescription') === 0) {
+				$i18nValues[] = $row['groupDescription'];
+			}
+		}
+		
+		$i18nValues = $this->getI18nValues($i18nValues);
+		
+		foreach ($groups as $groupID => $groupData) {
+			$i18nData = [];
+			if (isset($i18nValues[$groupData['groupName']])) $i18nData['groupName'] = $i18nValues[$groupData['groupName']];
+			if (isset($i18nValues[$groupData['groupDescription']])) $i18nData['groupName'] = $i18nValues[$groupData['groupDescription']];
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.group')->import($groupID, $groupData, ['i18n' => $i18nData]);
 		}
 	}
 	
@@ -863,8 +884,29 @@ class WBB4xExporter extends AbstractExporter {
 			ORDER BY	parentID, position";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute();
+		$i18nValues = [];
 		while ($row = $statement->fetchArray()) {
 			$this->boardCache[$row['parentID']][] = $row;
+			
+			if (strpos($row['title'], 'wbb.board.board') === 0) {
+				$i18nValues[] = $row['title'];
+			}
+			if (strpos($row['description'], 'wbb.board.board') === 0) {
+				$i18nValues[] = $row['description'];
+			}
+		}
+		
+		$i18nValues = $this->getI18nValues($i18nValues);
+		if (!empty($i18nValues)) {
+			foreach ($this->boardCache as &$boards) {
+				foreach ($boards as &$board) {
+					$board['i18n'] = [];
+					if (isset($i18nValues[$board['title']])) $board['i18n']['title'] = $i18nValues[$board['title']];
+					if (isset($i18nValues[$board['description']])) $board['i18n']['description'] = $i18nValues[$board['description']];
+				}
+				unset($board);
+			}
+			unset($boards);
 		}
 		
 		$this->exportBoardsRecursively();
@@ -905,6 +947,8 @@ class WBB4xExporter extends AbstractExporter {
 				'clicks' => $board['clicks'],
 				'posts' => $board['posts'],
 				'threads' => $board['threads']
+			], [
+				'i18n' => $board['i18n']
 			]);
 			
 			$this->exportBoardsRecursively($board['boardID']);
@@ -2515,5 +2559,38 @@ class WBB4xExporter extends AbstractExporter {
 				'isDisabled' => $row['isDisabled']
 			]);
 		}
+	}
+	
+	/**
+	 * Reads i18n values from the source database and filters by known language ids.
+	 * 
+	 * @param       string[]        $i18nValues     list of items
+	 * @return      string[][][]    list of values by language item and language id
+	 */
+	private function getI18nValues(array $i18nValues) {
+		if (empty($i18nValues)) return [];
+		
+		$conditions = new PreparedStatementConditionBuilder();
+		$conditions->add("language_item.languageItem IN (?)", [$i18nValues]);
+		
+		$sql = "SELECT          language_item.languageItem, language_item.languageItemValue, language.languageCode
+			FROM            wcf".$this->dbNo."_language_item language_item
+			LEFT JOIN       wcf".$this->dbNo."_language language
+			ON              (language_item.languageID = language.languageID)
+			".$conditions;
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute($conditions->getParameters());
+		
+		$i18nValues = [];
+		while ($row = $statement->fetchArray()) {
+			$language = LanguageFactory::getInstance()->getLanguageByCode($row['languageCode']);
+			if ($language === null) continue;
+			
+			$languageItem = $row['languageItem'];
+			if (!isset($i18nValues[$languageItem])) $i18nValues[$languageItem] = [];
+			$i18nValues[$languageItem][$language->languageID] = $row['languageItemValue'];
+		}
+		
+		return $i18nValues;
 	}
 }
