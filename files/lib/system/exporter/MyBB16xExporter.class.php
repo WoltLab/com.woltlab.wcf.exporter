@@ -1046,7 +1046,7 @@ class MyBB16xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute();
 		$row = $statement->fetchArray();
-		return $row['count'];
+		return $row['count'] ? 1 : 0;
 	}
 	
 	/**
@@ -1062,7 +1062,7 @@ class MyBB16xExporter extends AbstractExporter {
 		$sql = "SELECT	*
 			FROM	".$this->databasePrefix."threadprefixes";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute([0]);
+		$statement->execute();
 		while ($row = $statement->fetchArray()) {
 			$forums = array_unique(ArrayUtil::toIntegerArray(explode(',', $row['forums'])));
 			foreach ($forums as $key => $forum) {
