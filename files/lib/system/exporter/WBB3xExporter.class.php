@@ -2407,7 +2407,39 @@ class WBB3xExporter extends AbstractExporter {
 	 * @param	integer		$limit
 	 */
 	public function exportCalendarAttachments($offset, $limit) {
-		$this->exportAttachments('event', 'com.woltlab.calendar.event.attachment', $offset, $limit);
+		if (substr($this->getPackageVersion('com.woltlab.wcf'), 0, 3) == '1.1') {
+			$sql = "SELECT		attachment.*, (SELECT eventID FROM wcf".$this->dbNo."_calendar_event WHERE messageID = attachment.containerID) AS eventID
+				FROM		wcf".$this->dbNo."_attachment attachment
+				WHERE		containerType = ?
+						AND containerID > ?
+				ORDER BY	attachmentID DESC";
+		}
+		else {
+			$sql = "SELECT		attachment.*, (SELECT eventID FROM wcf".$this->dbNo."_calendar_event WHERE messageID = attachment.messageID) AS eventID
+				FROM		wcf".$this->dbNo."_attachment attachment
+				WHERE		messageType = ?
+						AND messageID > ?
+				ORDER BY	attachmentID DESC";
+		}
+		
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute(['event', 0]);
+		while ($row = $statement->fetchArray()) {
+			$fileLocation = $this->fileSystemPath.'attachments/attachment-'.$row['attachmentID'];
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.calendar.event.attachment')->import($row['attachmentID'], [
+				'objectID' => $row['eventID'],
+				'userID' => $row['userID'] ?: null,
+				'filename' => $row['attachmentName'],
+				'filesize' => $row['attachmentSize'],
+				'fileType' => $row['fileType'],
+				'isImage' => $row['isImage'],
+				'downloads' => $row['downloads'],
+				'lastDownloadTime' => $row['lastDownloadTime'],
+				'uploadTime' => $row['uploadTime'],
+				'showOrder' => !empty($row['showOrder']) ? $row['showOrder'] : 0
+			], ['fileLocation' => $fileLocation]);
+		}
 	}
 	
 	/**
