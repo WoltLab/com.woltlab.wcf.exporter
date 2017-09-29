@@ -948,7 +948,7 @@ class WBB4xExporter extends AbstractExporter {
 				'posts' => $board['posts'],
 				'threads' => $board['threads']
 			], [
-				'i18n' => $board['i18n']
+				'i18n' => (isset($board['i18n']) ? $board['i18n'] : [])
 			]);
 			
 			$this->exportBoardsRecursively($board['boardID']);
