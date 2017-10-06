@@ -434,9 +434,10 @@ class SMF2xExporter extends AbstractExporter {
 	public function countUserRanks() {
 		$sql = "SELECT	COUNT(*) AS count
 			FROM	".$this->databasePrefix."membergroups
-			WHERE	min_posts <> ?";
+			WHERE	min_posts <> ?
+				AND stars <> ?";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute([-1]);
+		$statement->execute([-1, '']);
 		$row = $statement->fetchArray();
 		return $row['count'];
 	}
@@ -451,9 +452,10 @@ class SMF2xExporter extends AbstractExporter {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."membergroups
 			WHERE		min_posts <> ?
+					AND stars <> ?
 			ORDER BY	id_group";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute([-1]);
+		$statement->execute([-1, '']);
 		while ($row = $statement->fetchArray()) {
 			list($repeatImage, $rankImage) = explode('#', $row['stars'], 2);
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.rank')->import($row['id_group'] == self::GROUP_USER ? self::GROUP_USER_FAKE : $row['id_group'], [
