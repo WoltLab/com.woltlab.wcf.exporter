@@ -747,7 +747,7 @@ class SMF2xExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.user')->import(0, [
 				'conversationID' => $conversationID,
 				'participantID' => $row['id_member'],
-				'username' => $row['member_name'],
+				'username' => ($row['member_name'] ?: ''),
 				'hideConversation' => $row['deleted'] ? 1 : 0,
 				'isInvisible' => $row['bcc'] ? 1 : 0,
 				'lastVisitTime' => $row['is_new'] ? 0 : $row['msgtime']
