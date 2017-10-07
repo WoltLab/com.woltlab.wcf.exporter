@@ -320,7 +320,7 @@ class PhpBB31xExporter extends AbstractExporter {
 				'banned' => $row['banReason'] === null ? 0 : 1,
 				'banReason' => $row['banReason'],
 				'registrationIpAddress' => UserUtil::convertIPv4To6($row['user_ip']),
-				'signature' => self::fixBBCodes(StringUtil::decodeHTML($row['user_sig']), $row['user_sig_bbcode_uid']),
+				'signature' => self::fixBBCodes($row['user_sig'], $row['user_sig_bbcode_uid']),
 				'lastActivityTime' => $row['user_lastvisit']
 			];
 			
@@ -813,7 +813,7 @@ class PhpBB31xExporter extends AbstractExporter {
 				'conversationID' => $conversationID,
 				'userID' => $row['author_id'],
 				'username' => StringUtil::decodeHTML($row['username']) ?: '',
-				'message' => self::fixBBCodes(StringUtil::decodeHTML($row['message_text']), $row['bbcode_uid']),
+				'message' => self::fixBBCodes($row['message_text'], $row['bbcode_uid']),
 				'time' => $row['message_time'],
 				'attachments' => $row['attachments']
 			]);
@@ -1027,7 +1027,7 @@ class PhpBB31xExporter extends AbstractExporter {
 				'userID' => $row['poster_id'],
 				'username' => $row['post_username'] ?: (StringUtil::decodeHTML($row['username']) ?: ''),
 				'subject' => StringUtil::decodeHTML($row['post_subject']),
-				'message' => self::fixBBCodes(StringUtil::decodeHTML($row['post_text']), $row['bbcode_uid']),
+				'message' => self::fixBBCodes($row['post_text'], $row['bbcode_uid']),
 				'time' => $row['post_time'],
 				'isDisabled' => $row['post_visibility'] == self::ITEM_UNAPPROVED ? 1 : 0,
 				'isDeleted' => $row['post_visibility'] == self::ITEM_DELETED ? 1 : 0,
@@ -1475,6 +1475,14 @@ class PhpBB31xExporter extends AbstractExporter {
 	 * @return	string
 	 */
 	protected static function fixBBCodes($text, $uid) {
+		if (preg_match('~<[tr]>~', $text)) {
+			// see: https://github.com/s9e/TextFormatter/blob/cb0c4d6dc63f2ae88488f5010289af886c36928a/src/Unparser.php#L22
+			$text = html_entity_decode(strip_tags($text), ENT_QUOTES, 'UTF-8');
+		}
+		else {
+			$text = StringUtil::decodeHTML($text);
+		}
+		
 		// fix closing list tags
 		$text = preg_replace('~\[/list:(u|o)~i', '[/list', $text);
 		// fix closing list element tags
