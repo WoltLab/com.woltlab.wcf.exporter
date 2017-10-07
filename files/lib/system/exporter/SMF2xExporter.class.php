@@ -526,13 +526,13 @@ class SMF2xExporter extends AbstractExporter {
 	 */
 	public function exportUserAvatars($offset, $limit) {
 		$sql = "(
-				SELECT		id_member, 'attachment' AS type, filename AS avatarName, (id_attach || '_' || file_hash) AS filename
+				SELECT		id_member, 'attachment' AS type, filename AS avatarName, (id_attach || '_' || file_hash) AS filename, id_attach, file_hash, id_folder
 				FROM		".$this->databasePrefix."attachments
 				WHERE		id_member <> ?
 			)
 			UNION
 			(
-				SELECT		id_member, 'user' AS type, avatar AS avatarName, avatar AS filename
+				SELECT		id_member, 'user' AS type, avatar AS avatarName, avatar AS filename, '' AS id_attach, '' AS file_hash, '' AS id_folder
 				FROM		".$this->databasePrefix."members
 				WHERE		avatar <> ?
 			)";
@@ -542,7 +542,7 @@ class SMF2xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			switch ($row['type']) {
 				case 'attachment':
-					$fileLocation = $this->readOption('attachmentUploadDir').'/'.$row['filename'];
+					$fileLocation = $this->getAttachmentFilename($row['id_attach'], $row['id_folder'], $row['file_hash']);
 				break;
 				case 'user':
 					if (FileUtil::isURL($row['filename'])) return;
@@ -941,7 +941,7 @@ class SMF2xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute([0, 0]);
 		while ($row = $statement->fetchArray()) {
-			$fileLocation = $this->readOption('attachmentUploadDir').'/'.$row['id_attach'].'_'.$row['file_hash'];
+			$fileLocation = $this->getAttachmentFilename($row['id_attach'], $row['id_folder'], $row['file_hash']);
 			
 			if ($imageSize = @getimagesize($fileLocation)) {
 				$row['isImage'] = 1;
@@ -1355,7 +1355,7 @@ class SMF2xExporter extends AbstractExporter {
 			$statement->execute([$optionName]);
 			$row = $statement->fetchArray();
 			
-			$optionCache[$optionName] = $row['value'];
+			$optionCache[$optionName] = ($row !== false ? $row['value'] : '');
 		}
 		
 		return $optionCache[$optionName];
@@ -1421,5 +1421,27 @@ class SMF2xExporter extends AbstractExporter {
 		$message = MessageUtil::stripCrap($message);
 		
 		return $message;
+	}
+	
+	private function getAttachmentFilename($id, $dir, $hash) {
+		if (!empty($this->readOption('currentAttachmentUploadDir'))) {
+			// multiple attachments dir
+			static $dirs;
+			if ($dirs === null) {
+				$dirs = unserialize($this->readOption('attachmentUploadDir'));
+			}
+			
+			if (isset($dirs[$dir])) {
+				$path = $dirs[$dir];
+			}
+			else {
+				$path = $this->fileSystemPath . 'attachments';
+			}
+		}
+		else {
+			$path = $this->readOption('attachmentUploadDir');
+		}
+		
+		return $path . '/' . $id . '_' . $hash;
 	}
 }
