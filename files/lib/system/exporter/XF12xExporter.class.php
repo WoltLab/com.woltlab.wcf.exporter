@@ -881,7 +881,7 @@ class XF12xExporter extends AbstractExporter {
 			LEFT JOIN	xf_ip ip
 			ON		post.ip_id = ip.ip_id
 			LEFT JOIN	xf_thread thread
-			ON		thread.first_post_id = post.post_id
+			ON		(thread.thread_id = post.thread_id AND thread.first_post_id = post.post_id)
 			WHERE		post_id BETWEEN ? AND ?
 			ORDER BY	post_id";
 		$statement = $this->database->prepareStatement($sql);
