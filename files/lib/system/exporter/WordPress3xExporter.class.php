@@ -464,7 +464,7 @@ class WordPress3xExporter extends AbstractExporter {
 			$mediaID = ImportHandler::getInstance()->getNewID('com.woltlab.wcf.media', $matches[2]);
 			if (!$mediaID) {
 				return $matches[0];
-			} 
+			}
 			
 			$alignment = 'none';
 			if (strpos($matches[1], 'alignleft') !== false) {
@@ -492,4 +492,4 @@ class WordPress3xExporter extends AbstractExporter {
 		
 		return $string;
 	}
-}	
+}

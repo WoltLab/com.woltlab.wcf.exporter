@@ -1883,7 +1883,7 @@ class VB3or4xExporter extends AbstractExporter {
 					// each day is represented as one bit
 					for ($i = 0; $i < 7; $i++) {
 						if ($days & (1 << $i)) {
-							$eventDateData['repeatWeeklyByDay'][] = $i; 
+							$eventDateData['repeatWeeklyByDay'][] = $i;
 						}
 					}
 				break;

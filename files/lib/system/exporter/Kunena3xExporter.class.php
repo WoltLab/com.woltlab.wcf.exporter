@@ -165,7 +165,7 @@ class Kunena3xExporter extends AbstractExporter {
 	public function countUsers() {
 		$sql = "SELECT	COUNT(*) AS count
 			FROM	".$this->databasePrefix."kunena_users kunena_users,
-				".$this->databasePrefix."users users	
+				".$this->databasePrefix."users users
 			WHERE	users.id = kunena_users.userid";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute();

@@ -112,7 +112,7 @@ class IPB3xExporter extends AbstractExporter {
 				$queue[] = 'com.woltlab.wcf.user.group';
 			}
 			if (in_array('com.woltlab.wcf.user.option', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.option';
-			$queue[] = 'com.woltlab.wcf.user'; 
+			$queue[] = 'com.woltlab.wcf.user';
 			if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.avatar';
 				
 			if (in_array('com.woltlab.wcf.user.comment', $this->selectedData)) {
@@ -827,7 +827,7 @@ class IPB3xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			$data = @unserialize($row['choices']);
 			if (!$data) $data = @unserialize(str_replace('\"', '"', $row['choices'])); // pre ipb3.4 fallback
-			if (!$data || !isset($data[1])) continue; 
+			if (!$data || !isset($data[1])) continue;
 
 			// import poll
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll')->import($row['pid'], [

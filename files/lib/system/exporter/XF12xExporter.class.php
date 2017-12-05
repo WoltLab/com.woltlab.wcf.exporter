@@ -1213,7 +1213,7 @@ class XF12xExporter extends AbstractExporter {
 	 * Counts blog entries.
 	 */
 	public function countBlogEntries() {
-		$sql = "SELECT 
+		$sql = "SELECT
 			(
 				SELECT	COUNT(*)
 				FROM	xfa_blog_entry

@@ -1000,7 +1000,7 @@ class WBB3xExporter extends AbstractExporter {
 		$sql = "SELECT		board.*, structure.position
 			FROM		wbb".$this->dbNo."_".$this->instanceNo."_board board
 			LEFT JOIN	wbb".$this->dbNo."_".$this->instanceNo."_board_structure structure
-			ON		(structure.boardID = board.boardID)	
+			ON		(structure.boardID = board.boardID)
 			ORDER BY	board.parentID, structure.position";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute();
@@ -1338,7 +1338,7 @@ class WBB3xExporter extends AbstractExporter {
 			WHERE	pollID IN (
 					SELECT	pollID
 					FROM	wcf".$this->dbNo."_poll
-					WHERE	messageType = ?	
+					WHERE	messageType = ?
 				)";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute(['post']);
@@ -1359,7 +1359,7 @@ class WBB3xExporter extends AbstractExporter {
 			WHERE		pollID IN (
 						SELECT	pollID
 						FROM	wcf".$this->dbNo."_poll
-						WHERE	messageType = ?	
+						WHERE	messageType = ?
 					)
 					AND pollOptionID BETWEEN ? AND ?
 			ORDER BY	pollOptionID";
@@ -1617,7 +1617,7 @@ class WBB3xExporter extends AbstractExporter {
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
 			/** @noinspection PhpVariableVariableInspection */
-			${$row['type']}[] = $row; 
+			${$row['type']}[] = $row;
 		}
 		
 		// mods
@@ -2271,7 +2271,7 @@ class WBB3xExporter extends AbstractExporter {
 			ON		(calendar_event_message.messageID = calendar_event.messageID)
 			LEFT JOIN	wcf".$this->dbNo."_calendar_event_participation calendar_event_participation
 			ON		(calendar_event_participation.eventID = calendar_event.eventID)
-			WHERE		calendar_event.eventID BETWEEN ? AND ?			
+			WHERE		calendar_event.eventID BETWEEN ? AND ?
 			ORDER BY	calendar_event.eventID";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute([$offset + 1, $offset + $limit]);
@@ -2504,7 +2504,7 @@ class WBB3xExporter extends AbstractExporter {
 		
 		$sql = "SELECT		event_message.*
 			FROM		wcf".$this->dbNo."_calendar_event_message event_message
-			WHERE		event_message.messageID NOT IN (SELECT messageID FROM wcf".$this->dbNo."_calendar_event)		
+			WHERE		event_message.messageID NOT IN (SELECT messageID FROM wcf".$this->dbNo."_calendar_event)
 			ORDER BY	event_message.messageID";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
@@ -2661,7 +2661,7 @@ class WBB3xExporter extends AbstractExporter {
 	
 	/**
 	 * Returns the version of a package in the imported system or `false` if the package is
-	 * not installed in the imported system. 
+	 * not installed in the imported system.
 	 * 
 	 * @param	string		$name
 	 * @return	string|boolean

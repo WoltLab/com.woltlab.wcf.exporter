@@ -123,9 +123,9 @@ class IPB4xExporter extends AbstractExporter {
 				$queue[] = 'com.woltlab.wcf.user.group';
 			}
 			if (in_array('com.woltlab.wcf.user.option', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.option';
-			$queue[] = 'com.woltlab.wcf.user'; 
+			$queue[] = 'com.woltlab.wcf.user';
 			if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.avatar';
-				
+			
 			if (in_array('com.woltlab.wcf.user.comment', $this->selectedData)) {
 				$queue[] = 'com.woltlab.wcf.user.comment';
 				$queue[] = 'com.woltlab.wcf.user.comment.response';
@@ -278,7 +278,7 @@ class IPB4xExporter extends AbstractExporter {
 				'categoryName' => 'profile.personal',
 				'optionType' => 'textarea',
 				'askDuringRegistration' => $row['pf_show_on_reg'],
-			], ['name' => $this->getLanguageVar('core_pfield', $row['pf_id'])]); 
+			], ['name' => $this->getLanguageVar('core_pfield', $row['pf_id'])]);
 		}
 	}
 	
@@ -453,7 +453,7 @@ class IPB4xExporter extends AbstractExporter {
 			WHERE		follow_app = ?
 					AND follow_area = ?
 			ORDER BY	follow_id";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset); 
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(['core', 'member']);
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.follower')->import(0, [
@@ -763,7 +763,7 @@ class IPB4xExporter extends AbstractExporter {
 			WHERE		follow_app = ?
 					AND follow_area = ?
 			ORDER BY	follow_id";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset); 
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute(['forums', 'topic']);
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.watchedThread')->import(0, [
@@ -807,8 +807,8 @@ class IPB4xExporter extends AbstractExporter {
 			}
 			if (!$data || !isset($data[1])) {
 				continue;
-			} 
-
+			}
+			
 			// import poll
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll')->import($row['pid'], [
 				'objectID' => $row['topic_firstpost'],
@@ -962,7 +962,7 @@ class IPB4xExporter extends AbstractExporter {
 		$sql = "SELECT		core_attachments.*, core_attachments_map.id2
 			FROM		".$this->databasePrefix."core_attachments_map core_attachments_map
 			LEFT JOIN	".$this->databasePrefix."core_attachments core_attachments
-			ON		(core_attachments.attach_id = core_attachments_map.attachment_id)	
+			ON		(core_attachments.attach_id = core_attachments_map.attachment_id)
 			WHERE		core_attachments_map.location_key = ?
 					AND core_attachments_map.id2 IS NOT NULL
 			ORDER BY	core_attachments_map.attachment_id";
