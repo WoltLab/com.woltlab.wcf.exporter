@@ -1039,7 +1039,7 @@ class WBB3xExporter extends AbstractExporter {
 				'isInvisible' => $board['isInvisible'],
 				'postSortOrder' => !empty($board['postSortOrder']) ? $board['postSortOrder'] : '',
 				'postsPerPage' => !empty($board['postsPerPage']) ? $board['postsPerPage'] : 0,
-				'searchable' => !empty($board['searchable']) ? $board['searchable'] : 0,
+				'searchable' => isset($board['searchable']) ? intval($board['searchable']) : 1,
 				'searchableForSimilarThreads' => !empty($board['searchableForSimilarThreads']) ? $board['searchableForSimilarThreads'] : 0,
 				'showSubBoards' => $board['showSubBoards'],
 				'sortField' => $board['sortField'],
