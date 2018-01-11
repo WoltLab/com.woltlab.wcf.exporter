@@ -31,7 +31,9 @@
 		<instruction type="language" />
 	</instructions>
 	
-	<!-- TODO: upgrade path for 3.0 -->
+	<instructions type="update" fromversion="3.0.*">
+		<instruction type="file" />
+	</instructions>
 	
 	<instructions type="update" fromversion="3.1.0 Beta 4">
 		<instruction type="file">files_update.tar</instruction>
