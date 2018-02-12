@@ -126,7 +126,11 @@ class VB3or4xExporter extends AbstractExporter {
 		
 		'com.woltlab.calendar.category' => 'CalendarCategories',
 		'com.woltlab.calendar.event' => 'CalendarEvents',
-		'com.woltlab.calendar.event.date' => 'CalendarEventDates'
+		'com.woltlab.calendar.event.date' => 'CalendarEventDates',
+		
+		'com.woltlab.blog.entry' => 'BlogEntries',
+		'com.woltlab.blog.entry.comment' => 'BlogComments',
+		'com.woltlab.blog.entry.attachment' => 'BlogAttachments',
 	];
 	
 	/**
@@ -172,6 +176,10 @@ class VB3or4xExporter extends AbstractExporter {
 			'com.woltlab.calendar.event' => [
 				'com.woltlab.calendar.category'
 			],
+			'com.woltlab.blog.entry' => [
+				'com.woltlab.blog.entry.attachment',
+				'com.woltlab.blog.entry.comment'
+			],
 			'com.woltlab.wcf.smiley' => []
 		];
 	}
@@ -196,7 +204,7 @@ class VB3or4xExporter extends AbstractExporter {
 			if (empty($this->fileSystemPath) || !@file_exists($this->fileSystemPath . 'includes/version_vbulletin.php')) return false;
 		}
 		
-		if (in_array('com.woltlab.wbb.attachment', $this->selectedData)) {
+		if (in_array('com.woltlab.wbb.attachment', $this->selectedData) || in_array('com.woltlab.blog.entry.attachment', $this->selectedData)) {
 			if ($this->readOption('attachfile') != self::ATTACHFILE_DATABASE) {
 				$path = $this->readOption('attachpath');
 				if (!StringUtil::startsWith($path, '/')) $path = realpath($this->fileSystemPath.$path);
@@ -282,6 +290,13 @@ class VB3or4xExporter extends AbstractExporter {
 		if (in_array('com.woltlab.calendar.event', $this->selectedData)) {
 			if (in_array('com.woltlab.calendar.category', $this->selectedData)) $queue[] = 'com.woltlab.calendar.category';
 			$queue[] = 'com.woltlab.calendar.event';
+		}
+		
+		// blog
+		if (in_array('com.woltlab.blog.entry', $this->selectedData)) {
+			$queue[] = 'com.woltlab.blog.entry';
+			if (in_array('com.woltlab.blog.entry.attachment', $this->selectedData)) $queue[] = 'com.woltlab.blog.entry.attachment';
+			if (in_array('com.woltlab.blog.entry.comment', $this->selectedData)) $queue[] = 'com.woltlab.blog.entry.comment';
 		}
 		
 		return $queue;
@@ -1134,21 +1149,7 @@ class VB3or4xExporter extends AbstractExporter {
 	 * Counts post attachments.
 	 */
 	public function countPostAttachments() {
-		try {
-			$sql = "SELECT	COUNT(*) AS count
-				FROM	".$this->databasePrefix."attachment
-				WHERE	contenttypeid = (SELECT contenttypeid FROM ".$this->databasePrefix."contenttype WHERE class = 'Post')";
-			$statement = $this->database->prepareStatement($sql);
-			$statement->execute();
-		}
-		catch (DatabaseException $e) {
-			$sql = "SELECT	COUNT(*) AS count
-				FROM	".$this->databasePrefix."attachment";
-			$statement = $this->database->prepareStatement($sql);
-			$statement->execute();
-		}
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->countAttachments('Post');
 	}
 	
 	/**
@@ -1159,82 +1160,7 @@ class VB3or4xExporter extends AbstractExporter {
 	 * @throws	\Exception
 	 */
 	public function exportPostAttachments($offset, $limit) {
-		try {
-			// vb 4
-			$sql = "SELECT		attachment.*, attachment.contentid AS postid, filedata.filedata
-				FROM		".$this->databasePrefix."attachment attachment
-				LEFT JOIN	".$this->databasePrefix."filedata filedata
-				ON		attachment.filedataid = filedata.filedataid
-				WHERE		attachment.contenttypeid = (SELECT contenttypeid FROM ".$this->databasePrefix."contenttype contenttype WHERE contenttype.class = 'Post')
-				ORDER BY	attachment.attachmentid";
-			$statement = $this->database->prepareStatement($sql, $limit, $offset);
-			$statement->execute();
-		}
-		catch (DatabaseException $e) {
-			// vb 3
-			$sql = "SELECT		*
-				FROM		".$this->databasePrefix."attachment
-				ORDER BY	attachmentid";
-			$statement = $this->database->prepareStatement($sql, $limit, $offset);
-			$statement->execute();
-		}
-		
-		while ($row = $statement->fetchArray()) {
-			$file = null;
-			
-			try {
-				switch ($this->readOption('attachfile')) {
-					case self::ATTACHFILE_DATABASE:
-						$file = FileUtil::getTemporaryFilename('attachment_');
-						file_put_contents($file, $row['filedata']);
-					break;
-					case self::ATTACHFILE_FILESYSTEM:
-						$file = $this->readOption('attachpath');
-						if (!StringUtil::startsWith($file, '/')) $file = realpath($this->fileSystemPath.$file);
-						$file = FileUtil::addTrailingSlash($file);
-						$file .= $row['userid'].'/'.(isset($row['filedataid']) ? $row['filedataid'] : $row['attachmentid']).'.attach';
-					break;
-					case self::ATTACHFILE_FILESYSTEM_SUBFOLDER:
-						$file = $this->readOption('attachpath');
-						if (!StringUtil::startsWith($file, '/')) $file = realpath($this->fileSystemPath.$file);
-						$file = FileUtil::addTrailingSlash($file);
-						$file .= implode('/', str_split($row['userid'])).'/'.(isset($row['filedataid']) ? $row['filedataid'] : $row['attachmentid']).'.attach';
-					break;
-				}
-				
-				// unable to read file -> abort
-				if (!is_file($file) || !is_readable($file)) continue;
-				if ($imageSize = @getimagesize($file)) {
-					$row['isImage'] = 1;
-					$row['width'] = $imageSize[0];
-					$row['height'] = $imageSize[1];
-				}
-				else {
-					$row['isImage'] = $row['width'] = $row['height'] = 0;
-				}
-				
-				ImportHandler::getInstance()->getImporter('com.woltlab.wbb.attachment')->import($row['attachmentid'], [
-					'objectID' => $row['postid'],
-					'userID' => $row['userid'] ?: null,
-					'filename' => $row['filename'],
-					'filesize' => isset($row['filesize']) ? $row['filesize'] : filesize($file),
-					'fileType' => FileUtil::getMimeType($file),
-					'isImage' => $row['isImage'],
-					'width' => $row['width'],
-					'height' => $row['height'],
-					'downloads' => $row['counter'],
-					'uploadTime' => $row['dateline'],
-					'showOrder' => isset($row['displayOrder']) ? $row['displayOrder'] : 0
-				], ['fileLocation' => $file]);
-				
-				if ($this->readOption('attachfile') == self::ATTACHFILE_DATABASE) unlink($file);
-			}
-			catch (\Exception $e) {
-				if ($this->readOption('attachfile') == self::ATTACHFILE_DATABASE && $file) @unlink($file);
-				
-				throw $e;
-			}
-		}
+		$this->exportAttachments('Post', 'com.woltlab.wbb.attachment', $offset, $limit);
 	}
 	
 	/**
@@ -1934,6 +1860,210 @@ class VB3or4xExporter extends AbstractExporter {
 				'categories' => [$row['calendarid']],
 				'createEventDates' => true
 			]);
+		}
+	}
+	
+	/**
+	 * Counts blog entries.
+	 */
+	public function countBlogEntries() {
+		return $this->__getMaxID($this->databasePrefix."blog", 'blogid');
+	}
+	
+	/**
+	 * Exports blog entries.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportBlogEntries($offset, $limit) {
+		$sql = "SELECT		blog_text.*, blog.*
+			FROM		".$this->databasePrefix."blog blog
+			LEFT JOIN       ".$this->databasePrefix."blog_text blog_text
+			ON		blog_text.blogtextid = blog.firstblogtextid
+			WHERE		blog.blogid BETWEEN ? AND ?
+			ORDER BY	blog.blogid";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute([$offset + 1, $offset + $limit]);
+		while ($row = $statement->fetchArray()) {
+			$data = [
+				'userID' => $row['userid'] ?: null,
+				'username' => StringUtil::decodeHTML($row['username'] ?: ''),
+				'subject' => StringUtil::decodeHTML($row['title']),
+				'message' => self::fixBBCodes($row['pagetext']),
+				'time' => $row['dateline'],
+				'comments' => $row['comments_visible'],
+				'views' => $row['views'],
+			];
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry')->import($row['blogid'], $data);
+		}
+	}
+	
+	/**
+	 * Counts blog entry comments.
+	 */
+	public function countBlogComments() {
+		return $this->__getMaxID($this->databasePrefix."blog_text", 'blogtextid');
+	}
+	
+	/**
+	 * Exports blog entries.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportBlogComments($offset, $limit) {
+		$sql = "SELECT		blog_text.*
+			FROM		".$this->databasePrefix."blog_text blog_text
+			WHERE		blogtextid BETWEEN ? AND ?
+					AND blogtextid NOT IN (SELECT firstblogtextid FROM ".$this->databasePrefix."blog)
+			ORDER BY	blogtextid";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute([$offset + 1, $offset + $limit]);
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry.comment')->import($row['blogtextid'], [
+				'objectID' => $row['blogid'],
+				'userID' => $row['userid'] ?: null,
+				'username' => StringUtil::decodeHTML($row['username'] ?: ''),
+				'message' => self::fixBBCodes($row['pagetext']),
+				'time' => $row['dateline']
+			]);
+		}
+	}
+	
+	/**
+	 * Counts blog entry attachments.
+	 */
+	public function countBlogAttachments() {
+		return $this->countAttachments('BlogEntry');
+	}
+	
+	/**
+	 * Exports post attachments.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 * @throws	\Exception
+	 */
+	public function exportBlogAttachments($offset, $limit) {
+		$this->exportAttachments('BlogEntry', 'com.woltlab.blog.entry.attachment', $offset, $limit);
+	}
+	
+	/**
+	 * Returns the number of attachments.
+	 *
+	 * @param	string		$contentType
+	 * @return	integer
+	 */
+	private function countAttachments($contentType) {
+		try {
+			// vb 4
+			$sql = "SELECT	COUNT(*) AS count
+				FROM	".$this->databasePrefix."attachment
+				WHERE	contenttypeid = (SELECT contenttypeid FROM ".$this->databasePrefix."contenttype WHERE class = ?)";
+			$statement = $this->database->prepareStatement($sql);
+			$statement->execute([$contentType]);
+		}
+		catch (DatabaseException $e) {
+			// vb 3
+			if ($contentType != 'Post') return 0;
+			
+			$sql = "SELECT	COUNT(*) AS count
+				FROM	".$this->databasePrefix."attachment";
+			$statement = $this->database->prepareStatement($sql);
+			$statement->execute();
+		}
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports attachments.
+	 *
+	 * @param	string		$contentType
+	 * @param	string		$importer
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	private function exportAttachments($contentType, $importer, $offset, $limit) {
+		try {
+			// vb 4
+			$sql = "SELECT		attachment.*, filedata.filedata
+				FROM		".$this->databasePrefix."attachment attachment
+				LEFT JOIN	".$this->databasePrefix."filedata filedata
+				ON		attachment.filedataid = filedata.filedataid
+				WHERE		attachment.contenttypeid = (SELECT contenttypeid FROM ".$this->databasePrefix."contenttype contenttype WHERE contenttype.class = ?)
+				ORDER BY	attachment.attachmentid";
+			$statement = $this->database->prepareStatement($sql, $limit, $offset);
+			$statement->execute([$contentType]);
+		}
+		catch (DatabaseException $e) {
+			// vb 3
+			if ($contentType != 'Post') return 0;
+			
+			$sql = "SELECT		*
+				FROM		".$this->databasePrefix."attachment
+				ORDER BY	attachmentid";
+			$statement = $this->database->prepareStatement($sql, $limit, $offset);
+			$statement->execute();
+		}
+		
+		while ($row = $statement->fetchArray()) {
+			$file = null;
+			
+			try {
+				switch ($this->readOption('attachfile')) {
+					case self::ATTACHFILE_DATABASE:
+						$file = FileUtil::getTemporaryFilename('attachment_');
+						file_put_contents($file, $row['filedata']);
+						break;
+					case self::ATTACHFILE_FILESYSTEM:
+						$file = $this->readOption('attachpath');
+						if (!StringUtil::startsWith($file, '/')) $file = realpath($this->fileSystemPath.$file);
+						$file = FileUtil::addTrailingSlash($file);
+						$file .= $row['userid'].'/'.(isset($row['filedataid']) ? $row['filedataid'] : $row['attachmentid']).'.attach';
+						break;
+					case self::ATTACHFILE_FILESYSTEM_SUBFOLDER:
+						$file = $this->readOption('attachpath');
+						if (!StringUtil::startsWith($file, '/')) $file = realpath($this->fileSystemPath.$file);
+						$file = FileUtil::addTrailingSlash($file);
+						$file .= implode('/', str_split($row['userid'])).'/'.(isset($row['filedataid']) ? $row['filedataid'] : $row['attachmentid']).'.attach';
+						break;
+				}
+				
+				// unable to read file -> abort
+				if (!is_file($file) || !is_readable($file)) continue;
+				if ($imageSize = @getimagesize($file)) {
+					$row['isImage'] = 1;
+					$row['width'] = $imageSize[0];
+					$row['height'] = $imageSize[1];
+				}
+				else {
+					$row['isImage'] = $row['width'] = $row['height'] = 0;
+				}
+				
+				ImportHandler::getInstance()->getImporter($importer)->import($row['attachmentid'], [
+					'objectID' => $row['contentid'],
+					'userID' => $row['userid'] ?: null,
+					'filename' => $row['filename'],
+					'filesize' => isset($row['filesize']) ? $row['filesize'] : filesize($file),
+					'fileType' => FileUtil::getMimeType($file),
+					'isImage' => $row['isImage'],
+					'width' => $row['width'],
+					'height' => $row['height'],
+					'downloads' => $row['counter'],
+					'uploadTime' => $row['dateline'],
+					'showOrder' => isset($row['displayOrder']) ? $row['displayOrder'] : 0
+				], ['fileLocation' => $file]);
+				
+				if ($this->readOption('attachfile') == self::ATTACHFILE_DATABASE) unlink($file);
+			}
+			catch (\Exception $e) {
+				if ($this->readOption('attachfile') == self::ATTACHFILE_DATABASE && $file) @unlink($file);
+				
+				throw $e;
+			}
 		}
 	}
 	

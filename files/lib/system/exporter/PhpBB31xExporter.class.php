@@ -240,7 +240,7 @@ class PhpBB31xExporter extends AbstractExporter {
 				break;
 				case 6:
 					// BOTS
-					continue;
+					continue 2;
 				break;
 				default:
 					$groupType = UserGroup::OTHER;
