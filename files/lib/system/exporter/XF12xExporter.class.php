@@ -1052,7 +1052,7 @@ class XF12xExporter extends AbstractExporter {
 			FROM		xf_poll_vote
 			ORDER BY	poll_response_id, user_id";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute([0]);
+		$statement->execute();
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll.option.vote')->import(0, [
 				'pollID' => $row['poll_id'],
