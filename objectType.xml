@@ -80,6 +80,12 @@
 		</type>
 		
 		<type>
+			<name>com.woltlab.wcf.exporter.xf2x</name>
+			<definitionname>com.woltlab.wcf.exporter</definitionname>
+			<classname>wcf\system\exporter\XF2xExporter</classname>
+		</type>
+		
+		<type>
 			<name>com.woltlab.wcf.exporter.vb5x</name>
 			<definitionname>com.woltlab.wcf.exporter</definitionname>
 			<classname>wcf\system\exporter\VB5xExporter</classname>
