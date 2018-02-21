@@ -298,7 +298,8 @@ class PhpBB31xExporter extends AbstractExporter {
 					(
 						SELECT	GROUP_CONCAT(group_table.group_id)
 						FROM	".$this->databasePrefix."user_group group_table
-						WHERE	group_table.user_id = user_table.user_id
+						WHERE		group_table.user_id = user_table.user_id
+							AND	user_pending = ?
 					) AS groupIDs
 			FROM		".$this->databasePrefix."users user_table
 			LEFT JOIN	".$this->databasePrefix."banlist ban_table
@@ -310,7 +311,7 @@ class PhpBB31xExporter extends AbstractExporter {
 					AND user_table.user_id BETWEEN ? AND ?
 			ORDER BY	user_table.user_id";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute([0, self::USER_TYPE_USER_IGNORE, $offset + 1, $offset + $limit]);
+		$statement->execute([0, 0, self::USER_TYPE_USER_IGNORE, $offset + 1, $offset + $limit]);
 		while ($row = $statement->fetchArray()) {
 			$data = [
 				'username' => StringUtil::decodeHTML($row['username']),
