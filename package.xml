@@ -27,8 +27,10 @@
 	
 	<instructions type="install">
 		<instruction type="file" />
-		<instruction type="objectType" />
+		
 		<instruction type="language" />
+		
+		<instruction type="objectType" />
 	</instructions>
 	
 	<instructions type="update" fromversion="3.0.*">
@@ -40,7 +42,7 @@
 	</instructions>
 	
 	<instructions type="update" fromversion="3.1.0 RC 1">
-		<instruction type="file">files_update.tar</instruction>
+		<instruction type="file" />
 		
 		<instruction type="language" />
 		
