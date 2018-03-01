@@ -67,17 +67,11 @@ class XF2xExporter extends AbstractExporter {
 		'com.woltlab.wbb.acl' => 'ACLs',
 		'com.woltlab.wcf.smiley' => 'Smilies',
 		
-		'com.woltlab.blog.category' => 'BlogCategories',
-		'com.woltlab.blog.entry' => 'BlogEntries',
-		'com.woltlab.blog.entry.attachment' => 'BlogAttachments',
-		'com.woltlab.blog.entry.comment' => 'BlogComments',
-		'com.woltlab.blog.entry.like' => 'BlogEntryLikes',
-		
 		'com.woltlab.gallery.category' => 'GalleryCategories',
 		'com.woltlab.gallery.album' => 'GalleryAlbums',
 		'com.woltlab.gallery.image' => 'GalleryImages',
-		'com.woltlab.gallery.image.comment' => 'GalleryComments',
-		'com.woltlab.gallery.image.like' => 'GalleryImageLikes',
+	/*	'com.woltlab.gallery.image.comment' => 'GalleryComments',
+		'com.woltlab.gallery.image.like' => 'GalleryImageLikes',*/
 	];
 	
 	/**
@@ -113,12 +107,6 @@ class XF2xExporter extends AbstractExporter {
 			'com.woltlab.wcf.conversation' => [
 				'com.woltlab.wcf.conversation.label'
 			],
-			'com.woltlab.blog.entry' => [
-				'com.woltlab.blog.category',
-				'com.woltlab.blog.entry.attachment',
-				'com.woltlab.blog.entry.comment',
-				'com.woltlab.blog.entry.like'
-			],
 			'com.woltlab.gallery.image' => [
 				'com.woltlab.gallery.category',
 				'com.woltlab.gallery.album',
@@ -143,7 +131,7 @@ class XF2xExporter extends AbstractExporter {
 	 * @inheritDoc
 	 */
 	public function validateFileAccess() {
-		if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData) || in_array('com.woltlab.wbb.attachment', $this->selectedData) || in_array('com.woltlab.blog.entry.attachment', $this->selectedData) || in_array('com.woltlab.wcf.smiley', $this->selectedData) || in_array('com.woltlab.gallery.image', $this->selectedData)) {
+		if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData) || in_array('com.woltlab.wbb.attachment', $this->selectedData) || in_array('com.woltlab.wcf.smiley', $this->selectedData) || in_array('com.woltlab.gallery.image', $this->selectedData)) {
 			if (empty($this->fileSystemPath) || !@file_exists($this->fileSystemPath . 'src/XF.php')) return false;
 		}
 		
@@ -200,14 +188,6 @@ class XF2xExporter extends AbstractExporter {
 				$queue[] = 'com.woltlab.wbb.poll.option';
 				$queue[] = 'com.woltlab.wbb.poll.option.vote';
 			}
-		}
-		
-		if (in_array('com.woltlab.blog.entry', $this->selectedData)) {
-			if (in_array('com.woltlab.blog.category', $this->selectedData)) $queue[] = 'com.woltlab.blog.category';
-			$queue[] = 'com.woltlab.blog.entry';
-			if (in_array('com.woltlab.blog.entry.attachment', $this->selectedData)) $queue[] = 'com.woltlab.blog.entry.attachment';
-			if (in_array('com.woltlab.blog.entry.comment', $this->selectedData)) $queue[] = 'com.woltlab.blog.entry.comment';
-			if (in_array('com.woltlab.blog.entry.like', $this->selectedData)) $queue[] = 'com.woltlab.blog.entry.like';
 		}
 		
 		if (in_array('com.woltlab.gallery.image', $this->selectedData)) {
@@ -1213,208 +1193,6 @@ class XF2xExporter extends AbstractExporter {
 				]);
 			}
 		}
-	}
-	
-	
-	/**
-	 * Counts blog categories.
-	 */
-	public function countBlogCategories() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	xfa_blog_category
-			WHERE	user_id = ?";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute([0]);
-		$row = $statement->fetchArray();
-		return $row['count'];
-	}
-	
-	/**
-	 * Exports blog categories.
-	 *
-	 * @param	integer		$offset
-	 * @param	integer		$limit
-	 */
-	public function exportBlogCategories($offset, $limit) {
-		$sql = "SELECT		*
-			FROM		xfa_blog_category
-			WHERE		user_id = ?
-			ORDER BY	category_id ASC";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute([0]);
-		while ($row = $statement->fetchArray()) {
-			ImportHandler::getInstance()->getImporter('com.woltlab.blog.category')->import($row['category_id'], [
-				'title' => $row['category_name'],
-				'parentCategoryID' => 0, // by intent as Community Blog does not support arbitrary nested categories
-				'showOrder' => $row['display_order']
-			]);
-		}
-	}
-	
-	/**
-	 * Counts blog entries.
-	 */
-	public function countBlogEntries() {
-		$sql = "SELECT 
-			(
-				SELECT	COUNT(*)
-				FROM	xfa_blog_entry
-			)
-			+
-			(
-				SELECT	COUNT(*)
-				FROM	xfa_blog_entry_scheduled
-			) AS count";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
-	}
-	
-	/**
-	 * Exports blog entries.
-	 *
-	 * @param	integer		$offset
-	 * @param	integer		$limit
-	 */
-	public function exportBlogEntries($offset, $limit) {
-		$sql = "(
-				SELECT		1 AS isPublished,
-						entry.entry_id, entry.user_id, user.username, entry.title,
-						entry.message, entry.post_date, entry.reply_count, entry.view_count,
-						(SELECT GROUP_CONCAT(category_id) FROM xfa_blog_entry_category category WHERE category.entry_id = entry.entry_id) AS categories
-				FROM		xfa_blog_entry entry
-				LEFT JOIN	xf_user user
-				ON		entry.user_id = user.user_id
-			)
-			UNION ALL
-			(
-				SELECT		0 AS isPublished,
-						(entry.scheduled_entry_id || '-draft') AS entry_id, entry.user_id, user.username, entry.title,
-						entry.message, entry.post_date, 0 AS reply_count, 0 AS view_count,
-						entry.categories
-				FROM		xfa_blog_entry_scheduled entry
-				LEFT JOIN	xf_user user
-				ON		entry.user_id = user.user_id
-			)
-			ORDER BY isPublished DESC, entry_id ASC";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
-		while ($row = $statement->fetchArray()) {
-			$additionalData = [];
-			if ($row['isPublished']) {
-				$additionalData['categories'] = explode(',', $row['categories']);
-			}
-			else {
-				$categories = @unserialize($row['categories']);
-				if ($categories) $additionalData['categories'] = $categories;
-			}
-			
-			ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry')->import($row['entry_id'], [
-				'userID' => $row['user_id'] ?: null,
-				'username' => $row['username'] ?: '',
-				'subject' => $row['title'],
-				'message' => self::fixBBCodes($row['message']),
-				'time' => $row['post_date'],
-				'comments' => $row['reply_count'],
-				'views' => $row['view_count'],
-				'isPublished' => $row['isPublished'],
-				'publicationDate' => $row['post_date']
-			], $additionalData);
-		}
-	}
-	
-	/**
-	 * Counts blog comments.
-	 */
-	public function countBlogComments() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	xfa_blog_comment";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
-	}
-	
-	/**
-	 * Exports blog comments.
-	 *
-	 * @param	integer		$offset
-	 * @param	integer		$limit
-	 */
-	public function exportBlogComments($offset, $limit) {
-		$sql = "SELECT		comment.*, user.username
-			FROM		xfa_blog_comment comment
-			LEFT JOIN	xf_user user
-			ON		comment.user_id = user.user_id
-			ORDER BY	comment.comment_id";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
-		while ($row = $statement->fetchArray()) {
-			ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry.comment')->import($row['comment_id'], [
-				'objectID' => $row['entry_id'],
-				'userID' => $row['user_id'] ?: null,
-				'username' => $row['username'] ?: '',
-				'message' => self::fixComment($row['message']),
-				'time' => $row['post_date']
-			]);
-		}
-	}
-	
-	/**
-	 * Counts blog entry likes.
-	 */
-	public function countBlogEntryLikes() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	xf_liked_content
-			WHERE	content_type = ?";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(['xfa_blog_entry']);
-		$row = $statement->fetchArray();
-		return $row['count'];
-	}
-	
-	/**
-	 * Exports blog entry likes.
-	 *
-	 * @param	integer		$offset
-	 * @param	integer		$limit
-	 */
-	public function exportBlogEntryLikes($offset, $limit) {
-		$sql = "SELECT		*
-			FROM		xf_liked_content
-			WHERE		content_type = ?
-			ORDER BY	like_id ASC";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute(['xfa_blog_entry']);
-		while ($row = $statement->fetchArray()) {
-			ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry.like')->import($row['like_id'], [
-				'objectID' => $row['content_id'],
-				'objectUserID' => $row['content_user_id'] ?: null,
-				'userID' => $row['like_user_id'],
-				'likeValue' => Like::LIKE,
-				'time' => $row['like_date']
-			]);
-		}
-	}
-	
-	/**
-	 * Returns the number of blog attachments.
-	 * 
-	 * @return	integer
-	 */
-	public function countBlogAttachments() {
-		return $this->countAttachments('xfa_blog_entry');
-	}
-	
-	/**
-	 * Exports blog attachments.
-	 * 
-	 * @param	integer		$offset
-	 * @param	integer		$limit
-	 */
-	public function exportBlogAttachments($offset, $limit) {
-		$this->exportAttachments('xfa_blog_entry', 'com.woltlab.blog.entry.attachment', $offset, $limit);
 	}
 	
 	/**
