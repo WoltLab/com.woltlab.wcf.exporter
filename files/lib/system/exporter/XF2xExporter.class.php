@@ -1,5 +1,6 @@
 <?php
 namespace wcf\system\exporter;
+use gallery\system\GALLERYCore;
 use wbb\data\board\Board;
 use wcf\data\conversation\Conversation;
 use wcf\data\like\Like;
@@ -70,7 +71,13 @@ class XF2xExporter extends AbstractExporter {
 		'com.woltlab.blog.entry' => 'BlogEntries',
 		'com.woltlab.blog.entry.attachment' => 'BlogAttachments',
 		'com.woltlab.blog.entry.comment' => 'BlogComments',
-		'com.woltlab.blog.entry.like' => 'BlogEntryLikes'
+		'com.woltlab.blog.entry.like' => 'BlogEntryLikes',
+		
+		'com.woltlab.gallery.category' => 'GalleryCategories',
+		'com.woltlab.gallery.album' => 'GalleryAlbums',
+		'com.woltlab.gallery.image' => 'GalleryImages',
+		'com.woltlab.gallery.image.comment' => 'GalleryComments',
+		'com.woltlab.gallery.image.like' => 'GalleryImageLikes',
 	];
 	
 	/**
@@ -79,7 +86,8 @@ class XF2xExporter extends AbstractExporter {
 	protected $limits = [
 		'com.woltlab.wcf.user' => 200,
 		'com.woltlab.wcf.user.avatar' => 100,
-		'com.woltlab.wcf.user.follower' => 100
+		'com.woltlab.wcf.user.follower' => 100,
+		'com.woltlab.gallery.image' => 100
 	];
 	
 	/**
@@ -110,7 +118,13 @@ class XF2xExporter extends AbstractExporter {
 				'com.woltlab.blog.entry.attachment',
 				'com.woltlab.blog.entry.comment',
 				'com.woltlab.blog.entry.like'
-			]
+			],
+			'com.woltlab.gallery.image' => [
+				'com.woltlab.gallery.category',
+				'com.woltlab.gallery.album',
+				'com.woltlab.gallery.image.comment',
+				'com.woltlab.gallery.image.like'
+			],
 		];
 	}
 	
@@ -129,7 +143,7 @@ class XF2xExporter extends AbstractExporter {
 	 * @inheritDoc
 	 */
 	public function validateFileAccess() {
-		if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData) || in_array('com.woltlab.wbb.attachment', $this->selectedData) || in_array('com.woltlab.blog.entry.attachment', $this->selectedData) || in_array('com.woltlab.wcf.smiley', $this->selectedData)) {
+		if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData) || in_array('com.woltlab.wbb.attachment', $this->selectedData) || in_array('com.woltlab.blog.entry.attachment', $this->selectedData) || in_array('com.woltlab.wcf.smiley', $this->selectedData) || in_array('com.woltlab.gallery.image', $this->selectedData)) {
 			if (empty($this->fileSystemPath) || !@file_exists($this->fileSystemPath . 'src/XF.php')) return false;
 		}
 		
@@ -194,6 +208,14 @@ class XF2xExporter extends AbstractExporter {
 			if (in_array('com.woltlab.blog.entry.attachment', $this->selectedData)) $queue[] = 'com.woltlab.blog.entry.attachment';
 			if (in_array('com.woltlab.blog.entry.comment', $this->selectedData)) $queue[] = 'com.woltlab.blog.entry.comment';
 			if (in_array('com.woltlab.blog.entry.like', $this->selectedData)) $queue[] = 'com.woltlab.blog.entry.like';
+		}
+		
+		if (in_array('com.woltlab.gallery.image', $this->selectedData)) {
+			if (in_array('com.woltlab.gallery.category', $this->selectedData)) $queue[] = 'com.woltlab.gallery.category';
+			if (in_array('com.woltlab.gallery.album', $this->selectedData)) $queue[] = 'com.woltlab.gallery.album';
+			$queue[] = 'com.woltlab.gallery.image';
+		//	if (in_array('com.woltlab.gallery.image.comment', $this->selectedData)) $queue[] = 'com.woltlab.gallery.image.comment';
+		//	if (in_array('com.woltlab.gallery.image.like', $this->selectedData)) $queue[] = 'com.woltlab.gallery.image.like';
 		}
 		
 		return $queue;
@@ -1393,6 +1415,153 @@ class XF2xExporter extends AbstractExporter {
 	 */
 	public function exportBlogAttachments($offset, $limit) {
 		$this->exportAttachments('xfa_blog_entry', 'com.woltlab.blog.entry.attachment', $offset, $limit);
+	}
+	
+	/**
+	 * Counts gallery categories.
+	 */
+	public function countGalleryCategories() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	xf_mg_category";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports gallery categories.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportGalleryCategories($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		xf_mg_category
+			ORDER BY	lft";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.gallery.category')->import($row['category_id'], [
+				'title' => $row['title'],
+				'description' => $row['description'],
+				'parentCategoryID' => $row['parent_category_id'],
+				'showOrder' => $row['display_order']
+			]);
+		}
+	}
+
+	/**
+	 * Counts gallery albums.
+	 */
+	public function countGalleryAlbums() {
+		return $this->__getMaxID("xf_mg_album", 'album_id');
+	}
+	
+	/**
+	 * Exports gallery albums.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportGalleryAlbums($offset, $limit) {
+		$destVersion21 = version_compare(GALLERYCore::getInstance()->getPackage()->packageVersion, '2.1.0 Alpha 1', '>=');
+		
+		$sql = "SELECT		*
+			FROM		xf_mg_album
+			WHERE		album_id BETWEEN ? AND ?
+			ORDER BY	album_id";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute([$offset + 1, $offset + $limit]);
+		while ($row = $statement->fetchArray()) {
+			$data = [
+				'userID' => $row['user_id'],
+				'username' => $row['username'] ?: '',
+				'title' => $row['title'],
+				'description' => $row['description'],
+				'lastUpdateTime' => $row['last_update_date']
+			];
+			if ($destVersion21 && $row['view_privacy'] === 'private') {
+				$data['accessLevel'] = 2;
+			}
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.gallery.album')->import($row['album_id'], $data);
+		}
+	}
+	
+	/**
+	 * Counts gallery images.
+	 */
+	public function countGalleryImages() {
+		return $this->__getMaxID("xf_mg_media_item", 'media_id');
+	}
+	
+	/**
+	 * Exports gallery images.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportGalleryImages($offset, $limit) {
+		// get ids
+		$imageIDs = [];
+		$sql = "SELECT		media_id
+			FROM		xf_mg_media_item
+			WHERE		media_id BETWEEN ? AND ?
+				AND	media_type = ?
+			ORDER BY	media_id";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute([$offset + 1, $offset + $limit, 'image']);
+		while ($row = $statement->fetchArray()) {
+			$imageIDs[] = $row['media_id'];
+		}
+		if (empty($imageIDs)) return;
+		
+		$tags = $this->getTags('xfmg_media', $imageIDs);
+		
+		// get images
+		$conditionBuilder = new PreparedStatementConditionBuilder();
+		$conditionBuilder->add('m.media_id IN (?)', [$imageIDs]);
+		
+		$sql = "SELECT		m.*, ad.data_id, ad.file_hash, ad.filename, ad.file_size,
+					ad.width, ad.height
+			FROM		xf_mg_media_item m
+			INNER JOIN	xf_attachment a
+			ON		m.media_id = a.content_id
+				AND	a.content_type = ?
+			INNER JOIN	xf_attachment_data ad
+			ON		ad.data_id = a.data_id
+			".$conditionBuilder;
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array_merge(['xfmg_media'], $conditionBuilder->getParameters()));
+		while ($row = $statement->fetchArray()) {
+			$config = self::getConfig();
+			$fileLocation = $this->fileSystemPath.$config['internalDataPath'].'/attachments/'.floor($row['data_id'] / 1000).'/'.$row['data_id'].'-'.$row['file_hash'].'.data';
+			
+			if (!file_exists($fileLocation)) continue;
+			
+			$additionalData = [
+				'fileLocation' => $fileLocation
+			];
+			$additionalData['categories'] = [$row['category_id']];
+			if (isset($tags[$row['media_id']])) $additionalData['tags'] = $tags[$row['media_id']];
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.gallery.image')->import($row['media_id'], [
+				'userID' => $row['user_id'] ?: null,
+				'username' => $row['username'],
+				'albumID' => $row['album_id'] ?: null,
+				'title' => $row['title'],
+				'description' => $row['description'],
+				'filename' => $row['filename'],
+				'fileExtension' => pathinfo($row['filename'], PATHINFO_EXTENSION),
+				'filesize' => $row['file_size'],
+				'views' => $row['view_count'],
+				'uploadTime' => $row['media_date'],
+				'creationTime' => $row['media_date'],
+				'width' => $row['width'],
+				'height' => $row['height'],
+			], $additionalData);
+		}
 	}
 	
 	/**
