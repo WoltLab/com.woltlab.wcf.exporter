@@ -1,5 +1,6 @@
 <?php
 namespace wcf\system\exporter;
+use gallery\system\GALLERYCore;
 use wbb\data\board\Board;
 use wcf\data\conversation\Conversation;
 use wcf\data\like\Like;
@@ -66,11 +67,11 @@ class XF2xExporter extends AbstractExporter {
 		'com.woltlab.wbb.acl' => 'ACLs',
 		'com.woltlab.wcf.smiley' => 'Smilies',
 		
-		'com.woltlab.blog.category' => 'BlogCategories',
-		'com.woltlab.blog.entry' => 'BlogEntries',
-		'com.woltlab.blog.entry.attachment' => 'BlogAttachments',
-		'com.woltlab.blog.entry.comment' => 'BlogComments',
-		'com.woltlab.blog.entry.like' => 'BlogEntryLikes'
+		'com.woltlab.gallery.category' => 'GalleryCategories',
+		'com.woltlab.gallery.album' => 'GalleryAlbums',
+		'com.woltlab.gallery.image' => 'GalleryImages',
+	/*	'com.woltlab.gallery.image.comment' => 'GalleryComments',
+		'com.woltlab.gallery.image.like' => 'GalleryImageLikes',*/
 	];
 	
 	/**
@@ -79,7 +80,8 @@ class XF2xExporter extends AbstractExporter {
 	protected $limits = [
 		'com.woltlab.wcf.user' => 200,
 		'com.woltlab.wcf.user.avatar' => 100,
-		'com.woltlab.wcf.user.follower' => 100
+		'com.woltlab.wcf.user.follower' => 100,
+		'com.woltlab.gallery.image' => 100
 	];
 	
 	/**
@@ -105,12 +107,12 @@ class XF2xExporter extends AbstractExporter {
 			'com.woltlab.wcf.conversation' => [
 				'com.woltlab.wcf.conversation.label'
 			],
-			'com.woltlab.blog.entry' => [
-				'com.woltlab.blog.category',
-				'com.woltlab.blog.entry.attachment',
-				'com.woltlab.blog.entry.comment',
-				'com.woltlab.blog.entry.like'
-			]
+			'com.woltlab.gallery.image' => [
+				'com.woltlab.gallery.category',
+				'com.woltlab.gallery.album',
+				'com.woltlab.gallery.image.comment',
+				'com.woltlab.gallery.image.like'
+			],
 		];
 	}
 	
@@ -129,7 +131,7 @@ class XF2xExporter extends AbstractExporter {
 	 * @inheritDoc
 	 */
 	public function validateFileAccess() {
-		if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData) || in_array('com.woltlab.wbb.attachment', $this->selectedData) || in_array('com.woltlab.blog.entry.attachment', $this->selectedData) || in_array('com.woltlab.wcf.smiley', $this->selectedData)) {
+		if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData) || in_array('com.woltlab.wbb.attachment', $this->selectedData) || in_array('com.woltlab.wcf.smiley', $this->selectedData) || in_array('com.woltlab.gallery.image', $this->selectedData)) {
 			if (empty($this->fileSystemPath) || !@file_exists($this->fileSystemPath . 'src/XF.php')) return false;
 		}
 		
@@ -188,12 +190,12 @@ class XF2xExporter extends AbstractExporter {
 			}
 		}
 		
-		if (in_array('com.woltlab.blog.entry', $this->selectedData)) {
-			if (in_array('com.woltlab.blog.category', $this->selectedData)) $queue[] = 'com.woltlab.blog.category';
-			$queue[] = 'com.woltlab.blog.entry';
-			if (in_array('com.woltlab.blog.entry.attachment', $this->selectedData)) $queue[] = 'com.woltlab.blog.entry.attachment';
-			if (in_array('com.woltlab.blog.entry.comment', $this->selectedData)) $queue[] = 'com.woltlab.blog.entry.comment';
-			if (in_array('com.woltlab.blog.entry.like', $this->selectedData)) $queue[] = 'com.woltlab.blog.entry.like';
+		if (in_array('com.woltlab.gallery.image', $this->selectedData)) {
+			if (in_array('com.woltlab.gallery.category', $this->selectedData)) $queue[] = 'com.woltlab.gallery.category';
+			if (in_array('com.woltlab.gallery.album', $this->selectedData)) $queue[] = 'com.woltlab.gallery.album';
+			$queue[] = 'com.woltlab.gallery.image';
+		//	if (in_array('com.woltlab.gallery.image.comment', $this->selectedData)) $queue[] = 'com.woltlab.gallery.image.comment';
+		//	if (in_array('com.woltlab.gallery.image.like', $this->selectedData)) $queue[] = 'com.woltlab.gallery.image.like';
 		}
 		
 		return $queue;
@@ -833,12 +835,30 @@ class XF2xExporter extends AbstractExporter {
 	 * @param	integer		$limit
 	 */
 	public function exportThreads($offset, $limit) {
-		$sql = "SELECT		*
+		// get thread ids
+		$threadIDs = [];
+		$sql = "SELECT		thread_id
 			FROM		xf_thread
 			WHERE		thread_id BETWEEN ? AND ?
 			ORDER BY	thread_id";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute([$offset + 1, $offset + $limit]);
+		while ($row = $statement->fetchArray()) {
+			$threadIDs[] = $row['thread_id'];
+		}
+		if (empty($threadIDs)) return;
+
+		$tags = $this->getTags('thread', $threadIDs);
+
+		// get threads
+		$conditionBuilder = new PreparedStatementConditionBuilder();
+		$conditionBuilder->add('thread_id IN (?)', [$threadIDs]);
+
+		$sql = "SELECT		*
+			FROM		xf_thread
+			".$conditionBuilder;
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute($conditionBuilder->getParameters());
 		while ($row = $statement->fetchArray()) {
 			$data = [
 				'boardID' => $row['node_id'],
@@ -856,7 +876,8 @@ class XF2xExporter extends AbstractExporter {
 			
 			$additionalData = [];
 			if ($row['prefix_id']) $additionalData['labels'] = [$row['node_id'].'-'.$row['prefix_id']];
-			
+			if (isset($tags[$row['thread_id']])) $additionalData['tags'] = $tags[$row['thread_id']];
+
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.thread')->import($row['thread_id'], $data, $additionalData);
 		}
 	}
@@ -1174,206 +1195,151 @@ class XF2xExporter extends AbstractExporter {
 		}
 	}
 	
-	
 	/**
-	 * Counts blog categories.
+	 * Counts gallery categories.
 	 */
-	public function countBlogCategories() {
+	public function countGalleryCategories() {
 		$sql = "SELECT	COUNT(*) AS count
-			FROM	xfa_blog_category
-			WHERE	user_id = ?";
+			FROM	xf_mg_category";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute([0]);
+		$statement->execute();
 		$row = $statement->fetchArray();
 		return $row['count'];
 	}
 	
 	/**
-	 * Exports blog categories.
+	 * Exports gallery categories.
 	 *
 	 * @param	integer		$offset
 	 * @param	integer		$limit
 	 */
-	public function exportBlogCategories($offset, $limit) {
+	public function exportGalleryCategories($offset, $limit) {
 		$sql = "SELECT		*
-			FROM		xfa_blog_category
-			WHERE		user_id = ?
-			ORDER BY	category_id ASC";
+			FROM		xf_mg_category
+			ORDER BY	lft";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute([0]);
+		$statement->execute();
 		while ($row = $statement->fetchArray()) {
-			ImportHandler::getInstance()->getImporter('com.woltlab.blog.category')->import($row['category_id'], [
-				'title' => $row['category_name'],
-				'parentCategoryID' => 0, // by intent as Community Blog does not support arbitrary nested categories
+			ImportHandler::getInstance()->getImporter('com.woltlab.gallery.category')->import($row['category_id'], [
+				'title' => $row['title'],
+				'description' => $row['description'],
+				'parentCategoryID' => $row['parent_category_id'],
 				'showOrder' => $row['display_order']
 			]);
 		}
 	}
-	
+
 	/**
-	 * Counts blog entries.
+	 * Counts gallery albums.
 	 */
-	public function countBlogEntries() {
-		$sql = "SELECT 
-			(
-				SELECT	COUNT(*)
-				FROM	xfa_blog_entry
-			)
-			+
-			(
-				SELECT	COUNT(*)
-				FROM	xfa_blog_entry_scheduled
-			) AS count";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+	public function countGalleryAlbums() {
+		return $this->__getMaxID("xf_mg_album", 'album_id');
 	}
 	
 	/**
-	 * Exports blog entries.
+	 * Exports gallery albums.
 	 *
 	 * @param	integer		$offset
 	 * @param	integer		$limit
 	 */
-	public function exportBlogEntries($offset, $limit) {
-		$sql = "(
-				SELECT		1 AS isPublished,
-						entry.entry_id, entry.user_id, user.username, entry.title,
-						entry.message, entry.post_date, entry.reply_count, entry.view_count,
-						(SELECT GROUP_CONCAT(category_id) FROM xfa_blog_entry_category category WHERE category.entry_id = entry.entry_id) AS categories
-				FROM		xfa_blog_entry entry
-				LEFT JOIN	xf_user user
-				ON		entry.user_id = user.user_id
-			)
-			UNION ALL
-			(
-				SELECT		0 AS isPublished,
-						(entry.scheduled_entry_id || '-draft') AS entry_id, entry.user_id, user.username, entry.title,
-						entry.message, entry.post_date, 0 AS reply_count, 0 AS view_count,
-						entry.categories
-				FROM		xfa_blog_entry_scheduled entry
-				LEFT JOIN	xf_user user
-				ON		entry.user_id = user.user_id
-			)
-			ORDER BY isPublished DESC, entry_id ASC";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+	public function exportGalleryAlbums($offset, $limit) {
+		$destVersion21 = version_compare(GALLERYCore::getInstance()->getPackage()->packageVersion, '2.1.0 Alpha 1', '>=');
+		
+		$sql = "SELECT		*
+			FROM		xf_mg_album
+			WHERE		album_id BETWEEN ? AND ?
+			ORDER BY	album_id";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute([$offset + 1, $offset + $limit]);
 		while ($row = $statement->fetchArray()) {
-			$additionalData = [];
-			if ($row['isPublished']) {
-				$additionalData['categories'] = explode(',', $row['categories']);
-			}
-			else {
-				$categories = @unserialize($row['categories']);
-				if ($categories) $additionalData['categories'] = $categories;
+			$data = [
+				'userID' => $row['user_id'],
+				'username' => $row['username'] ?: '',
+				'title' => $row['title'],
+				'description' => $row['description'],
+				'lastUpdateTime' => $row['last_update_date']
+			];
+			if ($destVersion21 && $row['view_privacy'] === 'private') {
+				$data['accessLevel'] = 2;
 			}
 			
-			ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry')->import($row['entry_id'], [
+			ImportHandler::getInstance()->getImporter('com.woltlab.gallery.album')->import($row['album_id'], $data);
+		}
+	}
+	
+	/**
+	 * Counts gallery images.
+	 */
+	public function countGalleryImages() {
+		return $this->__getMaxID("xf_mg_media_item", 'media_id');
+	}
+	
+	/**
+	 * Exports gallery images.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportGalleryImages($offset, $limit) {
+		// get ids
+		$imageIDs = [];
+		$sql = "SELECT		media_id
+			FROM		xf_mg_media_item
+			WHERE		media_id BETWEEN ? AND ?
+				AND	media_type = ?
+			ORDER BY	media_id";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute([$offset + 1, $offset + $limit, 'image']);
+		while ($row = $statement->fetchArray()) {
+			$imageIDs[] = $row['media_id'];
+		}
+		if (empty($imageIDs)) return;
+		
+		$tags = $this->getTags('xfmg_media', $imageIDs);
+		
+		// get images
+		$conditionBuilder = new PreparedStatementConditionBuilder();
+		$conditionBuilder->add('m.media_id IN (?)', [$imageIDs]);
+		
+		$sql = "SELECT		m.*, ad.data_id, ad.file_hash, ad.filename, ad.file_size,
+					ad.width, ad.height
+			FROM		xf_mg_media_item m
+			INNER JOIN	xf_attachment a
+			ON		m.media_id = a.content_id
+				AND	a.content_type = ?
+			INNER JOIN	xf_attachment_data ad
+			ON		ad.data_id = a.data_id
+			".$conditionBuilder;
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(array_merge(['xfmg_media'], $conditionBuilder->getParameters()));
+		while ($row = $statement->fetchArray()) {
+			$config = self::getConfig();
+			$fileLocation = $this->fileSystemPath.$config['internalDataPath'].'/attachments/'.floor($row['data_id'] / 1000).'/'.$row['data_id'].'-'.$row['file_hash'].'.data';
+			
+			if (!file_exists($fileLocation)) continue;
+			
+			$additionalData = [
+				'fileLocation' => $fileLocation
+			];
+			$additionalData['categories'] = [$row['category_id']];
+			if (isset($tags[$row['media_id']])) $additionalData['tags'] = $tags[$row['media_id']];
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.gallery.image')->import($row['media_id'], [
 				'userID' => $row['user_id'] ?: null,
-				'username' => $row['username'] ?: '',
-				'subject' => $row['title'],
-				'message' => self::fixBBCodes($row['message']),
-				'time' => $row['post_date'],
-				'comments' => $row['reply_count'],
+				'username' => $row['username'],
+				'albumID' => $row['album_id'] ?: null,
+				'title' => $row['title'],
+				'description' => $row['description'],
+				'filename' => $row['filename'],
+				'fileExtension' => pathinfo($row['filename'], PATHINFO_EXTENSION),
+				'filesize' => $row['file_size'],
 				'views' => $row['view_count'],
-				'isPublished' => $row['isPublished'],
-				'publicationDate' => $row['post_date']
+				'uploadTime' => $row['media_date'],
+				'creationTime' => $row['media_date'],
+				'width' => $row['width'],
+				'height' => $row['height'],
 			], $additionalData);
 		}
-	}
-	
-	/**
-	 * Counts blog comments.
-	 */
-	public function countBlogComments() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	xfa_blog_comment";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
-	}
-	
-	/**
-	 * Exports blog comments.
-	 *
-	 * @param	integer		$offset
-	 * @param	integer		$limit
-	 */
-	public function exportBlogComments($offset, $limit) {
-		$sql = "SELECT		comment.*, user.username
-			FROM		xfa_blog_comment comment
-			LEFT JOIN	xf_user user
-			ON		comment.user_id = user.user_id
-			ORDER BY	comment.comment_id";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
-		while ($row = $statement->fetchArray()) {
-			ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry.comment')->import($row['comment_id'], [
-				'objectID' => $row['entry_id'],
-				'userID' => $row['user_id'] ?: null,
-				'username' => $row['username'] ?: '',
-				'message' => self::fixComment($row['message']),
-				'time' => $row['post_date']
-			]);
-		}
-	}
-	
-	/**
-	 * Counts blog entry likes.
-	 */
-	public function countBlogEntryLikes() {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	xf_liked_content
-			WHERE	content_type = ?";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(['xfa_blog_entry']);
-		$row = $statement->fetchArray();
-		return $row['count'];
-	}
-	
-	/**
-	 * Exports blog entry likes.
-	 *
-	 * @param	integer		$offset
-	 * @param	integer		$limit
-	 */
-	public function exportBlogEntryLikes($offset, $limit) {
-		$sql = "SELECT		*
-			FROM		xf_liked_content
-			WHERE		content_type = ?
-			ORDER BY	like_id ASC";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute(['xfa_blog_entry']);
-		while ($row = $statement->fetchArray()) {
-			ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry.like')->import($row['like_id'], [
-				'objectID' => $row['content_id'],
-				'objectUserID' => $row['content_user_id'] ?: null,
-				'userID' => $row['like_user_id'],
-				'likeValue' => Like::LIKE,
-				'time' => $row['like_date']
-			]);
-		}
-	}
-	
-	/**
-	 * Returns the number of blog attachments.
-	 * 
-	 * @return	integer
-	 */
-	public function countBlogAttachments() {
-		return $this->countAttachments('xfa_blog_entry');
-	}
-	
-	/**
-	 * Exports blog attachments.
-	 * 
-	 * @param	integer		$offset
-	 * @param	integer		$limit
-	 */
-	public function exportBlogAttachments($offset, $limit) {
-		$this->exportAttachments('xfa_blog_entry', 'com.woltlab.blog.entry.attachment', $offset, $limit);
 	}
 	
 	/**
@@ -1437,6 +1403,34 @@ class XF2xExporter extends AbstractExporter {
 				'uploadTime' => $row['upload_date']
 			], ['fileLocation' => $fileLocation]);
 		}
+	}
+	
+	/**
+	 * Returns tags to import.
+	 * 
+	 * @param	string		$name
+	 * @param	integer[]	$objectIDs
+	 * @return	string[][]
+	 */
+	private function getTags($name, array $objectIDs) {
+		$tags = [];
+		$conditionBuilder = new PreparedStatementConditionBuilder();
+		$conditionBuilder->add('xf_tag_content.content_type = ?', [$name]);
+		$conditionBuilder->add('xf_tag_content.content_id IN (?)', [$objectIDs]);
+		
+		$sql = "SELECT		xf_tag.tag, xf_tag_content.content_id
+			FROM		xf_tag_content
+			INNER JOIN	xf_tag
+			USING		(tag_id)
+			".$conditionBuilder;
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute($conditionBuilder->getParameters());
+		while ($row = $statement->fetchArray()) {
+			if (!isset($tags[$row['content_id']])) $tags[$row['content_id']] = [];
+			$tags[$row['content_id']][] = $row['tag'];
+		}
+		
+		return $tags;
 	}
 	
 	/**
