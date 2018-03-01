@@ -623,7 +623,7 @@ class WBB2xExporter extends AbstractExporter {
 				'boardType' => !$board['isboard'] ? 1 : (!empty($board['externalurl']) ? 2 : 0),
 				'title' => $board['title'],
 				'description' => $board['description'],
-				'externalURL' => $board['externalurl'],
+				'externalURL' => (!empty($board['externalurl']) ? $board['externalurl'] : ''),
 				'countUserPosts' => $board['countuserposts'],
 				'isClosed' => $board['closed'],
 				'isInvisible' => intval($board['invisible'] == 2)
@@ -784,7 +784,7 @@ class WBB2xExporter extends AbstractExporter {
 				'editor' => $row['editor'],
 				'lastEditTime' => $row['edittime'],
 				'editCount' => $row['editcount'],
-				'attachments' => $row['attachments'],
+				'attachments' => (!empty($row['attachments']) ? $row['attachments'] : 0),
 				'enableHtml' => $row['allowhtml'],
 				'ipAddress' => UserUtil::convertIPv4To6($row['ipaddress'])
 			]);
@@ -1150,13 +1150,13 @@ class WBB2xExporter extends AbstractExporter {
 			
 			ImportHandler::getInstance()->getImporter($objectType)->import($row['attachmentid'], [
 				'objectID' => $row[$indexName],
-				'userID' => $row['userid'] ?: null,
+				'userID' => (!empty($row['userid']) ? $row['userid'] : null),
 				'filename' => $row['attachmentname'].'.'.$row['attachmentextension'],
 				'filesize' => $row['attachmentsize'],
 				'fileType' => $fileType,
 				'isImage' => $isImage,
 				'downloads' => $row['counter'],
-				'uploadTime' => $row['uploadtime'],
+				'uploadTime' => (!empty($row['uploadtime']) ? $row['uploadtime'] : 0),
 				'showOrder' => 0
 			], ['fileLocation' => $fileLocation]);
 		}
