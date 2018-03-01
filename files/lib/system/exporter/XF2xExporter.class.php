@@ -833,12 +833,30 @@ class XF2xExporter extends AbstractExporter {
 	 * @param	integer		$limit
 	 */
 	public function exportThreads($offset, $limit) {
-		$sql = "SELECT		*
+		// get thread ids
+		$threadIDs = [];
+		$sql = "SELECT		thread_id
 			FROM		xf_thread
 			WHERE		thread_id BETWEEN ? AND ?
 			ORDER BY	thread_id";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute([$offset + 1, $offset + $limit]);
+		while ($row = $statement->fetchArray()) {
+			$threadIDs[] = $row['thread_id'];
+		}
+		if (empty($threadIDs)) return;
+
+		$tags = $this->getTags('thread', $threadIDs);
+
+		// get threads
+		$conditionBuilder = new PreparedStatementConditionBuilder();
+		$conditionBuilder->add('thread_id IN (?)', [$threadIDs]);
+
+		$sql = "SELECT		*
+			FROM		xf_thread
+			".$conditionBuilder;
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute($conditionBuilder->getParameters());
 		while ($row = $statement->fetchArray()) {
 			$data = [
 				'boardID' => $row['node_id'],
@@ -856,7 +874,8 @@ class XF2xExporter extends AbstractExporter {
 			
 			$additionalData = [];
 			if ($row['prefix_id']) $additionalData['labels'] = [$row['node_id'].'-'.$row['prefix_id']];
-			
+			if (isset($tags[$row['thread_id']])) $additionalData['tags'] = $tags[$row['thread_id']];
+
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.thread')->import($row['thread_id'], $data, $additionalData);
 		}
 	}
@@ -1437,6 +1456,34 @@ class XF2xExporter extends AbstractExporter {
 				'uploadTime' => $row['upload_date']
 			], ['fileLocation' => $fileLocation]);
 		}
+	}
+	
+	/**
+	 * Returns tags to import.
+	 * 
+	 * @param	string		$name
+	 * @param	integer[]	$objectIDs
+	 * @return	string[][]
+	 */
+	private function getTags($name, array $objectIDs) {
+		$tags = [];
+		$conditionBuilder = new PreparedStatementConditionBuilder();
+		$conditionBuilder->add('xf_tag_content.content_type = ?', [$name]);
+		$conditionBuilder->add('xf_tag_content.content_id IN (?)', [$objectIDs]);
+		
+		$sql = "SELECT		xf_tag.tag, xf_tag_content.content_id
+			FROM		xf_tag_content
+			INNER JOIN	xf_tag
+			USING		(tag_id)
+			".$conditionBuilder;
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute($conditionBuilder->getParameters());
+		while ($row = $statement->fetchArray()) {
+			if (!isset($tags[$row['content_id']])) $tags[$row['content_id']] = [];
+			$tags[$row['content_id']][] = $row['tag'];
+		}
+		
+		return $tags;
 	}
 	
 	/**
