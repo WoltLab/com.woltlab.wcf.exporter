@@ -673,7 +673,7 @@ class VB5xExporter extends AbstractExporter {
 	 * @param	integer		$limit
 	 */
 	public function exportPollOptions($offset, $limit) {
-		$sql = "SELECT		polloption.*, poll.pollid
+		$sql = "SELECT		polloption.*, poll.nodeid
 			FROM		".$this->databasePrefix."polloption polloption
 			LEFT JOIN	".$this->databasePrefix."poll poll
 			ON		poll.nodeid = polloption.nodeid
@@ -683,7 +683,7 @@ class VB5xExporter extends AbstractExporter {
 		$statement->execute([$offset + 1, $offset + $limit]);
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll.option')->import($row['polloptionid'], [
-				'pollID' => $row['pollid'],
+				'pollID' => $row['nodeid'],
 				'optionValue' => $row['title'],
 				'votes' => $row['votes']
 			]);
@@ -713,7 +713,7 @@ class VB5xExporter extends AbstractExporter {
 		$statement->execute([$offset + 1, $offset + $limit]);
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll.option.vote')->import(0, [
-				'pollID' => $row['pollid'],
+				'pollID' => $row['nodeid'],
 				'optionID' => $row['polloptionid'],
 				'userID' => $row['userid']
 			]);
