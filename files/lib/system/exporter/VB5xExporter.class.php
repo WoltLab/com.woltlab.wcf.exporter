@@ -690,7 +690,7 @@ class VB5xExporter extends AbstractExporter {
 		$statement->execute(array($offset + 1, $offset + $limit));
 		while ($row = $statement->fetchArray()) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll.option.vote')->import(0, array(
-				'pollID' => $row['pollid'],
+				'pollID' => $row['nodeid'],
 				'optionID' => $row['polloptionid'],
 				'userID' => $row['userid']
 			));
