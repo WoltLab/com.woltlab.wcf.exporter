@@ -62,7 +62,7 @@ class XF2xExporter extends AbstractExporter {
 		'com.woltlab.wbb.poll' => 'Polls',
 		'com.woltlab.wbb.poll.option' => 'PollOptions',
 		'com.woltlab.wbb.poll.option.vote' => 'PollOptionVotes',
-		'com.woltlab.wbb.like' => 'Likes',
+		'com.woltlab.wbb.like' => 'PostLikes',
 		'com.woltlab.wcf.label' => 'Labels',
 		'com.woltlab.wbb.acl' => 'ACLs',
 		'com.woltlab.wcf.smiley' => 'Smilies',
@@ -70,8 +70,8 @@ class XF2xExporter extends AbstractExporter {
 		'com.woltlab.gallery.category' => 'GalleryCategories',
 		'com.woltlab.gallery.album' => 'GalleryAlbums',
 		'com.woltlab.gallery.image' => 'GalleryImages',
-	/*	'com.woltlab.gallery.image.comment' => 'GalleryComments',
-		'com.woltlab.gallery.image.like' => 'GalleryImageLikes',*/
+		'com.woltlab.gallery.image.comment' => 'GalleryComments',
+		'com.woltlab.gallery.image.like' => 'GalleryImageLikes',
 	];
 	
 	/**
@@ -102,6 +102,7 @@ class XF2xExporter extends AbstractExporter {
 				'com.woltlab.wbb.attachment',
 				'com.woltlab.wbb.poll',
 				'com.woltlab.wbb.watchedThread',
+				'com.woltlab.wbb.like',
 				'com.woltlab.wcf.label'
 			],
 			'com.woltlab.wcf.conversation' => [
@@ -188,6 +189,7 @@ class XF2xExporter extends AbstractExporter {
 				$queue[] = 'com.woltlab.wbb.poll.option';
 				$queue[] = 'com.woltlab.wbb.poll.option.vote';
 			}
+			if (in_array('com.woltlab.wbb.like', $this->selectedData)) $queue[] = 'com.woltlab.wbb.like';
 		}
 		
 		if (in_array('com.woltlab.gallery.image', $this->selectedData)) {
@@ -195,7 +197,7 @@ class XF2xExporter extends AbstractExporter {
 			if (in_array('com.woltlab.gallery.album', $this->selectedData)) $queue[] = 'com.woltlab.gallery.album';
 			$queue[] = 'com.woltlab.gallery.image';
 		//	if (in_array('com.woltlab.gallery.image.comment', $this->selectedData)) $queue[] = 'com.woltlab.gallery.image.comment';
-		//	if (in_array('com.woltlab.gallery.image.like', $this->selectedData)) $queue[] = 'com.woltlab.gallery.image.like';
+			if (in_array('com.woltlab.gallery.image.like', $this->selectedData)) $queue[] = 'com.woltlab.gallery.image.like';
 		}
 		
 		return $queue;
@@ -1085,6 +1087,23 @@ class XF2xExporter extends AbstractExporter {
 	}
 	
 	/**
+	 * Counts likes.
+	 */
+	public function countPostLikes() {
+		return $this->countLikes('post');
+	}
+	
+	/**
+	 * Exports likes.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportPostLikes($offset, $limit) {
+		$this->exportLikes('post', 'com.woltlab.wbb.like', $offset, $limit);
+	}
+	
+	/**
 	 * Counts labels.
 	 */
 	public function countLabels() {
@@ -1343,6 +1362,23 @@ class XF2xExporter extends AbstractExporter {
 	}
 	
 	/**
+	 * Counts gallery image likes.
+	 */
+	public function countGalleryImageLikes() {
+		return $this->countLikes('xfmg_media');
+	}
+	
+	/**
+	 * Exports gallery image likes.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportGalleryImageLikes($offset, $limit) {
+		$this->exportLikes('xfmg_media', 'com.woltlab.gallery.image.like', $offset, $limit);
+	}
+	
+	/**
 	 * Returns the number of attachments.
 	 * 
 	 * @param	string		$type
@@ -1368,11 +1404,11 @@ class XF2xExporter extends AbstractExporter {
 	 */
 	public function exportAttachments($type, $objectType, $offset, $limit) {
 		$sql = "SELECT		attachment.*, data.*
-		FROM		xf_attachment attachment
-		LEFT JOIN	xf_attachment_data data
-		ON		attachment.data_id = data.data_id
-		WHERE		attachment.content_type = ?
-		ORDER BY	attachment.attachment_id";
+			FROM		xf_attachment attachment
+			LEFT JOIN	xf_attachment_data data
+			ON		attachment.data_id = data.data_id
+			WHERE		attachment.content_type = ?
+			ORDER BY	attachment.attachment_id";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute([$type]);
 		while ($row = $statement->fetchArray()) {
@@ -1431,6 +1467,47 @@ class XF2xExporter extends AbstractExporter {
 		}
 		
 		return $tags;
+	}
+	
+	/**
+	 * Counts likes.
+	 *
+	 * @param	string		$objectType
+	 */
+	private function countLikes($objectType) {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	xf_liked_content
+			WHERE	content_type = ?";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute([$objectType]);
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports likes.
+	 *
+	 * @param	string		$objectType
+	 * @param	string		$importer
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	private function exportLikes($objectType, $importer, $offset, $limit) {
+		$sql = "SELECT		*
+			FROM		xf_liked_content
+			WHERE		content_type = ?
+			ORDER BY	like_id";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute([$objectType]);
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter($importer)->import(0, [
+				'objectID' => $row['content_id'],
+				'objectUserID' => $row['content_user_id'],
+				'userID' => $row['like_user_id'],
+				'likeValue' => Like::LIKE,
+				'time' => $row['like_date']
+			]);
+		}
 	}
 	
 	/**
