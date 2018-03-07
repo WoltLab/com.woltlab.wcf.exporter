@@ -408,9 +408,15 @@ class VB3or4xExporter extends AbstractExporter {
 				'userTitle' => ($row['customtitle'] != 0) ? StringUtil::decodeHTML($row['usertitle']) : '',
 				'lastActivityTime' => $row['lastactivity']
 			];
+			
+			$options = [];
+			if ($row['birthday']) {
+				$options['birthday'] = self::convertBirthday($row['birthday']);
+			}
+			
 			$additionalData = [
 				'groupIDs' => explode(',', $row['membergroupids'].','.$row['usergroupid']),
-				'options' => []
+				'options' => $options
 			];
 			
 			// handle user options
@@ -2178,5 +2184,18 @@ class VB3or4xExporter extends AbstractExporter {
 		$message = MessageUtil::stripCrap($message);
 		
 		return $message;
+	}
+	
+	/**
+	 * Converts vb's birthday format (mm-dd-yy)
+	 * 
+	 * @param       string          $birthday
+	 * @return      string
+	 */
+	private static function convertBirthday($birthday) {
+		$a = explode('-', $birthday);
+		if (count($a) != 3) return '0000-00-00';
+		
+		return $a[2] . '-' . $a[0] . '-' . $a[1];
 	}
 }
