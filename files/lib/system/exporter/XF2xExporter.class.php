@@ -196,7 +196,7 @@ class XF2xExporter extends AbstractExporter {
 			if (in_array('com.woltlab.gallery.category', $this->selectedData)) $queue[] = 'com.woltlab.gallery.category';
 			if (in_array('com.woltlab.gallery.album', $this->selectedData)) $queue[] = 'com.woltlab.gallery.album';
 			$queue[] = 'com.woltlab.gallery.image';
-		//	if (in_array('com.woltlab.gallery.image.comment', $this->selectedData)) $queue[] = 'com.woltlab.gallery.image.comment';
+			if (in_array('com.woltlab.gallery.image.comment', $this->selectedData)) $queue[] = 'com.woltlab.gallery.image.comment';
 			if (in_array('com.woltlab.gallery.image.like', $this->selectedData)) $queue[] = 'com.woltlab.gallery.image.like';
 		}
 		
@@ -1360,6 +1360,40 @@ class XF2xExporter extends AbstractExporter {
 			], $additionalData);
 		}
 	}
+	
+	/**
+	 * Counts gallery comments.
+	 */
+	public function countGalleryComments() {
+		return $this->__getMaxID("xf_mg_comment", 'comment_id');
+	}
+	
+	/**
+	 * Exports gallery comments.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportGalleryComments($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		xf_mg_comment
+			WHERE		comment_id BETWEEN ? AND ?
+				AND	comment_state = ?
+				AND	content_type = ?
+			ORDER BY	comment_id";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute([$offset + 1, $offset + $limit, 'visible', 'xfmg_media']);
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.gallery.image.comment')->import($row['comment_id'], [
+				'objectID' => $row['content_id'],
+				'userID' => $row['user_id'] ?: null,
+				'username' => $row['username'],
+				'message' => $row['message'],
+				'time' => $row['comment_date']
+			]);
+		}
+	}
+	
 	
 	/**
 	 * Counts gallery image likes.
