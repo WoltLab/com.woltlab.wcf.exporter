@@ -456,7 +456,8 @@ class WBB4xExporter extends AbstractExporter {
 				'disableSignatureReason' => $row['disableSignatureReason'],
 				'profileHits' => $row['profileHits'],
 				'userTitle' => $row['userTitle'],
-				'lastActivityTime' => $row['lastActivityTime']
+				'lastActivityTime' => $row['lastActivityTime'],
+				'authData' => $row['authData']
 			];
 			$additionalData = [
 				'groupIDs' => explode(',', $row['groupIDs']),
