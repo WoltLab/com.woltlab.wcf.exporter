@@ -2006,7 +2006,7 @@ class VB3or4xExporter extends AbstractExporter {
 		}
 		catch (DatabaseException $e) {
 			// vb 3
-			if ($contentType != 'Post') return 0;
+			if ($contentType != 'Post') return;
 			
 			$sql = "SELECT		*
 				FROM		".$this->databasePrefix."attachment
