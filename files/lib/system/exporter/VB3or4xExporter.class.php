@@ -2008,9 +2008,9 @@ class VB3or4xExporter extends AbstractExporter {
 			// vb 3
 			if ($contentType != 'Post') return;
 			
-			$sql = "SELECT		*
-				FROM		".$this->databasePrefix."attachment
-				ORDER BY	attachmentid";
+			$sql = "SELECT		attachment.*, attachment.postid AS contentid
+				FROM		".$this->databasePrefix."attachment attachment
+				ORDER BY	attachment.attachmentid";
 			$statement = $this->database->prepareStatement($sql, $limit, $offset);
 			$statement->execute();
 		}
