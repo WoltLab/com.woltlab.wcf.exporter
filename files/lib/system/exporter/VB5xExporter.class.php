@@ -393,7 +393,7 @@ class VB5xExporter extends AbstractExporter {
 	 * @param	integer		$offset
 	 * @param	integer		$limit
 	 */
-	public function exportBoards($offset, $limit) {
+	public function exportBoards(/** @noinspection PhpUnusedParameterInspection */$offset, $limit) {
 		$sql = "SELECT		node.*
 			FROM		".$this->databasePrefix."node node
 			

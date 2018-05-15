@@ -6,7 +6,7 @@ use wcf\data\like\Like;
 use wcf\data\object\type\ObjectTypeCache;
 use wcf\data\user\group\UserGroup;
 use wcf\data\user\option\UserOption;
-use wcf\system\database\DatabaseException;
+use wcf\system\database\exception\DatabaseException;
 use wcf\system\importer\ImportHandler;
 use wcf\system\request\LinkHandler;
 use wcf\system\Regex;
@@ -633,7 +633,7 @@ class VB3or4xExporter extends AbstractExporter {
 	 * @param	integer		$offset
 	 * @param	integer		$limit
 	 */
-	public function exportUserOptions($offset, $limit) {
+	public function exportUserOptions(/** @noinspection PhpUnusedParameterInspection */$offset, $limit) {
 		$sql = "SELECT	*
 			FROM	".$this->databasePrefix."profilefield";
 		$statement = $this->database->prepareStatement($sql);
@@ -978,7 +978,7 @@ class VB3or4xExporter extends AbstractExporter {
 	 * @param	integer		$offset
 	 * @param	integer		$limit
 	 */
-	public function exportBoards($offset, $limit) {
+	public function exportBoards(/** @noinspection PhpUnusedParameterInspection */$offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."forum
 			ORDER BY	forumid";
@@ -1648,6 +1648,7 @@ class VB3or4xExporter extends AbstractExporter {
 					}
 				}
 				
+				/** @noinspection PhpUndefinedVariableInspection */
 				$additionalData = [
 					'fileLocation' => $file
 				];
@@ -1668,7 +1669,9 @@ class VB3or4xExporter extends AbstractExporter {
 				], $additionalData);
 			}
 			catch (\Exception $e) {
+				/** @noinspection PhpUndefinedVariableInspection */
 				if ($vB === 3 && $this->readOption('album_dataloc') == self::GALLERY_DATABASE && $file) @unlink($file);
+				/** @noinspection PhpUndefinedVariableInspection */
 				if ($vB === 4 && $this->readOption('attachfile') == self::ATTACHFILE_DATABASE && $file) @unlink($file);
 				
 				throw $e;
@@ -1770,11 +1773,13 @@ class VB3or4xExporter extends AbstractExporter {
 		foreach (DateUtil::getAvailableTimezones() as $timezone) {
 			$dateTimeZone = new \DateTimeZone($timezone);
 			$offset = $dateTimeZone->getOffset(new \DateTime("now", $dateTimeZone));
+			/** @noinspection PhpIllegalArrayKeyTypeInspection */
 			$timezones[round($offset / 360, 0)] = $timezone;
 		}
 		
 		while ($row = $statement->fetchArray()) {
 			
+			/** @noinspection PhpIllegalArrayKeyTypeInspection */
 			$eventDateData = [
 				'startTime' => $row['dateline_from'],
 				'endTime' => ($row['recurring'] != 0) ? $row['dateline_from'] + 1 : $row['dateline_to'], // vBulletin does not properly support endTime for recurring events

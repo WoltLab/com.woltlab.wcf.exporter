@@ -172,7 +172,7 @@ class WordPress3xExporter extends AbstractExporter {
 	 * @param	integer		$offset
 	 * @param	integer		$limit
 	 */
-	public function exportBlogCategories($offset, $limit) {
+	public function exportBlogCategories(/** @noinspection PhpUnusedParameterInspection */$offset, $limit) {
 		$sql = "SELECT		term_taxonomy.*, term.name
 			FROM		" . $this->databasePrefix . "term_taxonomy term_taxonomy
 			LEFT JOIN	" . $this->databasePrefix . "terms term

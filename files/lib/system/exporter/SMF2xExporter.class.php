@@ -396,6 +396,7 @@ class SMF2xExporter extends AbstractExporter {
 					continue;
 			}
 			
+			$editable = $visible = 0;
 			switch ($row['private']) {
 				case 0:
 					$visible = UserOption::VISIBILITY_ALL;
@@ -550,6 +551,7 @@ class SMF2xExporter extends AbstractExporter {
 				break;
 			}
 			
+			/** @noinspection PhpUndefinedVariableInspection */
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.avatar')->import(0, [
 				'avatarName' => basename($row['avatarName']),
 				'avatarExtension' => pathinfo($row['avatarName'], PATHINFO_EXTENSION),
@@ -773,7 +775,7 @@ class SMF2xExporter extends AbstractExporter {
 	 * @param	integer		$offset
 	 * @param	integer		$limit
 	 */
-	public function exportBoards($offset, $limit) {
+	public function exportBoards(/** @noinspection PhpUnusedParameterInspection */$offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."categories
 			ORDER BY	id_cat";
@@ -1125,7 +1127,7 @@ class SMF2xExporter extends AbstractExporter {
 	 * @param	integer		$offset
 	 * @param	integer		$limit
 	 */
-	public function exportACLs($offset, $limit) {
+	public function exportACLs(/** @noinspection PhpUnusedParameterInspection */$offset, $limit) {
 		// TODO: try to split this into several requests
 		$profileToBoard = [];
 		$boardToGroup = [];

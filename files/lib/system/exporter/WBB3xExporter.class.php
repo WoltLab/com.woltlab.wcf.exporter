@@ -668,7 +668,7 @@ class WBB3xExporter extends AbstractExporter {
 	 * @param	integer		$offset
 	 * @param	integer		$limit
 	 */
-	public function exportUserOptions($offset, $limit) {
+	public function exportUserOptions(/** @noinspection PhpUnusedParameterInspection */$offset, $limit) {
 		// get existing option names
 		$optionsNames = $this->getExistingUserOptions();
 		
@@ -996,7 +996,7 @@ class WBB3xExporter extends AbstractExporter {
 	 * @param	integer		$offset
 	 * @param	integer		$limit
 	 */
-	public function exportBoards($offset, $limit) {
+	public function exportBoards(/** @noinspection PhpUnusedParameterInspection */$offset, $limit) {
 		$sql = "SELECT		board.*, structure.position
 			FROM		wbb".$this->dbNo."_".$this->instanceNo."_board board
 			LEFT JOIN	wbb".$this->dbNo."_".$this->instanceNo."_board_structure structure
@@ -1491,7 +1491,7 @@ class WBB3xExporter extends AbstractExporter {
 	 * @param	integer		$offset
 	 * @param	integer		$limit
 	 */
-	public function exportLabels($offset, $limit) {
+	public function exportLabels(/** @noinspection PhpUnusedParameterInspection */$offset, $limit) {
 		$prefixMap = [];
 		
 		// get global prefixes

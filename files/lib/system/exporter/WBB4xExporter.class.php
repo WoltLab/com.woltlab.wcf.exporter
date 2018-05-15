@@ -640,7 +640,7 @@ class WBB4xExporter extends AbstractExporter {
 	 * @param	integer		$offset
 	 * @param	integer		$limit
 	 */
-	public function exportUserOptions($offset, $limit) {
+	public function exportUserOptions(/** @noinspection PhpUnusedParameterInspection */$offset, $limit) {
 		// get existing option names
 		$optionsNames = $this->getExistingUserOptions();
 		
@@ -879,7 +879,7 @@ class WBB4xExporter extends AbstractExporter {
 	 * @param	integer		$offset
 	 * @param	integer		$limit
 	 */
-	public function exportBoards($offset, $limit) {
+	public function exportBoards(/** @noinspection PhpUnusedParameterInspection */$offset, $limit) {
 		$sql = "SELECT		*
 			FROM		wbb".$this->dbNo."_board
 			ORDER BY	parentID, position";
@@ -1309,7 +1309,7 @@ class WBB4xExporter extends AbstractExporter {
 	 * @param	integer		$offset
 	 * @param	integer		$limit
 	 */
-	public function exportLabels($offset, $limit) {
+	public function exportLabels(/** @noinspection PhpUnusedParameterInspection */$offset, $limit) {
 		// get labels array($this->getObjectTypeID('com.woltlab.wcf.label.object', 'com.woltlab.wbb.thread'))
 		$labels = [];
 		$sql = "SELECT	*

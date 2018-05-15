@@ -611,6 +611,7 @@ class PhpBB31xExporter extends AbstractExporter {
 				break;
 			}
 			
+			/** @noinspection PhpUndefinedVariableInspection */
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.avatar')->import(0, [
 				'avatarName' => basename($row['user_avatar']),
 				'avatarExtension' => $extension,
@@ -733,6 +734,7 @@ class PhpBB31xExporter extends AbstractExporter {
 				if (ImportHandler::getInstance()->getNewID('com.woltlab.wcf.conversation', $conversationID) !== null) continue;
 			}
 			
+			/** @noinspection PhpUndefinedVariableInspection */
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import(($row['isDraft'] ? 'draft-'.$row['msg_id'] : $conversationID), [
 				'subject' => StringUtil::decodeHTML($row['message_subject']),
 				'time' => $row['message_time'],
@@ -906,7 +908,7 @@ class PhpBB31xExporter extends AbstractExporter {
 	 * @param	integer		$offset
 	 * @param	integer		$limit
 	 */
-	public function exportBoards($offset, $limit) {
+	public function exportBoards(/** @noinspection PhpUnusedParameterInspection */$offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."forums
 			ORDER BY	parent_id, left_id, forum_id";
@@ -1226,7 +1228,7 @@ class PhpBB31xExporter extends AbstractExporter {
 	 * @param	integer		$offset
 	 * @param	integer		$limit
 	 */
-	public function exportACLs($offset, $limit) {
+	public function exportACLs($offset, /** @noinspection PhpUnusedParameterInspection */$limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."acl_options
 			WHERE		is_local = ?";
@@ -1250,6 +1252,7 @@ class PhpBB31xExporter extends AbstractExporter {
 		}
 		
 		$data = [];
+		$key = '';
 		if ($offset == 0) {
 			// groups
 			$sql = "SELECT		*

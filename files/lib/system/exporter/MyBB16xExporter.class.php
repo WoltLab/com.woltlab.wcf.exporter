@@ -678,7 +678,7 @@ class MyBB16xExporter extends AbstractExporter {
 	 * @param	integer		$offset
 	 * @param	integer		$limit
 	 */
-	public function exportBoards($offset, $limit) {
+	public function exportBoards(/** @noinspection PhpUnusedParameterInspection */$offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."forums
 			ORDER BY	pid, disporder, fid";
@@ -1056,7 +1056,7 @@ class MyBB16xExporter extends AbstractExporter {
 	 * @param	integer		$offset
 	 * @param	integer		$limit
 	 */
-	public function exportLabels($offset, $limit) {
+	public function exportLabels(/** @noinspection PhpUnusedParameterInspection */$offset, $limit) {
 		$prefixMap = [];
 		$boardIDs = array_keys(BoardCache::getInstance()->getBoards());
 		

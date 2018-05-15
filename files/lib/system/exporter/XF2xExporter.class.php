@@ -630,6 +630,7 @@ class XF2xExporter extends AbstractExporter {
 					$extension = 'gif';
 			}
 			
+			/** @noinspection PhpUndefinedVariableInspection */
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.avatar')->import($row['user_id'], [
 				'avatarName' => '',
 				'avatarExtension' => $extension,
@@ -792,7 +793,7 @@ class XF2xExporter extends AbstractExporter {
 	 * @param	integer		$offset
 	 * @param	integer		$limit
 	 */
-	public function exportBoards($offset, $limit) {
+	public function exportBoards(/** @noinspection PhpUnusedParameterInspection */$offset, $limit) {
 		$sql = "SELECT		node.node_id AS nodeID, node.*, forum.*, link_forum.*
 			FROM		xf_node node
 			LEFT JOIN	xf_forum forum
@@ -1121,7 +1122,7 @@ class XF2xExporter extends AbstractExporter {
 	 * @param	integer		$offset
 	 * @param	integer		$limit
 	 */
-	public function exportLabels($offset, $limit) {
+	public function exportLabels(/** @noinspection PhpUnusedParameterInspection */$offset, $limit) {
 		$objectType = ObjectTypeCache::getInstance()->getObjectTypeByName('com.woltlab.wcf.label.objectType', 'com.woltlab.wbb.board');
 		
 		$sql = "SELECT		forum.*, phrase.phrase_text
@@ -1604,6 +1605,7 @@ class XF2xExporter extends AbstractExporter {
 			'enableClickjackingProtection' => true,
 			'maxImageResizePixelCount' => 20000000
 		];
+		/** @noinspection PhpIncludeInspection */
 		require($this->fileSystemPath.'src/config.php');
 		
 		return $config;
@@ -1638,6 +1640,7 @@ class XF2xExporter extends AbstractExporter {
 					break;
 				}
 				
+				/** @noinspection PhpUndefinedVariableInspection */
 				return '[media]'.$url;
 			};
 			
