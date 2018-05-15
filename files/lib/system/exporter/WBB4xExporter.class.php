@@ -803,7 +803,7 @@ class WBB4xExporter extends AbstractExporter {
 	 * @param	integer		$limit
 	 */
 	public function exportConversationUsers($offset, $limit) {
-		$conversationIDs = $userID = $rows = [];
+		$conversationIDs = $userIDs = $rows = [];
 		$sql = "SELECT		*
 			FROM		wcf".$this->dbNo."_conversation_to_user
 			ORDER BY	conversationID, participantID";
