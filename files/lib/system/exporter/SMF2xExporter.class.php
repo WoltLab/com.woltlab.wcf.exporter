@@ -1306,19 +1306,24 @@ class SMF2xExporter extends AbstractExporter {
 		static $quoteCallback = null;
 		
 		if ($sizeRegex === null) {
-			$quoteRegex = new Regex('\[quote author=(.*?) link=topic=\d+\.msg(\d+)#msg\\2 date=\d+\]');
+			$quoteRegex = new Regex('\[quote author=(.*?)(?: link=topic=\d+\.msg(\d+)#msg\\2 date=\d+)?\]');
 			$quoteCallback = new Callback(function ($matches) {
 				$username = str_replace(array("\\", "'"), array("\\\\", "\'"), $matches[1]);
 				$postID = $matches[2];
 				
-				$postLink = LinkHandler::getInstance()->getLink('Thread', array(
-					'application' => 'wbb',
-					'postID' => $postID,
-					'forceFrontend' => true
-				)).'#post'.$postID;
-				$postLink = str_replace(array("\\", "'"), array("\\\\", "\'"), $postLink);
-				
-				return "[quote='".$username."','".$postLink."']";
+				if ($postID) {
+					$postLink = LinkHandler::getInstance()->getLink('Thread', array(
+						'application' => 'wbb',
+						'postID' => $postID,
+						'forceFrontend' => true
+					)).'#post'.$postID;
+					$postLink = str_replace(array("\\", "'"), array("\\\\", "\'"), $postLink);
+					
+					return "[quote='".$username."','".$postLink."']";
+				}
+				else {
+					return "[quote='".$username."']";
+				}
 			});
 			
 			$sizeRegex = new Regex('\[size=(8|10|12|14|18|24|34)pt\]');
