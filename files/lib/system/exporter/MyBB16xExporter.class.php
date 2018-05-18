@@ -383,7 +383,7 @@ class MyBB16xExporter extends AbstractExporter {
 				break;
 				default:
 					$type = explode("\n", $row['type'], 2);
-					if (count($type) < 2) continue;
+					if (count($type) < 2) continue 2;
 					switch ($type[0]) {
 						case 'select':
 							$row['type'] = $type[0];
@@ -395,7 +395,7 @@ class MyBB16xExporter extends AbstractExporter {
 							$row['type'] = 'radioButton';
 						break;
 						default:
-							continue;
+							continue 3;
 					}
 					
 					$selectOptions = $type[1];

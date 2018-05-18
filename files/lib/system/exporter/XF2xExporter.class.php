@@ -414,7 +414,7 @@ class XF2xExporter extends AbstractExporter {
 					$row['field_type'] = 'boolean';
 					break;
 				default:
-					continue;
+					continue 2;
 			}
 				
 			$selectOptions = [];
