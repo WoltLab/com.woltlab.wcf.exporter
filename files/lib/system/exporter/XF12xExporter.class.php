@@ -303,6 +303,8 @@ class XF12xExporter extends AbstractExporter {
 			
 			if ($customFields) {
 				foreach ($customFields as $key => $value) {
+					if (is_array($value)) continue;
+					
 					if (in_array($key, self::$knownProfileFields)) {
 						$options[$key] = $value;
 						continue;
@@ -409,7 +411,7 @@ class XF12xExporter extends AbstractExporter {
 					$row['field_type'] = 'boolean';
 					break;
 				default:
-					continue;
+					continue 2;
 			}
 				
 			$selectOptions = [];
