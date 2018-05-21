@@ -848,7 +848,7 @@ class WBB4xExporter extends AbstractExporter {
 	 * Counts conversation attachments.
 	 */
 	public function countConversationAttachments() {
-		return $this->countAttachments('com.woltlab.wcf.conversation.attachment');
+		return $this->countAttachments('com.woltlab.wcf.conversation.message');
 	}
 	
 	/**
