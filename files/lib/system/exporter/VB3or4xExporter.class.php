@@ -364,12 +364,16 @@ class VB3or4xExporter extends AbstractExporter {
 	public function exportUsers($offset, $limit) {
 		// cache user options
 		$userOptions = [];
-		$sql = "SELECT	profilefieldid
+		$sql = "SELECT	*
 			FROM	".$this->databasePrefix."profilefield";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute();
 		while ($row = $statement->fetchArray()) {
-			$userOptions[] = $row['profilefieldid'];
+			if ($row['type'] == 'select_multiple' || $row['type'] == 'checkbox') {
+				$row['data'] = @unserialize($row['data']);
+			}
+			
+			$userOptions[] = $row;
 		}
 		
 		// prepare password update
@@ -420,9 +424,24 @@ class VB3or4xExporter extends AbstractExporter {
 			];
 			
 			// handle user options
-			foreach ($userOptions as $optionID) {
+			foreach ($userOptions as $userOption) {
+				$optionID = $userOption['profilefieldid'];
 				if (isset($row['field'.$optionID])) {
-					$additionalData['options'][$optionID] = $row['field'.$optionID];
+					$userOptionValue = $row['field'.$optionID];
+					if ($userOptionValue && ($userOption['type'] == 'select_multiple' || $userOption['type'] == 'checkbox')) {
+						if (is_array($userOption['data'])) {
+							$newUserOptionValue = '';
+							foreach ($userOption['data'] as $key => $value) {
+								if ($userOptionValue & pow(2, $key)) {
+									if (!empty($newUserOptionValue)) $newUserOptionValue .= "\n";
+									$newUserOptionValue .= $value;
+								}
+							}
+							$userOptionValue = $newUserOptionValue;
+						}
+					}
+					
+					$additionalData['options'][$optionID] = $userOptionValue;
 				}
 			}
 			
