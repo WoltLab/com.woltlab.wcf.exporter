@@ -439,7 +439,7 @@ class Kunena3xExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.post')->import($row['id'], [
 				'threadID' => $row['thread'],
 				'userID' => $row['userid'],
-				'username' => $row['name'],
+				'username' => ($row['name'] ?: ''),
 				'subject' => $row['subject'],
 				'message' => self::fixBBCodes($row['message']),
 				'time' => $row['time'],
