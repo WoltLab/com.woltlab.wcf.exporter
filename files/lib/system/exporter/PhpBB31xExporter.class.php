@@ -6,6 +6,7 @@ use wcf\data\user\group\UserGroup;
 use wcf\data\user\option\UserOption;
 use wcf\system\database\util\PreparedStatementConditionBuilder;
 use wcf\system\importer\ImportHandler;
+use wcf\system\request\LinkHandler;
 use wcf\system\WCF;
 use wcf\util\FileUtil;
 use wcf\util\MessageUtil;
@@ -1529,9 +1530,23 @@ class PhpBB31xExporter extends AbstractExporter {
 		}, $text);
 		
 		// fix quotes
-		$text = preg_replace_callback('~\[quote="([^"]+?)"\]~', function ($matches) {
-			$username = str_replace(array("\\", "'"), array("\\\\", "\'"), $matches[1]);
-			return "[quote='".$username."']";
+		$text = preg_replace_callback('~\[quote=("?)([^"]+?)\\1(?:\s+post_id=(\d+)[^\]]*)?\]~', function ($matches) {
+			$username = str_replace(array("\\", "'"), array("\\\\", "\'"), $matches[2]);
+			$postID = isset($matches[3]) ? $matches[3] : null;
+			
+			if ($postID) {
+				$postLink = LinkHandler::getInstance()->getLink('Thread', [
+					'application' => 'wbb',
+					'postID' => $postID,
+					'forceFrontend' => true
+				]).'#post'.$postID;
+				$postLink = str_replace(["\\", "'"], ["\\\\", "\'"], $postLink);
+				
+				return "[quote='".$username."','".$postLink."']";
+			}
+			else {
+				return "[quote='".$username."']";
+			}
 		}, $text);
 		
 		// convert attachments
