@@ -1376,7 +1376,7 @@ class SMF2xExporter extends AbstractExporter {
 			$quoteRegex = new Regex('\[quote author=(.*?)(?: link=topic=\d+\.msg(\d+)#msg\\2 date=\d+)?\]');
 			$quoteCallback = function ($matches) {
 				$username = str_replace(["\\", "'"], ["\\\\", "\'"], $matches[1]);
-				$postID = $matches[2];
+				$postID = isset($matches[2]) ? $matches[2] : null;
 				
 				if ($postID) {
 					$postLink = LinkHandler::getInstance()->getLink('Thread', [
