@@ -899,6 +899,7 @@ class XF12xExporter extends AbstractExporter {
 				'message' => self::fixBBCodes($row['message']),
 				'time' => $row['post_date'],
 				'isDisabled' => $row['message_state'] == 'moderated' ? 1 : 0,
+				'isDeleted' => $row['message_state'] == 'deleted' ? 1 : 0,
 				'editorID' => $row['last_edit_user_id'] ?: null,
 				'editor' => $row['editor'] ?: '',
 				'lastEditTime' => $row['last_edit_date'],
