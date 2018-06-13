@@ -641,7 +641,7 @@ class XF12xExporter extends AbstractExporter {
 	 * Counts conversation folders.
 	 */
 	public function countConversationFolders() {
-		$this->countUsers();
+		return $this->countUsers();
 	}
 	
 	/**
@@ -655,9 +655,9 @@ class XF12xExporter extends AbstractExporter {
 			FROM		xf_user
 			ORDER BY	user_id";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute(['']);
+		$statement->execute();
 		while ($row = $statement->fetchArray()) {
-			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.label')->import($row['userid'], [
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.label')->import($row['user_id'], [
 				'userID' => $row['user_id'],
 				'label' => 'Star'
 			]);
