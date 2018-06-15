@@ -8,7 +8,7 @@
 		<item name="wcf.acp.dataImport.exporter.com.woltlab.wcf.exporter.mybb16x"><![CDATA[MyBB 1.8.x]]></item>
 		<item name="wcf.acp.dataImport.exporter.com.woltlab.wcf.exporter.smf2x"><![CDATA[Simple Machines Forum 2.x]]></item>
 		<item name="wcf.acp.dataImport.exporter.com.woltlab.wcf.exporter.phpbb3x"><![CDATA[phpBB 3.0.x]]></item>
-		<item name="wcf.acp.dataImport.exporter.com.woltlab.wcf.exporter.phpbb31x"><![CDATA[phpBB 3.1.x]]></item>
+		<item name="wcf.acp.dataImport.exporter.com.woltlab.wcf.exporter.phpbb31x"><![CDATA[phpBB 3.1.x, phpBB 3.2.x]]></item>
 		<item name="wcf.acp.dataImport.exporter.com.woltlab.wcf.exporter.wordpress3x"><![CDATA[WordPress 3.7+]]></item>
 		<item name="wcf.acp.dataImport.exporter.com.woltlab.wcf.exporter.vb3or4x"><![CDATA[vBulletin 3.8.x - 4.2.x]]></item>
 		<item name="wcf.acp.dataImport.exporter.com.woltlab.wcf.exporter.vb5x"><![CDATA[vBulletin 5.x (experimentell)]]></item>
