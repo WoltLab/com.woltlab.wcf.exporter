@@ -1436,8 +1436,8 @@ class PhpBB3xExporter extends AbstractExporter {
 		// see: https://github.com/phpbb/phpbb3/blob/179f41475b555d0a3314d779d0d7423f66f0fb95/phpBB/includes/functions.php#L3767
 		$text = preg_replace('#<!\-\- s(.*?) \-\-><img src=".*? \/><!\-\- s\1 \-\->#', '\\1', $text);
 		$text = preg_replace('#<!\-\- e \-\-><a href="mailto:(.*?)">.*?</a><!\-\- e \-\->#', '[email]\\1[/email]', $text);
-		$text = preg_replace('#<!\-\- ([mw]) \-\-><a (?:class="[\w-]+" )?href="(.*?)">.*?</a><!\-\- \1 \-\->#', '[url]\\2[/url]', $text);
-		$text = preg_replace('#<!\-\- l \-\-><a (?:class="[\w-]+" )?href="(.*?)(?:(&amp;|\?)sid=[0-9a-f]{32})?">.*?</a><!\-\- l \-\->#', '[url]\\1[/url]', $text);
+		$text = preg_replace('#<!\-\- ([mw]) \-\-><a (?:class="[\w\-]+" )?href="(.*?)">.*?</a><!\-\- \1 \-\->#', '[url]\\2[/url]', $text);
+		$text = preg_replace('#<!\-\- l \-\-><a (?:class="[\w\-]+" )?href="(.*?)(?:(&amp;|\?)sid=[0-9a-f]{32})?">.*?</a><!\-\- l \-\->#', '[url]\\1[/url]', $text);
 		
 		// fix code php bbcode...
 		$text = preg_replace_callback('#\[code(=php)?\](.*)\[/code\]#s', function ($matches) {
