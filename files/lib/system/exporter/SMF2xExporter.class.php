@@ -1398,6 +1398,10 @@ class SMF2xExporter extends AbstractExporter {
 			$sizeRegex = new Regex('\[size=(8|10|12|14|18|24|34)pt\]');
 		}
 		
+		// remove unsupported attributes in img tags
+		$message = preg_replace('~(\[img[^]]*)\s+width=\d+([^]]*\])~i', '\\1\\2', $message);
+		$message = preg_replace('~(\[img[^]]*)\s+height=\d+([^]]*\])~i', '\\1\\2', $message);
+		
 		// use proper WCF 2 bbcode
 		$message = strtr($message, [
 			'<br />' => "\n",
