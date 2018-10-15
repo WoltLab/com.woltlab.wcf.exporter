@@ -2040,17 +2040,20 @@ class WBB4xExporter extends AbstractExporter {
 		
 		// get categories
 		$categories = [];
-		$conditionBuilder = new PreparedStatementConditionBuilder();
-		$conditionBuilder->add('eventID IN (?)', [$eventIDs]);
-		
-		$sql = "SELECT		*
-			FROM		calendar".$this->dbNo."_event_to_category
-			".$conditionBuilder;
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute($conditionBuilder->getParameters());
-		while ($row = $statement->fetchArray()) {
-			if (!isset($categories[$row['eventID']])) $categories[$row['eventID']] = [];
-			$categories[$row['eventID']][] = $row['categoryID'];
+		if (version_compare($this->getPackageVersion('com.woltlab.calendar'), '3.0.0 Alpha 1', '<')) {
+			// 2.x
+			$conditionBuilder = new PreparedStatementConditionBuilder();
+			$conditionBuilder->add('eventID IN (?)', [$eventIDs]);
+			
+			$sql = "SELECT		*
+				FROM		calendar" . $this->dbNo . "_event_to_category
+				" . $conditionBuilder;
+			$statement = $this->database->prepareStatement($sql);
+			$statement->execute($conditionBuilder->getParameters());
+			while ($row = $statement->fetchArray()) {
+				if (!isset($categories[$row['eventID']])) $categories[$row['eventID']] = [];
+				$categories[$row['eventID']][] = $row['categoryID'];
+			}
 		}
 		
 		// get event
@@ -2067,7 +2070,6 @@ class WBB4xExporter extends AbstractExporter {
 			$additionalData = [];
 			if ($row['languageCode']) $additionalData['languageCode'] = $row['languageCode'];
 			if (isset($tags[$row['eventID']])) $additionalData['tags'] = $tags[$row['eventID']];
-			if (isset($categories[$row['eventID']])) $additionalData['categories'] = $categories[$row['eventID']];
 			
 			$data = [
 				'userID' => $row['userID'],
@@ -2093,6 +2095,15 @@ class WBB4xExporter extends AbstractExporter {
 				'participationIsChangeable' => $row['participationIsChangeable'],
 				'participationIsPublic' => $row['participationIsPublic']
 			];
+			
+			if (version_compare($this->getPackageVersion('com.woltlab.calendar'), '3.0.0 Alpha 1', '<')) {
+				// 2.x
+				if (isset($categories[$row['eventID']])) $additionalData['categories'] = $categories[$row['eventID']];
+			}
+			else {
+				// 3.0+
+				$data['categoryID'] = $row['categoryID'];
+			}
 				
 			ImportHandler::getInstance()->getImporter('com.woltlab.calendar.event')->import($row['eventID'], $data, $additionalData);
 		}
