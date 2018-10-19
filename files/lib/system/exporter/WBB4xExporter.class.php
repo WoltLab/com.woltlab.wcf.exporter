@@ -2294,7 +2294,9 @@ class WBB4xExporter extends AbstractExporter {
 				'userID' => $row['userID'],
 				'username' => $row['username'],
 				'message' => $row['message'],
-				'time' => $row['time']
+				'time' => $row['time'],
+				'enableHtml' => (isset($row['enableHtml'])) ? $row['enableHtml'] : 0,
+				'isDisabled' => (isset($row['isDisabled'])) ? $row['isDisabled'] : 0,
 			]);
 		}
 	}
@@ -2336,6 +2338,8 @@ class WBB4xExporter extends AbstractExporter {
 				'userID' => $row['userID'],
 				'username' => $row['username'],
 				'message' => $row['message'],
+				'enableHtml' => (isset($row['enableHtml'])) ? $row['enableHtml'] : 0,
+				'isDisabled' => (isset($row['isDisabled'])) ? $row['isDisabled'] : 0,
 			]);
 		}
 	}
