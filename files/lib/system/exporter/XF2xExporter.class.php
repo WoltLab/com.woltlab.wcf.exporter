@@ -784,7 +784,7 @@ class XF2xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute(['Forum', 'Category', 'LinkForum']);
 		$row = $statement->fetchArray();
-		return $row['count'];
+		return ($row['count'] ? 1 : 0);
 	}
 	
 	/**
