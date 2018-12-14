@@ -75,7 +75,8 @@ class MyBB16xExporter extends AbstractExporter {
 	protected $limits = [
 		'com.woltlab.wcf.user' => 200,
 		'com.woltlab.wcf.user.avatar' => 100,
-		'com.woltlab.wcf.user.follower' => 100
+		'com.woltlab.wcf.user.follower' => 100,
+		'com.woltlab.wcf.conversation' => 100
 	];
 	
 	/**
@@ -577,12 +578,7 @@ class MyBB16xExporter extends AbstractExporter {
 	 * Counts conversations.
 	 */
 	public function countConversations() {
-		$sql = "SELECT		COUNT(DISTINCT fromid, dateline) AS count
-			FROM		".$this->databasePrefix."privatemessages";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute();
-		$row = $statement->fetchArray();
-		return $row['count'];
+		return $this->__getMaxID($this->databasePrefix."privatemessages", 'pmid');
 	}
 	
 	/**
@@ -596,14 +592,15 @@ class MyBB16xExporter extends AbstractExporter {
 			FROM		".$this->databasePrefix."privatemessages message_table
 			LEFT JOIN	".$this->databasePrefix."users user_table
 			ON		user_table.uid = message_table.fromid
-			WHERE		pmid IN (
+			WHERE		pmid BETWEEN ? AND ?
+					AND pmid IN (
 						SELECT		MIN(pmID)
 						FROM		".$this->databasePrefix."privatemessages
 						GROUP BY	fromid, dateline
 					)
 			ORDER BY	pmid";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute();
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute([$offset + 1, $offset + $limit]);
 		while ($row = $statement->fetchArray()) {
 			$row['isDraft'] = $row['folder'] == 3 ? 1 : 0;
 			
