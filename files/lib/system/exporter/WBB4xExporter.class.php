@@ -89,7 +89,17 @@ class WBB4xExporter extends AbstractExporter {
 		'com.woltlab.calendar.event.date.comment' => 'CalendarEventDateComments',
 		'com.woltlab.calendar.event.date.comment.response' => 'CalendarEventDateCommentResponses',
 		'com.woltlab.calendar.event.date.participation' => 'CalendarEventDateParticipation',
-		'com.woltlab.calendar.event.like' => 'CalendarEventLikes'
+		'com.woltlab.calendar.event.like' => 'CalendarEventLikes',
+				
+		'com.woltlab.filebase.category' => 'FilebaseCategories',
+		'com.woltlab.filebase.file' => 'FilebaseFiles',
+		'com.woltlab.filebase.file.version' => 'FilebaseFileVersions',
+		'com.woltlab.filebase.file.comment' => 'FilebaseFileComments',
+		'com.woltlab.filebase.file.comment.response' => 'FilebaseFileCommentResponses',
+		'com.woltlab.filebase.file.like' => 'FilebaseFileLikes',
+		'com.woltlab.filebase.file.version.like' => 'FilebaseFileVersionLikes',
+		'com.woltlab.filebase.file.attachment' => 'FilebaseFileAttachments',
+		'com.woltlab.filebase.file.version.attachment' => 'FilebaseFileVersionAttachments',
 	];
 	
 	/**
@@ -101,7 +111,12 @@ class WBB4xExporter extends AbstractExporter {
 		'com.woltlab.wcf.conversation.attachment' => 100,
 		'com.woltlab.wbb.thread' => 200,
 		'com.woltlab.wbb.attachment' => 100,
-		'com.woltlab.wbb.acl' => 50
+		'com.woltlab.wbb.acl' => 50,
+		'com.woltlab.blog.entry.attachment' => 100,
+		'com.woltlab.gallery.image' => 100,
+		'com.woltlab.calendar.event.attachment' => 100,
+		'com.woltlab.filebase.file.attachment' => 100,
+		'com.woltlab.filebase.file.version.attachment' => 100,
 	];
 	
 	/**
@@ -159,6 +174,12 @@ class WBB4xExporter extends AbstractExporter {
 				'com.woltlab.calendar.event.date.comment',
 				'com.woltlab.calendar.event.date.participation',
 				'com.woltlab.calendar.event.like'
+			],
+			'com.woltlab.filebase.file' => [
+				'com.woltlab.filebase.category',
+				'com.woltlab.filebase.file.attachment',
+				'com.woltlab.filebase.file.comment',
+				'com.woltlab.filebase.file.like'
 			],
 			'com.woltlab.wcf.smiley' => [],
 		];
@@ -305,6 +326,29 @@ class WBB4xExporter extends AbstractExporter {
 				}
 				if (in_array('com.woltlab.calendar.event.like', $this->selectedData)) $queue[] = 'com.woltlab.calendar.event.like';
 				if (in_array('com.woltlab.calendar.event.date.participation', $this->selectedData)) $queue[] = 'com.woltlab.calendar.event.date.participation';
+			}
+		}
+		
+		// filebase
+		if ($this->getPackageVersion('com.woltlab.filebase')) {
+			if (in_array('com.woltlab.filebase.file', $this->selectedData)) {
+				if (in_array('com.woltlab.filebase.category', $this->selectedData)) $queue[] = 'com.woltlab.filebase.category';
+				$queue[] = 'com.woltlab.filebase.file';
+				$queue[] = 'com.woltlab.filebase.file.version';
+				
+				if (in_array('com.woltlab.filebase.file.attachment', $this->selectedData)) {
+					$queue[] = 'com.woltlab.filebase.file.attachment';
+					$queue[] = 'com.woltlab.filebase.file.version.attachment';
+				}
+				
+				if (in_array('com.woltlab.filebase.file.comment', $this->selectedData)) {
+					$queue[] = 'com.woltlab.filebase.file.comment';
+					$queue[] = 'com.woltlab.filebase.file.comment.response';
+				}
+				if (in_array('com.woltlab.filebase.file.like', $this->selectedData)) {
+					$queue[] = 'com.woltlab.filebase.file.like';
+					$queue[] = 'com.woltlab.filebase.file.version.like';
+				}
 			}
 		}
 		
@@ -2259,9 +2303,285 @@ class WBB4xExporter extends AbstractExporter {
 	}
 	
 	/**
+	 * Counts filebase categories.
+	 */
+	public function countFilebaseCategories() {
+		return $this->countCategories('com.woltlab.filebase.category');
+	}
+	
+	/**
+	 * Exports filebase categories.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportFilebaseCategories($offset, $limit) {
+		$this->exportCategories('com.woltlab.filebase.category', 'com.woltlab.filebase.category', $offset, $limit);
+	}
+	
+	/**
+	 * Counts filebase files.
+	 */
+	public function countFilebaseFiles() {
+		return $this->__getMaxID("filebase".$this->dbNo."_file", 'fileID');
+	}
+	
+	/**
+	 * Exports filebase files.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportFilebaseFiles($offset, $limit) {
+		// get file ids
+		$fileIDs = [];
+		$sql = "SELECT		fileID
+			FROM		filebase".$this->dbNo."_file
+			WHERE		fileID BETWEEN ? AND ?
+			ORDER BY	fileID";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute([$offset + 1, $offset + $limit]);
+		while ($row = $statement->fetchArray()) {
+			$fileIDs[] = $row['fileID'];
+		}
+		
+		if (empty($fileIDs)) return;
+		
+		// get tags
+		$tags = $this->getTags('com.woltlab.filebase.file', $fileIDs);
+		
+		// get categories
+		$categories = [];
+		if (version_compare($this->getPackageVersion('com.woltlab.filebase'), '3.0.0 Alpha 1', '<')) {
+			// 2.x
+			$conditionBuilder = new PreparedStatementConditionBuilder();
+			$conditionBuilder->add('fileID IN (?)', [$fileIDs]);
+			
+			$sql = "SELECT		*
+				FROM		filebase" . $this->dbNo . "_file_to_category
+				" . $conditionBuilder;
+			$statement = $this->database->prepareStatement($sql);
+			$statement->execute($conditionBuilder->getParameters());
+			while ($row = $statement->fetchArray()) {
+				if (!isset($categories[$row['fileID']])) $categories[$row['fileID']] = [];
+				$categories[$row['fileID']][] = $row['categoryID'];
+			}
+		}
+		
+		// get files
+		$conditionBuilder = new PreparedStatementConditionBuilder();
+		$conditionBuilder->add('file.fileID IN (?)', [$fileIDs]);
+		$sql = "SELECT		file.*, language.languageCode
+			FROM		filebase".$this->dbNo."_file file
+			LEFT JOIN	wcf".$this->dbNo."_language language
+			ON		(language.languageID = file.languageID)
+			".$conditionBuilder;
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute($conditionBuilder->getParameters());
+		while ($row = $statement->fetchArray()) {
+			$additionalData = [];
+			if ($row['languageCode']) $additionalData['languageCode'] = $row['languageCode'];
+			if (isset($tags[$row['fileID']])) $additionalData['tags'] = $tags[$row['fileID']];
+			
+			$data = [
+				'userID' => $row['userID'],
+				'username' => $row['username'],
+				'subject' => $row['subject'],
+				'message' => $row['message'],
+				'time' => $row['time'],
+				'teaser' => $row['teaser'],
+				'website' => $row['website'],
+				'enableHtml' => $row['enableHtml'],
+				'enableComments' => $row['enableComments'],
+				'isDisabled' => $row['isDisabled'],
+				'isDeleted' => $row['isDeleted'],
+				'ipAddress' => $row['ipAddress'],
+				'deleteTime' => $row['deleteTime'],
+				'isCommercial' => $row['isCommercial'],
+				'isPurchasable' => $row['isPurchasable'],
+				'price' => $row['price'],
+				'currency' => $row['currency'],
+				'totalRevenue' => $row['totalRevenue'],
+				'purchases' => $row['purchases'],
+				'licenseName' => $row['licenseName'],
+				'licenseURL' => $row['licenseURL'],
+				'downloads' => $row['downloads'],
+				'isFeatured' => $row['isFeatured'],
+			];
+			
+			// file icon
+			if (!empty($row['iconHash'])) {
+				$data['iconHash'] = $row['iconHash'];
+				$data['iconExtension'] = $row['iconExtension'];
+				$additionalData['iconLocation'] = $this->getFilebaseDir() . 'images/file/' . substr($row['iconHash'], 0, 2) . '/' . $row['fileID'] . '.' . $row['iconExtension'];
+			}
+			
+			if (version_compare($this->getPackageVersion('com.woltlab.filebase'), '3.0.0 Alpha 1', '<')) {
+				// 2.x
+				if (isset($categories[$row['fileID']])) $additionalData['categories'] = $categories[$row['fileID']];
+			}
+			else {
+				// 3.0+
+				$data['categoryID'] = $row['categoryID'];
+			}
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.filebase.file')->import($row['fileID'], $data, $additionalData);
+		}
+	}
+	
+	/**
+	 * Counts filebase file versions.
+	 */
+	public function countFilebaseFileVersions() {
+		return $this->__getMaxID("filebase".$this->dbNo."_file_version", 'versionID');
+	}
+	
+	/**
+	 * Exports filebase file versions.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportFilebaseFileVersions($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		filebase".$this->dbNo."_file_version
+			WHERE		versionID BETWEEN ? AND ?
+			ORDER BY	versionID";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute([$offset + 1, $offset + $limit]);
+		while ($row = $statement->fetchArray()) {
+			$fileLocation = '';
+			if (!$row['downloadURL']) {
+				$fileLocation = $this->getFilebaseDir() . 'files/' . substr($row['fileHash'], 0, 2) . '/' . $row['versionID'] . '-' . $row['fileHash'];
+			}
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.filebase.file.version')->import($row['versionID'], [
+				'fileID' => $row['fileID'],
+				'versionNumber' => $row['versionNumber'],
+				'description' => $row['description'],
+				'filename' => $row['filename'],
+				'filesize' => $row['filesize'],
+				'fileType' => $row['fileType'],
+				'fileHash' => $row['fileHash'],
+				'uploadTime' => $row['uploadTime'],
+				'downloads' => $row['downloads'],
+				'downloadURL' => $row['downloadURL'],
+				'isDisabled' => $row['isDisabled'],
+				'isDeleted' => $row['isDeleted'],
+				'deleteTime' => $row['deleteTime'],
+				'ipAddress' => $row['ipAddress'],
+				'enableHtml' => $row['enableHtml']
+			], ['fileLocation' => $fileLocation]);
+		}
+	}
+	
+	/**
+	 * Counts filebase file comments.
+	 */
+	public function countFilebaseFileComments() {
+		return $this->countComments('com.woltlab.filebase.fileComment');
+	}
+	
+	/**
+	 * Exports filebase file comments.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportFilebaseFileComments($offset, $limit) {
+		$this->exportComments('com.woltlab.filebase.fileComment', 'com.woltlab.filebase.file.comment', $offset, $limit);
+	}
+	
+	/**
+	 * Counts filebase file comment responses.
+	 */
+	public function countFilebaseFileCommentResponses() {
+		return $this->countCommentResponses('com.woltlab.filebase.fileComment');
+	}
+	
+	/**
+	 * Exports filebase file comment responses.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportFilebaseFileCommentResponses($offset, $limit) {
+		$this->exportCommentResponses('com.woltlab.filebase.fileComment', 'com.woltlab.filebase.file.comment.response', $offset, $limit);
+	}
+	
+	/**
+	 * Counts filebase file likes.
+	 */
+	public function countFilebaseFileLikes() {
+		return $this->countLikes('com.woltlab.filebase.likeableFile');
+	}
+	
+	/**
+	 * Exports filebase file likes.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportFilebaseFileLikes($offset, $limit) {
+		$this->exportLikes('com.woltlab.filebase.likeableFile', 'com.woltlab.filebase.file.like', $offset, $limit);
+	}
+	
+	/**
+	 * Counts filebase file version likes.
+	 */
+	public function countFilebaseFileVersionLikes() {
+		return $this->countLikes('com.woltlab.filebase.likeableFileVersion');
+	}
+	
+	/**
+	 * Exports filebase file version likes.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportFilebaseFileVersionLikes($offset, $limit) {
+		$this->exportLikes('com.woltlab.filebase.likeableFileVersion', 'com.woltlab.filebase.file.version.like', $offset, $limit);
+	}
+	
+	/**
+	 * Counts filebae file attachments.
+	 */
+	public function countFilebaseFileAttachments() {
+		return $this->countAttachments('com.woltlab.filebase.file');
+	}
+	
+	/**
+	 * Exports filebase file attachments.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportFilebaseFileAttachments($offset, $limit) {
+		$this->exportAttachments('com.woltlab.filebase.file', 'com.woltlab.filebase.file.attachment', $offset, $limit);
+	}
+	
+	/**
+	 * Counts filebae file version attachments.
+	 */
+	public function countFilebaseFileVersionAttachments() {
+		return $this->countAttachments('com.woltlab.filebase.version');
+	}
+	
+	/**
+	 * Exports filebase file version attachments.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportFilebaseFileVersionAttachments($offset, $limit) {
+		$this->exportAttachments('com.woltlab.filebase.version', 'com.woltlab.filebase.file.version.attachment', $offset, $limit);
+	}
+	
+	/**
 	 * Counts comments.
 	 *
 	 * @param	integer		$objectType
+	 * @return      integer
 	 */
 	private function countComments($objectType) {
 		$sql = "SELECT	COUNT(*) AS count
@@ -2646,5 +2966,22 @@ class WBB4xExporter extends AbstractExporter {
 		}
 		
 		return $i18nValues;
+	}
+	
+	/**
+	 * Returns the installation directory of the filebase.
+	 *
+	 * @return	string
+	 */
+	private function getFilebaseDir() {
+		$sql = "SELECT	packageDir
+			FROM	wcf".$this->dbNo."_package
+			WHERE	package = ?";
+		$statement = $this->database->prepareStatement($sql, 1);
+		$statement->execute(['com.woltlab.filebase']);
+		$row = $statement->fetchArray();
+		if ($row !== false) return FileUtil::getRealPath($this->fileSystemPath . $row['packageDir']);
+		
+		return '';
 	}
 }
