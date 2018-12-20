@@ -2401,10 +2401,10 @@ class WBB4xExporter extends AbstractExporter {
 				'isPurchasable' => $row['isPurchasable'],
 				'price' => $row['price'],
 				'currency' => $row['currency'],
-				'totalRevenue' => $row['totalRevenue'],
+				'totalRevenue' => (isset($row['totalRevenue']) ? $row['totalRevenue'] : 0),
 				'purchases' => $row['purchases'],
-				'licenseName' => $row['licenseName'],
-				'licenseURL' => $row['licenseURL'],
+				'licenseName' => (isset($row['licenseName']) ? $row['licenseName'] : ''),
+				'licenseURL' => (isset($row['licenseURL']) ? $row['licenseURL'] : ''),
 				'downloads' => $row['downloads'],
 				'isFeatured' => $row['isFeatured'],
 			];
@@ -2451,7 +2451,7 @@ class WBB4xExporter extends AbstractExporter {
 		$statement->execute([$offset + 1, $offset + $limit]);
 		while ($row = $statement->fetchArray()) {
 			$fileLocation = '';
-			if (!$row['downloadURL']) {
+			if (empty($row['downloadURL'])) {
 				$fileLocation = $this->getFilebaseDir() . 'files/' . substr($row['fileHash'], 0, 2) . '/' . $row['versionID'] . '-' . $row['fileHash'];
 			}
 			
@@ -2465,7 +2465,7 @@ class WBB4xExporter extends AbstractExporter {
 				'fileHash' => $row['fileHash'],
 				'uploadTime' => $row['uploadTime'],
 				'downloads' => $row['downloads'],
-				'downloadURL' => $row['downloadURL'],
+				'downloadURL' => (isset($row['downloadURL']) ? $row['downloadURL'] : ''),
 				'isDisabled' => $row['isDisabled'],
 				'isDeleted' => $row['isDeleted'],
 				'deleteTime' => $row['deleteTime'],
