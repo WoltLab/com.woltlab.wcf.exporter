@@ -4,8 +4,8 @@
 		<packagename>WoltLab Suite Core: Importer</packagename>
 		<packagedescription>Import data from other discussion board systems.</packagedescription>
 		<packagedescription language="de">Ermöglicht den Datenimport aus anderen Forensystemen.</packagedescription>
-		<version>3.1.6</version>
-		<date>2018-10-15</date>
+		<version>3.1.7</version>
+		<date>2018-12-21</date>
 	</packageinformation>
 	
 	<authorinformation>
@@ -14,7 +14,7 @@
 	</authorinformation>
 	
 	<requiredpackages>
-		<requiredpackage minversion="3.1.6">com.woltlab.wcf</requiredpackage>
+		<requiredpackage minversion="3.1.7">com.woltlab.wcf</requiredpackage>
 	</requiredpackages>
 	
 	<excludedpackages>
@@ -41,9 +41,7 @@
 		<instruction type="objectType" />
 	</instructions>
 	
-	<instructions type="update" fromversion="3.1.5">
+	<instructions type="update" fromversion="3.1.6">
 		<instruction type="file">files_update.tar</instruction>
-		
-		<instruction type="language" />
 	</instructions>
 </package>
