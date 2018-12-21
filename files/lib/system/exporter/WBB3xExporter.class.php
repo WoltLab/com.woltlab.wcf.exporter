@@ -2733,6 +2733,7 @@ class WBB3xExporter extends AbstractExporter {
 		$message = preg_replace('~\[/(?:php|java|css|html|xml|tpl|js|c|mysql)\]~', '[/code]', $message);
 		
 		// media bbcodes
+		$message = preg_replace('~\[youtube\]([a-z0-9_-]+)\[/youtube\]~i', '[media]https://www.youtube.com/watch?v=\\1[/media]', $message);
 		$message = preg_replace("~\[(?:youtube|myvideo|myspace|googlevideo|clipfish|sevenload)(?:='?([^'\],]+)'?)?(?:,[^\]]+)?\]~", '[media]\\1', $message);
 		$message = preg_replace('~\[/(?:youtube|myvideo|myspace|googlevideo|clipfish|sevenload)\]~', '[/media]', $message);
 		
