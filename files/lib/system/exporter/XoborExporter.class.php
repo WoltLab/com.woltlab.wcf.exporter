@@ -1,12 +1,8 @@
 <?php
 namespace wcf\system\exporter;
 use wbb\data\board\Board;
-use wcf\data\like\Like;
-use wcf\data\user\group\UserGroup;
 use wcf\data\user\UserProfile;
-use wcf\system\database\util\PreparedStatementConditionBuilder;
 use wcf\system\importer\ImportHandler;
-use wcf\system\WCF;
 use wcf\util\StringUtil;
 use wcf\util\UserUtil;
 
@@ -14,7 +10,7 @@ use wcf\util\UserUtil;
  * Exporter for Xobor
  * 
  * @author	Tim Duesterhus
- * @copyright	2001-2016 WoltLab GmbH
+ * @copyright	2001-2019 WoltLab GmbH
  * @license	GNU Lesser General Public License <http://opensource.org/licenses/lgpl-license.php>
  * @package	com.woltlab.wcf.exporter
  * @subpackage	system.exporter
@@ -25,41 +21,39 @@ class XoborExporter extends AbstractExporter {
 	 * board cache
 	 * @var	array
 	 */
-	protected $boardCache = array();
+	protected $boardCache = [];
 	
 	/**
-	 * @see	\wcf\system\exporter\AbstractExporter::$methods
+	 * @inheritDoc
 	 */
-	protected $methods = array(
+	protected $methods = [
 		'com.woltlab.wcf.user' => 'Users',
 		'com.woltlab.wbb.board' => 'Boards',
 		'com.woltlab.wbb.thread' => 'Threads',
-		'com.woltlab.wbb.post' => 'Posts',
-	);
-	
+		'com.woltlab.wbb.post' => 'Posts'
+	];
+
 	/**
-	 * @see	\wcf\system\exporter\AbstractExporter::$limits
+	 * @inheritDoc
 	 */
-	protected $limits = array(
+	protected $limits = [
 		'com.woltlab.wcf.user' => 200,
 		'com.woltlab.wcf.user.avatar' => 100,
 		'com.woltlab.wcf.user.follower' => 100
-	);
-	
+	];
+
 	/**
-	 * @see	\wcf\system\exporter\IExporter::getSupportedData()
+	 * @inheritDoc
 	 */
 	public function getSupportedData() {
-		return array(
-			'com.woltlab.wcf.user' => array(
-			),
-			'com.woltlab.wbb.board' => array(
-			),
-		);
+		return [
+			'com.woltlab.wcf.user' => [],
+			'com.woltlab.wbb.board' => [],
+		];
 	}
-	
+
 	/**
-	 * @see	\wcf\system\exporter\IExporter::validateDatabaseAccess()
+	 * @inheritDoc
 	 */
 	public function validateDatabaseAccess() {
 		parent::validateDatabaseAccess();
@@ -68,19 +62,19 @@ class XoborExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute();
 	}
-	
+
 	/**
-	 * @see	\wcf\system\exporter\IExporter::validateFileAccess()
+	 * @inheritDoc
 	 */
 	public function validateFileAccess() {
 		return true;
 	}
 	
 	/**
-	 * @see	\wcf\system\exporter\IExporter::getQueue()
+	 * @inheritDoc
 	 */
 	public function getQueue() {
-		$queue = array();
+		$queue = [];
 		
 		// user
 		if (in_array('com.woltlab.wcf.user', $this->selectedData)) {
@@ -99,13 +93,18 @@ class XoborExporter extends AbstractExporter {
 	
 	/**
 	 * Counts users.
+	 * 
+	 * @return	integer
 	 */
 	public function countUsers() {
 		return $this->__getMaxID('forum_user', 'id');
 	}
-	
+
 	/**
 	 * Exports users.
+	 * 
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportUsers($offset, $limit) {
 		// get users
@@ -114,19 +113,19 @@ class XoborExporter extends AbstractExporter {
 			WHERE		id BETWEEN ? AND ?
 			ORDER BY	id";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array($offset + 1, $offset + $limit));
+		$statement->execute([$offset + 1, $offset + $limit]);
 		while ($row = $statement->fetchArray()) {
-			$data = array(
+			$data = [
 				'username' => StringUtil::decodeHTML($row['name']),
 				'password' => '',
 				'email' => $row['mail'],
 				'registrationDate' => strtotime($row['reged']),
 				'signature' => self::fixMessage($row['signature_editable']),
 				'lastActivityTime' => $row['online']
-			);
+			];
 			
 			// get user options
-			$options = array(
+			$options = [
 				'birthday' => $row['birthday'],
 				'occupation' => $row['occupation'],
 				'homepage' => $row['homepage'],
@@ -134,7 +133,7 @@ class XoborExporter extends AbstractExporter {
 				'hobbies' => $row['hobby'],
 				'aboutMe' => $row['story_editable'],
 				'location' => $row['ploc']
-			);
+			];
 			switch ($row['gender']) {
 				case 'm':
 					$options['gender'] = UserProfile::GENDER_MALE;
@@ -144,9 +143,7 @@ class XoborExporter extends AbstractExporter {
 				break;
 			}
 			
-			$additionalData = array(
-				'options' => $options
-			);
+			$additionalData = ['options' => $options];
 			
 			// import user
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user')->import($row['id'], $data, $additionalData);
@@ -155,6 +152,8 @@ class XoborExporter extends AbstractExporter {
 	
 	/**
 	 * Counts boards.
+	 * 
+	 * @return	integer
 	 */
 	public function countBoards() {
 		$sql = "SELECT	COUNT(*) AS count
@@ -164,9 +163,12 @@ class XoborExporter extends AbstractExporter {
 		$row = $statement->fetchArray();
 		return ($row['count'] ? 1 : 0);
 	}
-	
+
 	/**
 	 * Exports boards.
+	 * 
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportBoards($offset, $limit) {
 		$sql = "SELECT		*
@@ -183,18 +185,20 @@ class XoborExporter extends AbstractExporter {
 	
 	/**
 	 * Exports the boards recursively.
+	 * 
+	 * @param	integer		$parentID
 	 */
 	protected function exportBoardsRecursively($parentID = 0) {
 		if (!isset($this->boardCache[$parentID])) return;
 		
 		foreach ($this->boardCache[$parentID] as $board) {
-			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import($board['id'], array(
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import($board['id'], [
 				'parentID' => ($board['zuid'] ?: null),
 				'position' => $board['sort'],
 				'boardType' => ($board['iscat'] ? Board::TYPE_CATEGORY : Board::TYPE_BOARD),
 				'title' => StringUtil::decodeHTML($board['title']),
 				'description' => $board['text']
-			));
+			]);
 			
 			$this->exportBoardsRecursively($board['id']);
 		}
@@ -202,13 +206,18 @@ class XoborExporter extends AbstractExporter {
 	
 	/**
 	 * Counts threads.
+	 * 
+	 * @return	integer
 	 */
 	public function countThreads() {
 		return $this->__getMaxID("forum_threads", 'id');
 	}
-	
+
 	/**
 	 * Exports threads.
+	 * 
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportThreads($offset, $limit) {
 		$sql = "SELECT		*
@@ -216,9 +225,9 @@ class XoborExporter extends AbstractExporter {
 			WHERE		id BETWEEN ? AND ?
 			ORDER BY	id";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array($offset + 1, $offset + $limit));
+		$statement->execute([$offset + 1, $offset + $limit]);
 		while ($row = $statement->fetchArray()) {
-			$data = array(
+			$data = [
 				'boardID' => $row['forum'],
 				'topic' => StringUtil::decodeHTML($row['title']),
 				'time' => $row['created'],
@@ -226,14 +235,16 @@ class XoborExporter extends AbstractExporter {
 				'username' => StringUtil::decodeHTML($row['name']),
 				'views' => $row['hits'],
 				'isSticky' => $row['header'] ? 1 : 0
-			);
+			];
 			
-			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.thread')->import($row['id'], $data, array());
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.thread')->import($row['id'], $data, []);
 		}
 	}
 	
 	/**
 	 * Counts posts.
+	 * 
+	 * @return	integer
 	 */
 	public function countPosts() {
 		return $this->__getMaxID("forum_posts", 'id');
@@ -241,6 +252,9 @@ class XoborExporter extends AbstractExporter {
 	
 	/**
 	 * Exports posts.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
 	 */
 	public function exportPosts($offset, $limit) {
 		$sql = "SELECT		*
@@ -248,9 +262,9 @@ class XoborExporter extends AbstractExporter {
 			WHERE		id BETWEEN ? AND ?
 			ORDER BY	id";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(array($offset + 1, $offset + $limit));
+		$statement->execute([$offset + 1, $offset + $limit]);
 		while ($row = $statement->fetchArray()) {
-			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.post')->import($row['id'], array(
+			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.post')->import($row['id'], [
 				'threadID' => $row['thread'],
 				'userID' => $row['userid'],
 				'username' => StringUtil::decodeHTML($row['username']),
@@ -261,17 +275,17 @@ class XoborExporter extends AbstractExporter {
 				'enableHtml' => 1,
 				'isClosed' => 1,
 				'ipAddress' => UserUtil::convertIPv4To6($row['useraddr'])
-			));
+			]);
 		}
 	}
 	
 	private static function fixMessage($string) {
-		$string = strtr($string, array(
+		$string = strtr($string, [
 			'[center]' => '[align=center]',
 			'[/center]' => '[/align]',
 			'[big]' => '[size=18]',
 			'[/big]' => '[/size]'
-		));
+		]);
 		
 		return StringUtil::decodeHTML($string);
 	}
