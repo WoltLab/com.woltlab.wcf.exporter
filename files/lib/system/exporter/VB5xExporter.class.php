@@ -18,7 +18,7 @@ use wcf\util\UserUtil;
  * Exporter for vBulletin 5.x
  * 
  * @author	Tim Duesterhus
- * @copyright	2001-2018 WoltLab GmbH
+ * @copyright	2001-2019 WoltLab GmbH
  * @license	GNU Lesser General Public License <http://opensource.org/licenses/lgpl-license.php>
  * @package	com.woltlab.wcf.exporter
  * @subpackage	system.exporter
