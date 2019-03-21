@@ -65,6 +65,13 @@ class WBB4xExporter extends AbstractExporter {
 		'com.woltlab.wbb.acl' => 'ACLs',
 		'com.woltlab.wcf.smiley.category' => 'SmileyCategories',
 		'com.woltlab.wcf.smiley' => 'Smilies',
+		'com.woltlab.wcf.page' => 'Pages',
+		'com.woltlab.wcf.media' => 'Media',
+		
+		'com.woltlab.wcf.article.category' => 'ArticleCategories',
+		'com.woltlab.wcf.article' => 'Articles',
+		'com.woltlab.wcf.article.comment' => 'ArticleComments',
+		'com.woltlab.wcf.article.comment.response' => 'ArticleCommentResponses',
 		
 		'com.woltlab.blog.blog' => 'Blogs',
 		'com.woltlab.blog.category' => 'BlogCategories',
@@ -118,6 +125,22 @@ class WBB4xExporter extends AbstractExporter {
 		'com.woltlab.filebase.file.attachment' => 100,
 		'com.woltlab.filebase.file.version.attachment' => 100,
 	];
+	
+	/**
+	 * @var string[]
+	 */
+	protected $requiresFileAccess = [
+		'com.woltlab.wcf.user.avatar',
+		'com.woltlab.wbb.attachment',
+		'com.woltlab.wcf.conversation.attachment',
+		'com.woltlab.wcf.smiley',
+		'com.woltlab.wcf.media',
+		'com.woltlab.blog.entry.attachment',
+		'com.woltlab.gallery.image',
+		'com.woltlab.calendar.event.attachment',
+		'com.woltlab.filebase.file',
+		'com.woltlab.filebase.file.attachment'
+	]; 
 	
 	/**
 	 * @inheritDoc
@@ -181,7 +204,13 @@ class WBB4xExporter extends AbstractExporter {
 				'com.woltlab.filebase.file.comment',
 				'com.woltlab.filebase.file.like'
 			],
+			'com.woltlab.wcf.article' => [
+				'com.woltlab.wcf.article.category',
+				'com.woltlab.wcf.article.comment'
+			],
 			'com.woltlab.wcf.smiley' => [],
+			'com.woltlab.wcf.page' => [],
+			'com.woltlab.wcf.media' => [],
 		];
 		
 		$gallery = PackageCache::getInstance()->getPackageByIdentifier('com.woltlab.gallery');
@@ -213,8 +242,11 @@ class WBB4xExporter extends AbstractExporter {
 	 * @inheritDoc
 	 */
 	public function validateFileAccess() {
-		if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData) || in_array('com.woltlab.wbb.attachment', $this->selectedData) || in_array('com.woltlab.wcf.conversation.attachment', $this->selectedData) || in_array('com.woltlab.wcf.smiley', $this->selectedData)) {
-			if (empty($this->fileSystemPath) || (!@file_exists($this->fileSystemPath . 'lib/core.functions.php') && !@file_exists($this->fileSystemPath . 'wcf/lib/core.functions.php'))) return false;
+		foreach ($this->requiresFileAccess as $item) {
+			if (in_array($item, $this->selectedData)) {
+				if (empty($this->fileSystemPath) || (!@file_exists($this->fileSystemPath . 'lib/core.functions.php') && !@file_exists($this->fileSystemPath . 'wcf/lib/core.functions.php'))) return false;
+				break;
+			}
 		}
 		
 		return true;
@@ -348,6 +380,25 @@ class WBB4xExporter extends AbstractExporter {
 				if (in_array('com.woltlab.filebase.file.like', $this->selectedData)) {
 					$queue[] = 'com.woltlab.filebase.file.like';
 					$queue[] = 'com.woltlab.filebase.file.version.like';
+				}
+			}
+		}
+		
+		// cms page
+		if (version_compare($this->getPackageVersion('com.woltlab.wcf'), '3.0.0 Alpha 1', '>=')) {
+			if (in_array('com.woltlab.wcf.page', $this->selectedData)) {
+				$queue[] = 'com.woltlab.wcf.page';
+			}
+			if (in_array('com.woltlab.wcf.media', $this->selectedData)) {
+				$queue[] = 'com.woltlab.wcf.media';
+			}
+			
+			if (in_array('com.woltlab.wcf.article', $this->selectedData)) {
+				if (in_array('com.woltlab.wcf.article.category', $this->selectedData)) $queue[] = 'com.woltlab.wcf.article.category';
+				$queue[] = 'com.woltlab.wcf.article';
+				if (in_array('com.woltlab.wcf.article.comment', $this->selectedData)) {
+					$queue[] = 'com.woltlab.wcf.article.comment';
+					$queue[] = 'com.woltlab.wcf.article.comment.response';
 				}
 			}
 		}
@@ -2578,6 +2629,303 @@ class WBB4xExporter extends AbstractExporter {
 	}
 	
 	/**
+	 * Counts pages.
+	 */
+	public function countPages() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	wcf".$this->dbNo."_page
+			WHERE   pageType IN (?, ?, ?)
+				AND originIsSystem = ?";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(['text', 'html', 'tpl', 0]);
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports pages.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportPages($offset, $limit) {
+		// get page ids
+		$pageIDs = [];
+		$sql = "SELECT		pageID
+			FROM	        wcf".$this->dbNo."_page
+			WHERE           pageType IN (?, ?, ?)
+					AND originIsSystem = ?
+			ORDER BY	pageID";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute(['text', 'html', 'tpl', 0]);
+		while ($pageID = $statement->fetchColumn()) {
+			$pageIDs[] = $pageID;
+		}
+		if (empty($pageIDs)) return;
+		
+		// get page contents
+		$contents = [];
+		$conditionBuilder = new PreparedStatementConditionBuilder();
+		$conditionBuilder->add('page_content.pageID IN (?)', [$pageIDs]);
+		$sql = "SELECT		page_content.*,
+					(SELECT languageCode FROM wcf".WCF_N."_language WHERE languageID = page_content.languageID) AS languageCode
+			FROM	        wcf".$this->dbNo."_page_content page_content
+			".$conditionBuilder;
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute($conditionBuilder->getParameters());
+		while ($row = $statement->fetchArray()) {
+			if (!isset($contents[$row['pageID']])) $contents[$row['pageID']] = [];
+			$contents[$row['pageID']][$row['languageCode'] ?: 0] = [
+				'title' => $row['title'],
+				'content' => $row['content'],
+				'metaDescription' => $row['metaDescription'],
+				'metaKeywords' => $row['metaKeywords'],
+				'customURL' => $row['customURL'],
+				'hasEmbeddedObjects' => $row['hasEmbeddedObjects']
+			];
+		}
+		
+		$conditionBuilder = new PreparedStatementConditionBuilder();
+		$conditionBuilder->add('pageID IN (?)', [$pageIDs]);
+		$sql = "SELECT		*
+			FROM	        wcf".$this->dbNo."_page
+			".$conditionBuilder."
+			ORDER BY	pageID";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute($conditionBuilder->getParameters());
+		while ($row = $statement->fetchArray()) {
+			if (!isset($contents[$row['pageID']])) continue;
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.page')->import($row['pageID'], [
+				'identifier' => $row['identifier'],
+				'name' => $row['name'],
+				'pageType' => $row['pageType'],
+				'isDisabled' => $row['isDisabled'],
+				'lastUpdateTime' => $row['lastUpdateTime'],
+				'cssClassName' => (isset($row['cssClassName']) ? $row['cssClassName'] : ''),
+				'availableDuringOfflineMode' => (isset($row['availableDuringOfflineMode']) ? $row['availableDuringOfflineMode'] : 0),
+				'allowSpidersToIndex' => (isset($row['allowSpidersToIndex']) ? $row['allowSpidersToIndex'] : 1)
+			], [
+				'contents' => $contents[$row['pageID']]
+			]);
+		}
+	}
+	
+	/**
+	 * Counts media.
+	 */
+	public function countMedia() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	wcf".$this->dbNo."_media";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports media.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportMedia($offset, $limit) {
+		// get media ids
+		$mediaIDs = [];
+		$sql = "SELECT		mediaID
+			FROM	        wcf".$this->dbNo."_media
+			ORDER BY	mediaID";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($mediaID = $statement->fetchColumn()) {
+			$mediaIDs[] = $mediaID;
+		}
+		if (empty($mediaIDs)) return;
+		
+		// get media contents
+		$contents = [];
+		$conditionBuilder = new PreparedStatementConditionBuilder();
+		$conditionBuilder->add('media_content.mediaID IN (?)', [$mediaIDs]);
+		$sql = "SELECT		media_content.*,
+					(SELECT languageCode FROM wcf".WCF_N."_language WHERE languageID = media_content.languageID) AS languageCode
+			FROM	        wcf".$this->dbNo."_media_content media_content
+			".$conditionBuilder;
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute($conditionBuilder->getParameters());
+		while ($row = $statement->fetchArray()) {
+			if (!isset($contents[$row['mediaID']])) $contents[$row['mediaID']] = [];
+			$contents[$row['mediaID']][$row['languageCode'] ?: 0] = [
+				'title' => $row['title'],
+				'caption' => $row['caption'],
+				'altText' => $row['altText']
+			];
+		}
+		
+		$conditionBuilder = new PreparedStatementConditionBuilder();
+		$conditionBuilder->add('media.mediaID IN (?)', [$mediaIDs]);
+		$sql = "SELECT		media.*,
+					(SELECT languageCode FROM wcf".WCF_N."_language WHERE languageID = media.languageID) AS languageCode
+			FROM	        wcf".$this->dbNo."_media media
+			".$conditionBuilder."
+			ORDER BY	media.mediaID";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute($conditionBuilder->getParameters());
+		while ($row = $statement->fetchArray()) {
+			$additionalData = [
+				'fileLocation' => $this->fileSystemPath . 'media_files/' . substr($row['fileHash'], 0, 2) . '/' . $row['mediaID'] . '-' . $row['fileHash'],
+				'languageCode' => $row['languageCode']
+			];
+			if (isset($contents[$row['mediaID']])) {
+				$additionalData['contents'] = $contents[$row['mediaID']];
+			}
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.media')->import($row['mediaID'], [
+				'filename' => $row['filename'],
+				'filesize' => $row['filesize'],
+				'fileType' => $row['fileType'],
+				'fileHash' => $row['fileHash'],
+				'uploadTime' => $row['uploadTime'],
+				'userID' => $row['userID'],
+				'username' => $row['username'],
+				'isImage' => $row['isImage'],
+				'width' => $row['width'],
+				'height' => $row['height']
+			], $additionalData);
+		}
+	}
+	
+	/**
+	 * Counts article categories.
+	 */
+	public function countArticleCategories() {
+		return $this->countCategories('com.woltlab.wcf.article.category');
+	}
+	
+	/**
+	 * Exports article categories.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportArticleCategories($offset, $limit) {
+		$this->exportCategories('com.woltlab.wcf.article.category', 'com.woltlab.wcf.article.category', $offset, $limit);
+	}
+	
+	/**
+	 * Counts articles.
+	 */
+	public function countArticles() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	wcf".$this->dbNo."_article";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports articles.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportArticles($offset, $limit) {
+		// get article ids
+		$articleIDs = [];
+		$sql = "SELECT		articleID
+			FROM	        wcf".$this->dbNo."_article
+			ORDER BY	articleID";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($articleID = $statement->fetchColumn()) {
+			$articleIDs[] = $articleID;
+		}
+		if (empty($articleIDs)) return;
+		
+		// get article contents
+		$contents = [];
+		$conditionBuilder = new PreparedStatementConditionBuilder();
+		$conditionBuilder->add('article_content.articleID IN (?)', [$articleIDs]);
+		$sql = "SELECT		article_content.*,
+					(SELECT languageCode FROM wcf".WCF_N."_language WHERE languageID = article_content.languageID) AS languageCode
+			FROM	        wcf".$this->dbNo."_article_content article_content
+			".$conditionBuilder;
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute($conditionBuilder->getParameters());
+		while ($row = $statement->fetchArray()) {
+			if (!isset($contents[$row['articleID']])) $contents[$row['articleID']] = [];
+			$contents[$row['articleID']][$row['languageCode'] ?: 0] = [
+				'title' => $row['title'],
+				'teaser' => $row['teaser'],
+				'content' => $row['content'],
+				'imageID' => $row['imageID'],
+				'teaserImageID' => (isset($row['teaserImageID']) ? $row['teaserImageID'] : null),
+				'hasEmbeddedObjects' => $row['hasEmbeddedObjects']
+			];
+		}
+		
+		$conditionBuilder = new PreparedStatementConditionBuilder();
+		$conditionBuilder->add('articleID IN (?)', [$articleIDs]);
+		$sql = "SELECT		*
+			FROM	        wcf".$this->dbNo."_article
+			".$conditionBuilder."
+			ORDER BY	articleID";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute($conditionBuilder->getParameters());
+		while ($row = $statement->fetchArray()) {
+			if (!isset($contents[$row['articleID']])) continue;
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.article')->import($row['articleID'], [
+				'userID' => $row['userID'],
+				'username' => $row['username'],
+				'time' => $row['time'],
+				'categoryID' => $row['categoryID'],
+				'publicationStatus' => $row['publicationStatus'],
+				'publicationDate' => $row['publicationDate'],
+				'enableComments' => $row['enableComments'],
+				'views' => $row['views'],
+				'isDeleted' => (isset($row['isDeleted']) ? $row['isDeleted'] : 0)
+			], [
+				'contents' => $contents[$row['articleID']]
+			]);
+		}
+	}
+	
+	/**
+	 * Counts article comments.
+	 */
+	public function countArticleComments() {
+		return $this->countComments('com.woltlab.wcf.article.comment');
+	}
+	
+	/**
+	 * Exports article comments.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportArticleComments($offset, $limit) {
+		$this->exportComments('com.woltlab.wcf.article.comment', 'com.woltlab.wcf.article.comment', $offset, $limit);
+	}
+	
+	/**
+	 * Counts article comment responses.
+	 */
+	public function countArticleCommentResponses() {
+		return $this->countCommentResponses('com.woltlab.wcf.article.comment');
+	}
+	
+	/**
+	 * Exports article comment responses.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportArticleCommentResponses($offset, $limit) {
+		$this->exportCommentResponses('com.woltlab.wcf.article.comment', 'com.woltlab.wcf.article.comment.response', $offset, $limit);
+	}
+	
+	/**
 	 * Counts comments.
 	 *
 	 * @param	integer		$objectType
@@ -2625,6 +2973,7 @@ class WBB4xExporter extends AbstractExporter {
 	 * Counts comment responses.
 	 *
 	 * @param	string		$objectType
+	 * @return      integer
 	 */
 	private function countCommentResponses($objectType) {
 		$sql = "SELECT	COUNT(*) AS count
@@ -2668,6 +3017,7 @@ class WBB4xExporter extends AbstractExporter {
 	 * Counts likes.
 	 *
 	 * @param	string		$objectType
+	 * @return      integer
 	 */
 	private function countLikes($objectType) {
 		$sql = "SELECT	COUNT(*) AS count
