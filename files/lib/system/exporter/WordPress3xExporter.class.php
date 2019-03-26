@@ -38,7 +38,8 @@ class WordPress3xExporter extends AbstractExporter {
 		'com.woltlab.wcf.article.category' => 'BlogCategories',
 		'com.woltlab.wcf.article' => 'BlogEntries',
 		'com.woltlab.wcf.article.comment' => 'BlogComments',
-		'com.woltlab.wcf.media' => 'BlogAttachments'
+		'com.woltlab.wcf.media' => 'Media',
+		'com.woltlab.wcf.page' => 'Pages'
 	];
 	
 	/**
@@ -49,9 +50,10 @@ class WordPress3xExporter extends AbstractExporter {
 			'com.woltlab.wcf.user' => [],
 			'com.woltlab.wcf.article' => [
 				'com.woltlab.wcf.article.category',
-				'com.woltlab.wcf.article.comment',
-				'com.woltlab.wcf.media'
-			]
+				'com.woltlab.wcf.article.comment'
+			],
+			'com.woltlab.wcf.media' => [],
+			'com.woltlab.wcf.page' => []
 		];
 	}
 	
@@ -66,12 +68,21 @@ class WordPress3xExporter extends AbstractExporter {
 			$queue[] = 'com.woltlab.wcf.user';
 		}
 		
+		// media
+		if (in_array('com.woltlab.wcf.media', $this->selectedData)) {
+			$queue[] = 'com.woltlab.wcf.media';
+		}
+		
 		// article
 		if (in_array('com.woltlab.wcf.article', $this->selectedData)) {
-			if (in_array('com.woltlab.wcf.media', $this->selectedData)) $queue[] = 'com.woltlab.wcf.media';
 			if (in_array('com.woltlab.wcf.article.category', $this->selectedData)) $queue[] = 'com.woltlab.wcf.article.category';
 			$queue[] = 'com.woltlab.wcf.article';
 			if (in_array('com.woltlab.wcf.article.comment', $this->selectedData)) $queue[] = 'com.woltlab.wcf.article.comment';
+		}
+		
+		// pages
+		if (in_array('com.woltlab.wcf.page', $this->selectedData)) {
+			$queue[] = 'com.woltlab.wcf.page';
 		}
 		
 		return $queue;
@@ -213,9 +224,10 @@ class WordPress3xExporter extends AbstractExporter {
 	public function countBlogEntries() {
 		$sql = "SELECT	COUNT(*) AS count
 			FROM	" . $this->databasePrefix . "posts
-			WHERE	post_type = ?";
+			WHERE	post_type = ?
+				AND post_status IN (?, ?, ?, ?, ?)";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(['post']);
+		$statement->execute(['post', 'publish', 'pending', 'draft', 'future', 'private']);
 		$row = $statement->fetchArray();
 		return $row['count'];
 	}
@@ -343,7 +355,7 @@ class WordPress3xExporter extends AbstractExporter {
 		
 		$sql = "SELECT		*
 			FROM		" . $this->databasePrefix . "comments
-			WHERE	comment_approved = ?
+			WHERE	        comment_approved = ?
 			ORDER BY	comment_parent, comment_ID";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute([1]);
@@ -381,31 +393,31 @@ class WordPress3xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * Counts blog attachments.
+	 * Counts media.
 	 */
-	public function countBlogAttachments() {
+	public function countMedia() {
 		$sql = "SELECT		COUNT(*) AS count
 			FROM		" . $this->databasePrefix . "posts
 			WHERE		post_type = ?
 					AND post_parent IN (
 						SELECT	ID
 						FROM	" . $this->databasePrefix . "posts
-						WHERE	post_type = ?
+						WHERE	post_type IN (?, ?)
 							AND post_status IN (?, ?, ?, ?, ?, ?)
 					)";
 		$statement = $this->database->prepareStatement($sql);
-		$statement->execute(['attachment', 'post', 'publish', 'pending', 'draft', 'future', 'private', 'trash']);
+		$statement->execute(['attachment', 'page', 'post', 'publish', 'pending', 'draft', 'future', 'private', 'trash']);
 		$row = $statement->fetchArray();
 		return $row['count'];
 	}
 	
 	/**
-	 * Exports blog attachments.
+	 * Exports media.
 	 *
 	 * @param	integer		$offset
 	 * @param	integer		$limit
 	 */
-	public function exportBlogAttachments($offset, $limit) {
+	public function exportMedia($offset, $limit) {
 		$sql = "SELECT		posts.*, postmeta.*
 			FROM		" . $this->databasePrefix . "posts posts
 			LEFT JOIN	" . $this->databasePrefix . "postmeta postmeta
@@ -414,12 +426,12 @@ class WordPress3xExporter extends AbstractExporter {
 					AND post_parent IN (
 						SELECT	ID
 						FROM	" . $this->databasePrefix . "posts
-						WHERE	post_type = ?
-							AND post_status IN (?, ?, ?, ?, ?, ?)
+						WHERE	post_type IN (?, ?)
+							AND post_status IN (?, ?, ?, ?, ?, ?, ?)
 					)
 			ORDER BY	ID";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute(['_wp_attached_file', 'attachment', 'post', 'publish', 'pending', 'draft', 'future', 'private', 'trash']);
+		$statement->execute(['_wp_attached_file', 'attachment', 'page', 'post', 'publish', 'pending', 'draft', 'future', 'private', 'trash']);
 		while ($row = $statement->fetchArray()) {
 			$fileLocation = $this->fileSystemPath . 'wp-content/uploads/' . $row['meta_value'];
 			if (!file_exists($fileLocation)) continue;
@@ -447,6 +459,59 @@ class WordPress3xExporter extends AbstractExporter {
 				'width' => $width,
 				'height' => $height
 			], ['fileLocation' => $fileLocation, 'contents' => []]);
+		}
+	}
+	
+	
+	/**
+	 * Counts pages.
+	 */
+	public function countPages() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	" . $this->databasePrefix . "posts
+			WHERE	post_type = ?
+				AND post_status IN (?, ?, ?, ?, ?)";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(['page', 'publish', 'pending', 'draft', 'future', 'private']);
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports blog entries.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportPages($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		" . $this->databasePrefix . "posts
+			WHERE		post_type = ?
+					AND post_status IN (?, ?, ?, ?, ?)
+			ORDER BY	ID";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute(['page', 'publish', 'pending', 'draft', 'future', 'private']);
+		while ($row = $statement->fetchArray()) {
+			$time = @strtotime($row['post_date_gmt']);
+			if (!$time) $time = @strtotime($row['post_date']);
+			if ($time < 0) $time = TIME_NOW;
+			
+			$additionalData = [
+				'contents' => [
+					0 => [
+						'title' => $row['post_title'],
+						'content' => self::fixMessage($row['post_content']),
+						'customURL' => $row['post_name']
+					]
+				]
+			];
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.page')->import($row['ID'], [
+				'name' => $row['post_title'],
+				'pageType' => 'text',
+				'isDisabled' => ($row['post_status'] == 'publish' ? 1 : 0),
+				'lastUpdateTime' => $time,
+			], $additionalData);
 		}
 	}
 	
