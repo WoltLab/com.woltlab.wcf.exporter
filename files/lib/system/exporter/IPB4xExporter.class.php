@@ -969,6 +969,8 @@ class IPB4xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute([$type]);
 		while ($row = $statement->fetchArray()) {
+			if (!$row['attach_id']) continue; // skip orphaned attachments
+			
 			$fileLocation = $this->fileSystemPath.'uploads/'.$row['attach_location'];
 			
 			ImportHandler::getInstance()->getImporter($objectType)->import($row['attach_id'], [
