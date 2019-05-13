@@ -55,7 +55,6 @@ class SMF2xExporter extends AbstractExporter {
 		'com.woltlab.wcf.conversation' => 'Conversations',
 		'com.woltlab.wcf.conversation.message' => 'ConversationMessages',
 		'com.woltlab.wcf.conversation.user' => 'ConversationUsers',
-		'com.woltlab.wcf.conversation.attachment' => 'ConversationAttachments',
 		'com.woltlab.wbb.board' => 'Boards',
 		'com.woltlab.wbb.thread' => 'Threads',
 		'com.woltlab.wbb.post' => 'Posts',
