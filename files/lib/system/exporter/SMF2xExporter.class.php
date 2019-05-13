@@ -942,6 +942,10 @@ class SMF2xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute([0, 0]);
 		while ($row = $statement->fetchArray()) {
+			if (substr($row['filename'], -6) == '_thumb') {
+				continue; // ignore thumbnails
+			}
+			
 			$fileLocation = $this->getAttachmentFilename($row['id_attach'], $row['id_folder'], $row['file_hash']);
 			
 			if ($imageSize = @getimagesize($fileLocation)) {
