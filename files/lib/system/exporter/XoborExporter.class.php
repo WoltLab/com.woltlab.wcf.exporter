@@ -3,6 +3,7 @@ namespace wcf\system\exporter;
 use wbb\data\board\Board;
 use wcf\data\user\UserProfile;
 use wcf\system\importer\ImportHandler;
+use wcf\util\FileUtil;
 use wcf\util\StringUtil;
 use wcf\util\UserUtil;
 
@@ -30,7 +31,8 @@ class XoborExporter extends AbstractExporter {
 		'com.woltlab.wcf.user' => 'Users',
 		'com.woltlab.wbb.board' => 'Boards',
 		'com.woltlab.wbb.thread' => 'Threads',
-		'com.woltlab.wbb.post' => 'Posts'
+		'com.woltlab.wbb.post' => 'Posts',
+		'com.woltlab.wbb.attachment' => 'PostAttachments',
 	];
 
 	/**
@@ -48,7 +50,9 @@ class XoborExporter extends AbstractExporter {
 	public function getSupportedData() {
 		return [
 			'com.woltlab.wcf.user' => [],
-			'com.woltlab.wbb.board' => [],
+			'com.woltlab.wbb.board' => [
+				'com.woltlab.wbb.attachment',
+			],
 		];
 	}
 
@@ -86,6 +90,7 @@ class XoborExporter extends AbstractExporter {
 			$queue[] = 'com.woltlab.wbb.board';
 			$queue[] = 'com.woltlab.wbb.thread';
 			$queue[] = 'com.woltlab.wbb.post';
+			if (in_array('com.woltlab.wbb.attachment', $this->selectedData)) $queue[] = 'com.woltlab.wbb.attachment';
 		}
 		
 		return $queue;
@@ -276,6 +281,71 @@ class XoborExporter extends AbstractExporter {
 				'isClosed' => 1,
 				'ipAddress' => UserUtil::convertIPv4To6($row['useraddr'])
 			]);
+		}
+	}
+	
+	/**
+	 * Counts post attachments.
+	 */
+	public function countPostAttachments() {
+		return $this->__getMaxID('forum_posts', 'id');
+	}
+	
+	/**
+	 * Exports post attachments.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportPostAttachments($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		forum_posts
+			WHERE		id BETWEEN ? AND ?
+				AND	files <> ?
+				AND	files <> ?
+			ORDER BY	id";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute([$offset + 1, $offset + $limit, '', serialize([])]);
+		
+		while ($row = $statement->fetchArray()) {
+			$files = @unserialize($row['files']);
+			$convert = false;
+			if (!$files) {
+				$files = @unserialize(mb_convert_encoding($row['files'], 'ISO-8859-1', 'UTF-8'));
+				$convert = true;
+			}
+			if (!$files) continue;
+			
+			$i = 0;
+			foreach ($files as $file) {
+				if (!isset($file['filelink'])) continue;
+				$fileLocation = FileUtil::addTrailingSlash($this->fileSystemPath).$file['filelink'];
+				if (!file_exists($fileLocation)) continue;
+				
+				if ($imageSize = @getimagesize($fileLocation)) {
+					$row['isImage'] = 1;
+					$row['width'] = $imageSize[0];
+					$row['height'] = $imageSize[1];
+				}
+				else {
+					$row['isImage'] = $row['width'] = $row['height'] = 0;
+				}
+				
+				$filename = $file['filename'] ?? $row['filelink'];
+				if ($convert) $filename = mb_convert_encoding($filename, 'UTF-8', 'ISO-8859-1');
+				ImportHandler::getInstance()->getImporter('com.woltlab.wbb.attachment')->import($row['id'].'-'.$file['filelink'], [
+					'objectID' => $row['id'],
+					'userID' => $row['userid'] ?: null,
+					'filename' => $filename,
+					'filesize' => filesize($fileLocation),
+					'fileType' => FileUtil::getMimeType($fileLocation),
+					'isImage' => $row['isImage'],
+					'width' => $row['width'],
+					'height' => $row['height'],
+					'downloads' => 0,
+					'uploadTime' => strtotime($row['writetime'])
+				], ['fileLocation' => $fileLocation]);
+			}
 		}
 	}
 	
