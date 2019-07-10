@@ -309,6 +309,9 @@ class VB5xExporter extends AbstractExporter {
 				else if ($row['scheme'] == 'legacy') {
 					$password = 'vb5:'.implode(':', explode(' ', $row['token'], 2));
 				}
+				else {
+					continue;
+				}
 				
 				$passwordUpdateStatement->execute([$password, $newUserID]);
 			}

@@ -55,7 +55,6 @@ class SMF2xExporter extends AbstractExporter {
 		'com.woltlab.wcf.conversation' => 'Conversations',
 		'com.woltlab.wcf.conversation.message' => 'ConversationMessages',
 		'com.woltlab.wcf.conversation.user' => 'ConversationUsers',
-		'com.woltlab.wcf.conversation.attachment' => 'ConversationAttachments',
 		'com.woltlab.wbb.board' => 'Boards',
 		'com.woltlab.wbb.thread' => 'Threads',
 		'com.woltlab.wbb.post' => 'Posts',
@@ -943,6 +942,10 @@ class SMF2xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute([0, 0]);
 		while ($row = $statement->fetchArray()) {
+			if (substr($row['filename'], -6) == '_thumb') {
+				continue; // ignore thumbnails
+			}
+			
 			$fileLocation = $this->getAttachmentFilename($row['id_attach'], $row['id_folder'], $row['file_hash']);
 			
 			if ($imageSize = @getimagesize($fileLocation)) {
