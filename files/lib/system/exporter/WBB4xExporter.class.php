@@ -66,6 +66,7 @@ class WBB4xExporter extends AbstractExporter {
 		'com.woltlab.wcf.smiley.category' => 'SmileyCategories',
 		'com.woltlab.wcf.smiley' => 'Smilies',
 		'com.woltlab.wcf.page' => 'Pages',
+		'com.woltlab.wcf.media.category' => 'MediaCategories',
 		'com.woltlab.wcf.media' => 'Media',
 		
 		'com.woltlab.wcf.article.category' => 'ArticleCategories',
@@ -97,7 +98,7 @@ class WBB4xExporter extends AbstractExporter {
 		'com.woltlab.calendar.event.date.comment.response' => 'CalendarEventDateCommentResponses',
 		'com.woltlab.calendar.event.date.participation' => 'CalendarEventDateParticipation',
 		'com.woltlab.calendar.event.like' => 'CalendarEventLikes',
-				
+		
 		'com.woltlab.filebase.category' => 'FilebaseCategories',
 		'com.woltlab.filebase.file' => 'FilebaseFiles',
 		'com.woltlab.filebase.file.version' => 'FilebaseFileVersions',
@@ -210,7 +211,9 @@ class WBB4xExporter extends AbstractExporter {
 			],
 			'com.woltlab.wcf.smiley' => [],
 			'com.woltlab.wcf.page' => [],
-			'com.woltlab.wcf.media' => [],
+			'com.woltlab.wcf.media' => [
+				'com.woltlab.wcf.media.category'
+			],
 		];
 		
 		$gallery = PackageCache::getInstance()->getPackageByIdentifier('com.woltlab.gallery');
@@ -384,12 +387,13 @@ class WBB4xExporter extends AbstractExporter {
 			}
 		}
 		
-		// cms page
+		// cms pages, media, and articles
 		if (version_compare($this->getPackageVersion('com.woltlab.wcf'), '3.0.0 Alpha 1', '>=')) {
 			if (in_array('com.woltlab.wcf.page', $this->selectedData)) {
 				$queue[] = 'com.woltlab.wcf.page';
 			}
 			if (in_array('com.woltlab.wcf.media', $this->selectedData)) {
+				if (in_array('com.woltlab.wcf.media.category', $this->selectedData)) $queue[] = 'com.woltlab.wcf.media.category';
 				$queue[] = 'com.woltlab.wcf.media';
 			}
 			
@@ -2712,6 +2716,25 @@ class WBB4xExporter extends AbstractExporter {
 	}
 	
 	/**
+	 * Retruns the number of article categories.
+	 * 
+	 * @return	int
+	 */
+	public function countMediaCategories() {
+		return $this->countCategories('com.woltlab.wcf.media.category');
+	}
+	
+	/**
+	 * Exports media categories.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportMediaCategories($offset, $limit) {
+		$this->exportCategories('com.woltlab.wcf.media.category', 'com.woltlab.wcf.media.category', $offset, $limit);
+	}
+	
+	/**
 	 * Counts media.
 	 */
 	public function countMedia() {
@@ -2780,6 +2803,7 @@ class WBB4xExporter extends AbstractExporter {
 			}
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.media')->import($row['mediaID'], [
+				'categoryID' => $row['categoryID'],
 				'filename' => $row['filename'],
 				'filesize' => $row['filesize'],
 				'fileType' => $row['fileType'],
