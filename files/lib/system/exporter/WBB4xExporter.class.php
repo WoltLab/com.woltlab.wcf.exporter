@@ -2668,7 +2668,7 @@ class WBB4xExporter extends AbstractExporter {
 		$conditionBuilder = new PreparedStatementConditionBuilder();
 		$conditionBuilder->add('page_content.pageID IN (?)', [$pageIDs]);
 		$sql = "SELECT		page_content.*,
-					(SELECT languageCode FROM wcf".WCF_N."_language WHERE languageID = page_content.languageID) AS languageCode
+					(SELECT languageCode FROM wcf".$this->dbNo."_language WHERE languageID = page_content.languageID) AS languageCode
 			FROM	        wcf".$this->dbNo."_page_content page_content
 			".$conditionBuilder;
 		$statement = $this->database->prepareStatement($sql);
@@ -2747,7 +2747,7 @@ class WBB4xExporter extends AbstractExporter {
 		$conditionBuilder = new PreparedStatementConditionBuilder();
 		$conditionBuilder->add('media_content.mediaID IN (?)', [$mediaIDs]);
 		$sql = "SELECT		media_content.*,
-					(SELECT languageCode FROM wcf".WCF_N."_language WHERE languageID = media_content.languageID) AS languageCode
+					(SELECT languageCode FROM wcf".$this->dbNo."_language WHERE languageID = media_content.languageID) AS languageCode
 			FROM	        wcf".$this->dbNo."_media_content media_content
 			".$conditionBuilder;
 		$statement = $this->database->prepareStatement($sql);
@@ -2764,7 +2764,7 @@ class WBB4xExporter extends AbstractExporter {
 		$conditionBuilder = new PreparedStatementConditionBuilder();
 		$conditionBuilder->add('media.mediaID IN (?)', [$mediaIDs]);
 		$sql = "SELECT		media.*,
-					(SELECT languageCode FROM wcf".WCF_N."_language WHERE languageID = media.languageID) AS languageCode
+					(SELECT languageCode FROM wcf".$this->dbNo."_language WHERE languageID = media.languageID) AS languageCode
 			FROM	        wcf".$this->dbNo."_media media
 			".$conditionBuilder."
 			ORDER BY	media.mediaID";
@@ -2847,7 +2847,7 @@ class WBB4xExporter extends AbstractExporter {
 		$conditionBuilder = new PreparedStatementConditionBuilder();
 		$conditionBuilder->add('article_content.articleID IN (?)', [$articleIDs]);
 		$sql = "SELECT		article_content.*,
-					(SELECT languageCode FROM wcf".WCF_N."_language WHERE languageID = article_content.languageID) AS languageCode
+					(SELECT languageCode FROM wcf".$this->dbNo."_language WHERE languageID = article_content.languageID) AS languageCode
 			FROM	        wcf".$this->dbNo."_article_content article_content
 			".$conditionBuilder;
 		$statement = $this->database->prepareStatement($sql);
