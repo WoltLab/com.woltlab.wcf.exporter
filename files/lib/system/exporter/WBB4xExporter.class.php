@@ -1576,41 +1576,6 @@ class WBB4xExporter extends AbstractExporter {
 	 */
 	public function exportSmileyCategories($offset, $limit) {
 		$this->exportCategories('com.woltlab.wcf.bbcode.smiley', 'com.woltlab.wcf.smiley.category', $offset, $limit);
-		
-		$sql = "SELECT		*
-			FROM		wcf".$this->dbNo."_category
-			WHERE		objectTypeID = ?
-			ORDER BY	categoryID";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute([$this->getObjectTypeID('com.woltlab.wcf.category', 'com.woltlab.wcf.bbcode.smiley')]);
-		$categories = $i18nValues = [];
-		while ($row = $statement->fetchArray()) {
-			$categories[$row['categoryID']] = [
-				'title' => $row['title'],
-				'description' => $row['description'],
-				'parentCategoryID' => 0,
-				'showOrder' => $row['showOrder'],
-				'time' => $row['time'],
-				'isDisabled' => $row['isDisabled']
-			];
-			
-			if (strpos($row['title'], 'wcf.category') === 0) {
-				$i18nValues[] = $row['title'];
-			}
-			if (strpos($row['description'], 'wcf.category') === 0) {
-				$i18nValues[] = $row['description'];
-			}
-		}
-		
-		$i18nValues = $this->getI18nValues($i18nValues);
-		
-		foreach ($categories as $categoryID => $categoryData) {
-			$i18nData = [];
-			if (isset($i18nValues[$categoryData['title']])) $i18nData['title'] = $i18nValues[$categoryData['title']];
-			if (isset($i18nValues[$categoryData['description']])) $i18nData['description'] = $i18nValues[$categoryData['description']];
-			
-			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.smiley.category')->import($categoryID, $categoryData, ['i18n' => $i18nData]);
-		}
 	}
 	
 	/**
