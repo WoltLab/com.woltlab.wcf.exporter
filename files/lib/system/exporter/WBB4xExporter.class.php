@@ -2884,7 +2884,7 @@ class WBB4xExporter extends AbstractExporter {
 	 * Counts article comments.
 	 */
 	public function countArticleComments() {
-		return $this->countComments('com.woltlab.wcf.article.comment');
+		return $this->countComments('com.woltlab.wcf.articleComment');
 	}
 	
 	/**
@@ -2894,14 +2894,14 @@ class WBB4xExporter extends AbstractExporter {
 	 * @param	integer		$limit
 	 */
 	public function exportArticleComments($offset, $limit) {
-		$this->exportComments('com.woltlab.wcf.article.comment', 'com.woltlab.wcf.article.comment', $offset, $limit);
+		$this->exportComments('com.woltlab.wcf.articleComment', 'com.woltlab.wcf.article.comment', $offset, $limit);
 	}
 	
 	/**
 	 * Counts article comment responses.
 	 */
 	public function countArticleCommentResponses() {
-		return $this->countCommentResponses('com.woltlab.wcf.article.comment');
+		return $this->countCommentResponses('com.woltlab.wcf.articleComment');
 	}
 	
 	/**
@@ -2911,7 +2911,7 @@ class WBB4xExporter extends AbstractExporter {
 	 * @param	integer		$limit
 	 */
 	public function exportArticleCommentResponses($offset, $limit) {
-		$this->exportCommentResponses('com.woltlab.wcf.article.comment', 'com.woltlab.wcf.article.comment.response', $offset, $limit);
+		$this->exportCommentResponses('com.woltlab.wcf.articleComment', 'com.woltlab.wcf.article.comment.response', $offset, $limit);
 	}
 	
 	/**
