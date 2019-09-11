@@ -542,7 +542,7 @@ class SMF2xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			switch ($row['type']) {
 				case 'attachment':
-					$fileLocation = $this->getAttachmentFilename($row['id_attach'], $row['id_folder'], $row['file_hash']);
+					$fileLocation = $this->getAttachmentFilename($row['id_attach'], $row['id_folder'], $row['file_hash'], $row['filename']);
 				break;
 				case 'user':
 					if (FileUtil::isURL($row['filename'])) return;
@@ -946,7 +946,7 @@ class SMF2xExporter extends AbstractExporter {
 				continue; // ignore thumbnails
 			}
 			
-			$fileLocation = $this->getAttachmentFilename($row['id_attach'], $row['id_folder'], $row['file_hash']);
+			$fileLocation = $this->getAttachmentFilename($row['id_attach'], $row['id_folder'], $row['file_hash'], $row['filename']);
 			
 			if ($imageSize = @getimagesize($fileLocation)) {
 				$row['isImage'] = 1;
@@ -1437,7 +1437,7 @@ class SMF2xExporter extends AbstractExporter {
 		return $message;
 	}
 	
-	private function getAttachmentFilename($id, $dir, $hash) {
+	private function getAttachmentFilename($id, $dir, $hash, $filename) {
 		if (!empty($this->readOption('currentAttachmentUploadDir'))) {
 			// multiple attachments dir
 			static $dirs;
@@ -1456,6 +1456,24 @@ class SMF2xExporter extends AbstractExporter {
 			$path = $this->readOption('attachmentUploadDir');
 		}
 		
-		return $path . '/' . $id . '_' . $hash;
+		if ($hash) {
+			return $path . '/' . $id . '_' . $hash;
+		}
+		else {
+			// sanitize spaces
+			$filename = preg_replace('/\s/', '_', $filename);
+			// strip special characters
+			$filename = preg_replace('/[^\w_\.\-]/', '', $filename);
+			
+			$scrambled = $id . '_' . str_replace('.', '_', $filename) . md5($filename);
+			if (file_exists($path . '/' . $scrambled)) {
+				return $path . '/' . $scrambled;
+			}
+			
+			// collapsed consecutive dots
+			$filename = preg_replace('/\.{2,}/', '.', $filename);
+			
+			return $path . '/' . $filename;
+		}
 	}
 }
