@@ -15,7 +15,7 @@
 		<item name="wcf.acp.dataImport.exporter.com.woltlab.wcf.exporter.ipb3x"><![CDATA[IP.Board 3.4.x]]></item>
 		<item name="wcf.acp.dataImport.exporter.com.woltlab.wcf.exporter.ipb4x"><![CDATA[IP.Board 4.x]]></item>
 		<item name="wcf.acp.dataImport.exporter.com.woltlab.wcf.exporter.xf12x"><![CDATA[XenForo 1.2.x - 1.4.x]]></item>
-		<item name="wcf.acp.dataImport.exporter.com.woltlab.wcf.exporter.xf2x"><![CDATA[XenForo 2.x (experimental)]]></item>
+		<item name="wcf.acp.dataImport.exporter.com.woltlab.wcf.exporter.xf2x"><![CDATA[XenForo 2.0.x, 2.1.x]]></item>
 		<item name="wcf.acp.dataImport.exporter.com.woltlab.wcf.exporter.nodeBB0xRedis"><![CDATA[NodeBB 0.6+ (Redis, experimental)]]></item>
 	</category>
 </language>
