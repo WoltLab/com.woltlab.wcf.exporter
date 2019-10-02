@@ -1521,11 +1521,20 @@ class XF2xExporter extends AbstractExporter {
 	 * @param	string		$objectType
 	 */
 	private function countLikes($objectType) {
-		$sql = "SELECT	COUNT(*) AS count
-			FROM	xf_liked_content
-			WHERE	content_type = ?";
-		$statement = $this->database->prepareStatement($sql);
-		$statement->execute([$objectType]);
+		try {
+			$sql = "SELECT	COUNT(*) AS count
+				FROM	xf_reaction_content
+				WHERE	content_type = ?";
+			$statement = $this->database->prepareStatement($sql);
+			$statement->execute([$objectType]);
+		}
+		catch (SystemException $e) {
+			$sql = "SELECT	COUNT(*) AS count
+				FROM	xf_liked_content
+				WHERE	content_type = ?";
+			$statement = $this->database->prepareStatement($sql);
+			$statement->execute([$objectType]);
+		}
 		$row = $statement->fetchArray();
 		return $row['count'];
 	}
@@ -1539,19 +1548,40 @@ class XF2xExporter extends AbstractExporter {
 	 * @param	integer		$limit
 	 */
 	private function exportLikes($objectType, $importer, $offset, $limit) {
-		$sql = "SELECT		*
-			FROM		xf_liked_content
-			WHERE		content_type = ?
-			ORDER BY	like_id";
-		$statement = $this->database->prepareStatement($sql, $limit, $offset);
-		$statement->execute([$objectType]);
+		try {
+			$sql = "SELECT		rc.*, r.reaction_score
+				FROM		xf_reaction_content rc
+				INNER JOIN	xf_reaction r
+					ON	r.reaction_id = rc.reaction_id
+				WHERE		rc.content_type = ?
+				ORDER BY	rc.reaction_content_id";
+			$statement = $this->database->prepareStatement($sql, $limit, $offset);
+			$statement->execute([$objectType]);
+		}
+		catch (SystemException $e) {
+			$sql = "SELECT		*
+				FROM		xf_liked_content
+				WHERE		content_type = ?
+				ORDER BY	like_id";
+			$statement = $this->database->prepareStatement($sql, $limit, $offset);
+			$statement->execute([$objectType]);
+		}
 		while ($row = $statement->fetchArray()) {
+			if (!isset($row['reaction_user_id'])) {
+				$row['reaction_user_id'] = $row['like_user_id'];
+			}
+			if (!isset($row['reaction_date'])) {
+				$row['reaction_date'] = $row['like_date'];
+			}
+			if (!isset($row['reaction_score'])) {
+				$row['reaction_score'] = 1;
+			}
 			ImportHandler::getInstance()->getImporter($importer)->import(0, [
 				'objectID' => $row['content_id'],
 				'objectUserID' => $row['content_user_id'],
-				'userID' => $row['like_user_id'],
-				'likeValue' => Like::LIKE,
-				'time' => $row['like_date']
+				'userID' => $row['reaction_user_id'],
+				'likeValue' => $row['reaction_score'] >= 0 ? Like::LIKE : Like::DISLIKE,
+				'time' => $row['reaction_date']
 			]);
 		}
 	}
