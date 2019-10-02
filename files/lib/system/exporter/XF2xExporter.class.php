@@ -14,6 +14,7 @@ use wcf\system\request\LinkHandler;
 use wcf\system\Regex;
 use wcf\system\WCF;
 use wcf\util\FileUtil;
+use wcf\util\JSON;
 use wcf\util\MessageUtil;
 use wcf\util\PasswordUtil;
 use wcf\util\UserUtil;
@@ -302,7 +303,12 @@ class XF2xExporter extends AbstractExporter {
 				'birthday' => $row['dob_year'].'-'.$row['dob_month'].'-'.$row['dob_day']
 			];
 			
-			$customFields = unserialize($row['custom_fields']);
+			try {
+				$customFields = self::decodeJsonOrSerialized($row['custom_fields']);
+			}
+			catch (\Exception $e) {
+				$customFields = null;
+			}
 			
 			if ($customFields) {
 				foreach ($customFields as $key => $value) {
@@ -419,7 +425,12 @@ class XF2xExporter extends AbstractExporter {
 				
 			$selectOptions = [];
 			if ($row['field_choices']) {
-				$field_choices = @unserialize($row['field_choices']);
+				try {
+					$field_choices = self::decodeJsonOrSerialized($row['field_choices']);
+				}
+				catch (\Exception $e) {
+					$field_choices = null;
+				}
 				if (!$field_choices) continue;
 				foreach ($field_choices as $key => $value) {
 					$selectOptions[] = $key.':'.$value;
@@ -1744,5 +1755,20 @@ class XF2xExporter extends AbstractExporter {
 		}
 		
 		return $mentionRegex->replace($message, "\\1");
+	}
+	
+	/**
+	 * Decodes either JSON or deserializes.
+	 * 
+	 * @param	string		$jsonOrSerialized
+	 * @return	mixed
+	 */
+	private static function decodeJsonOrSerialized($jsonOrSerialized) {
+		if (strpos($jsonOrSerialized, '{') === 0 || strpos($jsonOrSerialized, '{') === 0) {
+			return JSON::decode($jsonOrSerialized);
+		}
+		else {
+			return unserialize($jsonOrSerialized);
+		}
 	}
 }
