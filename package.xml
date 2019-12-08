@@ -40,7 +40,7 @@
 	</instructions>
 	
 	<instructions type="update" fromversion="master">
-		<instruction type="file">files_update.tar</instruction>
+		<instruction type="file" run="standalone" />
 		
 		<instruction type="language" />
 		
