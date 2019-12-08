@@ -39,7 +39,7 @@
 		<instruction type="language" />
 	</instructions>
 	
-	<instructions type="update" fromversion="master">
+	<instructions type="update" fromversion="3.1.*">
 		<instruction type="file" run="standalone" />
 		
 		<instruction type="language" />
