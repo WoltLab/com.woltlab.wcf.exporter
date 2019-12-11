@@ -2,10 +2,11 @@
 <package name="com.woltlab.wcf.exporter" xmlns="http://www.woltlab.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.woltlab.com http://www.woltlab.com/XSD/2019/package.xsd">
 	<packageinformation>
 		<packagename>WoltLab Suite Core: Importer</packagename>
+		<packagename language="de">WoltLab Suite Core: Importer</packagename>
 		<packagedescription>Import data from other discussion board systems.</packagedescription>
 		<packagedescription language="de">Ermöglicht den Datenimport aus anderen Forensystemen.</packagedescription>
 		<version>5.2.0 RC 1</version>
-		<date>2019-10-06</date>
+		<date>2019-12-12</date>
 	</packageinformation>
 	
 	<authorinformation>
@@ -33,17 +34,16 @@
 		<instruction type="objectType" />
 	</instructions>
 	
-	<instructions type="update" fromversion="5.2.0 Beta 1">
-		<instruction type="file">files_update.tar</instruction>
-		
-		<instruction type="language" />
-	</instructions>
-	
 	<instructions type="update" fromversion="3.1.*">
 		<instruction type="file" run="standalone" />
 		
 		<instruction type="language" />
 		
 		<instruction type="objectType" />
+	</instructions>
+	
+	<instructions type="update" fromversion="5.2.0 Beta 2">
+		<!-- fake update -->
+		<instruction type="language" />
 	</instructions>
 </package>
