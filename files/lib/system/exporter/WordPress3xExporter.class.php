@@ -427,7 +427,7 @@ class WordPress3xExporter extends AbstractExporter {
 						SELECT	ID
 						FROM	" . $this->databasePrefix . "posts
 						WHERE	post_type IN (?, ?)
-							AND post_status IN (?, ?, ?, ?, ?, ?, ?)
+							AND post_status IN (?, ?, ?, ?, ?, ?)
 					)
 			ORDER BY	ID";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
