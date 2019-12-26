@@ -3080,6 +3080,11 @@ class WBB4xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			$fileLocation = $this->fileSystemPath . 'attachments/' . substr($row['fileHash'], 0, 2) . '/' . $row['attachmentID'] . '-' . $row['fileHash'];
 			
+			// WoltLab Suite 5.2 uses the `.bin` extension for attachments.
+			if (!is_readable($fileLocation) && is_readable("{$fileLocation}.bin")) {
+				$fileLocation .= '.bin';
+			}
+			
 			ImportHandler::getInstance()->getImporter($importer)->import($row['attachmentID'], [
 				'objectID' => $row['objectID'],
 				'userID' => $row['userID'] ?: null,
