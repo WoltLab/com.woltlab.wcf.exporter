@@ -5,6 +5,7 @@ use wbb\data\board\Board;
 use wcf\data\conversation\Conversation;
 use wcf\data\like\Like;
 use wcf\data\object\type\ObjectTypeCache;
+use wcf\data\package\PackageCache;
 use wcf\data\user\group\UserGroup;
 use wcf\data\user\option\UserOption;
 use wcf\system\database\util\PreparedStatementConditionBuilder;
@@ -73,6 +74,17 @@ class XF2xExporter extends AbstractExporter {
 		'com.woltlab.gallery.image' => 'GalleryImages',
 		'com.woltlab.gallery.image.comment' => 'GalleryComments',
 		'com.woltlab.gallery.image.like' => 'GalleryImageLikes',
+		
+		'com.woltlab.filebase.category' => 'FilebaseCategories',
+		'com.woltlab.filebase.file' => 'FilebaseFiles',
+		'com.woltlab.filebase.file.version' => 'FilebaseFileVersions',
+		'com.woltlab.filebase.file.comment' => 'FilebaseFileComments',
+		'com.woltlab.filebase.file.comment.response' => 'FilebaseFileCommentResponses',
+		'com.woltlab.filebase.file.like' => 'FilebaseFileLikes',
+		'com.woltlab.filebase.file.version.like' => 'FilebaseFileVersionLikes',
+		'com.woltlab.filebase.file.attachment' => 'FilebaseFileAttachments',
+		'com.woltlab.filebase.file.version.attachment' => 'FilebaseFileVersionAttachments',
+		'com.woltlab.filebase.file.version.review' => 'FilebaseFileVersionReviews',
 	];
 	
 	/**
@@ -82,7 +94,9 @@ class XF2xExporter extends AbstractExporter {
 		'com.woltlab.wcf.user' => 200,
 		'com.woltlab.wcf.user.avatar' => 100,
 		'com.woltlab.wcf.user.follower' => 100,
-		'com.woltlab.gallery.image' => 100
+		'com.woltlab.gallery.image' => 100,
+		'com.woltlab.filebase.file' => 100,
+		'com.woltlab.filebase.file.version' => 100,
 	];
 	
 	/**
@@ -115,6 +129,11 @@ class XF2xExporter extends AbstractExporter {
 				'com.woltlab.gallery.image.comment',
 				'com.woltlab.gallery.image.like'
 			],
+			'com.woltlab.filebase.file' => [
+				'com.woltlab.filebase.category',
+				'com.woltlab.filebase.file.attachment',
+				'com.woltlab.filebase.file.version.review',
+			],
 		];
 	}
 	
@@ -133,7 +152,7 @@ class XF2xExporter extends AbstractExporter {
 	 * @inheritDoc
 	 */
 	public function validateFileAccess() {
-		if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData) || in_array('com.woltlab.wbb.attachment', $this->selectedData) || in_array('com.woltlab.wcf.smiley', $this->selectedData) || in_array('com.woltlab.gallery.image', $this->selectedData)) {
+		if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData) || in_array('com.woltlab.wbb.attachment', $this->selectedData) || in_array('com.woltlab.wcf.smiley', $this->selectedData) || in_array('com.woltlab.gallery.image', $this->selectedData) || in_array('com.woltlab.filebase.file', $this->selectedData)) {
 			if (empty($this->fileSystemPath) || !@file_exists($this->fileSystemPath . 'src/XF.php')) return false;
 		}
 		
@@ -199,6 +218,19 @@ class XF2xExporter extends AbstractExporter {
 			$queue[] = 'com.woltlab.gallery.image';
 			if (in_array('com.woltlab.gallery.image.comment', $this->selectedData)) $queue[] = 'com.woltlab.gallery.image.comment';
 			if (in_array('com.woltlab.gallery.image.like', $this->selectedData)) $queue[] = 'com.woltlab.gallery.image.like';
+		}
+		
+		if (in_array('com.woltlab.filebase.file', $this->selectedData)) {
+			if (in_array('com.woltlab.filebase.category', $this->selectedData)) $queue[] = 'com.woltlab.filebase.category';
+			$queue[] = 'com.woltlab.filebase.file';
+			$queue[] = 'com.woltlab.filebase.file.version';
+			
+			if (in_array('com.woltlab.filebase.file.attachment', $this->selectedData)) {
+				$queue[] = 'com.woltlab.filebase.file.attachment';
+			}
+			if (in_array('com.woltlab.filebase.file.version.review', $this->selectedData)) {
+				$queue[] = 'com.woltlab.filebase.file.version.review';
+			}
 		}
 		
 		return $queue;
@@ -1425,6 +1457,271 @@ class XF2xExporter extends AbstractExporter {
 	}
 	
 	/**
+	 * Counts filebase categories.
+	 */
+	public function countFilebaseCategories() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	xf_rm_category";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports filebase categories.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportFilebaseCategories($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		xf_rm_category
+			ORDER BY	lft";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.filebase.category')->import($row['resource_category_id'], [
+				'title' => $row['title'],
+				'description' => $row['description'],
+				'parentCategoryID' => $row['parent_category_id'],
+				'showOrder' => $row['display_order']
+			]);
+		}
+	}
+	
+	/**
+	 * Counts filebase files.
+	 */
+	public function countFilebaseFiles() {
+		return $this->__getMaxID("xf_rm_resource", 'resource_id');
+	}
+	
+	/**
+	 * Exports filebase files.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportFilebaseFiles($offset, $limit) {
+		static $supportThreadInstalled = null;
+		if ($supportThreadInstalled === null) {
+			$supportThreadInstalled = PackageCache::getInstance()->getPackageByIdentifier('com.woltlab.filebase.supportThread') !== null;
+		}
+		// get file ids
+		$sql = "SELECT		resource_id
+			FROM		xf_rm_resource
+			WHERE		resource_id BETWEEN ? AND ?
+			ORDER BY	resource_id";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute([$offset + 1, $offset + $limit]);
+		$fileIDs = $statement->fetchAll(\PDO::FETCH_COLUMN);
+		
+		if (empty($fileIDs)) return;
+		
+		$tags = $this->getTags('resource', $fileIDs);
+		
+		// get files
+		$conditionBuilder = new PreparedStatementConditionBuilder();
+		$conditionBuilder->add('r.resource_id IN (?)', [$fileIDs]);
+		$sql = "SELECT		r.*, u.message
+			FROM		xf_rm_resource r
+			LEFT JOIN	xf_rm_resource_update u
+				ON	r.description_update_id = u.resource_update_id
+			".$conditionBuilder;
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute($conditionBuilder->getParameters());
+		while ($row = $statement->fetchArray()) {
+			$additionalData = [];
+			if (isset($tags[$row['resource_id']])) $additionalData['tags'] = $tags[$row['resource_id']];
+			
+			$data = [
+				'userID' => $row['user_id'],
+				'categoryID' => $row['resource_category_id'],
+				'username' => $row['username'],
+				'subject' => $row['title'],
+				'message' => self::fixBBCodes($row['message'] ?? ''),
+				'time' => $row['resource_date'],
+				'lastChangeTime' => $row['last_update'],
+				'teaser' => $row['tag_line'],
+				'enableHtml' => 0,
+				'isDisabled' => $row['resource_state'] == 'moderated' ? 1 : 0,
+				'isDeleted' => $row['resource_state'] == 'deleted' ? 1 : 0,
+				'deleteTime' => $row['resource_state'] == 'deleted' ? TIME_NOW : 0,
+				'downloads' => $row['download_count'],
+			];
+			
+			// file icon
+			if (!empty($row['icon_date'])) {
+				$config = self::getConfig();
+				$iconLocation = $this->fileSystemPath.$config['externalDataPath'].'/resource_icons/'.floor($row['resource_id'] / 1000).'/'.$row['resource_id'].'.jpg';
+
+				$imageData = @getimagesize($iconLocation);
+				if ($imageData !== false) {
+					switch ($imageData[2]) {
+						case IMAGETYPE_GIF:
+							$iconExtension = 'gif';
+						break;
+						case IMAGETYPE_PNG:
+							$iconExtension = 'png';
+						break;
+						case IMAGETYPE_JPEG:
+							$iconExtension = 'jpg';
+						break;
+						default:
+							$iconExtension = null;
+					}
+					
+					if ($iconExtension !== null) {
+						$data['iconHash'] = sha1_file($iconLocation);
+						$data['iconExtension'] = $iconExtension;
+						$additionalData['iconLocation'] = $iconLocation;
+					}
+				}
+			}
+			
+			if ($supportThreadInstalled && $row['discussion_thread_id']) {
+				$data['supportThreadID'] = ImportHandler::getInstance()->getNewID('com.woltlab.wbb.thread', $row['discussion_thread_id']);
+			}
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.filebase.file')->import($row['resource_id'], $data, $additionalData);
+		}
+	}
+	
+	/**
+	 * Counts filebase file versions.
+	 */
+	public function countFilebaseFileVersions() {
+		return $this->__getMaxID("xf_rm_resource_version", 'resource_version_id');
+	}
+	
+	/**
+	 * Exports filebase file versions.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportFilebaseFileVersions($offset, $limit) {
+		$sql = "SELECT		v.*, d.data_id, d.filename, d.file_hash
+			FROM		xf_rm_resource_version v
+			INNER JOIN	xf_attachment a
+			ON		a.content_type = ?
+				AND	a.content_id = v.resource_version_id
+			INNER JOIN	xf_attachment_data d
+			ON		a.data_id = d.data_id
+			WHERE		v.resource_version_id BETWEEN ? AND ?
+			ORDER BY	v.resource_version_id";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(['resource_version', $offset + 1, $offset + $limit]);
+		while ($row = $statement->fetchArray()) {
+			$fileLocation = '';
+			
+			$data = [
+				'fileID' => $row['resource_id'],
+				'versionNumber' => $row['version_string'],
+				'description' => '',
+				'filename' => $row['filename'],
+				'downloadURL' => $row['download_url'],
+				'uploadTime' => $row['release_date'],
+				'downloads' => $row['download_count'],
+				'isDisabled' => $row['version_state'] == 'moderated' ? 1 : 0,
+				'isDeleted' => $row['version_state'] == 'deleted' ? 1 : 0,
+				'deleteTime' => $row['version_state'] == 'deleted' ? TIME_NOW : 0,
+				'enableHtml' => 0
+			];
+			if (empty($row['download_url'])) {
+				$config = self::getConfig();
+				$fileLocation = $this->fileSystemPath.$config['internalDataPath'].'/attachments/'.floor($row['data_id'] / 1000).'/'.$row['data_id'].'-'.$row['file_hash'].'.data';
+				
+				$data['filesize'] = filesize($fileLocation);
+				$data['fileType'] = FileUtil::getMimeType($fileLocation) ?: 'application/octet-stream';
+				$data['fileHash'] = sha1_file($fileLocation);
+			}
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.filebase.file.version')->import($row['resource_version_id'], $data, ['fileLocation' => $fileLocation]);
+		}
+	}
+	
+	/**
+	 * Counts filebase file attachments.
+	 */
+	public function countFilebaseFileAttachments() {
+		return $this->countAttachments('resource_update');
+	}
+	
+	/**
+	 * Exports filebase file attachments.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportFilebaseFileAttachments($offset, $limit) {
+		$sql = "SELECT		attachment.*, data.*, resource.resource_id
+			FROM		xf_attachment attachment
+			INNER JOIN	xf_attachment_data data
+			ON		attachment.data_id = data.data_id
+			LEFT JOIN	xf_rm_resource resource
+			ON		attachment.content_id = resource.description_update_id
+			WHERE		attachment.content_type = ?
+			ORDER BY	attachment.attachment_id";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute(['resource_update']);
+		while ($row = $statement->fetchArray()) {
+			// Skip attachment that don't belong to an update that is used as a
+			// description for a XFRM resource.
+			if ($row['resource_id'] === null) continue;
+			
+			$config = self::getConfig();
+			$fileLocation = $this->fileSystemPath.$config['internalDataPath'].'/attachments/'.floor($row['data_id'] / 1000).'/'.$row['data_id'].'-'.$row['file_hash'].'.data';
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.filebase.file.attachment')->import($row['attachment_id'], [
+				'objectID' => $row['resource_id'],
+				'userID' => $row['user_id'] ?: null,
+				'filename' => $row['filename'],
+				'downloads' => $row['view_count'],
+				'uploadTime' => $row['upload_date']
+			], ['fileLocation' => $fileLocation]);
+		}
+	}
+	
+	/**
+	 * Counts filebase file version reviews.
+	 */
+	public function countFilebaseFileVersionReviews() {
+		return $this->__getMaxID("xf_rm_resource_rating", 'resource_rating_id');
+	}
+	
+	/**
+	 * Exports filebase file version reviews.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportFilebaseFileVersionReviews($offset, $limit) {
+		$sql = "SELECT		r.*, user.username
+			FROM		xf_rm_resource_rating r
+			LEFT JOIN	xf_user user
+			ON		user.user_id = r.user_id
+			WHERE		r.resource_rating_id BETWEEN ? AND ?
+			ORDER BY	r.resource_rating_id";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute([$offset + 1, $offset + $limit]);
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.filebase.file.version.review')->import($row['resource_rating_id'], [
+				'versionID' => $row['resource_version_id'],
+				'fileID' => $row['resource_id'],
+				'userID' => $row['user_id'] ?: null,
+				'username' => $row['username'] ?: '',
+				'time' => $row['rating_date'],
+				'title' => 'Review',
+				'message' => $row['message'],
+				'rating' => min(5, max(1, $row['rating'])), // clamp to a range of 1 to 5
+				'isDisabled' => $row['rating_state'] == 'deleted' ? 1 : 0, // Import deleted reviews as disabled, WoltLab Suite Filebase does not have soft deletions.
+			]);
+		}
+	}
+	
+	/**
 	 * Returns the number of attachments.
 	 * 
 	 * @param	string		$type
@@ -1432,8 +1729,8 @@ class XF2xExporter extends AbstractExporter {
 	 */
 	public function countAttachments($type) {
 		$sql = "SELECT	COUNT(*) AS count
-		FROM	xf_attachment
-		WHERE	content_type = ?";
+			FROM	xf_attachment
+			WHERE	content_type = ?";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute([$type]);
 		$row = $statement->fetchArray();
@@ -1451,7 +1748,7 @@ class XF2xExporter extends AbstractExporter {
 	public function exportAttachments($type, $objectType, $offset, $limit) {
 		$sql = "SELECT		attachment.*, data.*
 			FROM		xf_attachment attachment
-			LEFT JOIN	xf_attachment_data data
+			INNER JOIN	xf_attachment_data data
 			ON		attachment.data_id = data.data_id
 			WHERE		attachment.content_type = ?
 			ORDER BY	attachment.attachment_id";
@@ -1461,26 +1758,10 @@ class XF2xExporter extends AbstractExporter {
 			$config = self::getConfig();
 			$fileLocation = $this->fileSystemPath.$config['internalDataPath'].'/attachments/'.floor($row['data_id'] / 1000).'/'.$row['data_id'].'-'.$row['file_hash'].'.data';
 			
-			if (!file_exists($fileLocation)) continue;
-			
-			if ($imageSize = @getimagesize($fileLocation)) {
-				$row['isImage'] = 1;
-				$row['width'] = $imageSize[0];
-				$row['height'] = $imageSize[1];
-			}
-			else {
-				$row['isImage'] = $row['width'] = $row['height'] = 0;
-			}
-			
 			ImportHandler::getInstance()->getImporter($objectType)->import($row['attachment_id'], [
 				'objectID' => $row['content_id'],
 				'userID' => $row['user_id'] ?: null,
 				'filename' => $row['filename'],
-				'filesize' => $row['file_size'],
-				'fileType' => FileUtil::getMimeType($fileLocation) ?: 'application/octet-stream',
-				'isImage' => $row['isImage'],
-				'width' => $row['width'],
-				'height' => $row['height'],
 				'downloads' => $row['view_count'],
 				'uploadTime' => $row['upload_date']
 			], ['fileLocation' => $fileLocation]);
