@@ -1794,7 +1794,7 @@ class XF2xExporter extends AbstractExporter {
 	 * @return	mixed
 	 */
 	private static function decodeJsonOrSerialized($jsonOrSerialized) {
-		if (strpos($jsonOrSerialized, '{') === 0 || strpos($jsonOrSerialized, '{') === 0) {
+		if (strpos($jsonOrSerialized, '{') === 0 || strpos($jsonOrSerialized, '[') === 0) {
 			return JSON::decode($jsonOrSerialized);
 		}
 		else {
