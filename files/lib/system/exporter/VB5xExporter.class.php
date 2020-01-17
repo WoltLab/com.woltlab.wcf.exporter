@@ -781,20 +781,31 @@ class VB5xExporter extends AbstractExporter {
 			$imgRegex = new Regex('\[img width=(\d+) height=\d+\](.*?)\[/img\]');
 			$mediaRegex = new Regex('\[video=([a-z]+);([a-z0-9-_]+)\]', Regex::CASE_INSENSITIVE);
 			
-			$attachRegex = new Regex('\[attach=json\](\{.*?\})\[/attach\]', Regex::CASE_INSENSITIVE);
+			$attachRegex = new Regex('\[attach=(?:json\](\{.*?\})|config\]([0-9]+))\[/attach\]', Regex::CASE_INSENSITIVE);
 			$attachCallback = function ($matches) {
-				try {
-					$payload = JSON::decode($matches[1]);
+				if (!empty($matches[1])) {
+					// json
+					try {
+						$payload = JSON::decode($matches[1]);
+					}
+					catch (SystemException $e) {
+						return '';
+					}
+					
+					if (empty($payload['data-attachmentid'])) {
+						return '';
+					}
+					
+					return "[attach]".$payload['data-attachmentid']."[/attach]";
 				}
-				catch (SystemException $e) {
-					return '';
+				else if (!empty($matches[2])) {
+					// config
+					return "[attach]".$matches[2]."[/attach]";
 				}
-				
-				if (empty($payload['data-attachmentid'])) {
-					return '';
+				else {
+					// technically unreachable
+					return "";
 				}
-				
-				return "[attach]".$payload['data-attachmentid']."[/attach]";
 			};
 		}
 		
