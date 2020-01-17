@@ -3,11 +3,13 @@ namespace wcf\system\exporter;
 use wbb\data\board\Board;
 use wcf\data\user\group\UserGroup;
 use wcf\system\database\DatabaseException;
+use wcf\system\exception\SystemException;
 use wcf\system\importer\ImportHandler;
 use wcf\system\request\LinkHandler;
 use wcf\system\Regex;
 use wcf\system\WCF;
 use wcf\util\FileUtil;
+use wcf\util\JSON;
 use wcf\util\MessageUtil;
 use wcf\util\PasswordUtil;
 use wcf\util\StringUtil;
@@ -757,6 +759,8 @@ class VB5xExporter extends AbstractExporter {
 		static $quoteCallback = null;
 		static $imgRegex = null;
 		static $mediaRegex = null;
+		static $attachRegex = null;
+		static $attachCallback = null;
 		
 		if ($quoteRegex === null) {
 			$quoteRegex = new Regex('\[quote=(.*?);n(\d+)\]', Regex::CASE_INSENSITIVE);
@@ -776,6 +780,22 @@ class VB5xExporter extends AbstractExporter {
 			
 			$imgRegex = new Regex('\[img width=(\d+) height=\d+\](.*?)\[/img\]');
 			$mediaRegex = new Regex('\[video=([a-z]+);([a-z0-9-_]+)\]', Regex::CASE_INSENSITIVE);
+			
+			$attachRegex = new Regex('\[attach=json\](\{.*?\})\[/attach\]', Regex::CASE_INSENSITIVE);
+			$attachCallback = function ($matches) {
+				try {
+					$payload = JSON::decode($matches[1]);
+				}
+				catch (SystemException $e) {
+					return '';
+				}
+				
+				if (empty($payload['data-attachmentid'])) {
+					return '';
+				}
+				
+				return "[attach]".$payload['data-attachmentid']."[/attach]";
+			};
 		}
 		
 		// use proper WCF 2 bbcode
@@ -799,6 +819,9 @@ class VB5xExporter extends AbstractExporter {
 		
 		// img
 		$message = $imgRegex->replace($message, "[img='\\2',none,\\1][/img]");
+		
+		// attach
+		$message = $attachRegex->replace($message, $attachCallback);
 		
 		// fix size bbcodes
 		$message = preg_replace_callback('/\[size=\'?(\d+)\'?\]/i', function ($matches) {
