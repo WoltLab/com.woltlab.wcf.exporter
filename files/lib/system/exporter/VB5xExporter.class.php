@@ -3,11 +3,13 @@ namespace wcf\system\exporter;
 use wbb\data\board\Board;
 use wcf\data\user\group\UserGroup;
 use wcf\system\database\DatabaseException;
+use wcf\system\exception\SystemException;
 use wcf\system\importer\ImportHandler;
 use wcf\system\request\LinkHandler;
 use wcf\system\Regex;
 use wcf\system\WCF;
 use wcf\util\FileUtil;
+use wcf\util\JSON;
 use wcf\util\MessageUtil;
 use wcf\util\PasswordUtil;
 use wcf\util\StringUtil;
@@ -289,7 +291,7 @@ class VB5xExporter extends AbstractExporter {
 				'activationCode' => $row['activationType'] !== null && $row['activationType'] == 0 && $row['emailchange'] == 0 ? UserRegistrationUtil::getActivationCode() : 0, // vB's codes are strings
 				'oldUsername' => '',
 				'registrationIpAddress' => UserUtil::convertIPv4To6($row['ipaddress']), // TODO: check whether this is the registration IP
-				'signature' => $row['signature'],
+				'signature' => self::fixBBCodes($row['signature']),
 				'userTitle' => ($row['customtitle'] != 0) ? $row['usertitle'] : '',
 				'lastActivityTime' => $row['lastactivity']
 			];
@@ -757,6 +759,8 @@ class VB5xExporter extends AbstractExporter {
 		static $quoteCallback = null;
 		static $imgRegex = null;
 		static $mediaRegex = null;
+		static $attachRegex = null;
+		static $attachCallback = null;
 		
 		if ($quoteRegex === null) {
 			$quoteRegex = new Regex('\[quote=(.*?);n(\d+)\]', Regex::CASE_INSENSITIVE);
@@ -776,6 +780,33 @@ class VB5xExporter extends AbstractExporter {
 			
 			$imgRegex = new Regex('\[img width=(\d+) height=\d+\](.*?)\[/img\]');
 			$mediaRegex = new Regex('\[video=([a-z]+);([a-z0-9-_]+)\]', Regex::CASE_INSENSITIVE);
+			
+			$attachRegex = new Regex('\[attach=(?:json\](\{.*?\})|config\]([0-9]+))\[/attach\]', Regex::CASE_INSENSITIVE);
+			$attachCallback = function ($matches) {
+				if (!empty($matches[1])) {
+					// json
+					try {
+						$payload = JSON::decode($matches[1]);
+					}
+					catch (SystemException $e) {
+						return '';
+					}
+					
+					if (empty($payload['data-attachmentid'])) {
+						return '';
+					}
+					
+					return "[attach]".$payload['data-attachmentid']."[/attach]";
+				}
+				else if (!empty($matches[2])) {
+					// config
+					return "[attach]".$matches[2]."[/attach]";
+				}
+				else {
+					// technically unreachable
+					return "";
+				}
+			};
 		}
 		
 		// use proper WCF 2 bbcode
@@ -800,28 +831,31 @@ class VB5xExporter extends AbstractExporter {
 		// img
 		$message = $imgRegex->replace($message, "[img='\\2',none,\\1][/img]");
 		
+		// attach
+		$message = $attachRegex->replace($message, $attachCallback);
+		
 		// fix size bbcodes
-		$message = preg_replace_callback('/\[size=\'?(\d+)\'?\]/i', function ($matches) {
-			$size = 36;
+		$message = preg_replace_callback('/\[size=\'?(\d+)(px)?\'?\]/i', function ($matches) {
+			$unit = 'scalar';
+			if (!empty($matches[2])) $unit = $matches[2];
 			
-			switch ($matches[1]) {
-				case 1:
-					$size = 8;
+			$validSizes = [8, 10, 12, 14, 18, 24, 36];
+			$size = 36;
+			switch ($unit) {
+				case 'px':
+					foreach ($validSizes as $pt) {
+						// 1 Point equals roughly 4/3 Pixels
+						if ($pt >= ($matches[1] / 4 * 3)) {
+							$size = $pt;
+							break;
+						}
+					}
 				break;
-				case 2:
-					$size = 10;
-				break;
-				case 3:
-					$size = 12;
-				break;
-				case 4:
-					$size = 14;
-				break;
-				case 5:
-					$size = 18;
-				break;
-				case 6:
-					$size = 24;
+				case 'scalar':
+				default:
+					if ($matches[1] >= 1 && $matches[1] <= 6) {
+						$size = $validSizes[$matches[1] - 1];
+					}
 				break;
 			}
 			
