@@ -1336,7 +1336,7 @@ class MyBB16xExporter extends AbstractExporter {
 
 			$fontRegex = new Regex('\[font=([^\]]+)\]');
 			$fontCallback = function ($matches) {
-				return '[font="'.str_replace(['"', "'"], '', $matches[1]).'"]';
+				return '[font=\''.str_replace(['"', "'"], '', $matches[1]).'\']';
 			};
 		}
 		
