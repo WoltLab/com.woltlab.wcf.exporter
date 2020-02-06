@@ -1723,6 +1723,9 @@ class XF2xExporter extends AbstractExporter {
 		$message = $userRegex->replace($message, $userCallback);
 		$message = $quoteRegex->replace($message, $quoteCallback);
 		
+		// fix attach bbcodes
+		$message = preg_replace('/\[attach(?: type="[^"]+")?(?: width="[^"]+")?(?: alt="[^"]+")?\]/i', '[attach]', $message);
+		
 		// fix color bbcodes
 		$message = preg_replace_callback('/\[color=rgb\((\d+),\s*(\d+),\s*(\d+)\)\]/i', function ($matches) {
 			list(, $r, $g, $b) = $matches;
