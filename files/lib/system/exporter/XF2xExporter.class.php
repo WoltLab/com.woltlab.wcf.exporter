@@ -1723,6 +1723,13 @@ class XF2xExporter extends AbstractExporter {
 		$message = $userRegex->replace($message, $userCallback);
 		$message = $quoteRegex->replace($message, $quoteCallback);
 		
+		// fix color bbcodes
+		$message = preg_replace_callback('/\[color=rgb\((\d+),\s*(\d+),\s*(\d+)\)\]/i', function ($matches) {
+			list(, $r, $g, $b) = $matches;
+			
+			return sprintf('[color=#%02X%02X%02X]', $r, $g, $b);
+		}, $message);
+		
 		// fix size bbcodes
 		$message = preg_replace_callback('/\[size=\'?(\d+)(px)?\'?\]/i', function ($matches) {
 			$unit = 'scalar';
