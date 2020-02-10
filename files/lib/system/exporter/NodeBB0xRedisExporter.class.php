@@ -174,7 +174,7 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 			
 			$data = [
 				'username' => $row['username'],
-				'password' => '',
+				'password' => null,
 				'email' => $row['email'],
 				'registrationDate' => intval($row['joindate'] / 1000),
 				'banned' => $row['banned'] ? 1 : 0,

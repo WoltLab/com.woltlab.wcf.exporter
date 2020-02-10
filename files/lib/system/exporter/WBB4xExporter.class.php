@@ -538,7 +538,7 @@ class WBB4xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			$data = [
 				'username' => $row['username'],
-				'password' => '',
+				'password' => null,
 				'email' => $row['email'],
 				'registrationDate' => $row['registrationDate'],
 				'banned' => $row['banned'],

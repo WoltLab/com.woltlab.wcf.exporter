@@ -316,7 +316,7 @@ class PhpBB31xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			$data = [
 				'username' => StringUtil::decodeHTML($row['username']),
-				'password' => '',
+				'password' => null,
 				'email' => $row['user_email'],
 				'registrationDate' => $row['user_regdate'],
 				'banned' => $row['banReason'] === null ? 0 : 1,

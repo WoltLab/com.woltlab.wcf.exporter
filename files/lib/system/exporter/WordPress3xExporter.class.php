@@ -149,7 +149,7 @@ class WordPress3xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			$data = [
 				'username' => $row['user_login'],
-				'password' => '',
+				'password' => null,
 				'email' => $row['user_email'],
 				'registrationDate' => @strtotime($row['user_registered'])
 			];

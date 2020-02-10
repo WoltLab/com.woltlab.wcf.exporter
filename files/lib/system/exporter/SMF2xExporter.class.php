@@ -306,7 +306,7 @@ class SMF2xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			$data = [
 				'username' => $row['member_name'],
-				'password' => '',
+				'password' => null,
 				'email' => $row['email_address'],
 				'registrationDate' => $row['date_registered'],
 				'banned' => ($row['ban_time'] && $row['banExpire'] === null) ? 1 : 0, // only permabans are imported
