@@ -1723,29 +1723,39 @@ class XF2xExporter extends AbstractExporter {
 		$message = $userRegex->replace($message, $userCallback);
 		$message = $quoteRegex->replace($message, $quoteCallback);
 		
-		// fix size bbcodes
-		$message = preg_replace_callback('/\[size=\'?(\d+)\'?\]/i', function ($matches) {
-			$size = 36;
+		// fix attach bbcodes
+		$message = preg_replace('/\[attach(?: type="[^"]+")?(?: width="[^"]+")?(?: alt="[^"]+")?\]/i', '[attach]', $message);
+		
+		// fix color bbcodes
+		$message = preg_replace_callback('/\[color=rgb\((\d+),\s*(\d+),\s*(\d+)\)\]/i', function ($matches) {
+			list(, $r, $g, $b) = $matches;
 			
-			switch ($matches[1]) {
-				case 1:
-					$size = 8;
-					break;
-				case 2:
-					$size = 10;
-					break;
-				case 3:
-					$size = 12;
-					break;
-				case 4:
-					$size = 14;
-					break;
-				case 5:
-					$size = 18;
-					break;
-				case 6:
-					$size = 24;
-					break;
+			return sprintf('[color=#%02X%02X%02X]', $r, $g, $b);
+		}, $message);
+		
+		// fix size bbcodes
+		$message = preg_replace_callback('/\[size=\'?(\d+)(px)?\'?\]/i', function ($matches) {
+			$unit = 'scalar';
+			if (!empty($matches[2])) $unit = $matches[2];
+			
+			$validSizes = [8, 10, 12, 14, 18, 24, 36];
+			$size = 36;
+			switch ($unit) {
+				case 'px':
+					foreach ($validSizes as $pt) {
+						// 1 Point equals roughly 4/3 Pixels
+						if ($pt >= ($matches[1] / 4 * 3)) {
+							$size = $pt;
+							break;
+						}
+					}
+				break;
+				case 'scalar':
+				default:
+					if ($matches[1] >= 1 && $matches[1] <= 6) {
+						$size = $validSizes[$matches[1] - 1];
+					}
+				break;
 			}
 			
 			return '[size='.$size.']';
