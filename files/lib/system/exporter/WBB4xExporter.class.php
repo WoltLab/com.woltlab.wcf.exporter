@@ -2768,7 +2768,7 @@ class WBB4xExporter extends AbstractExporter {
 			}
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.media')->import($row['mediaID'], [
-				'categoryID' => $row['categoryID'],
+				'categoryID' => (!empty($row['categoryID']) ? $row['categoryID'] : null),
 				'filename' => $row['filename'],
 				'filesize' => $row['filesize'],
 				'fileType' => $row['fileType'],
