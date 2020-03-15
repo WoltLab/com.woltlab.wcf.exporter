@@ -400,7 +400,7 @@ class VB3or4xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			$data = [
 				'username' => StringUtil::decodeHTML($row['username']),
-				'password' => '',
+				'password' => null,
 				'email' => StringUtil::decodeHTML($row['email']),
 				'registrationDate' => $row['joindate'],
 				'banned' => $row['liftdate'] !== null && $row['liftdate'] == 0 ? 1 : 0,

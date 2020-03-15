@@ -199,7 +199,7 @@ class IPB3xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			$data = [
 				'username' => self::fixSubject($row['name']),
-				'password' => '',
+				'password' => null,
 				'email' => $row['email'],
 				'registrationDate' => $row['joined'],
 				'banned' => $row['member_banned'],

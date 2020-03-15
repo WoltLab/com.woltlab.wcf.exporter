@@ -122,7 +122,7 @@ class XoborExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			$data = [
 				'username' => StringUtil::decodeHTML($row['name']),
-				'password' => '',
+				'password' => null,
 				'email' => $row['mail'],
 				'registrationDate' => strtotime($row['reged']),
 				'signature' => self::fixMessage($row['signature_editable']),
