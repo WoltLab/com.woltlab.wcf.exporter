@@ -203,7 +203,7 @@ class IPB4xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			$data = [
 				'username' => $row['name'],
-				'password' => '',
+				'password' => null,
 				'email' => $row['email'],
 				'registrationDate' => $row['joined'],
 				'banned' => $row['temp_ban'] == -1 ? 1 : 0,

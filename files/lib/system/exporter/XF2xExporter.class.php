@@ -319,7 +319,7 @@ class XF2xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			$data = [
 				'username' => $row['username'],
-				'password' => '',
+				'password' => null,
 				'email' => $row['email'],
 				'registrationDate' => $row['register_date'],
 				'banned' => $row['is_banned'] ? 1 : 0,

@@ -280,7 +280,7 @@ class WBB2xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			$data = [
 				'username' => $row['username'],
-				'password' => '',
+				'password' => null,
 				'email' => $row['email'],
 				'registrationDate' => $row['regdate'],
 				'signature' => self::fixBBCodes($row['signature']),
