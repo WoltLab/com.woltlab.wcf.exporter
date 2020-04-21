@@ -1800,6 +1800,7 @@ class XF2xExporter extends AbstractExporter {
 	 * Counts likes.
 	 *
 	 * @param	string		$objectType
+	 * @return	integer
 	 */
 	private function countLikes($objectType) {
 		try {
