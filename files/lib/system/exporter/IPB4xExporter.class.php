@@ -977,8 +977,6 @@ class IPB4xExporter extends AbstractExporter {
 				'objectID' => $row['id2'],
 				'userID' => $row['attach_member_id'] ?: null,
 				'filename' => $row['attach_file'],
-				'filesize' => $row['attach_filesize'],
-				'isImage' => $row['attach_is_image'],
 				'downloads' => $row['attach_hits'],
 				'uploadTime' => $row['attach_date'],
 			], ['fileLocation' => $fileLocation]);

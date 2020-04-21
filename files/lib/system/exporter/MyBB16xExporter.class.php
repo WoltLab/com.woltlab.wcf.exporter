@@ -833,26 +833,11 @@ class MyBB16xExporter extends AbstractExporter {
 		$statement->execute([$offset + 1, $offset + $limit]);
 		while ($row = $statement->fetchArray()) {
 			$fileLocation = FileUtil::addTrailingSlash($uploadsPath).$row['attachname'];
-			if (!file_exists($fileLocation)) continue;
-			
-			if ($imageSize = @getimagesize($fileLocation)) {
-				$row['isImage'] = 1;
-				$row['width'] = $imageSize[0];
-				$row['height'] = $imageSize[1];
-			}
-			else {
-				$row['isImage'] = $row['width'] = $row['height'] = 0;
-			}
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.attachment')->import($row['aid'], [
 				'objectID' => $row['pid'],
 				'userID' => $row['uid'] ?: null,
 				'filename' => $row['filename'],
-				'filesize' => $row['filesize'],
-				'fileType' => $row['filetype'],
-				'isImage' => $row['isImage'],
-				'width' => $row['width'],
-				'height' => $row['height'],
 				'downloads' => $row['downloads'],
 				'uploadTime' => $row['dateuploaded']
 			], ['fileLocation' => $fileLocation]);

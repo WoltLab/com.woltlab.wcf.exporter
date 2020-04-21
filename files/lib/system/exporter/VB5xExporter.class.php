@@ -594,24 +594,11 @@ class VB5xExporter extends AbstractExporter {
 				
 				// unable to read file -> abort
 				if (!is_file($file) || !is_readable($file)) continue;
-				if ($imageSize = @getimagesize($file)) {
-					$row['isImage'] = 1;
-					$row['width'] = $imageSize[0];
-					$row['height'] = $imageSize[1];
-				}
-				else {
-					$row['isImage'] = $row['width'] = $row['height'] = 0;
-				}
 				
 				ImportHandler::getInstance()->getImporter('com.woltlab.wbb.attachment')->import($row['nodeid'], [
 					'objectID' => $row['parentid'],
 					'userID' => $row['userid'] ?: null,
 					'filename' => $row['filename'],
-					'filesize' => isset($row['filesize']) ? $row['filesize'] : filesize($file),
-					'fileType' => FileUtil::getMimeType($file),
-					'isImage' => $row['isImage'],
-					'width' => $row['width'],
-					'height' => $row['height'],
 					'downloads' => $row['counter'],
 					'uploadTime' => $row['dateline'],
 					'showOrder' => isset($row['displayOrder']) ? $row['displayOrder'] : 0

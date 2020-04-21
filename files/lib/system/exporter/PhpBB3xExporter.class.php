@@ -1389,16 +1389,10 @@ class PhpBB3xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			$fileLocation = FileUtil::addTrailingSlash($this->fileSystemPath.$upload_path).$row['physical_filename'];
 			
-			$isImage = 0;
-			if ($row['mimetype'] == 'image/jpeg' || $row['mimetype'] == 'image/png' || $row['mimetype'] == 'image/gif') $isImage = 1;
-			
 			ImportHandler::getInstance()->getImporter('com.woltlab.'.($conversation ? 'wcf.conversation' : 'wbb').'.attachment')->import(0, [ // TODO: support inline attachments
 				'objectID' => $row['post_msg_id'],
 				'userID' => $row['poster_id'] ?: null,
 				'filename' => $row['real_filename'],
-				'filesize' => $row['filesize'],
-				'fileType' => $row['mimetype'],
-				'isImage' => $isImage,
 				'downloads' => $row['download_count'],
 				'uploadTime' => $row['filetime']
 			], ['fileLocation' => $fileLocation]);

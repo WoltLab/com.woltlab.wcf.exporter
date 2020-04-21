@@ -473,16 +473,10 @@ class Kunena3xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			$fileLocation = FileUtil::addTrailingSlash($this->fileSystemPath . $row['folder']) . $row['filename'];
 				
-			$isImage = 0;
-			if ($row['filetype'] == 'image/jpeg' || $row['filetype'] == 'image/png' || $row['filetype'] == 'image/gif') $isImage = 1;
-				
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.attachment')->import($row['id'], [
 				'objectID' => $row['mesid'],
 				'userID' => $row['userid'] ?: null,
 				'filename' => $row['filename'],
-				'filesize' => $row['size'],
-				'fileType' => $row['filetype'],
-				'isImage' => $isImage
 			], ['fileLocation' => $fileLocation]);
 		}
 	}

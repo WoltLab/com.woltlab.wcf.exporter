@@ -320,16 +320,6 @@ class XoborExporter extends AbstractExporter {
 			foreach ($files as $file) {
 				if (!isset($file['filelink'])) continue;
 				$fileLocation = FileUtil::addTrailingSlash($this->fileSystemPath).$file['filelink'];
-				if (!file_exists($fileLocation)) continue;
-				
-				if ($imageSize = @getimagesize($fileLocation)) {
-					$row['isImage'] = 1;
-					$row['width'] = $imageSize[0];
-					$row['height'] = $imageSize[1];
-				}
-				else {
-					$row['isImage'] = $row['width'] = $row['height'] = 0;
-				}
 				
 				$filename = $file['filename'] ?? $row['filelink'];
 				if ($convert) $filename = mb_convert_encoding($filename, 'UTF-8', 'ISO-8859-1');
@@ -337,11 +327,6 @@ class XoborExporter extends AbstractExporter {
 					'objectID' => $row['id'],
 					'userID' => $row['userid'] ?: null,
 					'filename' => $filename,
-					'filesize' => filesize($fileLocation),
-					'fileType' => FileUtil::getMimeType($fileLocation),
-					'isImage' => $row['isImage'],
-					'width' => $row['width'],
-					'height' => $row['height'],
 					'downloads' => 0,
 					'uploadTime' => strtotime($row['writetime'])
 				], ['fileLocation' => $fileLocation]);

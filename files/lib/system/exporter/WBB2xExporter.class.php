@@ -1142,19 +1142,11 @@ class WBB2xExporter extends AbstractExporter {
 		$statement->execute([0]);
 		while ($row = $statement->fetchArray()) {
 			$fileLocation = $this->fileSystemPath.'attachments/attachment-'.$row['attachmentid'].'.'.$row['attachmentextension'];
-			if (!@file_exists($fileLocation)) continue;
-			
-			$fileType = FileUtil::getMimeType($fileLocation);
-			$isImage = 0;
-			if ($fileType == 'image/jpeg' || $fileType == 'image/png' || $fileType == 'image/gif') $isImage = 1;
 			
 			ImportHandler::getInstance()->getImporter($objectType)->import($row['attachmentid'], [
 				'objectID' => $row[$indexName],
 				'userID' => (!empty($row['userid']) ? $row['userid'] : null),
 				'filename' => $row['attachmentname'].'.'.$row['attachmentextension'],
-				'filesize' => $row['attachmentsize'],
-				'fileType' => $fileType,
-				'isImage' => $isImage,
 				'downloads' => $row['counter'],
 				'uploadTime' => (!empty($row['uploadtime']) ? $row['uploadtime'] : 0),
 				'showOrder' => 0

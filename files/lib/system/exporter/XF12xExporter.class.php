@@ -1417,26 +1417,10 @@ class XF12xExporter extends AbstractExporter {
 			$config = self::getConfig();
 			$fileLocation = $this->fileSystemPath.$config['internalDataPath'].'/attachments/'.floor($row['data_id'] / 1000).'/'.$row['data_id'].'-'.$row['file_hash'].'.data';
 			
-			if (!file_exists($fileLocation)) continue;
-			
-			if ($imageSize = @getimagesize($fileLocation)) {
-				$row['isImage'] = 1;
-				$row['width'] = $imageSize[0];
-				$row['height'] = $imageSize[1];
-			}
-			else {
-				$row['isImage'] = $row['width'] = $row['height'] = 0;
-			}
-			
 			ImportHandler::getInstance()->getImporter($objectType)->import($row['attachment_id'], [
 				'objectID' => $row['content_id'],
 				'userID' => $row['user_id'] ?: null,
 				'filename' => $row['filename'],
-				'filesize' => $row['file_size'],
-				'fileType' => FileUtil::getMimeType($fileLocation) ?: 'application/octet-stream',
-				'isImage' => $row['isImage'],
-				'width' => $row['width'],
-				'height' => $row['height'],
 				'downloads' => $row['view_count'],
 				'uploadTime' => $row['upload_date']
 			], ['fileLocation' => $fileLocation]);

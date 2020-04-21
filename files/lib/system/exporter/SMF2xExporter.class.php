@@ -948,24 +948,10 @@ class SMF2xExporter extends AbstractExporter {
 			
 			$fileLocation = $this->getAttachmentFilename($row['id_attach'], $row['id_folder'], $row['file_hash'], $row['filename']);
 			
-			if ($imageSize = @getimagesize($fileLocation)) {
-				$row['isImage'] = 1;
-				$row['width'] = $imageSize[0];
-				$row['height'] = $imageSize[1];
-			}
-			else {
-				$row['isImage'] = $row['width'] = $row['height'] = 0;
-			}
-			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.attachment')->import($row['id_attach'], [
 				'objectID' => $row['id_msg'],
 				'userID' => $row['id_member'] ?: null,
 				'filename' => $row['filename'],
-				'filesize' => $row['size'],
-				'fileType' => $row['mime_type'],
-				'isImage' => $row['isImage'],
-				'width' => $row['width'],
-				'height' => $row['height'],
 				'downloads' => $row['downloads'],
 				'uploadTime' => $row['poster_time']
 			], ['fileLocation' => $fileLocation]);
