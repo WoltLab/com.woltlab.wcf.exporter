@@ -766,12 +766,12 @@ class WBB4xExporter extends AbstractExporter {
 			$optionType = StringUtil::firstCharToUpperCase($row['optionType']);
 			$className = 'wcf\system\option\\'.$optionType.'OptionType';
 			if (!class_exists($className)) {
-				$optionType = 'textarea';
+				$row['optionType'] = 'textarea';
 			}
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.option')->import($row['optionID'], [
 				'categoryName' => $row['categoryName'],
-				'optionType' => $optionType,
+				'optionType' => $row['optionType'],
 				'defaultValue' => $row['defaultValue'],
 				'validationPattern' => $row['validationPattern'],
 				'selectOptions' => $row['selectOptions'],
