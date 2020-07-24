@@ -2427,6 +2427,7 @@ class WBB4xExporter extends AbstractExporter {
 				'licenseURL' => (isset($row['licenseURL']) ? $row['licenseURL'] : ''),
 				'downloads' => $row['downloads'],
 				'isFeatured' => $row['isFeatured'],
+				'lastChangeTime' => $row['lastChangeTime'],
 			];
 			
 			// file icon
