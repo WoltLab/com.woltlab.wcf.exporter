@@ -2347,7 +2347,7 @@ class WBB4xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * Exports filebase files from 5.2-.
+	 * Exports filebase files from 5.2 or lower.
 	 *
 	 * @param	integer		$offset
 	 * @param	integer		$limit
@@ -2532,7 +2532,7 @@ class WBB4xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * Exports filebase file versions.
+	 * Exports filebase file versions from 5.2 or lower.
 	 *
 	 * @param	integer		$offset
 	 * @param	integer		$limit
