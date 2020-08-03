@@ -2347,12 +2347,17 @@ class WBB4xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * Exports filebase files.
+	 * Exports filebase files from 5.2 or lower.
 	 *
 	 * @param	integer		$offset
 	 * @param	integer		$limit
 	 */
 	public function exportFilebaseFiles($offset, $limit) {
+		if (version_compare($this->getPackageVersion('com.woltlab.filebase'), '5.3.0 Alpha 1', '>=')) {
+			$this->exportFilebaseFiles53($offset, $limit);
+			return;
+		}
+		
 		// get file ids
 		$fileIDs = [];
 		$sql = "SELECT		fileID
@@ -2364,7 +2369,6 @@ class WBB4xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			$fileIDs[] = $row['fileID'];
 		}
-		
 		if (empty($fileIDs)) return;
 		
 		// get tags
@@ -2399,55 +2403,125 @@ class WBB4xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute($conditionBuilder->getParameters());
 		while ($row = $statement->fetchArray()) {
-			$additionalData = [];
-			if ($row['languageCode']) $additionalData['languageCode'] = $row['languageCode'];
-			if (isset($tags[$row['fileID']])) $additionalData['tags'] = $tags[$row['fileID']];
-			
-			$data = [
-				'userID' => $row['userID'],
-				'username' => $row['username'],
+			$contents[$row['languageCode'] ?: ''] = [
 				'subject' => $row['subject'],
-				'message' => $row['message'],
-				'time' => $row['time'],
 				'teaser' => $row['teaser'],
-				'website' => $row['website'],
-				'enableHtml' => $row['enableHtml'],
-				'enableComments' => $row['enableComments'],
-				'isDisabled' => $row['isDisabled'],
-				'isDeleted' => $row['isDeleted'],
-				'ipAddress' => $row['ipAddress'],
-				'deleteTime' => $row['deleteTime'],
-				'isCommercial' => $row['isCommercial'],
-				'isPurchasable' => $row['isPurchasable'],
-				'price' => $row['price'],
-				'currency' => $row['currency'],
-				'totalRevenue' => (isset($row['totalRevenue']) ? $row['totalRevenue'] : 0),
-				'purchases' => $row['purchases'],
-				'licenseName' => (isset($row['licenseName']) ? $row['licenseName'] : ''),
-				'licenseURL' => (isset($row['licenseURL']) ? $row['licenseURL'] : ''),
-				'downloads' => $row['downloads'],
-				'isFeatured' => $row['isFeatured'],
-				'lastChangeTime' => $row['lastChangeTime'],
+				'message' => $row['message'],
+				'tags' => $tags[$row['fileID']] ?? [],
 			];
 			
-			// file icon
-			if (!empty($row['iconHash'])) {
-				$data['iconHash'] = $row['iconHash'];
-				$data['iconExtension'] = $row['iconExtension'];
-				$additionalData['iconLocation'] = $this->getFilebaseDir() . 'images/file/' . substr($row['iconHash'], 0, 2) . '/' . $row['fileID'] . '.' . $row['iconExtension'];
+			$this->exportFilebaseFilesHelper($row, $contents, $categories[$row['fileID']] ?? [$row['categoryID']]);
+		}
+	}
+	
+	/**
+	 * Exports filebase files from 5.3+.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportFilebaseFiles53($offset, $limit) {
+		// get file ids
+		$fileIDs = [];
+		$sql = "SELECT		fileID
+			FROM		filebase".$this->dbNo."_file
+			WHERE		fileID BETWEEN ? AND ?
+			ORDER BY	fileID";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute([$offset + 1, $offset + $limit]);
+		while ($row = $statement->fetchArray()) {
+			$fileIDs[] = $row['fileID'];
+		}
+		if (empty($fileIDs)) return;
+		
+		// get file contents
+		$fileContents = $fileContentIDs = [];
+		$conditionBuilder = new PreparedStatementConditionBuilder();
+		$conditionBuilder->add('fileID IN (?)', [$fileIDs]);
+		$sql = "SELECT		file_content.*, language.languageCode
+			FROM		filebase".$this->dbNo."_file_content file_content
+			LEFT JOIN	wcf".$this->dbNo."_language language
+			ON		(language.languageID = file_content.languageID)
+			" . $conditionBuilder;
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute($conditionBuilder->getParameters());
+		while ($row = $statement->fetchArray()) {
+			$fileContents[$row['fileID']][$row['languageCode'] ?: ''] = $row;
+			$fileContentIDs[] = $row['fileContentID'];
+		}
+		
+		// get tags
+		$tags = $this->getTags('com.woltlab.filebase.file', $fileContentIDs);
+		
+		// get files
+		$sql = "SELECT		*
+			FROM		filebase".$this->dbNo."_file
+			".$conditionBuilder;
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute($conditionBuilder->getParameters());
+		while ($row = $statement->fetchArray()) {
+			$contents = [];
+			if (isset($fileContents[$row['fileID']])) {
+				foreach ($fileContents[$row['fileID']] as $languageCode => $fileContent) {
+					$contents[$languageCode ?: ''] = [
+						'subject' => $fileContent['subject'],
+						'teaser' => $fileContent['teaser'],
+						'message' => $fileContent['message'],
+						'tags' => $tags[$fileContent['fileContentID']] ?? [],
+					];
+				}
 			}
 			
-			if (version_compare($this->getPackageVersion('com.woltlab.filebase'), '3.0.0 Alpha 1', '<')) {
-				// 2.x
-				if (isset($categories[$row['fileID']])) $additionalData['categories'] = $categories[$row['fileID']];
+			$this->exportFilebaseFilesHelper($row, $contents, [$row['categoryID']]);
+		}
+	}
+	
+	protected function exportFilebaseFilesHelper(array $row, array $contents = [], array $categories = []) {
+		$additionalData = [
+			'contents' => $contents,
+		];
+		
+		$data = [
+			'userID' => $row['userID'],
+			'username' => $row['username'],
+			'time' => $row['time'],
+			'website' => $row['website'],
+			'enableHtml' => $row['enableHtml'],
+			'enableComments' => $row['enableComments'],
+			'isDisabled' => $row['isDisabled'],
+			'isDeleted' => $row['isDeleted'],
+			'ipAddress' => $row['ipAddress'],
+			'deleteTime' => $row['deleteTime'],
+			'isCommercial' => $row['isCommercial'],
+			'isPurchasable' => $row['isPurchasable'],
+			'price' => $row['price'],
+			'currency' => $row['currency'],
+			'totalRevenue' => (isset($row['totalRevenue']) ? $row['totalRevenue'] : 0),
+			'purchases' => $row['purchases'],
+			'licenseName' => (isset($row['licenseName']) ? $row['licenseName'] : ''),
+			'licenseURL' => (isset($row['licenseURL']) ? $row['licenseURL'] : ''),
+			'downloads' => $row['downloads'],
+			'isFeatured' => $row['isFeatured'],
+			'lastChangeTime' => $row['lastChangeTime'],
+		];
+		
+		// file icon
+		if (!empty($row['iconHash'])) {
+			$data['iconHash'] = $row['iconHash'];
+			$data['iconExtension'] = $row['iconExtension'];
+			$additionalData['iconLocation'] = $this->getFilebaseDir() . 'images/file/' . substr($row['iconHash'], 0, 2) . '/' . $row['fileID'] . '.' . $row['iconExtension'];
+		}
+		
+		if (!empty($categories)) {
+			if (count($categories) == 1) {
+				$data['categoryID'] = reset($categories);
 			}
 			else {
-				// 3.0+
-				$data['categoryID'] = $row['categoryID'];
+				$additionalData['categories'] = $categories;
 			}
-			
-			ImportHandler::getInstance()->getImporter('com.woltlab.filebase.file')->import($row['fileID'], $data, $additionalData);
 		}
+		
+		ImportHandler::getInstance()->getImporter('com.woltlab.filebase.file')->import($row['fileID'], $data, $additionalData);
 	}
 	
 	/**
@@ -2458,42 +2532,116 @@ class WBB4xExporter extends AbstractExporter {
 	}
 	
 	/**
-	 * Exports filebase file versions.
+	 * Exports filebase file versions from 5.2 or lower.
 	 *
 	 * @param	integer		$offset
 	 * @param	integer		$limit
 	 */
 	public function exportFilebaseFileVersions($offset, $limit) {
-		$sql = "SELECT		*
+		if (version_compare($this->getPackageVersion('com.woltlab.filebase'), '5.3.0 Alpha 1', '>=')) {
+			$this->exportFilebaseFileVersions53($offset, $limit);
+			return;
+		}
+		
+		$sql = "SELECT		file_version.*, language.languageCode
+			FROM		filebase".$this->dbNo."_file_version file_version
+			LEFT JOIN       filebase".$this->dbNo."_file file
+			ON              (file.fileID = file_version.fileID)
+			LEFT JOIN	wcf".$this->dbNo."_language language
+			ON		(language.languageID = file.languageID)
+			WHERE		file_version.versionID BETWEEN ? AND ?
+			ORDER BY	file_version.versionID";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute([$offset + 1, $offset + $limit]);
+		while ($row = $statement->fetchArray()) {
+			$contents[$row['languageCode'] ?: ''] = [
+				'description' => $row['description'],
+			];
+			
+			$this->exportFilebaseFileVersionsHelper($row, $contents);
+		}
+	}
+	
+	/**
+	 * Exports filebase file versions from 5.3+.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportFilebaseFileVersions53($offset, $limit) {
+		// get version ids
+		$versionIDs = [];
+		$sql = "SELECT		versionID
 			FROM		filebase".$this->dbNo."_file_version
 			WHERE		versionID BETWEEN ? AND ?
 			ORDER BY	versionID";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute([$offset + 1, $offset + $limit]);
 		while ($row = $statement->fetchArray()) {
-			$fileLocation = '';
-			if (empty($row['downloadURL'])) {
-				$fileLocation = $this->getFilebaseDir() . 'files/' . substr($row['fileHash'], 0, 2) . '/' . $row['versionID'] . '-' . $row['fileHash'];
+			$versionIDs[] = $row['versionID'];
+		}
+		if (empty($versionIDs)) return;
+		
+		// get version contents
+		$versionContents = [];
+		$conditionBuilder = new PreparedStatementConditionBuilder();
+		$conditionBuilder->add('versionID IN (?)', [$versionIDs]);
+		$sql = "SELECT		version_content.*, language.languageCode
+			FROM		filebase".$this->dbNo."_file_version_content version_content
+			LEFT JOIN	wcf".$this->dbNo."_language language
+			ON		(language.languageID = version_content.languageID)
+			" . $conditionBuilder;
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute($conditionBuilder->getParameters());
+		while ($row = $statement->fetchArray()) {
+			$versionContents[$row['versionID']][$row['languageCode'] ?: ''] = $row;
+		}
+		
+		// get versions
+		$sql = "SELECT		*
+			FROM		filebase".$this->dbNo."_file_version
+			" . $conditionBuilder;
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute($conditionBuilder->getParameters());
+		while ($row = $statement->fetchArray()) {
+			$contents = [];
+			if (isset($versionContents[$row['versionID']])) {
+				foreach ($versionContents[$row['versionID']] as $languageCode => $versionContent) {
+					$contents[$languageCode ?: ''] = [
+						'description' => $versionContent['description'],
+					];
+				}
 			}
 			
-			ImportHandler::getInstance()->getImporter('com.woltlab.filebase.file.version')->import($row['versionID'], [
-				'fileID' => $row['fileID'],
-				'versionNumber' => $row['versionNumber'],
-				'description' => $row['description'],
-				'filename' => $row['filename'],
-				'filesize' => $row['filesize'],
-				'fileType' => $row['fileType'],
-				'fileHash' => $row['fileHash'],
-				'uploadTime' => $row['uploadTime'],
-				'downloads' => $row['downloads'],
-				'downloadURL' => (isset($row['downloadURL']) ? $row['downloadURL'] : ''),
-				'isDisabled' => $row['isDisabled'],
-				'isDeleted' => $row['isDeleted'],
-				'deleteTime' => $row['deleteTime'],
-				'ipAddress' => $row['ipAddress'],
-				'enableHtml' => $row['enableHtml']
-			], ['fileLocation' => $fileLocation]);
+			$this->exportFilebaseFileVersionsHelper($row, $contents);
 		}
+	}
+	
+	protected function exportFilebaseFileVersionsHelper(array $row, array $contents = []) {
+		$additionalData = [
+			'contents' => $contents,
+			'fileLocation' => '',
+		];
+		if (empty($row['downloadURL'])) {
+			$additionalData['fileLocation'] = $this->getFilebaseDir() . 'files/' . substr($row['fileHash'], 0, 2) . '/' . $row['versionID'] . '-' . $row['fileHash'];
+		}
+		
+		ImportHandler::getInstance()->getImporter('com.woltlab.filebase.file.version')->import($row['versionID'], [
+			'fileID' => $row['fileID'],
+			'versionNumber' => $row['versionNumber'],
+			'filename' => $row['filename'],
+			'filesize' => $row['filesize'],
+			'fileType' => $row['fileType'],
+			'fileHash' => $row['fileHash'],
+			'uploadTime' => $row['uploadTime'],
+			'downloads' => $row['downloads'],
+			'downloadURL' => (isset($row['downloadURL']) ? $row['downloadURL'] : ''),
+			'isDisabled' => $row['isDisabled'],
+			'isDeleted' => $row['isDeleted'],
+			'deleteTime' => $row['deleteTime'],
+			'ipAddress' => $row['ipAddress'],
+			'enableHtml' => $row['enableHtml']
+		], $additionalData);
 	}
 	
 	/**

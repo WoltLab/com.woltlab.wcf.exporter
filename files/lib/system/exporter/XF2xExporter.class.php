@@ -1532,18 +1532,23 @@ class XF2xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute($conditionBuilder->getParameters());
 		while ($row = $statement->fetchArray()) {
-			$additionalData = [];
-			if (isset($tags[$row['resource_id']])) $additionalData['tags'] = $tags[$row['resource_id']];
+			$additionalData = [
+				'contents' => [
+					'' => [
+						'subject' => $row['title'],
+						'teaser' => $row['tag_line'],
+						'message' => self::fixBBCodes($row['message'] ?? ''),
+						'tags' => $tags[$row['resource_id']] ?? [],
+					],
+				],
+			];
 			
 			$data = [
 				'userID' => $row['user_id'],
 				'categoryID' => $row['resource_category_id'],
 				'username' => $row['username'],
-				'subject' => $row['title'],
-				'message' => self::fixBBCodes($row['message'] ?? ''),
 				'time' => $row['resource_date'],
 				'lastChangeTime' => $row['last_update'],
-				'teaser' => $row['tag_line'],
 				'enableHtml' => 0,
 				'isDisabled' => $row['resource_state'] == 'moderated' ? 1 : 0,
 				'isDeleted' => $row['resource_state'] == 'deleted' ? 1 : 0,
@@ -1614,12 +1619,18 @@ class XF2xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute(['resource_version', $offset + 1, $offset + $limit]);
 		while ($row = $statement->fetchArray()) {
-			$fileLocation = '';
+			$additionalData = [
+				'fileLocation' => '',
+				'contents' => [
+					'' => [
+						'description' => '',
+					],
+				],
+			];
 			
 			$data = [
 				'fileID' => $row['resource_id'],
 				'versionNumber' => $row['version_string'],
-				'description' => '',
 				'filename' => $row['filename'],
 				'downloadURL' => $row['download_url'],
 				'uploadTime' => $row['release_date'],
@@ -1636,9 +1647,10 @@ class XF2xExporter extends AbstractExporter {
 				$data['filesize'] = filesize($fileLocation);
 				$data['fileType'] = FileUtil::getMimeType($fileLocation) ?: 'application/octet-stream';
 				$data['fileHash'] = sha1_file($fileLocation);
+				$additionalData['fileLocation'] = $fileLocation;
 			}
 			
-			ImportHandler::getInstance()->getImporter('com.woltlab.filebase.file.version')->import($row['resource_version_id'], $data, ['fileLocation' => $fileLocation]);
+			ImportHandler::getInstance()->getImporter('com.woltlab.filebase.file.version')->import($row['resource_version_id'], $data, $additionalData);
 		}
 	}
 	
