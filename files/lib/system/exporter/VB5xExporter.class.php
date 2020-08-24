@@ -757,6 +757,8 @@ class VB5xExporter extends AbstractExporter {
 	private static function fixBBCodes($message) {
 		static $quoteRegex = null;
 		static $quoteCallback = null;
+		static $urlRegex = null;
+		static $urlCallback = null;
 		static $imgRegex = null;
 		static $mediaRegex = null;
 		static $attachRegex = null;
@@ -776,6 +778,12 @@ class VB5xExporter extends AbstractExporter {
 				$postLink = str_replace(["\\", "'"], ["\\\\", "\'"], $postLink);
 				
 				return "[quote='".$username."','".$postLink."']";
+			};
+			
+			$urlRegex = new Regex('\[url="([^"]+)"\]', Regex::CASE_INSENSITIVE);
+			$urlCallback = function ($matches) {
+				$url = str_replace(["\\", "'"], ["\\\\", "\'"], $matches[1]);
+				return "[url='".$url."']";
 			};
 			
 			$imgRegex = new Regex('\[img width=(\d+) height=\d+\](.*?)\[/img\]');
@@ -827,6 +835,9 @@ class VB5xExporter extends AbstractExporter {
 		
 		// quotes
 		$message = $quoteRegex->replace($message, $quoteCallback);
+		
+		// url
+		$message = $urlRegex->replace($message, $urlCallback);
 		
 		// img
 		$message = $imgRegex->replace($message, "[img='\\2',none,\\1][/img]");
