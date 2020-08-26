@@ -744,8 +744,12 @@ class VB5xExporter extends AbstractExporter {
 	private static function fixBBCodes($message) {
 		static $quoteRegex = null;
 		static $quoteCallback = null;
+		static $urlRegex = null;
+		static $urlCallback = null;
 		static $imgRegex = null;
 		static $mediaRegex = null;
+		static $img2Regex = null;
+		static $img2Callback = null;
 		static $attachRegex = null;
 		static $attachCallback = null;
 		
@@ -765,8 +769,33 @@ class VB5xExporter extends AbstractExporter {
 				return "[quote='".$username."','".$postLink."']";
 			};
 			
+			$urlRegex = new Regex('\[url="([^"]+)"\]', Regex::CASE_INSENSITIVE);
+			$urlCallback = function ($matches) {
+				$url = str_replace(["\\", "'"], ["\\\\", "\'"], $matches[1]);
+				return "[url='".$url."']";
+			};
+			
 			$imgRegex = new Regex('\[img width=(\d+) height=\d+\](.*?)\[/img\]');
 			$mediaRegex = new Regex('\[video=([a-z]+);([a-z0-9-_]+)\]', Regex::CASE_INSENSITIVE);
+			
+			$img2Regex = new Regex('\[img2=json\](.*?)\[/img2\]', Regex::CASE_INSENSITIVE);
+			$img2Callback = function ($matches) {
+				if (!empty($matches[1])) {
+					// json
+					try {
+						$payload = JSON::decode($matches[1]);
+					}
+					catch (SystemException $e) {
+						return $matches[0];
+					}
+					
+					if (isset($payload['src'])) {
+						return "[img]".$payload['src']."[/img]";
+					}
+				}
+				
+				return $matches[0];
+			};
 			
 			$attachRegex = new Regex('\[attach=(?:json\](\{.*?\})|config\]([0-9]+))\[/attach\]', Regex::CASE_INSENSITIVE);
 			$attachCallback = function ($matches) {
@@ -815,8 +844,12 @@ class VB5xExporter extends AbstractExporter {
 		// quotes
 		$message = $quoteRegex->replace($message, $quoteCallback);
 		
+		// url
+		$message = $urlRegex->replace($message, $urlCallback);
+		
 		// img
 		$message = $imgRegex->replace($message, "[img='\\2',none,\\1][/img]");
+		$message = $img2Regex->replace($message, $img2Callback);
 		
 		// attach
 		$message = $attachRegex->replace($message, $attachCallback);
