@@ -15,9 +15,7 @@ use wcf\util\StringUtil;
  * @author	Tim Duesterhus
  * @copyright	2001-2019 WoltLab GmbH
  * @license	GNU Lesser General Public License <http://opensource.org/licenses/lgpl-license.php>
- * @package	com.woltlab.wcf.exporter
- * @subpackage	system.exporter
- * @category	Community Framework
+ * @package	WoltLabSuite\Core\System\Exporter
  */
 class NodeBB0xRedisExporter extends AbstractExporter {
 	/**
