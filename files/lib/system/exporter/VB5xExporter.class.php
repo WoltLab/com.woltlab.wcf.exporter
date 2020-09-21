@@ -27,6 +27,8 @@ use wcf\util\UserUtil;
  * @category	Community Framework
  */
 class VB5xExporter extends AbstractExporter {
+	const CHANNELOPTIONS_CANCONTAINTHREADS = 4;
+	
 	const ATTACHFILE_DATABASE = 0;
 	const ATTACHFILE_FILESYSTEM = 1;
 	const ATTACHFILE_FILESYSTEM_SUBFOLDER = 2;
@@ -402,7 +404,7 @@ class VB5xExporter extends AbstractExporter {
 	 * @param	integer		$limit
 	 */
 	public function exportBoards(/** @noinspection PhpUnusedParameterInspection */$offset, $limit) {
-		$sql = "SELECT		node.*, channel.guid
+		$sql = "SELECT		node.*, channel.guid, channel.options AS channelOptions
 			FROM		".$this->databasePrefix."node node
 			
 			INNER JOIN	(SELECT contenttypeid FROM ".$this->databasePrefix."contenttype WHERE class = ?) x
@@ -445,7 +447,7 @@ class VB5xExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import($board['nodeid'], [
 				'parentID' => $board['parentid'] ?: null,
 				'position' => $board['displayorder'] ?: 0,
-				'boardType' => Board::TYPE_BOARD,
+				'boardType' => $board['channelOptions'] & self::CHANNELOPTIONS_CANCONTAINTHREADS ? Board::TYPE_BOARD : Board::TYPE_CATEGORY,
 				'title' => $board['title'],
 				'description' => $board['description'],
 				'descriptionUseHtml' => 0,
