@@ -1550,7 +1550,7 @@ class PhpBB31xExporter extends AbstractExporter {
 		}, $text);
 		
 		// convert attachments
-		$text = preg_replace('~\[attachment=(\d+)\]<!-- ia\\1 -->.*?<!-- ia\\1 -->\[/attachment\]~', '', $text); // TODO: not supported right now
+		$text = preg_replace('~\[attachment=(\d+)\].*?\[/attachment\]~', '', $text); // TODO: not supported right now
 		
 		// remove crap
 		$text = MessageUtil::stripCrap($text);
