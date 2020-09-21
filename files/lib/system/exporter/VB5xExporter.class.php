@@ -106,8 +106,8 @@ class VB5xExporter extends AbstractExporter {
 			],
 		/*	'com.woltlab.wcf.conversation' => array(
 				'com.woltlab.wcf.conversation.label'
-			),
-			'com.woltlab.wcf.smiley' => array()*/
+			),*/
+			'com.woltlab.wcf.smiley' => []
 		];
 	}
 	
@@ -198,10 +198,10 @@ class VB5xExporter extends AbstractExporter {
 		}
 		
 		// smiley
-	/*	if (in_array('com.woltlab.wcf.smiley', $this->selectedData)) {
+		if (in_array('com.woltlab.wcf.smiley', $this->selectedData)) {
 			$queue[] = 'com.woltlab.wcf.smiley.category';
 			$queue[] = 'com.woltlab.wcf.smiley';
-		}*/
+		}
 		
 		return $queue;
 	}
@@ -741,6 +741,77 @@ class VB5xExporter extends AbstractExporter {
 				'pollID' => $row['nodeid'],
 				'optionID' => $row['polloptionid'],
 				'userID' => $row['userid']
+			]);
+		}
+	}
+	
+	/**
+	 * Counts smilies.
+	 */
+	public function countSmilies() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."smilie";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports smilies.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportSmilies($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."smilie
+			ORDER BY	smilieid";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			$fileLocation = $this->fileSystemPath . $row['smiliepath'];
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.smiley')->import($row['smilieid'], [
+				'smileyTitle' => $row['title'],
+				'smileyCode' => $row['smilietext'],
+				'showOrder' => $row['displayorder'],
+				'categoryID' => !empty($row['imagecategoryid']) ? $row['imagecategoryid'] : null
+			], ['fileLocation' => $fileLocation]);
+		}
+	}
+	
+	/**
+	 * Counts smiley categories.
+	 */
+	public function countSmileyCategories() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."imagecategory
+			WHERE	imagetype = ?";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute([3]);
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports smiley categories.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportSmileyCategories($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."imagecategory
+			WHERE		imagetype = ?
+			ORDER BY	imagecategoryid";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute([3]);
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.smiley.category')->import($row['imagecategoryid'], [
+				'title' => $row['title'],
+				'parentCategoryID' => 0,
+				'showOrder' => $row['displayorder']
 			]);
 		}
 	}
