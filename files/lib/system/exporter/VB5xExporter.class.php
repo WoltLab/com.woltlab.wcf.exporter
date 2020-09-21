@@ -308,6 +308,9 @@ class VB5xExporter extends AbstractExporter {
 				if (StringUtil::startsWith($row['scheme'], 'blowfish')) {
 					$password = PasswordUtil::getSaltedHash($row['token'], $row['token']);
 				}
+				else if (StringUtil::startsWith($row['scheme'], 'argon2')) {
+					$password = 'argon2:'.$row['token'];
+				}
 				else if ($row['scheme'] == 'legacy') {
 					$password = 'vb5:'.implode(':', explode(' ', $row['token'], 2));
 				}
