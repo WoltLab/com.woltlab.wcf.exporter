@@ -402,20 +402,35 @@ class VB5xExporter extends AbstractExporter {
 	 * @param	integer		$limit
 	 */
 	public function exportBoards(/** @noinspection PhpUnusedParameterInspection */$offset, $limit) {
-		$sql = "SELECT		node.*
+		$sql = "SELECT		node.*, channel.guid
 			FROM		".$this->databasePrefix."node node
 			
 			INNER JOIN	(SELECT contenttypeid FROM ".$this->databasePrefix."contenttype WHERE class = ?) x
 			ON		x.contenttypeid = node.contenttypeid
 			
+			INNER JOIN	".$this->databasePrefix."channel channel
+			ON		channel.nodeid = node.nodeid
+			
 			ORDER BY	nodeid";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute(['Channel']);
+		
+		$boardRoot = 0;
 		while ($row = $statement->fetchArray()) {
 			$this->boardCache[$row['parentid']][] = $row;
+			if ($row['guid'] === 'vbulletin-4ecbdf567f2c35.70389590') {
+				$boardRoot = $row['nodeid'];
+			}
 		}
 		
-		$this->exportBoardsRecursively();
+		if ($boardRoot !== 0) {
+			// Pretend that the subforums of the boardRoot do not have a parent board.
+			foreach ($this->boardCache[$boardRoot] as $board) {
+				$board['parentid'] = 0;
+			}
+		}
+		
+		$this->exportBoardsRecursively($boardRoot);
 	}
 	
 	/**
