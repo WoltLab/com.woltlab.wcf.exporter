@@ -38,6 +38,7 @@ class VB5xExporter extends AbstractExporter {
 	 * @var	array
 	 */
 	protected $boardCache = [];
+	protected $blogCache = [];
 	
 	/**
 	 * @inheritDoc
@@ -69,6 +70,14 @@ class VB5xExporter extends AbstractExporter {
 		'com.woltlab.wbb.acl' => 'ACLs',
 		'com.woltlab.wcf.smiley.category' => 'SmileyCategories',
 		'com.woltlab.wcf.smiley' => 'Smilies',
+		
+		'com.woltlab.blog.blog' => 'Blogs',
+		'com.woltlab.blog.category' => 'BlogCategories',
+		'com.woltlab.blog.entry' => 'BlogEntries',
+		'com.woltlab.blog.entry.attachment' => 'BlogAttachments',
+		'com.woltlab.blog.entry.comment' => 'BlogComments',
+		'com.woltlab.blog.entry.comment.response' => 'BlogCommentResponses',
+		'com.woltlab.blog.entry.like' => 'BlogEntryLikes',
 	];
 	
 	/**
@@ -107,7 +116,14 @@ class VB5xExporter extends AbstractExporter {
 		/*	'com.woltlab.wcf.conversation' => array(
 				'com.woltlab.wcf.conversation.label'
 			),*/
-			'com.woltlab.wcf.smiley' => []
+			'com.woltlab.wcf.smiley' => [],
+			
+			'com.woltlab.blog.entry' => [
+			/*	'com.woltlab.blog.category',
+				'com.woltlab.blog.entry.attachment',
+				'com.woltlab.blog.entry.comment',
+				'com.woltlab.blog.entry.like'*/
+			],
 		];
 	}
 	
@@ -195,6 +211,19 @@ class VB5xExporter extends AbstractExporter {
 				$queue[] = 'com.woltlab.wbb.poll.option.vote';
 			}
 		/*	if (in_array('com.woltlab.wbb.like', $this->selectedData)) $queue[] = 'com.woltlab.wbb.like';*/
+		}
+		
+		// blog
+		if (in_array('com.woltlab.blog.entry', $this->selectedData)) {
+			$queue[] = 'com.woltlab.blog.blog';
+		/*	if (in_array('com.woltlab.blog.category', $this->selectedData)) $queue[] = 'com.woltlab.blog.category';*/
+			$queue[] = 'com.woltlab.blog.entry';
+		/*	if (in_array('com.woltlab.blog.entry.attachment', $this->selectedData)) $queue[] = 'com.woltlab.blog.entry.attachment';
+			if (in_array('com.woltlab.blog.entry.comment', $this->selectedData)) {
+				$queue[] = 'com.woltlab.blog.entry.comment';
+				$queue[] = 'com.woltlab.blog.entry.comment.response';
+			}
+			if (in_array('com.woltlab.blog.entry.like', $this->selectedData)) $queue[] = 'com.woltlab.blog.entry.like';*/
 		}
 		
 		// smiley
@@ -742,6 +771,134 @@ class VB5xExporter extends AbstractExporter {
 				'optionID' => $row['polloptionid'],
 				'userID' => $row['userid']
 			]);
+		}
+	}
+	
+	/**
+	 * Counts blogs.
+	 */
+	public function countBlogs() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."node node
+			
+			INNER JOIN	(SELECT contenttypeid FROM ".$this->databasePrefix."contenttype WHERE class = ?) x
+			ON		x.contenttypeid = node.contenttypeid";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(['Channel']);
+		$row = $statement->fetchArray();
+		return ($row['count'] ? 1 : 0);
+	}
+	
+	/**
+	 * Exports blogs.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportBlogs(/** @noinspection PhpUnusedParameterInspection */$offset, $limit) {
+		$sql = "SELECT		node.*, channel.guid
+			FROM		".$this->databasePrefix."node node
+			
+			INNER JOIN	(SELECT contenttypeid FROM ".$this->databasePrefix."contenttype WHERE class = ?) x
+			ON		x.contenttypeid = node.contenttypeid
+			
+			INNER JOIN	".$this->databasePrefix."channel channel
+			ON		channel.nodeid = node.nodeid
+			
+			ORDER BY	nodeid";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(['Channel']);
+		
+		$blogRoot = 0;
+		while ($row = $statement->fetchArray()) {
+			$this->blogCache[$row['parentid']][] = $row;
+			if ($row['guid'] === 'vbulletin-4ecbdf567f3a38.99555305') {
+				$blogRoot = $row['nodeid'];
+			}
+		}
+		
+		// If the blog root could not be found then we skip, because we don't want to import boards as blogs.
+		if ($blogRoot === 0) {
+			return;
+		}
+		
+		$this->exportBlogsRecursively($blogRoot);
+	}
+	
+	/**
+	 * Exports the blogs recursively.
+	 *
+	 * @param	integer		$parentID
+	 */
+	protected function exportBlogsRecursively($parentID = 0) {
+		if (!isset($this->blogCache[$parentID])) return;
+		
+		foreach ($this->blogCache[$parentID] as $blog) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.blog.blog')->import($blog['nodeid'], [
+				'userID' => $blog['userid'],
+				'username' => $blog['authorname'],
+				'title' => $blog['title'],
+				'description' => $blog['description'],
+			]);
+			
+			$this->exportBlogsRecursively($blog['nodeid']);
+		}
+	}
+	
+	/**
+	 * Counts blog entries.
+	 */
+	public function countBlogEntries() {
+		return $this->__getMaxID($this->databasePrefix."node", 'nodeid');
+	}
+	
+	/**
+	 * Exports blog entries.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportBlogEntries($offset, $limit) {
+		$sql = "SELECT		child.*, view.count AS views, text.*
+			FROM		".$this->databasePrefix."node child
+			INNER JOIN	".$this->databasePrefix."node parent
+			ON		child.parentid = parent.nodeid
+			LEFT JOIN	".$this->databasePrefix."nodeview view
+			ON		child.nodeid = view.nodeid
+			INNER JOIN	".$this->databasePrefix."text text
+			ON		child.nodeid = text.nodeid
+			
+			INNER JOIN	(SELECT contenttypeid FROM ".$this->databasePrefix."contenttype WHERE class = ?) x
+			ON		x.contenttypeid = parent.contenttypeid
+			INNER JOIN	(SELECT contenttypeid FROM ".$this->databasePrefix."contenttype WHERE class IN (?)) y
+			ON		y.contenttypeid = child.contenttypeid
+			
+			WHERE		child.nodeid BETWEEN ? AND ?
+			ORDER BY	child.nodeid ASC";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(['Channel', 'Text', $offset + 1, $offset + $limit]);
+		while ($row = $statement->fetchArray()) {
+			// The importer will create blogs on demand. As we cannot specifically filter out blogs within MySQL
+			// we need to check whether the parentid matches a valid blog.
+			if (!ImportHandler::getInstance()->getNewID('com.woltlab.blog.blog', $row['parentid'])) {
+				continue;
+			}
+			
+			$additionalData = [];
+			
+			$data = [
+				'userID' => $row['userid'],
+				'username' => $row['authorname'],
+				'subject' => StringUtil::decodeHTML($row['title']),
+				'message' => self::fixBBCodes($row['rawtext']),
+				'time' => $row['created'],
+				'views' => $row['views'] ?: 0,
+				'enableHtml' => (isset($row['htmlState']) && $row['htmlState'] != 'off') ? 1 : 0,
+				'ipAddress' => UserUtil::convertIPv4To6($row['ipaddress']),
+				'blogID' => $row['parentid'],
+			];
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry')->import($row['nodeid'], $data, $additionalData);
 		}
 	}
 	
