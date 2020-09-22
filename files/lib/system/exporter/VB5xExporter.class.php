@@ -89,7 +89,8 @@ class VB5xExporter extends AbstractExporter {
 		'com.woltlab.wcf.conversation.attachment' => 100,
 		'com.woltlab.wbb.thread' => 200,
 		'com.woltlab.wbb.attachment' => 100,
-		'com.woltlab.wbb.acl' => 50
+		'com.woltlab.wbb.acl' => 50,
+		'com.woltlab.blog.entry.attachment' => 100,
 	];
 	
 	/**
@@ -119,8 +120,8 @@ class VB5xExporter extends AbstractExporter {
 			'com.woltlab.wcf.smiley' => [],
 			
 			'com.woltlab.blog.entry' => [
-			/*	'com.woltlab.blog.category',
-				'com.woltlab.blog.entry.attachment',*/
+			/*	'com.woltlab.blog.category',*/
+				'com.woltlab.blog.entry.attachment',
 				'com.woltlab.blog.entry.comment',
 			/*	'com.woltlab.blog.entry.like'*/
 			],
@@ -218,7 +219,7 @@ class VB5xExporter extends AbstractExporter {
 			$queue[] = 'com.woltlab.blog.blog';
 		/*	if (in_array('com.woltlab.blog.category', $this->selectedData)) $queue[] = 'com.woltlab.blog.category';*/
 			$queue[] = 'com.woltlab.blog.entry';
-		/*	if (in_array('com.woltlab.blog.entry.attachment', $this->selectedData)) $queue[] = 'com.woltlab.blog.entry.attachment';*/
+			if (in_array('com.woltlab.blog.entry.attachment', $this->selectedData)) $queue[] = 'com.woltlab.blog.entry.attachment';
 			if (in_array('com.woltlab.blog.entry.comment', $this->selectedData)) {
 				$queue[] = 'com.woltlab.blog.entry.comment';
 		/*		$queue[] = 'com.woltlab.blog.entry.comment.response';*/
@@ -899,6 +900,76 @@ class VB5xExporter extends AbstractExporter {
 			];
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry')->import($row['nodeid'], $data, $additionalData);
+		}
+	}
+	
+	/**
+	 * Counts blog attachments.
+	 */
+	public function countBlogAttachments() {
+		return $this->__getMaxID($this->databasePrefix."node", 'nodeid');
+	}
+	
+	/**
+	 * Exports blog attachments.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportBlogAttachments($offset, $limit) {
+		$sql = "SELECT		child.*, attach.*, filedata.*
+			FROM		".$this->databasePrefix."node child
+			INNER JOIN	".$this->databasePrefix."node parent
+			ON		child.parentid = parent.nodeid
+			INNER JOIN	".$this->databasePrefix."node grandparent
+			ON		parent.parentid = grandparent.nodeid
+			INNER JOIN	".$this->databasePrefix."attach attach
+			ON		child.nodeid = attach.nodeid
+			INNER JOIN	".$this->databasePrefix."filedata filedata
+			ON		attach.filedataid = filedata.filedataid
+			
+			INNER JOIN	(SELECT contenttypeid FROM ".$this->databasePrefix."contenttype WHERE class IN(?)) x
+			ON		x.contenttypeid = grandparent.contenttypeid
+			INNER JOIN	(SELECT contenttypeid FROM ".$this->databasePrefix."contenttype WHERE class = ?) y
+			ON		y.contenttypeid = parent.contenttypeid
+			INNER JOIN	(SELECT contenttypeid FROM ".$this->databasePrefix."contenttype WHERE class = ?) z
+			ON		z.contenttypeid = child.contenttypeid
+			
+			WHERE		child.nodeid BETWEEN ? AND ?
+			ORDER BY	child.nodeid ASC";
+		$statement = $this->database->prepareStatement($sql);
+		
+		$statement->execute(['Channel', 'Text', 'Attach', $offset + 1, $offset + $limit]);
+		while ($row = $statement->fetchArray()) {
+			$file = null;
+			
+			try {
+				switch ($this->readOption('attachfile')) {
+					case self::ATTACHFILE_DATABASE:
+						$file = FileUtil::getTemporaryFilename('attachment_');
+						file_put_contents($file, $row['filedata']);
+					break;
+				}
+				
+				// unable to read file -> abort
+				if (!is_file($file) || !is_readable($file)) continue;
+				
+				ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry.attachment')->import($row['nodeid'], [
+					'objectID' => $row['parentid'],
+					'userID' => $row['userid'] ?: null,
+					'filename' => $row['filename'],
+					'downloads' => $row['counter'],
+					'uploadTime' => $row['dateline'],
+					'showOrder' => isset($row['displayOrder']) ? $row['displayOrder'] : 0
+				], ['fileLocation' => $file]);
+				
+				if ($this->readOption('attachfile') == self::ATTACHFILE_DATABASE) unlink($file);
+			}
+			catch (\Exception $e) {
+				if ($this->readOption('attachfile') == self::ATTACHFILE_DATABASE && $file) @unlink($file);
+			
+				throw $e;
+			}
 		}
 	}
 	
