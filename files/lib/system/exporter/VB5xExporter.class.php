@@ -120,9 +120,9 @@ class VB5xExporter extends AbstractExporter {
 			
 			'com.woltlab.blog.entry' => [
 			/*	'com.woltlab.blog.category',
-				'com.woltlab.blog.entry.attachment',
+				'com.woltlab.blog.entry.attachment',*/
 				'com.woltlab.blog.entry.comment',
-				'com.woltlab.blog.entry.like'*/
+			/*	'com.woltlab.blog.entry.like'*/
 			],
 		];
 	}
@@ -218,12 +218,12 @@ class VB5xExporter extends AbstractExporter {
 			$queue[] = 'com.woltlab.blog.blog';
 		/*	if (in_array('com.woltlab.blog.category', $this->selectedData)) $queue[] = 'com.woltlab.blog.category';*/
 			$queue[] = 'com.woltlab.blog.entry';
-		/*	if (in_array('com.woltlab.blog.entry.attachment', $this->selectedData)) $queue[] = 'com.woltlab.blog.entry.attachment';
+		/*	if (in_array('com.woltlab.blog.entry.attachment', $this->selectedData)) $queue[] = 'com.woltlab.blog.entry.attachment';*/
 			if (in_array('com.woltlab.blog.entry.comment', $this->selectedData)) {
 				$queue[] = 'com.woltlab.blog.entry.comment';
-				$queue[] = 'com.woltlab.blog.entry.comment.response';
+		/*		$queue[] = 'com.woltlab.blog.entry.comment.response';*/
 			}
-			if (in_array('com.woltlab.blog.entry.like', $this->selectedData)) $queue[] = 'com.woltlab.blog.entry.like';*/
+		/*	if (in_array('com.woltlab.blog.entry.like', $this->selectedData)) $queue[] = 'com.woltlab.blog.entry.like';*/
 		}
 		
 		// smiley
@@ -899,6 +899,47 @@ class VB5xExporter extends AbstractExporter {
 			];
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry')->import($row['nodeid'], $data, $additionalData);
+		}
+	}
+	
+	/**
+	 * Counts blog comments.
+	 */
+	public function countBlogComments() {
+		return $this->__getMaxID($this->databasePrefix."node", 'nodeid');
+	}
+	
+	/**
+	 * Exports blog comments.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportBlogComments($offset, $limit) {
+		$sql = "SELECT		child.*, text.*
+			FROM		".$this->databasePrefix."node child
+			INNER JOIN	".$this->databasePrefix."node parent
+			ON		child.parentid = parent.nodeid
+			INNER JOIN	".$this->databasePrefix."text text
+			ON		child.nodeid = text.nodeid
+			
+			INNER JOIN	(SELECT contenttypeid FROM ".$this->databasePrefix."contenttype WHERE class = ?) x
+			ON		x.contenttypeid = parent.contenttypeid
+			INNER JOIN	(SELECT contenttypeid FROM ".$this->databasePrefix."contenttype WHERE class IN (?)) y
+			ON		y.contenttypeid = child.contenttypeid
+			
+			WHERE		child.nodeid BETWEEN ? AND ?
+			ORDER BY	child.nodeid ASC";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(['Text', 'Text', $offset + 1, $offset + $limit]);
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry.comment')->import($row['nodeid'], [
+				'objectID' => $row['parentid'],
+				'userID' => $row['userid'] ?: null,
+				'username' => $row['authorname'] ?: '',
+				'message' => self::fixBBCodes($row['rawtext']),
+				'time' => $row['created']
+			]);
 		}
 	}
 	
