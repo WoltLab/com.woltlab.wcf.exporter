@@ -1125,6 +1125,7 @@ class VB5xExporter extends AbstractExporter {
 		static $img2Callback = null;
 		static $attachRegex = null;
 		static $attachCallback = null;
+		static $tableRegex = null;
 		
 		if ($quoteRegex === null) {
 			$quoteRegex = new Regex('\[quote=(.*?);n(\d+)\]', Regex::CASE_INSENSITIVE);
@@ -1196,6 +1197,8 @@ class VB5xExporter extends AbstractExporter {
 					return "";
 				}
 			};
+			
+			$tableRegex = new Regex('\[TABLE(?:="[a-z0-9_-]+:\s*[a-z0-9_-]+(?:,\s*[a-z0-9_-]+:\s*[a-z0-9_-]+)*")?\]', Regex::CASE_INSENSITIVE);
 		}
 		
 		// use proper WCF 2 bbcode
@@ -1226,6 +1229,9 @@ class VB5xExporter extends AbstractExporter {
 		
 		// attach
 		$message = $attachRegex->replace($message, $attachCallback);
+		
+		// tables
+		$message = $tableRegex->replace($message, '[table]');
 		
 		// fix size bbcodes
 		$message = preg_replace_callback('/\[size=\'?(\d+)(px)?\'?\]/i', function ($matches) {
