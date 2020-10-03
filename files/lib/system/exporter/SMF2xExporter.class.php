@@ -347,7 +347,9 @@ class SMF2xExporter extends AbstractExporter {
 			
 			// update password hash
 			if ($newUserID) {
-				$passwordUpdateStatement->execute(['smf2:'.$row['passwd'].':'.$row['password_salt'], $newUserID]);
+				// The lowered username is used for the salt. The column `passwd_salt` is in fact used 
+				// for the auto login. 
+				$passwordUpdateStatement->execute(['smf2:'.$row['passwd'].':'.mb_strtolower($row['member_name']), $newUserID]);
 			}
 		}
 	}
