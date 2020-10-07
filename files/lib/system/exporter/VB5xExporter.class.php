@@ -443,7 +443,7 @@ class VB5xExporter extends AbstractExporter {
 			INNER JOIN	".$this->databasePrefix."channel channel
 			ON		channel.nodeid = node.nodeid
 			
-			ORDER BY	nodeid";
+			ORDER BY	parentid, displayorder";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute(['Channel']);
 		
