@@ -2,6 +2,7 @@
 namespace wcf\system\exporter;
 use wbb\data\board\Board;
 use wcf\data\user\group\UserGroup;
+use wcf\data\user\option\UserOption;
 use wcf\system\database\DatabaseException;
 use wcf\system\exception\SystemException;
 use wcf\system\importer\ImportHandler;
@@ -411,6 +412,135 @@ class VB5xExporter extends AbstractExporter {
 		}
 	}
 	
+	/**
+	 * Counts user options.
+	 */
+	public function countUserOptions() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."profilefield";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return ($row['count'] ? 1 : 0);
+	}
+	
+	/**
+	 * Exports user options.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportUserOptions(/** @noinspection PhpUnusedParameterInspection */$offset, $limit) {
+		$sql = "SELECT	*
+			FROM	".$this->databasePrefix."profilefield";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			$editable = 0;
+			switch ($row['editable']) {
+				case 0:
+					$editable = UserOption::EDITABILITY_ADMINISTRATOR;
+					break;
+				case 1:
+				case 2:
+					$editable = UserOption::EDITABILITY_ALL;
+					break;
+			}
+				
+			$visible = UserOption::VISIBILITY_ALL;
+			if ($row['hidden']) {
+				$visible = UserOption::VISIBILITY_ADMINISTRATOR;
+			}
+			
+			// get select options
+			$selectOptions = [];
+			if ($row['type'] == 'radio' || $row['type'] == 'select' || $row['type'] == 'select_multiple' || $row['type'] == 'checkbox') {
+				$selectOptions = @unserialize($row['data']);
+				
+				if (!is_array($selectOptions)) {
+					$selectOptions = @unserialize(mb_convert_encoding($row['data'], 'ISO-8859-1', 'UTF-8'));
+					if (!is_array($selectOptions)) continue;
+					
+					$selectOptions = array_map(function ($item) {
+						return mb_convert_encoding($item, 'UTF-8', 'ISO-8859-1');
+					}, $selectOptions);
+				}
+			}
+			
+			// get option type
+			$optionType = 'text';
+			switch ($row['type']) {
+				case 'textarea':
+					$optionType = 'textarea';
+					break;
+				case 'radio':
+					$optionType = 'radioButton';
+					break;
+				case 'select':
+					$optionType = 'select';
+					break;
+				case 'select_multiple':
+				case 'checkbox':
+					$optionType = 'multiSelect';
+					break;
+			}
+			
+			// get default value
+			$defaultValue = '';
+			switch ($row['type']) {
+				case 'input':
+				case 'textarea':
+					$defaultValue = $row['data'];
+					break;
+				case 'radio':
+				case 'select':
+					if ($row['def']) {
+						// use first radio option
+						$defaultValue = reset($selectOptions);
+					}
+					break;
+			}
+			
+			// get required status
+			$required = $askDuringRegistration = 0;
+			switch ($row['required']) {
+				case 1:
+				case 3:
+					$required = 1;
+					break;
+				case 2:
+					$askDuringRegistration = 1;
+					break;
+			}
+			
+			// get field name
+			$fieldName = 'field'.$row['profilefieldid'];
+			$sql = "SELECT	text
+				FROM	".$this->databasePrefix."phrase
+				WHERE	languageid = ?
+					AND varname = ?";
+			$statement2 = $this->database->prepareStatement($sql);
+			$statement2->execute([0, 'field'.$row['profilefieldid'].'_title']);
+			$row2 = $statement2->fetchArray();
+			if ($row2 !== false) {
+				$fieldName = $row2['text'];
+			}
+				
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.option')->import($row['profilefieldid'], [
+				'categoryName' => 'profile.personal',
+				'optionType' => $optionType,
+				'defaultValue' => $defaultValue,
+				'validationPattern' => $row['regex'],
+				'selectOptions' => implode("\n", $selectOptions),
+				'required' => $required,
+				'askDuringRegistration' => $askDuringRegistration,
+				'searchable' => $row['searchable'],
+				'editable' => $editable,
+				'visible' => $visible,
+				'showOrder' => $row['displayorder']
+			], ['name' => $fieldName]);
+		}
+	}
 	
 	/**
 	 * Counts boards.
