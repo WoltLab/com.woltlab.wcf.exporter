@@ -1,5 +1,6 @@
 <?php
 namespace wcf\system\exporter;
+use gallery\data\album\Album;
 use wbb\data\board\Board;
 use wcf\data\user\group\UserGroup;
 use wcf\data\user\option\UserOption;
@@ -79,6 +80,14 @@ class VB5xExporter extends AbstractExporter {
 		'com.woltlab.blog.entry.comment' => 'BlogComments',
 		'com.woltlab.blog.entry.comment.response' => 'BlogCommentResponses',
 		'com.woltlab.blog.entry.like' => 'BlogEntryLikes',
+		
+		'com.woltlab.gallery.category' => 'GalleryCategories',
+		'com.woltlab.gallery.album' => 'GalleryAlbums',
+		'com.woltlab.gallery.image' => 'GalleryImages',
+		'com.woltlab.gallery.image.comment' => 'GalleryComments',
+		'com.woltlab.gallery.image.comment.response' => 'GalleryCommentResponses',
+		'com.woltlab.gallery.image.like' => 'GalleryImageLikes',
+		'com.woltlab.gallery.image.marker' => 'GalleryImageMarkers',
 	];
 	
 	/**
@@ -126,6 +135,14 @@ class VB5xExporter extends AbstractExporter {
 				'com.woltlab.blog.entry.comment',
 			/*	'com.woltlab.blog.entry.like'*/
 			],
+			
+			'com.woltlab.gallery.image' => [
+			/*	'com.woltlab.gallery.category',*/
+				'com.woltlab.gallery.album',
+			/*	'com.woltlab.gallery.image.comment',
+				'com.woltlab.gallery.image.like',
+				'com.woltlab.gallery.image.marker'*/
+			]
 		];
 	}
 	
@@ -226,6 +243,19 @@ class VB5xExporter extends AbstractExporter {
 		/*		$queue[] = 'com.woltlab.blog.entry.comment.response';*/
 			}
 		/*	if (in_array('com.woltlab.blog.entry.like', $this->selectedData)) $queue[] = 'com.woltlab.blog.entry.like';*/
+		}
+		
+		// gallery
+		if (in_array('com.woltlab.gallery.image', $this->selectedData)) {
+		/*	if (in_array('com.woltlab.gallery.category', $this->selectedData)) $queue[] = 'com.woltlab.gallery.category';*/
+			if (in_array('com.woltlab.gallery.album', $this->selectedData)) $queue[] = 'com.woltlab.gallery.album';
+		/*	$queue[] = 'com.woltlab.gallery.image';
+			if (in_array('com.woltlab.gallery.image.comment', $this->selectedData)) {
+				$queue[] = 'com.woltlab.gallery.image.comment';
+				$queue[] = 'com.woltlab.gallery.image.comment.response';
+			}
+			if (in_array('com.woltlab.gallery.image.like', $this->selectedData)) $queue[] = 'com.woltlab.gallery.image.like';
+			if (in_array('com.woltlab.gallery.image.marker', $this->selectedData)) $queue[] = 'com.woltlab.gallery.image.marker';*/
 		}
 		
 		// smiley
@@ -1185,6 +1215,44 @@ class VB5xExporter extends AbstractExporter {
 				'message' => self::fixBBCodes($row['rawtext']),
 				'time' => $row['created']
 			]);
+		}
+	}
+	
+	/**
+	 * Counts gallery albums.
+	 */
+	public function countGalleryAlbums() {
+		return $this->__getMaxID($this->databasePrefix."node", 'nodeid');
+	}
+	
+	/**
+	 * Exports gallery albums.
+	 * 
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportGalleryAlbums($offset, $limit) {
+		$sql = "SELECT		node.*
+			FROM		".$this->databasePrefix."node node
+			
+			INNER JOIN	(SELECT contenttypeid FROM ".$this->databasePrefix."contenttype WHERE class = ?) x
+			ON		x.contenttypeid = node.contenttypeid
+			
+			WHERE		node.nodeid BETWEEN ? AND ?
+			ORDER BY	node.nodeid ASC";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(['Gallery', $offset + 1, $offset + $limit]);
+		while ($row = $statement->fetchArray()) {
+			$data = [
+				'userID' => $row['userid'],
+				'username' => $row['username'] ?: '',
+				'title' => $row['title'],
+				'description' => $row['description'],
+				'lastUpdateTime' => $row['lastcontent'],
+				'accessLevel'  => Album::ACCESS_EVERYONE, // TODO: Check whether this is sane.
+			];
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.gallery.album')->import($row['nodeid'], $data);
 		}
 	}
 	
