@@ -102,7 +102,7 @@ class VB5xExporter extends AbstractExporter {
 			'com.woltlab.wcf.user' => [
 				'com.woltlab.wcf.user.group',
 				'com.woltlab.wcf.user.avatar',
-			/*	'com.woltlab.wcf.user.option',*/
+				'com.woltlab.wcf.user.option',
 			/*	'com.woltlab.wcf.user.comment',
 				'com.woltlab.wcf.user.follower',
 				'com.woltlab.wcf.user.rank'*/
@@ -177,7 +177,7 @@ class VB5xExporter extends AbstractExporter {
 				$queue[] = 'com.woltlab.wcf.user.group';
 			//	if (in_array('com.woltlab.wcf.user.rank', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.rank';
 			}
-			//if (in_array('com.woltlab.wcf.user.option', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.option';
+			if (in_array('com.woltlab.wcf.user.option', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.option';
 			$queue[] = 'com.woltlab.wcf.user';
 			if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.avatar';
 			
@@ -294,6 +294,20 @@ class VB5xExporter extends AbstractExporter {
 	 * @param	integer		$limit
 	 */
 	public function exportUsers($offset, $limit) {
+		// cache user options
+		$userOptions = [];
+		$sql = "SELECT	*
+			FROM	".$this->databasePrefix."profilefield";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			if ($row['type'] == 'select_multiple' || $row['type'] == 'checkbox') {
+				$row['data'] = @unserialize($row['data']);
+			}
+			
+			$userOptions[] = $row;
+		}
+		
 		// prepare password update
 		$sql = "UPDATE	wcf".WCF_N."_user
 			SET	password = ?
@@ -301,7 +315,7 @@ class VB5xExporter extends AbstractExporter {
 		$passwordUpdateStatement = WCF::getDB()->prepareStatement($sql);
 		
 		// get users
-		$sql = "SELECT		user_table.*, textfield.*, useractivation.type AS activationType, useractivation.emailchange, userban.liftdate, userban.reason AS banReason
+		$sql = "SELECT		userfield.*, user_table.*, textfield.*, useractivation.type AS activationType, useractivation.emailchange, userban.liftdate, userban.reason AS banReason
 			FROM		".$this->databasePrefix."user user_table
 			LEFT JOIN	".$this->databasePrefix."usertextfield textfield
 			ON		user_table.userid = textfield.userid
@@ -309,6 +323,8 @@ class VB5xExporter extends AbstractExporter {
 			ON		user_table.userid = useractivation.userid
 			LEFT JOIN	".$this->databasePrefix."userban userban
 			ON		user_table.userid = userban.userid
+			LEFT JOIN	".$this->databasePrefix."userfield userfield
+			ON		userfield.userid = user_table.userid
 			WHERE		user_table.userid BETWEEN ? AND ?
 			ORDER BY	user_table.userid";
 		$statement = $this->database->prepareStatement($sql);
@@ -328,10 +344,38 @@ class VB5xExporter extends AbstractExporter {
 				'userTitle' => ($row['customtitle'] != 0) ? $row['usertitle'] : '',
 				'lastActivityTime' => $row['lastactivity']
 			];
+			
+			$options = [];
+			if ($row['birthday']) {
+				$options['birthday'] = self::convertBirthday($row['birthday']);
+			}
+			
 			$additionalData = [
 				'groupIDs' => explode(',', $row['membergroupids'].','.$row['usergroupid']),
-				'options' => []
+				'options' => $options
 			];
+			
+			// handle user options
+			foreach ($userOptions as $userOption) {
+				$optionID = $userOption['profilefieldid'];
+				if (isset($row['field'.$optionID])) {
+					$userOptionValue = $row['field'.$optionID];
+					if ($userOptionValue && ($userOption['type'] == 'select_multiple' || $userOption['type'] == 'checkbox')) {
+						if (is_array($userOption['data'])) {
+							$newUserOptionValue = '';
+							foreach ($userOption['data'] as $key => $value) {
+								if ($userOptionValue & pow(2, $key)) {
+									if (!empty($newUserOptionValue)) $newUserOptionValue .= "\n";
+									$newUserOptionValue .= $value;
+								}
+							}
+							$userOptionValue = $newUserOptionValue;
+						}
+					}
+					
+					$additionalData['options'][$optionID] = $userOptionValue;
+				}
+			}
 			
 			// import user
 			$newUserID = ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user')->import($row['userid'], $data, $additionalData);
@@ -1397,5 +1441,18 @@ class VB5xExporter extends AbstractExporter {
 		$message = MessageUtil::stripCrap($message);
 		
 		return $message;
+	}
+	
+	/**
+	 * Converts vb's birthday format (mm-dd-yy)
+	 * 
+	 * @param       string          $birthday
+	 * @return      string
+	 */
+	private static function convertBirthday($birthday) {
+		$a = explode('-', $birthday);
+		if (count($a) != 3) return '0000-00-00';
+		
+		return $a[2] . '-' . $a[0] . '-' . $a[1];
 	}
 }
