@@ -101,6 +101,7 @@ class VB5xExporter extends AbstractExporter {
 		'com.woltlab.wbb.attachment' => 100,
 		'com.woltlab.wbb.acl' => 50,
 		'com.woltlab.blog.entry.attachment' => 100,
+		'com.woltlab.gallery.image' => 50,
 	];
 	
 	/**
@@ -249,8 +250,8 @@ class VB5xExporter extends AbstractExporter {
 		if (in_array('com.woltlab.gallery.image', $this->selectedData)) {
 		/*	if (in_array('com.woltlab.gallery.category', $this->selectedData)) $queue[] = 'com.woltlab.gallery.category';*/
 			if (in_array('com.woltlab.gallery.album', $this->selectedData)) $queue[] = 'com.woltlab.gallery.album';
-		/*	$queue[] = 'com.woltlab.gallery.image';
-			if (in_array('com.woltlab.gallery.image.comment', $this->selectedData)) {
+			$queue[] = 'com.woltlab.gallery.image';
+		/*	if (in_array('com.woltlab.gallery.image.comment', $this->selectedData)) {
 				$queue[] = 'com.woltlab.gallery.image.comment';
 				$queue[] = 'com.woltlab.gallery.image.comment.response';
 			}
@@ -729,7 +730,7 @@ class VB5xExporter extends AbstractExporter {
 				'topic' => StringUtil::decodeHTML($row['title']),
 				'time' => $row['created'],
 				'userID' => $row['userid'],
-				'username' => $row['authorname'],
+				'username' => $row['authorname'] ?: '',
 				'views' => $row['views'] ?: 0,
 				'isAnnouncement' => 0,
 				'isSticky' => $row['sticky'],
@@ -776,7 +777,7 @@ class VB5xExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.post')->import($row['nodeid'], [
 				'threadID' => $row['isFirstPost'] ? $row['nodeid'] : $row['parentid'],
 				'userID' => $row['userid'],
-				'username' => $row['authorname'],
+				'username' => $row['authorname'] ?: '',
 				'subject' => StringUtil::decodeHTML($row['title']),
 				'message' => self::fixBBCodes($row['rawtext']),
 				'time' => $row['created'],
@@ -1041,7 +1042,7 @@ class VB5xExporter extends AbstractExporter {
 		foreach ($this->blogCache[$parentID] as $blog) {
 			ImportHandler::getInstance()->getImporter('com.woltlab.blog.blog')->import($blog['nodeid'], [
 				'userID' => $blog['userid'],
-				'username' => $blog['authorname'],
+				'username' => $blog['authorname'] ?: '',
 				'title' => $blog['title'],
 				'description' => $blog['description'],
 			]);
@@ -1093,7 +1094,7 @@ class VB5xExporter extends AbstractExporter {
 			
 			$data = [
 				'userID' => $row['userid'],
-				'username' => $row['authorname'],
+				'username' => $row['authorname'] ?: '',
 				'subject' => StringUtil::decodeHTML($row['title']),
 				'message' => self::fixBBCodes($row['rawtext']),
 				'time' => $row['created'],
@@ -1245,7 +1246,7 @@ class VB5xExporter extends AbstractExporter {
 		while ($row = $statement->fetchArray()) {
 			$data = [
 				'userID' => $row['userid'],
-				'username' => $row['username'] ?: '',
+				'username' => $row['authorname'] ?: '',
 				'title' => $row['title'],
 				'description' => $row['description'],
 				'lastUpdateTime' => $row['lastcontent'],
@@ -1253,6 +1254,68 @@ class VB5xExporter extends AbstractExporter {
 			];
 			
 			ImportHandler::getInstance()->getImporter('com.woltlab.gallery.album')->import($row['nodeid'], $data);
+		}
+	}
+	
+	/**
+	 * Counts gallery images.
+	 */
+	public function countGalleryImages() {
+		return $this->__getMaxID($this->databasePrefix."node", 'nodeid');
+	}
+	
+	/**
+	 * Exports gallery images.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportGalleryImages($offset, $limit) {
+		$sql = "SELECT		child.*, photo.*, filedata.*
+			FROM		".$this->databasePrefix."node child
+			INNER JOIN	".$this->databasePrefix."node parent
+			ON		child.parentid = parent.nodeid
+			INNER JOIN	".$this->databasePrefix."photo photo
+			ON		child.nodeid = photo.nodeid
+			INNER JOIN	".$this->databasePrefix."filedata filedata
+			ON		photo.filedataid = filedata.filedataid
+			
+			INNER JOIN	(SELECT contenttypeid FROM ".$this->databasePrefix."contenttype WHERE class = ?) x
+			ON		x.contenttypeid = parent.contenttypeid
+			INNER JOIN	(SELECT contenttypeid FROM ".$this->databasePrefix."contenttype WHERE class IN (?)) y
+			ON		y.contenttypeid = child.contenttypeid
+			
+			WHERE		child.nodeid BETWEEN ? AND ?
+			ORDER BY	child.nodeid ASC";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(['Gallery', 'Photo', $offset + 1, $offset + $limit]);
+		while ($row = $statement->fetchArray()) {
+			$file = null;
+			
+			try {
+				switch ($this->readOption('attachfile')) {
+					case self::ATTACHFILE_DATABASE:
+						$file = FileUtil::getTemporaryFilename('attachment_');
+						file_put_contents($file, $row['filedata']);
+					break;
+				}
+				
+				// unable to read file -> abort
+				if (!is_file($file) || !is_readable($file)) continue;
+				
+				ImportHandler::getInstance()->getImporter('com.woltlab.gallery.image')->import($row['nodeid'], [
+					'userID' => $row['userid'],
+					'username' => $row['authorname'] ?: '',
+					'albumID' => $row['parentid'],
+					'title' => $row['title'],
+					'description' => ($row['title'] != $row['caption'] ? $row['caption'] : ''),
+					'fileSize' => filesize($file),
+					'uploadTime' => $row['created'],
+				], ['fileLocation' => $file]);
+			}
+			finally {
+				if ($this->readOption('attachfile') == self::ATTACHFILE_DATABASE && $file) @unlink($file);
+			}
 		}
 	}
 	
