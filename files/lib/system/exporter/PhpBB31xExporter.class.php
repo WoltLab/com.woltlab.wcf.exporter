@@ -1523,7 +1523,7 @@ class PhpBB31xExporter extends AbstractExporter {
 		
 		// fix quotes
 		$text = preg_replace_callback('~\[quote=("?)([^"]+?)\\1(?:\s+post_id=(\d+)[^\]]*)?\]~', function ($matches) {
-			$username = str_replace(array("\\", "'"), array("\\\\", "\'"), $matches[2]);
+			$username = str_replace(["\\", "'"], ["\\\\", "\'"], $matches[2]);
 			$postID = isset($matches[3]) ? $matches[3] : null;
 			
 			if ($postID) {
