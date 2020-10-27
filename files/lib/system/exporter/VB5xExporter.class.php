@@ -1,7 +1,9 @@
 <?php
 namespace wcf\system\exporter;
+use gallery\data\album\Album;
 use wbb\data\board\Board;
 use wcf\data\user\group\UserGroup;
+use wcf\data\user\option\UserOption;
 use wcf\system\database\DatabaseException;
 use wcf\system\exception\SystemException;
 use wcf\system\importer\ImportHandler;
@@ -25,6 +27,8 @@ use wcf\util\UserUtil;
  * @package	WoltLabSuite\Core\System\Exporter
  */
 class VB5xExporter extends AbstractExporter {
+	const CHANNELOPTIONS_CANCONTAINTHREADS = 4;
+	
 	const ATTACHFILE_DATABASE = 0;
 	const ATTACHFILE_FILESYSTEM = 1;
 	const ATTACHFILE_FILESYSTEM_SUBFOLDER = 2;
@@ -34,6 +38,7 @@ class VB5xExporter extends AbstractExporter {
 	 * @var	array
 	 */
 	protected $boardCache = [];
+	protected $blogCache = [];
 	
 	/**
 	 * @inheritDoc
@@ -65,6 +70,22 @@ class VB5xExporter extends AbstractExporter {
 		'com.woltlab.wbb.acl' => 'ACLs',
 		'com.woltlab.wcf.smiley.category' => 'SmileyCategories',
 		'com.woltlab.wcf.smiley' => 'Smilies',
+		
+		'com.woltlab.blog.blog' => 'Blogs',
+		'com.woltlab.blog.category' => 'BlogCategories',
+		'com.woltlab.blog.entry' => 'BlogEntries',
+		'com.woltlab.blog.entry.attachment' => 'BlogAttachments',
+		'com.woltlab.blog.entry.comment' => 'BlogComments',
+		'com.woltlab.blog.entry.comment.response' => 'BlogCommentResponses',
+		'com.woltlab.blog.entry.like' => 'BlogEntryLikes',
+		
+		'com.woltlab.gallery.category' => 'GalleryCategories',
+		'com.woltlab.gallery.album' => 'GalleryAlbums',
+		'com.woltlab.gallery.image' => 'GalleryImages',
+		'com.woltlab.gallery.image.comment' => 'GalleryComments',
+		'com.woltlab.gallery.image.comment.response' => 'GalleryCommentResponses',
+		'com.woltlab.gallery.image.like' => 'GalleryImageLikes',
+		'com.woltlab.gallery.image.marker' => 'GalleryImageMarkers',
 	];
 	
 	/**
@@ -76,7 +97,9 @@ class VB5xExporter extends AbstractExporter {
 		'com.woltlab.wcf.conversation.attachment' => 100,
 		'com.woltlab.wbb.thread' => 200,
 		'com.woltlab.wbb.attachment' => 100,
-		'com.woltlab.wbb.acl' => 50
+		'com.woltlab.wbb.acl' => 50,
+		'com.woltlab.blog.entry.attachment' => 100,
+		'com.woltlab.gallery.image' => 50,
 	];
 	
 	/**
@@ -87,7 +110,7 @@ class VB5xExporter extends AbstractExporter {
 			'com.woltlab.wcf.user' => [
 				'com.woltlab.wcf.user.group',
 				'com.woltlab.wcf.user.avatar',
-			/*	'com.woltlab.wcf.user.option',*/
+				'com.woltlab.wcf.user.option',
 			/*	'com.woltlab.wcf.user.comment',
 				'com.woltlab.wcf.user.follower',
 				'com.woltlab.wcf.user.rank'*/
@@ -102,8 +125,23 @@ class VB5xExporter extends AbstractExporter {
 			],
 		/*	'com.woltlab.wcf.conversation' => array(
 				'com.woltlab.wcf.conversation.label'
-			),
-			'com.woltlab.wcf.smiley' => array()*/
+			),*/
+			'com.woltlab.wcf.smiley' => [],
+			
+			'com.woltlab.blog.entry' => [
+			/*	'com.woltlab.blog.category',*/
+				'com.woltlab.blog.entry.attachment',
+				'com.woltlab.blog.entry.comment',
+			/*	'com.woltlab.blog.entry.like'*/
+			],
+			
+			'com.woltlab.gallery.image' => [
+			/*	'com.woltlab.gallery.category',*/
+				'com.woltlab.gallery.album',
+			/*	'com.woltlab.gallery.image.comment',
+				'com.woltlab.gallery.image.like',
+				'com.woltlab.gallery.image.marker'*/
+			]
 		];
 	}
 	
@@ -155,7 +193,7 @@ class VB5xExporter extends AbstractExporter {
 				$queue[] = 'com.woltlab.wcf.user.group';
 			//	if (in_array('com.woltlab.wcf.user.rank', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.rank';
 			}
-			//if (in_array('com.woltlab.wcf.user.option', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.option';
+			if (in_array('com.woltlab.wcf.user.option', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.option';
 			$queue[] = 'com.woltlab.wcf.user';
 			if (in_array('com.woltlab.wcf.user.avatar', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.avatar';
 			
@@ -193,11 +231,37 @@ class VB5xExporter extends AbstractExporter {
 		/*	if (in_array('com.woltlab.wbb.like', $this->selectedData)) $queue[] = 'com.woltlab.wbb.like';*/
 		}
 		
+		// blog
+		if (in_array('com.woltlab.blog.entry', $this->selectedData)) {
+			$queue[] = 'com.woltlab.blog.blog';
+		/*	if (in_array('com.woltlab.blog.category', $this->selectedData)) $queue[] = 'com.woltlab.blog.category';*/
+			$queue[] = 'com.woltlab.blog.entry';
+			if (in_array('com.woltlab.blog.entry.attachment', $this->selectedData)) $queue[] = 'com.woltlab.blog.entry.attachment';
+			if (in_array('com.woltlab.blog.entry.comment', $this->selectedData)) {
+				$queue[] = 'com.woltlab.blog.entry.comment';
+		/*		$queue[] = 'com.woltlab.blog.entry.comment.response';*/
+			}
+		/*	if (in_array('com.woltlab.blog.entry.like', $this->selectedData)) $queue[] = 'com.woltlab.blog.entry.like';*/
+		}
+		
+		// gallery
+		if (in_array('com.woltlab.gallery.image', $this->selectedData)) {
+		/*	if (in_array('com.woltlab.gallery.category', $this->selectedData)) $queue[] = 'com.woltlab.gallery.category';*/
+			if (in_array('com.woltlab.gallery.album', $this->selectedData)) $queue[] = 'com.woltlab.gallery.album';
+			$queue[] = 'com.woltlab.gallery.image';
+		/*	if (in_array('com.woltlab.gallery.image.comment', $this->selectedData)) {
+				$queue[] = 'com.woltlab.gallery.image.comment';
+				$queue[] = 'com.woltlab.gallery.image.comment.response';
+			}
+			if (in_array('com.woltlab.gallery.image.like', $this->selectedData)) $queue[] = 'com.woltlab.gallery.image.like';
+			if (in_array('com.woltlab.gallery.image.marker', $this->selectedData)) $queue[] = 'com.woltlab.gallery.image.marker';*/
+		}
+		
 		// smiley
-	/*	if (in_array('com.woltlab.wcf.smiley', $this->selectedData)) {
+		if (in_array('com.woltlab.wcf.smiley', $this->selectedData)) {
 			$queue[] = 'com.woltlab.wcf.smiley.category';
 			$queue[] = 'com.woltlab.wcf.smiley';
-		}*/
+		}
 		
 		return $queue;
 	}
@@ -259,6 +323,20 @@ class VB5xExporter extends AbstractExporter {
 	 * @param	integer		$limit
 	 */
 	public function exportUsers($offset, $limit) {
+		// cache user options
+		$userOptions = [];
+		$sql = "SELECT	*
+			FROM	".$this->databasePrefix."profilefield";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			if ($row['type'] == 'select_multiple' || $row['type'] == 'checkbox') {
+				$row['data'] = @unserialize($row['data']);
+			}
+			
+			$userOptions[] = $row;
+		}
+		
 		// prepare password update
 		$sql = "UPDATE	wcf".WCF_N."_user
 			SET	password = ?
@@ -266,7 +344,7 @@ class VB5xExporter extends AbstractExporter {
 		$passwordUpdateStatement = WCF::getDB()->prepareStatement($sql);
 		
 		// get users
-		$sql = "SELECT		user_table.*, textfield.*, useractivation.type AS activationType, useractivation.emailchange, userban.liftdate, userban.reason AS banReason
+		$sql = "SELECT		userfield.*, user_table.*, textfield.*, useractivation.type AS activationType, useractivation.emailchange, userban.liftdate, userban.reason AS banReason
 			FROM		".$this->databasePrefix."user user_table
 			LEFT JOIN	".$this->databasePrefix."usertextfield textfield
 			ON		user_table.userid = textfield.userid
@@ -274,6 +352,8 @@ class VB5xExporter extends AbstractExporter {
 			ON		user_table.userid = useractivation.userid
 			LEFT JOIN	".$this->databasePrefix."userban userban
 			ON		user_table.userid = userban.userid
+			LEFT JOIN	".$this->databasePrefix."userfield userfield
+			ON		userfield.userid = user_table.userid
 			WHERE		user_table.userid BETWEEN ? AND ?
 			ORDER BY	user_table.userid";
 		$statement = $this->database->prepareStatement($sql);
@@ -293,10 +373,38 @@ class VB5xExporter extends AbstractExporter {
 				'userTitle' => ($row['customtitle'] != 0) ? $row['usertitle'] : '',
 				'lastActivityTime' => $row['lastactivity']
 			];
+			
+			$options = [];
+			if ($row['birthday']) {
+				$options['birthday'] = self::convertBirthday($row['birthday']);
+			}
+			
 			$additionalData = [
 				'groupIDs' => explode(',', $row['membergroupids'].','.$row['usergroupid']),
-				'options' => []
+				'options' => $options
 			];
+			
+			// handle user options
+			foreach ($userOptions as $userOption) {
+				$optionID = $userOption['profilefieldid'];
+				if (isset($row['field'.$optionID])) {
+					$userOptionValue = $row['field'.$optionID];
+					if ($userOptionValue && ($userOption['type'] == 'select_multiple' || $userOption['type'] == 'checkbox')) {
+						if (is_array($userOption['data'])) {
+							$newUserOptionValue = '';
+							foreach ($userOption['data'] as $key => $value) {
+								if ($userOptionValue & pow(2, $key)) {
+									if (!empty($newUserOptionValue)) $newUserOptionValue .= "\n";
+									$newUserOptionValue .= $value;
+								}
+							}
+							$userOptionValue = $newUserOptionValue;
+						}
+					}
+					
+					$additionalData['options'][$optionID] = $userOptionValue;
+				}
+			}
 			
 			// import user
 			$newUserID = ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user')->import($row['userid'], $data, $additionalData);
@@ -305,6 +413,9 @@ class VB5xExporter extends AbstractExporter {
 			if ($newUserID) {
 				if (StringUtil::startsWith($row['scheme'], 'blowfish')) {
 					$password = PasswordUtil::getSaltedHash($row['token'], $row['token']);
+				}
+				else if (StringUtil::startsWith($row['scheme'], 'argon2')) {
+					$password = 'argon2:'.$row['token'];
 				}
 				else if ($row['scheme'] == 'legacy') {
 					$password = 'vb5:'.implode(':', explode(' ', $row['token'], 2));
@@ -374,6 +485,135 @@ class VB5xExporter extends AbstractExporter {
 		}
 	}
 	
+	/**
+	 * Counts user options.
+	 */
+	public function countUserOptions() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."profilefield";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return ($row['count'] ? 1 : 0);
+	}
+	
+	/**
+	 * Exports user options.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportUserOptions(/** @noinspection PhpUnusedParameterInspection */$offset, $limit) {
+		$sql = "SELECT	*
+			FROM	".$this->databasePrefix."profilefield";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			$editable = 0;
+			switch ($row['editable']) {
+				case 0:
+					$editable = UserOption::EDITABILITY_ADMINISTRATOR;
+					break;
+				case 1:
+				case 2:
+					$editable = UserOption::EDITABILITY_ALL;
+					break;
+			}
+				
+			$visible = UserOption::VISIBILITY_ALL;
+			if ($row['hidden']) {
+				$visible = UserOption::VISIBILITY_ADMINISTRATOR;
+			}
+			
+			// get select options
+			$selectOptions = [];
+			if ($row['type'] == 'radio' || $row['type'] == 'select' || $row['type'] == 'select_multiple' || $row['type'] == 'checkbox') {
+				$selectOptions = @unserialize($row['data']);
+				
+				if (!is_array($selectOptions)) {
+					$selectOptions = @unserialize(mb_convert_encoding($row['data'], 'ISO-8859-1', 'UTF-8'));
+					if (!is_array($selectOptions)) continue;
+					
+					$selectOptions = array_map(function ($item) {
+						return mb_convert_encoding($item, 'UTF-8', 'ISO-8859-1');
+					}, $selectOptions);
+				}
+			}
+			
+			// get option type
+			$optionType = 'text';
+			switch ($row['type']) {
+				case 'textarea':
+					$optionType = 'textarea';
+					break;
+				case 'radio':
+					$optionType = 'radioButton';
+					break;
+				case 'select':
+					$optionType = 'select';
+					break;
+				case 'select_multiple':
+				case 'checkbox':
+					$optionType = 'multiSelect';
+					break;
+			}
+			
+			// get default value
+			$defaultValue = '';
+			switch ($row['type']) {
+				case 'input':
+				case 'textarea':
+					$defaultValue = $row['data'];
+					break;
+				case 'radio':
+				case 'select':
+					if ($row['def']) {
+						// use first radio option
+						$defaultValue = reset($selectOptions);
+					}
+					break;
+			}
+			
+			// get required status
+			$required = $askDuringRegistration = 0;
+			switch ($row['required']) {
+				case 1:
+				case 3:
+					$required = 1;
+					break;
+				case 2:
+					$askDuringRegistration = 1;
+					break;
+			}
+			
+			// get field name
+			$fieldName = 'field'.$row['profilefieldid'];
+			$sql = "SELECT	text
+				FROM	".$this->databasePrefix."phrase
+				WHERE	languageid = ?
+					AND varname = ?";
+			$statement2 = $this->database->prepareStatement($sql);
+			$statement2->execute([0, 'field'.$row['profilefieldid'].'_title']);
+			$row2 = $statement2->fetchArray();
+			if ($row2 !== false) {
+				$fieldName = $row2['text'];
+			}
+				
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.option')->import($row['profilefieldid'], [
+				'categoryName' => 'profile.personal',
+				'optionType' => $optionType,
+				'defaultValue' => $defaultValue,
+				'validationPattern' => $row['regex'],
+				'selectOptions' => implode("\n", $selectOptions),
+				'required' => $required,
+				'askDuringRegistration' => $askDuringRegistration,
+				'searchable' => $row['searchable'],
+				'editable' => $editable,
+				'visible' => $visible,
+				'showOrder' => $row['displayorder']
+			], ['name' => $fieldName]);
+		}
+	}
 	
 	/**
 	 * Counts boards.
@@ -397,20 +637,35 @@ class VB5xExporter extends AbstractExporter {
 	 * @param	integer		$limit
 	 */
 	public function exportBoards(/** @noinspection PhpUnusedParameterInspection */$offset, $limit) {
-		$sql = "SELECT		node.*
+		$sql = "SELECT		node.*, channel.guid, channel.options AS channelOptions
 			FROM		".$this->databasePrefix."node node
 			
 			INNER JOIN	(SELECT contenttypeid FROM ".$this->databasePrefix."contenttype WHERE class = ?) x
 			ON		x.contenttypeid = node.contenttypeid
 			
-			ORDER BY	nodeid";
+			INNER JOIN	".$this->databasePrefix."channel channel
+			ON		channel.nodeid = node.nodeid
+			
+			ORDER BY	parentid, displayorder";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute(['Channel']);
+		
+		$boardRoot = 0;
 		while ($row = $statement->fetchArray()) {
 			$this->boardCache[$row['parentid']][] = $row;
+			if ($row['guid'] === 'vbulletin-4ecbdf567f2c35.70389590') {
+				$boardRoot = $row['nodeid'];
+			}
 		}
 		
-		$this->exportBoardsRecursively();
+		if ($boardRoot !== 0) {
+			// Pretend that the subforums of the boardRoot do not have a parent board.
+			foreach ($this->boardCache[$boardRoot] as $board) {
+				$board['parentid'] = 0;
+			}
+		}
+		
+		$this->exportBoardsRecursively($boardRoot);
 	}
 	
 	/**
@@ -425,7 +680,7 @@ class VB5xExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import($board['nodeid'], [
 				'parentID' => $board['parentid'] ?: null,
 				'position' => $board['displayorder'] ?: 0,
-				'boardType' => Board::TYPE_BOARD,
+				'boardType' => $board['channelOptions'] & self::CHANNELOPTIONS_CANCONTAINTHREADS ? Board::TYPE_BOARD : Board::TYPE_CATEGORY,
 				'title' => $board['title'],
 				'description' => $board['description'],
 				'descriptionUseHtml' => 0,
@@ -473,7 +728,7 @@ class VB5xExporter extends AbstractExporter {
 				'topic' => StringUtil::decodeHTML($row['title']),
 				'time' => $row['created'],
 				'userID' => $row['userid'],
-				'username' => $row['authorname'],
+				'username' => $row['authorname'] ?: '',
 				'views' => $row['views'] ?: 0,
 				'isAnnouncement' => 0,
 				'isSticky' => $row['sticky'],
@@ -520,7 +775,7 @@ class VB5xExporter extends AbstractExporter {
 			ImportHandler::getInstance()->getImporter('com.woltlab.wbb.post')->import($row['nodeid'], [
 				'threadID' => $row['isFirstPost'] ? $row['nodeid'] : $row['parentid'],
 				'userID' => $row['userid'],
-				'username' => $row['authorname'],
+				'username' => $row['authorname'] ?: '',
 				'subject' => StringUtil::decodeHTML($row['title']),
 				'message' => self::fixBBCodes($row['rawtext']),
 				'time' => $row['created'],
@@ -711,6 +966,416 @@ class VB5xExporter extends AbstractExporter {
 	}
 	
 	/**
+	 * Counts blogs.
+	 */
+	public function countBlogs() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."node node
+			
+			INNER JOIN	(SELECT contenttypeid FROM ".$this->databasePrefix."contenttype WHERE class = ?) x
+			ON		x.contenttypeid = node.contenttypeid";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(['Channel']);
+		$row = $statement->fetchArray();
+		return ($row['count'] ? 1 : 0);
+	}
+	
+	/**
+	 * Exports blogs.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportBlogs(/** @noinspection PhpUnusedParameterInspection */$offset, $limit) {
+		$sql = "SELECT		node.*, channel.guid
+			FROM		".$this->databasePrefix."node node
+			
+			INNER JOIN	(SELECT contenttypeid FROM ".$this->databasePrefix."contenttype WHERE class = ?) x
+			ON		x.contenttypeid = node.contenttypeid
+			
+			INNER JOIN	".$this->databasePrefix."channel channel
+			ON		channel.nodeid = node.nodeid
+			
+			ORDER BY	nodeid";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(['Channel']);
+		
+		$blogRoot = 0;
+		while ($row = $statement->fetchArray()) {
+			$this->blogCache[$row['parentid']][] = $row;
+			if ($row['guid'] === 'vbulletin-4ecbdf567f3a38.99555305') {
+				$blogRoot = $row['nodeid'];
+			}
+		}
+		
+		// If the blog root could not be found then we skip, because we don't want to import boards as blogs.
+		if ($blogRoot === 0) {
+			return;
+		}
+		
+		$this->exportBlogsRecursively($blogRoot);
+	}
+	
+	/**
+	 * Exports the blogs recursively.
+	 *
+	 * @param	integer		$parentID
+	 */
+	protected function exportBlogsRecursively($parentID = 0) {
+		if (!isset($this->blogCache[$parentID])) return;
+		
+		foreach ($this->blogCache[$parentID] as $blog) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.blog.blog')->import($blog['nodeid'], [
+				'userID' => $blog['userid'],
+				'username' => $blog['authorname'] ?: '',
+				'title' => $blog['title'],
+				'description' => $blog['description'],
+			]);
+			
+			$this->exportBlogsRecursively($blog['nodeid']);
+		}
+	}
+	
+	/**
+	 * Counts blog entries.
+	 */
+	public function countBlogEntries() {
+		return $this->__getMaxID($this->databasePrefix."node", 'nodeid');
+	}
+	
+	/**
+	 * Exports blog entries.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportBlogEntries($offset, $limit) {
+		$sql = "SELECT		child.*, view.count AS views, text.*
+			FROM		".$this->databasePrefix."node child
+			INNER JOIN	".$this->databasePrefix."node parent
+			ON		child.parentid = parent.nodeid
+			LEFT JOIN	".$this->databasePrefix."nodeview view
+			ON		child.nodeid = view.nodeid
+			INNER JOIN	".$this->databasePrefix."text text
+			ON		child.nodeid = text.nodeid
+			
+			INNER JOIN	(SELECT contenttypeid FROM ".$this->databasePrefix."contenttype WHERE class = ?) x
+			ON		x.contenttypeid = parent.contenttypeid
+			INNER JOIN	(SELECT contenttypeid FROM ".$this->databasePrefix."contenttype WHERE class IN (?)) y
+			ON		y.contenttypeid = child.contenttypeid
+			
+			WHERE		child.nodeid BETWEEN ? AND ?
+			ORDER BY	child.nodeid ASC";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(['Channel', 'Text', $offset + 1, $offset + $limit]);
+		while ($row = $statement->fetchArray()) {
+			// The importer will create blogs on demand. As we cannot specifically filter out blogs within MySQL
+			// we need to check whether the parentid matches a valid blog.
+			if (!ImportHandler::getInstance()->getNewID('com.woltlab.blog.blog', $row['parentid'])) {
+				continue;
+			}
+			
+			$additionalData = [];
+			
+			$data = [
+				'userID' => $row['userid'],
+				'username' => $row['authorname'] ?: '',
+				'subject' => StringUtil::decodeHTML($row['title']),
+				'message' => self::fixBBCodes($row['rawtext']),
+				'time' => $row['created'],
+				'views' => $row['views'] ?: 0,
+				'enableHtml' => (isset($row['htmlState']) && $row['htmlState'] != 'off') ? 1 : 0,
+				'ipAddress' => UserUtil::convertIPv4To6($row['ipaddress']),
+				'blogID' => $row['parentid'],
+			];
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry')->import($row['nodeid'], $data, $additionalData);
+		}
+	}
+	
+	/**
+	 * Counts blog attachments.
+	 */
+	public function countBlogAttachments() {
+		return $this->__getMaxID($this->databasePrefix."node", 'nodeid');
+	}
+	
+	/**
+	 * Exports blog attachments.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportBlogAttachments($offset, $limit) {
+		$sql = "SELECT		child.*, attach.*, filedata.*
+			FROM		".$this->databasePrefix."node child
+			INNER JOIN	".$this->databasePrefix."node parent
+			ON		child.parentid = parent.nodeid
+			INNER JOIN	".$this->databasePrefix."node grandparent
+			ON		parent.parentid = grandparent.nodeid
+			INNER JOIN	".$this->databasePrefix."attach attach
+			ON		child.nodeid = attach.nodeid
+			INNER JOIN	".$this->databasePrefix."filedata filedata
+			ON		attach.filedataid = filedata.filedataid
+			
+			INNER JOIN	(SELECT contenttypeid FROM ".$this->databasePrefix."contenttype WHERE class IN(?)) x
+			ON		x.contenttypeid = grandparent.contenttypeid
+			INNER JOIN	(SELECT contenttypeid FROM ".$this->databasePrefix."contenttype WHERE class = ?) y
+			ON		y.contenttypeid = parent.contenttypeid
+			INNER JOIN	(SELECT contenttypeid FROM ".$this->databasePrefix."contenttype WHERE class = ?) z
+			ON		z.contenttypeid = child.contenttypeid
+			
+			WHERE		child.nodeid BETWEEN ? AND ?
+			ORDER BY	child.nodeid ASC";
+		$statement = $this->database->prepareStatement($sql);
+		
+		$statement->execute(['Channel', 'Text', 'Attach', $offset + 1, $offset + $limit]);
+		while ($row = $statement->fetchArray()) {
+			$file = null;
+			
+			try {
+				switch ($this->readOption('attachfile')) {
+					case self::ATTACHFILE_DATABASE:
+						$file = FileUtil::getTemporaryFilename('attachment_');
+						file_put_contents($file, $row['filedata']);
+					break;
+				}
+				
+				// unable to read file -> abort
+				if (!is_file($file) || !is_readable($file)) continue;
+				
+				ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry.attachment')->import($row['nodeid'], [
+					'objectID' => $row['parentid'],
+					'userID' => $row['userid'] ?: null,
+					'filename' => $row['filename'],
+					'downloads' => $row['counter'],
+					'uploadTime' => $row['dateline'],
+					'showOrder' => isset($row['displayOrder']) ? $row['displayOrder'] : 0
+				], ['fileLocation' => $file]);
+				
+				if ($this->readOption('attachfile') == self::ATTACHFILE_DATABASE) unlink($file);
+			}
+			catch (\Exception $e) {
+				if ($this->readOption('attachfile') == self::ATTACHFILE_DATABASE && $file) @unlink($file);
+			
+				throw $e;
+			}
+		}
+	}
+	
+	/**
+	 * Counts blog comments.
+	 */
+	public function countBlogComments() {
+		return $this->__getMaxID($this->databasePrefix."node", 'nodeid');
+	}
+	
+	/**
+	 * Exports blog comments.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportBlogComments($offset, $limit) {
+		$sql = "SELECT		child.*, text.*
+			FROM		".$this->databasePrefix."node child
+			INNER JOIN	".$this->databasePrefix."node parent
+			ON		child.parentid = parent.nodeid
+			INNER JOIN	".$this->databasePrefix."text text
+			ON		child.nodeid = text.nodeid
+			
+			INNER JOIN	(SELECT contenttypeid FROM ".$this->databasePrefix."contenttype WHERE class = ?) x
+			ON		x.contenttypeid = parent.contenttypeid
+			INNER JOIN	(SELECT contenttypeid FROM ".$this->databasePrefix."contenttype WHERE class IN (?)) y
+			ON		y.contenttypeid = child.contenttypeid
+			
+			WHERE		child.nodeid BETWEEN ? AND ?
+			ORDER BY	child.nodeid ASC";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(['Text', 'Text', $offset + 1, $offset + $limit]);
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry.comment')->import($row['nodeid'], [
+				'objectID' => $row['parentid'],
+				'userID' => $row['userid'] ?: null,
+				'username' => $row['authorname'] ?: '',
+				'message' => self::fixBBCodes($row['rawtext']),
+				'time' => $row['created']
+			]);
+		}
+	}
+	
+	/**
+	 * Counts gallery albums.
+	 */
+	public function countGalleryAlbums() {
+		return $this->__getMaxID($this->databasePrefix."node", 'nodeid');
+	}
+	
+	/**
+	 * Exports gallery albums.
+	 * 
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportGalleryAlbums($offset, $limit) {
+		$sql = "SELECT		node.*
+			FROM		".$this->databasePrefix."node node
+			
+			INNER JOIN	(SELECT contenttypeid FROM ".$this->databasePrefix."contenttype WHERE class = ?) x
+			ON		x.contenttypeid = node.contenttypeid
+			
+			WHERE		node.nodeid BETWEEN ? AND ?
+			ORDER BY	node.nodeid ASC";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(['Gallery', $offset + 1, $offset + $limit]);
+		while ($row = $statement->fetchArray()) {
+			$data = [
+				'userID' => $row['userid'],
+				'username' => $row['authorname'] ?: '',
+				'title' => $row['title'],
+				'description' => $row['description'],
+				'lastUpdateTime' => $row['lastcontent'],
+				'accessLevel'  => Album::ACCESS_EVERYONE, // TODO: Check whether this is sane.
+			];
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.gallery.album')->import($row['nodeid'], $data);
+		}
+	}
+	
+	/**
+	 * Counts gallery images.
+	 */
+	public function countGalleryImages() {
+		return $this->__getMaxID($this->databasePrefix."node", 'nodeid');
+	}
+	
+	/**
+	 * Exports gallery images.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportGalleryImages($offset, $limit) {
+		$sql = "SELECT		child.*, photo.*, filedata.*
+			FROM		".$this->databasePrefix."node child
+			INNER JOIN	".$this->databasePrefix."node parent
+			ON		child.parentid = parent.nodeid
+			INNER JOIN	".$this->databasePrefix."photo photo
+			ON		child.nodeid = photo.nodeid
+			INNER JOIN	".$this->databasePrefix."filedata filedata
+			ON		photo.filedataid = filedata.filedataid
+			
+			INNER JOIN	(SELECT contenttypeid FROM ".$this->databasePrefix."contenttype WHERE class = ?) x
+			ON		x.contenttypeid = parent.contenttypeid
+			INNER JOIN	(SELECT contenttypeid FROM ".$this->databasePrefix."contenttype WHERE class IN (?)) y
+			ON		y.contenttypeid = child.contenttypeid
+			
+			WHERE		child.nodeid BETWEEN ? AND ?
+			ORDER BY	child.nodeid ASC";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute(['Gallery', 'Photo', $offset + 1, $offset + $limit]);
+		while ($row = $statement->fetchArray()) {
+			$file = null;
+			
+			try {
+				switch ($this->readOption('attachfile')) {
+					case self::ATTACHFILE_DATABASE:
+						$file = FileUtil::getTemporaryFilename('attachment_');
+						file_put_contents($file, $row['filedata']);
+					break;
+				}
+				
+				// unable to read file -> abort
+				if (!is_file($file) || !is_readable($file)) continue;
+				
+				ImportHandler::getInstance()->getImporter('com.woltlab.gallery.image')->import($row['nodeid'], [
+					'userID' => $row['userid'],
+					'username' => $row['authorname'] ?: '',
+					'albumID' => $row['parentid'],
+					'title' => $row['title'],
+					'description' => ($row['title'] != $row['caption'] ? $row['caption'] : ''),
+					'fileSize' => filesize($file),
+					'uploadTime' => $row['created'],
+				], ['fileLocation' => $file]);
+			}
+			finally {
+				if ($this->readOption('attachfile') == self::ATTACHFILE_DATABASE && $file) @unlink($file);
+			}
+		}
+	}
+	
+	/**
+	 * Counts smilies.
+	 */
+	public function countSmilies() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."smilie";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute();
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports smilies.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportSmilies($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."smilie
+			ORDER BY	smilieid";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute();
+		while ($row = $statement->fetchArray()) {
+			$fileLocation = $this->fileSystemPath . $row['smiliepath'];
+			
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.smiley')->import($row['smilieid'], [
+				'smileyTitle' => $row['title'],
+				'smileyCode' => $row['smilietext'],
+				'showOrder' => $row['displayorder'],
+				'categoryID' => !empty($row['imagecategoryid']) ? $row['imagecategoryid'] : null
+			], ['fileLocation' => $fileLocation]);
+		}
+	}
+	
+	/**
+	 * Counts smiley categories.
+	 */
+	public function countSmileyCategories() {
+		$sql = "SELECT	COUNT(*) AS count
+			FROM	".$this->databasePrefix."imagecategory
+			WHERE	imagetype = ?";
+		$statement = $this->database->prepareStatement($sql);
+		$statement->execute([3]);
+		$row = $statement->fetchArray();
+		return $row['count'];
+	}
+	
+	/**
+	 * Exports smiley categories.
+	 *
+	 * @param	integer		$offset
+	 * @param	integer		$limit
+	 */
+	public function exportSmileyCategories($offset, $limit) {
+		$sql = "SELECT		*
+			FROM		".$this->databasePrefix."imagecategory
+			WHERE		imagetype = ?
+			ORDER BY	imagecategoryid";
+		$statement = $this->database->prepareStatement($sql, $limit, $offset);
+		$statement->execute([3]);
+		while ($row = $statement->fetchArray()) {
+			ImportHandler::getInstance()->getImporter('com.woltlab.wcf.smiley.category')->import($row['imagecategoryid'], [
+				'title' => $row['title'],
+				'parentCategoryID' => 0,
+				'showOrder' => $row['displayorder']
+			]);
+		}
+	}
+	
+	/**
 	 * Returns the value of the given option in the imported board.
 	 * 
 	 * @param	string		$optionName
@@ -750,6 +1415,7 @@ class VB5xExporter extends AbstractExporter {
 		static $img2Callback = null;
 		static $attachRegex = null;
 		static $attachCallback = null;
+		static $tableRegex = null;
 		
 		if ($quoteRegex === null) {
 			$quoteRegex = new Regex('\[quote=(.*?);n(\d+)\]', Regex::CASE_INSENSITIVE);
@@ -821,6 +1487,8 @@ class VB5xExporter extends AbstractExporter {
 					return "";
 				}
 			};
+			
+			$tableRegex = new Regex('\[TABLE(?:="[a-z0-9_-]+:\s*[a-z0-9_-]+(?:,\s*[a-z0-9_-]+:\s*[a-z0-9_-]+)*")?\]', Regex::CASE_INSENSITIVE);
 		}
 		
 		// use proper WCF 2 bbcode
@@ -851,6 +1519,9 @@ class VB5xExporter extends AbstractExporter {
 		
 		// attach
 		$message = $attachRegex->replace($message, $attachCallback);
+		
+		// tables
+		$message = $tableRegex->replace($message, '[table]');
 		
 		// fix size bbcodes
 		$message = preg_replace_callback('/\[size=\'?(\d+)(px)?\'?\]/i', function ($matches) {
@@ -886,5 +1557,18 @@ class VB5xExporter extends AbstractExporter {
 		$message = MessageUtil::stripCrap($message);
 		
 		return $message;
+	}
+	
+	/**
+	 * Converts vb's birthday format (mm-dd-yy)
+	 * 
+	 * @param       string          $birthday
+	 * @return      string
+	 */
+	private static function convertBirthday($birthday) {
+		$a = explode('-', $birthday);
+		if (count($a) != 3) return '0000-00-00';
+		
+		return $a[2] . '-' . $a[0] . '-' . $a[1];
 	}
 }
