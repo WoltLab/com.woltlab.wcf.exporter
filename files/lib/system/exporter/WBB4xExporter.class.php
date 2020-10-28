@@ -2795,9 +2795,8 @@ class WBB4xExporter extends AbstractExporter {
 				'title' => $row['title'],
 				'content' => $row['content'],
 				'metaDescription' => $row['metaDescription'],
-				'metaKeywords' => $row['metaKeywords'],
 				'customURL' => $row['customURL'],
-				'hasEmbeddedObjects' => $row['hasEmbeddedObjects']
+				'hasEmbeddedObjects' => $row['hasEmbeddedObjects'],
 			];
 		}
 		
