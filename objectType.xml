@@ -81,7 +81,6 @@
 			<definitionname>com.woltlab.wcf.exporter</definitionname>
 			<classname>wcf\system\exporter\NodeBB0xRedisExporter</classname>
 		</type>
-		
 		<type>
 			<name>com.woltlab.wcf.exporter.xobor</name>
 			<definitionname>com.woltlab.wcf.exporter</definitionname>
