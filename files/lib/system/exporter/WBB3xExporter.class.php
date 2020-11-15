@@ -21,6 +21,14 @@ use wcf\util\UserUtil;
  * @package	WoltLabSuite\Core\System\Exporter
  */
 class WBB3xExporter extends AbstractExporter {
+	
+	/**
+	 * Has the installation been made with a db number?
+	 * Old installations can have a prefix like wbb1_ where 1 is the instance number
+	 * @var bool 
+	 */
+	protected $hasInstanceNumber = true;
+	
 	/**
 	 * wcf installation number
 	 * @var	integer
@@ -116,6 +124,9 @@ class WBB3xExporter extends AbstractExporter {
 		if (preg_match('/^wbb(\d+)_(\d+)_$/', $this->databasePrefix, $match)) {
 			$this->dbNo = $match[1];
 			$this->instanceNo = $match[2];
+		} else if (preg_match('/^wbb(\d+)_$/', $this->databasePrefix, $match)) {
+			$this->hasInstanceNumber = false;
+			$this->dbNo = $match[1];
 		}
 		
 		// fix file system path
@@ -178,7 +189,7 @@ class WBB3xExporter extends AbstractExporter {
 	public function validateDatabaseAccess() {
 		parent::validateDatabaseAccess();
 		
-		$sql = "SELECT COUNT(*) FROM wbb".$this->dbNo."_".$this->instanceNo."_post";
+		$sql = "SELECT COUNT(*) FROM wbb".$this->dbNo.($this->hasInstanceNumber ? "_".$this->instanceNo : "")."_post";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute();
 	}
@@ -981,7 +992,7 @@ class WBB3xExporter extends AbstractExporter {
 	 */
 	public function countBoards() {
 		$sql = "SELECT	COUNT(*) AS count
-			FROM	wbb".$this->dbNo."_".$this->instanceNo."_board";
+			FROM	wbb".$this->dbNo.($this->hasInstanceNumber ? "_".$this->instanceNo : "")."_board";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute();
 		$row = $statement->fetchArray();
@@ -996,8 +1007,8 @@ class WBB3xExporter extends AbstractExporter {
 	 */
 	public function exportBoards(/** @noinspection PhpUnusedParameterInspection */$offset, $limit) {
 		$sql = "SELECT		board.*, structure.position
-			FROM		wbb".$this->dbNo."_".$this->instanceNo."_board board
-			LEFT JOIN	wbb".$this->dbNo."_".$this->instanceNo."_board_structure structure
+			FROM		wbb".$this->dbNo.($this->hasInstanceNumber ? "_".$this->instanceNo : "")."_board board
+			LEFT JOIN	wbb".$this->dbNo.($this->hasInstanceNumber ? "_".$this->instanceNo : "")."_board_structure structure
 			ON		(structure.boardID = board.boardID)
 			ORDER BY	board.parentID, structure.position";
 		$statement = $this->database->prepareStatement($sql);
@@ -1056,7 +1067,7 @@ class WBB3xExporter extends AbstractExporter {
 	 * Counts threads.
 	 */
 	public function countThreads() {
-		return $this->__getMaxID("wbb".$this->dbNo."_".$this->instanceNo."_thread", 'threadID');
+		return $this->__getMaxID("wbb".$this->dbNo.($this->hasInstanceNumber ? "_".$this->instanceNo : "")."_thread", 'threadID');
 	}
 	
 	/**
@@ -1081,14 +1092,14 @@ class WBB3xExporter extends AbstractExporter {
 		
 		if (substr($this->getPackageVersion('com.woltlab.wcf'), 0, 3) == '1.1') {
 			$sql = "SELECT		boardID, prefixes, prefixMode
-				FROM		wbb".$this->dbNo."_".$this->instanceNo."_board
+				FROM		wbb".$this->dbNo.($this->hasInstanceNumber ? "_".$this->instanceNo : "")."_board
 				WHERE		prefixMode > ?";
 			$statement = $this->database->prepareStatement($sql);
 			$statement->execute([0]);
 		}
 		else {
 			$sql = "SELECT		boardID, prefixes, 2 AS prefixMode
-				FROM		wbb".$this->dbNo."_".$this->instanceNo."_board
+				FROM		wbb".$this->dbNo.($this->hasInstanceNumber ? "_".$this->instanceNo : "")."_board
 				WHERE		prefixes <> ?";
 			$statement = $this->database->prepareStatement($sql);
 			$statement->execute(['']);
@@ -1119,7 +1130,7 @@ class WBB3xExporter extends AbstractExporter {
 		// get thread ids
 		$threadIDs = $announcementIDs = [];
 		$sql = "SELECT		threadID, isAnnouncement
-			FROM		wbb".$this->dbNo."_".$this->instanceNo."_thread
+			FROM		wbb".$this->dbNo.($this->hasInstanceNumber ? "_".$this->instanceNo : "")."_thread
 			WHERE		threadID BETWEEN ? AND ?
 			ORDER BY	threadID";
 		$statement = $this->database->prepareStatement($sql);
@@ -1137,7 +1148,7 @@ class WBB3xExporter extends AbstractExporter {
 			$conditionBuilder->add('threadID IN (?)', [$announcementIDs]);
 			
 			$sql = "SELECT		boardID, threadID
-				FROM		wbb".$this->dbNo."_".$this->instanceNo."_thread_announcement
+				FROM		wbb".$this->dbNo.($this->hasInstanceNumber ? "_".$this->instanceNo : "")."_thread_announcement
 				".$conditionBuilder;
 			$statement = $this->database->prepareStatement($sql);
 			$statement->execute($conditionBuilder->getParameters());
@@ -1155,7 +1166,7 @@ class WBB3xExporter extends AbstractExporter {
 		$conditionBuilder->add('threadID IN (?)', [$threadIDs]);
 		
 		$sql = "SELECT		thread.*, language.languageCode
-			FROM		wbb".$this->dbNo."_".$this->instanceNo."_thread thread
+			FROM		wbb".$this->dbNo.($this->hasInstanceNumber ? "_".$this->instanceNo : "")."_thread thread
 			LEFT JOIN	wcf".$this->dbNo."_language language
 			ON		(language.languageID = thread.languageID)
 			".$conditionBuilder;
@@ -1194,7 +1205,7 @@ class WBB3xExporter extends AbstractExporter {
 	 * Counts posts.
 	 */
 	public function countPosts() {
-		return $this->__getMaxID("wbb".$this->dbNo."_".$this->instanceNo."_post", 'postID');
+		return $this->__getMaxID("wbb".$this->dbNo.($this->hasInstanceNumber ? "_".$this->instanceNo : "")."_post", 'postID');
 	}
 	
 	/**
@@ -1205,7 +1216,7 @@ class WBB3xExporter extends AbstractExporter {
 	 */
 	public function exportPosts($offset, $limit) {
 		$sql = "SELECT		*
-			FROM		wbb".$this->dbNo."_".$this->instanceNo."_post
+			FROM		wbb".$this->dbNo.($this->hasInstanceNumber ? "_".$this->instanceNo : "")."_post
 			WHERE		postID BETWEEN ? AND ?
 			ORDER BY	postID";
 		$statement = $this->database->prepareStatement($sql);
@@ -1256,7 +1267,7 @@ class WBB3xExporter extends AbstractExporter {
 	 */
 	public function countWatchedThreads() {
 		$sql = "SELECT	COUNT(*) AS count
-			FROM	wbb".$this->dbNo."_".$this->instanceNo."_thread_subscription";
+			FROM	wbb".$this->dbNo.($this->hasInstanceNumber ? "_".$this->instanceNo : "")."_thread_subscription";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute();
 		$row = $statement->fetchArray();
@@ -1271,7 +1282,7 @@ class WBB3xExporter extends AbstractExporter {
 	 */
 	public function exportWatchedThreads($offset, $limit) {
 		$sql = "SELECT		*
-			FROM		wbb".$this->dbNo."_".$this->instanceNo."_thread_subscription
+			FROM		wbb".$this->dbNo.($this->hasInstanceNumber ? "_".$this->instanceNo : "")."_thread_subscription
 			ORDER BY	userID, threadID";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
 		$statement->execute();
@@ -1423,7 +1434,7 @@ class WBB3xExporter extends AbstractExporter {
 	 */
 	public function countThreadRatings() {
 		$sql = "SELECT	COUNT(*) AS count
-			FROM	wbb".$this->dbNo."_".$this->instanceNo."_thread_rating
+			FROM	wbb".$this->dbNo.($this->hasInstanceNumber ? "_".$this->instanceNo : "")."_thread_rating
 			WHERE	userID <> ?
 				AND rating NOT IN (?, ?)";
 		$statement = $this->database->prepareStatement($sql);
@@ -1441,8 +1452,8 @@ class WBB3xExporter extends AbstractExporter {
 	public function exportThreadRatings($offset, $limit) {
 		$sql = "SELECT		thread_rating.*, thread.firstPostID, thread.userID AS objectUserID,
 					thread.time
-			FROM		wbb".$this->dbNo."_".$this->instanceNo."_thread_rating thread_rating
-			LEFT JOIN	wbb".$this->dbNo."_".$this->instanceNo."_thread thread
+			FROM		wbb".$this->dbNo.($this->hasInstanceNumber ? "_".$this->instanceNo : "")."_thread_rating thread_rating
+			LEFT JOIN	wbb".$this->dbNo.($this->hasInstanceNumber ? "_".$this->instanceNo : "")."_thread thread
 			ON		(thread.threadID = thread_rating.threadID)
 			WHERE		thread_rating.userID <> ?
 					AND thread_rating.rating NOT IN (?, ?)
@@ -1466,14 +1477,14 @@ class WBB3xExporter extends AbstractExporter {
 	public function countLabels() {
 		if (substr($this->getPackageVersion('com.woltlab.wcf'), 0, 3) == '1.1') {
 			$sql = "SELECT	COUNT(*) AS count
-				FROM	wbb".$this->dbNo."_".$this->instanceNo."_board
+				FROM	wbb".$this->dbNo.($this->hasInstanceNumber ? "_".$this->instanceNo : "")."_board
 				WHERE	prefixMode > ?";
 			$statement = $this->database->prepareStatement($sql);
 			$statement->execute([0]);
 		}
 		else {
 			$sql = "SELECT	COUNT(*) AS count
-				FROM	wbb".$this->dbNo."_".$this->instanceNo."_board
+				FROM	wbb".$this->dbNo.($this->hasInstanceNumber ? "_".$this->instanceNo : "")."_board
 				WHERE	prefixes <> ?";
 			$statement = $this->database->prepareStatement($sql);
 			$statement->execute(['']);
@@ -1505,14 +1516,14 @@ class WBB3xExporter extends AbstractExporter {
 		// get boards
 		if (substr($this->getPackageVersion('com.woltlab.wcf'), 0, 3) == '1.1') {
 			$sql = "SELECT		boardID, prefixes, prefixMode
-				FROM		wbb".$this->dbNo."_".$this->instanceNo."_board
+				FROM		wbb".$this->dbNo.($this->hasInstanceNumber ? "_".$this->instanceNo : "")."_board
 				WHERE		prefixMode > ?";
 			$statement = $this->database->prepareStatement($sql);
 			$statement->execute([0]);
 		}
 		else {
 			$sql = "SELECT		boardID, prefixes, 2 AS prefixMode
-				FROM		wbb".$this->dbNo."_".$this->instanceNo."_board
+				FROM		wbb".$this->dbNo.($this->hasInstanceNumber ? "_".$this->instanceNo : "")."_board
 				WHERE		prefixes <> ?";
 			$statement = $this->database->prepareStatement($sql);
 			$statement->execute(['']);
@@ -1577,9 +1588,9 @@ class WBB3xExporter extends AbstractExporter {
 	 * Counts ACLs.
 	 */
 	public function countACLs() {
-		$sql = "SELECT	(SELECT COUNT(*) FROM wbb".$this->dbNo."_".$this->instanceNo."_board_moderator)
-				+ (SELECT COUNT(*) FROM wbb".$this->dbNo."_".$this->instanceNo."_board_to_group)
-				+ (SELECT COUNT(*) FROM wbb".$this->dbNo."_".$this->instanceNo."_board_to_user) AS count";
+		$sql = "SELECT	(SELECT COUNT(*) FROM wbb".$this->dbNo.($this->hasInstanceNumber ? "_".$this->instanceNo : "")."_board_moderator)
+				+ (SELECT COUNT(*) FROM wbb".$this->dbNo.($this->hasInstanceNumber ? "_".$this->instanceNo : "")."_board_to_group)
+				+ (SELECT COUNT(*) FROM wbb".$this->dbNo.($this->hasInstanceNumber ? "_".$this->instanceNo : "")."_board_to_user) AS count";
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute();
 		$row = $statement->fetchArray();
@@ -1597,18 +1608,18 @@ class WBB3xExporter extends AbstractExporter {
 		$mod = $user = $group = [];
 		$sql = "(
 				SELECT	boardID, userID, groupID, 'mod' AS type
-				FROM	wbb".$this->dbNo."_".$this->instanceNo."_board_moderator
+				FROM	wbb".$this->dbNo.($this->hasInstanceNumber ? "_".$this->instanceNo : "")."_board_moderator
 				WHERE	userID <> 0
 			)
 			UNION
 			(
 				SELECT	boardID, 0 AS userID, groupID, 'group' AS type
-				FROM	wbb".$this->dbNo."_".$this->instanceNo."_board_to_group
+				FROM	wbb".$this->dbNo.($this->hasInstanceNumber ? "_".$this->instanceNo : "")."_board_to_group
 			)
 			UNION
 			(
 				SELECT	boardID, userID, 0 AS groupID, 'user' AS type
-				FROM	wbb".$this->dbNo."_".$this->instanceNo."_board_to_user
+				FROM	wbb".$this->dbNo.($this->hasInstanceNumber ? "_".$this->instanceNo : "")."_board_to_user
 			)
 			ORDER BY	boardID, userID, groupID, type";
 		$statement = $this->database->prepareStatement($sql, $limit, $offset);
@@ -1626,7 +1637,7 @@ class WBB3xExporter extends AbstractExporter {
 			}
 			
 			$sql = "SELECT	*
-				FROM	wbb".$this->dbNo."_".$this->instanceNo."_board_moderator
+				FROM	wbb".$this->dbNo.($this->hasInstanceNumber ? "_".$this->instanceNo : "")."_board_moderator
 				".$conditionBuilder;
 			$statement = $this->database->prepareStatement($sql);
 			$statement->execute($conditionBuilder->getParameters());
@@ -1655,7 +1666,7 @@ class WBB3xExporter extends AbstractExporter {
 			}
 			
 			$sql = "SELECT	*
-				FROM	wbb".$this->dbNo."_".$this->instanceNo."_board_to_group
+				FROM	wbb".$this->dbNo.($this->hasInstanceNumber ? "_".$this->instanceNo : "")."_board_to_group
 				".$conditionBuilder;
 			$statement = $this->database->prepareStatement($sql);
 			$statement->execute($conditionBuilder->getParameters());
@@ -1683,7 +1694,7 @@ class WBB3xExporter extends AbstractExporter {
 			}
 			
 			$sql = "SELECT	*
-				FROM	wbb".$this->dbNo."_".$this->instanceNo."_board_to_user
+				FROM	wbb".$this->dbNo.($this->hasInstanceNumber ? "_".$this->instanceNo : "")."_board_to_user
 				".$conditionBuilder;
 			$statement = $this->database->prepareStatement($sql);
 			$statement->execute($conditionBuilder->getParameters());
