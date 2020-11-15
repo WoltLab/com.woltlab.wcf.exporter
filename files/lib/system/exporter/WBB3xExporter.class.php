@@ -23,8 +23,8 @@ use wcf\util\UserUtil;
 class WBB3xExporter extends AbstractExporter {
 	
 	/**
-	 * Has the installation been made with a db number?
-	 * Old installations can have a prefix like wbb1_ where 1 is the instance number
+	 * Has the installation been made with an instance number?
+	 * Old installations can have a prefix like wbb1_ only where 1 is the instance number
 	 * @var bool 
 	 */
 	protected $hasInstanceNumber = true;
