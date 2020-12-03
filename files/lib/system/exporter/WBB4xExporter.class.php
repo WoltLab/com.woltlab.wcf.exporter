@@ -1902,7 +1902,6 @@ class WBB4xExporter extends AbstractExporter {
 				'filename' => $row['filename'],
 				'fileExtension' => $row['fileExtension'],
 				'fileHash' => $row['fileHash'],
-				'filesize' => $row['filesize'],
 				'comments' => $row['comments'],
 				'views' => $row['views'],
 				'cumulativeLikes' => $row['cumulativeLikes'],

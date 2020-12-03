@@ -2124,7 +2124,6 @@ class WBB3xExporter extends AbstractExporter {
 				'description' => $row['description'],
 				'filename' => $row['filename'],
 				'fileExtension' => $row['fileExtension'],
-				'filesize' => $row['filesize'],
 				'comments' => $row['comments'],
 				'views' => $row['views'],
 				'uploadTime' => $row['uploadTime'],

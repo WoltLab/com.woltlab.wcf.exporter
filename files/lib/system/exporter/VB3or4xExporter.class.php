@@ -1678,7 +1678,6 @@ class VB3or4xExporter extends AbstractExporter {
 					'description' => '',
 					'filename' => StringUtil::decodeHTML(isset($row['filename']) ? $row['filename'] : ''),
 					'fileExtension' => $row['extension'],
-					'filesize' => $row['filesize'],
 					'uploadTime' => $row['dateline'],
 					'creationTime' => $row['dateline'],
 					'width' => $row['width'],

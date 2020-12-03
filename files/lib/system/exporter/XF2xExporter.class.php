@@ -1393,7 +1393,6 @@ class XF2xExporter extends AbstractExporter {
 				'description' => $row['description'],
 				'filename' => $row['filename'],
 				'fileExtension' => pathinfo($row['filename'], PATHINFO_EXTENSION),
-				'filesize' => $row['file_size'],
 				'views' => $row['view_count'],
 				'uploadTime' => $row['media_date'],
 				'creationTime' => $row['media_date'],
