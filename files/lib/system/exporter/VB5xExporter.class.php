@@ -1294,7 +1294,7 @@ class VB5xExporter extends AbstractExporter {
 					'albumID' => $row['parentid'],
 					'title' => $row['title'],
 					'description' => ($row['title'] != $row['caption'] ? $row['caption'] : ''),
-					'fileSize' => filesize($file),
+					'filesize' => filesize($file),
 					'uploadTime' => $row['created'],
 				], ['fileLocation' => $file]);
 			}
