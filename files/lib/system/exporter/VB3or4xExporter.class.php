@@ -292,9 +292,23 @@ class VB3or4xExporter extends AbstractExporter {
 		
 		// blog
 		if (in_array('com.woltlab.blog.entry', $this->selectedData)) {
-			$queue[] = 'com.woltlab.blog.entry';
-			if (in_array('com.woltlab.blog.entry.attachment', $this->selectedData)) $queue[] = 'com.woltlab.blog.entry.attachment';
-			if (in_array('com.woltlab.blog.entry.comment', $this->selectedData)) $queue[] = 'com.woltlab.blog.entry.comment';
+			try {
+				// Check whether the blog appears to be available.
+				$sql = "SELECT	COUNT(*)
+					FROM	".$this->databasePrefix."blog";
+				$statement = $this->database->prepareStatement($sql);
+				$statement->execute();
+				$dummy = $statement->fetchSingleColumn();
+				
+				// If we reach this place then the above query succeeded, thus
+				// the blog appears to be available and we add it to the queue.
+				$queue[] = 'com.woltlab.blog.entry';
+				if (in_array('com.woltlab.blog.entry.attachment', $this->selectedData)) $queue[] = 'com.woltlab.blog.entry.attachment';
+				if (in_array('com.woltlab.blog.entry.comment', $this->selectedData)) $queue[] = 'com.woltlab.blog.entry.comment';
+			}
+			catch (DatabaseException $e) {
+				// The blog does not appear to be available.
+			}
 		}
 		
 		return $queue;
