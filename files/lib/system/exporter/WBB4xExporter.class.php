@@ -2401,11 +2401,13 @@ class WBB4xExporter extends AbstractExporter {
 		$statement = $this->database->prepareStatement($sql);
 		$statement->execute($conditionBuilder->getParameters());
 		while ($row = $statement->fetchArray()) {
-			$contents[$row['languageCode'] ?: ''] = [
-				'subject' => $row['subject'],
-				'teaser' => $row['teaser'],
-				'message' => $row['message'],
-				'tags' => $tags[$row['fileID']] ?? [],
+			$contents = [
+				($row['languageCode'] ?: '') => [
+					'subject' => $row['subject'],
+					'teaser' => $row['teaser'],
+					'message' => $row['message'],
+					'tags' => $tags[$row['fileID']] ?? [],
+				]
 			];
 			
 			$this->exportFilebaseFilesHelper($row, $contents, $categories[$row['fileID']] ?? [$row['categoryID']]);
