@@ -664,7 +664,7 @@ class VB3or4xExporter extends AbstractExporter {
 	 * @param	integer		$offset
 	 * @param	integer		$limit
 	 */
-	public function exportUserOptions(/** @noinspection PhpUnusedParameterInspection */$offset, $limit) {
+	public function exportUserOptions($offset, $limit) {
 		$sql = "SELECT	*
 			FROM	".$this->databasePrefix."profilefield";
 		$statement = $this->database->prepareStatement($sql);
@@ -1009,7 +1009,7 @@ class VB3or4xExporter extends AbstractExporter {
 	 * @param	integer		$offset
 	 * @param	integer		$limit
 	 */
-	public function exportBoards(/** @noinspection PhpUnusedParameterInspection */$offset, $limit) {
+	public function exportBoards($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."forum
 			ORDER BY	forumid";

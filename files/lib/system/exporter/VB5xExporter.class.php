@@ -503,7 +503,7 @@ class VB5xExporter extends AbstractExporter {
 	 * @param	integer		$offset
 	 * @param	integer		$limit
 	 */
-	public function exportUserOptions(/** @noinspection PhpUnusedParameterInspection */$offset, $limit) {
+	public function exportUserOptions($offset, $limit) {
 		$sql = "SELECT	*
 			FROM	".$this->databasePrefix."profilefield";
 		$statement = $this->database->prepareStatement($sql);
@@ -636,7 +636,7 @@ class VB5xExporter extends AbstractExporter {
 	 * @param	integer		$offset
 	 * @param	integer		$limit
 	 */
-	public function exportBoards(/** @noinspection PhpUnusedParameterInspection */$offset, $limit) {
+	public function exportBoards($offset, $limit) {
 		$sql = "SELECT		node.*, channel.guid, channel.options AS channelOptions
 			FROM		".$this->databasePrefix."node node
 			
@@ -986,7 +986,7 @@ class VB5xExporter extends AbstractExporter {
 	 * @param	integer		$offset
 	 * @param	integer		$limit
 	 */
-	public function exportBlogs(/** @noinspection PhpUnusedParameterInspection */$offset, $limit) {
+	public function exportBlogs($offset, $limit) {
 		$sql = "SELECT		node.*, channel.guid
 			FROM		".$this->databasePrefix."node node
 			

@@ -774,7 +774,7 @@ class SMF2xExporter extends AbstractExporter {
 	 * @param	integer		$offset
 	 * @param	integer		$limit
 	 */
-	public function exportBoards(/** @noinspection PhpUnusedParameterInspection */$offset, $limit) {
+	public function exportBoards($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."categories
 			ORDER BY	id_cat";
@@ -1116,7 +1116,7 @@ class SMF2xExporter extends AbstractExporter {
 	 * @param	integer		$offset
 	 * @param	integer		$limit
 	 */
-	public function exportACLs(/** @noinspection PhpUnusedParameterInspection */$offset, $limit) {
+	public function exportACLs($offset, $limit) {
 		// TODO: try to split this into several requests
 		$profileToBoard = [];
 		$boardToGroup = [];

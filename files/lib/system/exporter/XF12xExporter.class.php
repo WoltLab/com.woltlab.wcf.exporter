@@ -788,7 +788,7 @@ class XF12xExporter extends AbstractExporter {
 	 * @param	integer		$offset
 	 * @param	integer		$limit
 	 */
-	public function exportBoards(/** @noinspection PhpUnusedParameterInspection */$offset, $limit) {
+	public function exportBoards($offset, $limit) {
 		$sql = "SELECT		node.node_id AS nodeID, node.*, forum.*, link_forum.*
 			FROM		xf_node node
 			LEFT JOIN	xf_forum forum
@@ -1082,7 +1082,7 @@ class XF12xExporter extends AbstractExporter {
 	 * @param	integer		$offset
 	 * @param	integer		$limit
 	 */
-	public function exportLabels(/** @noinspection PhpUnusedParameterInspection */$offset, $limit) {
+	public function exportLabels($offset, $limit) {
 		$objectType = ObjectTypeCache::getInstance()->getObjectTypeByName('com.woltlab.wcf.label.objectType', 'com.woltlab.wbb.board');
 		
 		$sql = "SELECT		forum.*, phrase.phrase_text

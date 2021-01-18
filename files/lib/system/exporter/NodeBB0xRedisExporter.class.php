@@ -230,7 +230,7 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 	 * @param	integer		$limit
 	 * @throws	SystemException
 	 */
-	public function exportBoards(/** @noinspection PhpUnusedParameterInspection */$offset, $limit) {
+	public function exportBoards($offset, $limit) {
 		$boardIDs = $this->database->zrange('categories:cid', 0, -1);
 		if (!$boardIDs) throw new SystemException('Could not fetch boardIDs');
 		

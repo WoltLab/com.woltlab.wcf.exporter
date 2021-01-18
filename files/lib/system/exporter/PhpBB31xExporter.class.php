@@ -907,7 +907,7 @@ class PhpBB31xExporter extends AbstractExporter {
 	 * @param	integer		$offset
 	 * @param	integer		$limit
 	 */
-	public function exportBoards(/** @noinspection PhpUnusedParameterInspection */$offset, $limit) {
+	public function exportBoards($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."forums
 			ORDER BY	parent_id, left_id, forum_id";
@@ -1227,7 +1227,7 @@ class PhpBB31xExporter extends AbstractExporter {
 	 * @param	integer		$offset
 	 * @param	integer		$limit
 	 */
-	public function exportACLs($offset, /** @noinspection PhpUnusedParameterInspection */$limit) {
+	public function exportACLs($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."acl_options
 			WHERE		is_local = ?";

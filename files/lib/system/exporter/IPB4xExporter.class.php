@@ -597,7 +597,7 @@ class IPB4xExporter extends AbstractExporter {
 	 * @param	integer		$offset
 	 * @param	integer		$limit
 	 */
-	public function exportBoards(/** @noinspection PhpUnusedParameterInspection */$offset, $limit) {
+	public function exportBoards($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."forums_forums
 			ORDER BY	parent_id, id";

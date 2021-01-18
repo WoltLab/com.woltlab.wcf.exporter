@@ -411,7 +411,7 @@ class WBB2xExporter extends AbstractExporter {
 	 * @param	integer		$offset
 	 * @param	integer		$limit
 	 */
-	public function exportUserOptions(/** @noinspection PhpUnusedParameterInspection */$offset, $limit) {
+	public function exportUserOptions($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."profilefields
 			WHERE		profilefieldid > ?
@@ -593,7 +593,7 @@ class WBB2xExporter extends AbstractExporter {
 	 * @param	integer		$offset
 	 * @param	integer		$limit
 	 */
-	public function exportBoards(/** @noinspection PhpUnusedParameterInspection */$offset, $limit) {
+	public function exportBoards($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."boards
 			ORDER BY	parentid, boardorder";
@@ -952,7 +952,7 @@ class WBB2xExporter extends AbstractExporter {
 	 * @param	integer		$offset
 	 * @param	integer		$limit
 	 */
-	public function exportLabels(/** @noinspection PhpUnusedParameterInspection */$offset, $limit) {
+	public function exportLabels($offset, $limit) {
 		$prefixMap = [];
 		
 		// get global prefixes
@@ -1044,7 +1044,7 @@ class WBB2xExporter extends AbstractExporter {
 	 * @param	integer		$offset
 	 * @param	integer		$limit
 	 */
-	public function exportACLs(/** @noinspection PhpUnusedParameterInspection */$offset, $limit) {
+	public function exportACLs($offset, $limit) {
 		$sql = "SELECT		*
 			FROM		".$this->databasePrefix."permissions
 			ORDER BY	boardid, groupid";
