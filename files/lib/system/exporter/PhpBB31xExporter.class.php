@@ -385,6 +385,9 @@ class PhpBB31xExporter extends AbstractExporter {
 				if (PasswordUtil::isBlowfish($row['user_password'])) {
 					$password = PasswordUtil::getSaltedHash($row['user_password'], $row['user_password']);
 				}
+				else if (StringUtil::startsWith($row['user_password'], '$argon2')) {
+					$password = 'argon2:'.$row['user_password'];
+				}
 				else {
 					$password = 'phpbb3:'.$row['user_password'].':';
 				}
