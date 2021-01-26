@@ -382,8 +382,8 @@ class PhpBB31xExporter extends AbstractExporter {
 			
 			// update password hash
 			if ($newUserID) {
-				if (PasswordUtil::isBlowfish($row['user_password'])) {
-					$password = PasswordUtil::getSaltedHash($row['user_password'], $row['user_password']);
+				if (StringUtil::startsWith($row['user_password'], '$2')) {
+					$password = 'Bcrypt:'.$row['user_password'];
 				}
 				else if (StringUtil::startsWith($row['user_password'], '$argon2')) {
 					$password = 'argon2:'.$row['user_password'];

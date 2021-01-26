@@ -328,7 +328,7 @@ class XF12xExporter extends AbstractExporter {
 				$passwordData = unserialize($row['passwordData']);
 				switch ($row['scheme_class']) {
 					case 'XenForo_Authentication_Core12':
-						$password = PasswordUtil::getSaltedHash($passwordData['hash'], $passwordData['hash']);
+						$password = 'Bcrypt:'.$passwordData['hash'];
 					break;
 					
 					case 'XenForo_Authentication_Core':

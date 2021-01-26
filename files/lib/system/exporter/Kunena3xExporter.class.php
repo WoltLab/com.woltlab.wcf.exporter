@@ -229,13 +229,13 @@ class Kunena3xExporter extends AbstractExporter {
 			// update password hash
 			if ($newUserID) {
 				$password = 'joomla3:'.$row['password'];
-				if (substr($row['password'], 0, 3) == '$1$') {
+				if (StringUtil::startsWith($row['password'], '$1')) {
 					$password = 'cryptMD5:'.$row['password'];
 				}
-				else if (substr($row['password'], 0, 4) == '$2y$' || substr($row['password'], 0, 4) == '$2a$') {
-					$password = PasswordUtil::getSaltedHash($row['password'], $row['password']);
+				else if (StringUtil::startsWith($row['password'], '$2')) {
+					$password = 'Bcrypt:'.$row['password'];
 				}
-				else if (substr($row['password'], 0, 3) == '$P$') {
+				else if (StringUtil::startsWith($row['password'], '$P')) {
 					$password = 'phpass:'.$row['password'];
 				}
 				
