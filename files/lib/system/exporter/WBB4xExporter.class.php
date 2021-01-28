@@ -157,7 +157,10 @@ class WBB4xExporter extends AbstractExporter
 
         // fix file system path
         if (!empty($this->fileSystemPath)) {
-            if (!@\file_exists($this->fileSystemPath . 'lib/core.functions.php') && @\file_exists($this->fileSystemPath . 'wcf/lib/core.functions.php')) {
+            if (
+                !@\file_exists($this->fileSystemPath . 'lib/core.functions.php')
+                && @\file_exists($this->fileSystemPath . 'wcf/lib/core.functions.php')
+            ) {
                 $this->fileSystemPath = $this->fileSystemPath . 'wcf/';
             }
         }
@@ -252,7 +255,13 @@ class WBB4xExporter extends AbstractExporter
     {
         foreach ($this->requiresFileAccess as $item) {
             if (\in_array($item, $this->selectedData)) {
-                if (empty($this->fileSystemPath) || (!@\file_exists($this->fileSystemPath . 'lib/core.functions.php') && !@\file_exists($this->fileSystemPath . 'wcf/lib/core.functions.php'))) {
+                if (
+                    empty($this->fileSystemPath)
+                    || (
+                        !@\file_exists($this->fileSystemPath . 'lib/core.functions.php')
+                        && !@\file_exists($this->fileSystemPath . 'wcf/lib/core.functions.php')
+                    )
+                ) {
                     return false;
                 }
                 break;
@@ -535,7 +544,13 @@ class WBB4xExporter extends AbstractExporter
                 $i18nData['groupName'] = $i18nValues[$groupData['groupDescription']];
             }
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.group')->import($groupID, $groupData, ['i18n' => $i18nData]);
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.user.group')
+                ->import(
+                    $groupID,
+                    $groupData,
+                    ['i18n' => $i18nData]
+                );
         }
     }
 
@@ -640,7 +655,13 @@ class WBB4xExporter extends AbstractExporter
             }
 
             // import user
-            $newUserID = ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user')->import($row['userID'], $data, $additionalData);
+            $newUserID = ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.user')
+                ->import(
+                    $row['userID'],
+                    $data,
+                    $additionalData
+                );
 
             // update password hash
             if ($newUserID) {
@@ -677,7 +698,7 @@ class WBB4xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.rank')->import($row['rankID'], [
+            $data = [
                 'groupID' => $row['groupID'],
                 'requiredPoints' => $row['requiredPoints'],
                 'rankTitle' => $row['rankTitle'],
@@ -685,7 +706,11 @@ class WBB4xExporter extends AbstractExporter
                 'rankImage' => $row['rankImage'],
                 'repeatImage' => $row['repeatImage'],
                 'requiredGender' => $row['requiredGender'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.user.rank')
+                ->import($row['rankID'], $data);
         }
     }
 
@@ -712,11 +737,15 @@ class WBB4xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.follower')->import(0, [
+            $data = [
                 'userID' => $row['userID'],
                 'followUserID' => $row['followUserID'],
                 'time' => $row['time'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.user.follower')
+                ->import(0, $data);
         }
     }
 
@@ -736,7 +765,12 @@ class WBB4xExporter extends AbstractExporter
      */
     public function exportProfileComments($offset, $limit)
     {
-        $this->exportComments('com.woltlab.wcf.user.profileComment', 'com.woltlab.wcf.user.comment', $offset, $limit);
+        $this->exportComments(
+            'com.woltlab.wcf.user.profileComment',
+            'com.woltlab.wcf.user.comment',
+            $offset,
+            $limit
+        );
     }
 
     /**
@@ -755,7 +789,12 @@ class WBB4xExporter extends AbstractExporter
      */
     public function exportProfileCommentResponses($offset, $limit)
     {
-        $this->exportCommentResponses('com.woltlab.wcf.user.profileComment', 'com.woltlab.wcf.user.comment.response', $offset, $limit);
+        $this->exportCommentResponses(
+            'com.woltlab.wcf.user.profileComment',
+            'com.woltlab.wcf.user.comment.response',
+            $offset,
+            $limit
+        );
     }
 
     /**
@@ -781,14 +820,24 @@ class WBB4xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.avatar')->import($row['avatarID'], [
+            $fileLocation = $this->fileSystemPath . 'images/avatars/' . \substr($row['fileHash'], 0, 2) . '/' . $row['avatarID'] . '-' . $row['fileHash'] . '.' . $row['avatarExtension'];
+
+            $data = [
                 'avatarName' => $row['avatarName'],
                 'avatarExtension' => $row['avatarExtension'],
                 'width' => $row['width'],
                 'height' => $row['height'],
                 'userID' => $row['userID'],
                 'fileHash' => $row['fileHash'],
-            ], ['fileLocation' => $this->fileSystemPath . 'images/avatars/' . \substr($row['fileHash'], 0, 2) . '/' . $row['avatarID'] . '-' . $row['fileHash'] . '.' . $row['avatarExtension']]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.user.avatar')
+                ->import(
+                    $row['avatarID'],
+                    $data,
+                    ['fileLocation' => $fileLocation]
+                );
         }
     }
 
@@ -801,7 +850,10 @@ class WBB4xExporter extends AbstractExporter
         $optionsNames = $this->getExistingUserOptions();
 
         $conditionBuilder = new PreparedStatementConditionBuilder();
-        $conditionBuilder->add('categoryName IN (SELECT categoryName FROM wcf' . $this->dbNo . '_user_option_category WHERE parentCategoryName = ?)', ['profile']);
+        $conditionBuilder->add(
+            'categoryName IN (SELECT categoryName FROM wcf' . $this->dbNo . '_user_option_category WHERE parentCategoryName = ?)',
+            ['profile']
+        );
         if (!empty($optionsNames)) {
             $conditionBuilder->add('optionName NOT IN (?)', [$optionsNames]);
         }
@@ -828,7 +880,10 @@ class WBB4xExporter extends AbstractExporter
         $optionsNames = $this->getExistingUserOptions();
 
         $conditionBuilder = new PreparedStatementConditionBuilder();
-        $conditionBuilder->add('categoryName IN (SELECT categoryName FROM wcf' . $this->dbNo . '_user_option_category WHERE parentCategoryName = ?)', ['profile']);
+        $conditionBuilder->add(
+            'categoryName IN (SELECT categoryName FROM wcf' . $this->dbNo . '_user_option_category WHERE parentCategoryName = ?)',
+            ['profile']
+        );
         if (!empty($optionsNames)) {
             $conditionBuilder->add('optionName NOT IN (?)', [$optionsNames]);
         }
@@ -855,7 +910,7 @@ class WBB4xExporter extends AbstractExporter
                 $row['optionType'] = 'textarea';
             }
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.option')->import($row['optionID'], [
+            $data = [
                 'categoryName' => $row['categoryName'],
                 'optionType' => $row['optionType'],
                 'defaultValue' => $row['defaultValue'],
@@ -868,7 +923,15 @@ class WBB4xExporter extends AbstractExporter
                 'editable' => $row['editable'],
                 'visible' => $row['visible'],
                 'showOrder' => $row['showOrder'],
-            ], ['name' => $row['name'] ?: $row['optionName']]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.user.option')
+                ->import(
+                    $row['optionID'],
+                    $data,
+                    ['name' => $row['name'] ?: $row['optionName']]
+                );
         }
     }
 
@@ -895,11 +958,15 @@ class WBB4xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.label')->import($row['labelID'], [
+            $data = [
                 'userID' => $row['userID'],
                 'label' => $row['label'],
                 'cssClassName' => $row['cssClassName'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.conversation.label')
+                ->import($row['labelID'], $data);
         }
     }
 
@@ -926,7 +993,7 @@ class WBB4xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import($row['conversationID'], [
+            $data = [
                 'subject' => $row['subject'],
                 'time' => $row['time'],
                 'userID' => $row['userID'],
@@ -935,7 +1002,11 @@ class WBB4xExporter extends AbstractExporter
                 'isClosed' => $row['isClosed'],
                 'isDraft' => $row['isDraft'],
                 'draftData' => $row['draftData'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.conversation')
+                ->import($row['conversationID'], $data);
         }
     }
 
@@ -962,7 +1033,7 @@ class WBB4xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.message')->import($row['messageID'], [
+            $data = [
                 'conversationID' => $row['conversationID'],
                 'userID' => $row['userID'],
                 'username' => $row['username'],
@@ -971,7 +1042,11 @@ class WBB4xExporter extends AbstractExporter
                 'attachments' => $row['attachments'],
                 'enableHtml' => $row['enableHtml'],
                 'ipAddress' => $row['ipAddress'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.conversation.message')
+                ->import($row['messageID'], $data);
         }
     }
 
@@ -1027,14 +1102,18 @@ class WBB4xExporter extends AbstractExporter
         }
 
         foreach ($rows as $row) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.user')->import(0, [
+            $data = [
                 'conversationID' => $row['conversationID'],
                 'participantID' => $row['participantID'],
                 'username' => $row['username'],
                 'hideConversation' => $row['hideConversation'],
                 'isInvisible' => $row['isInvisible'],
                 'lastVisitTime' => $row['lastVisitTime'],
-            ], ['labelIDs' => $labels[$row['conversationID']][$row['participantID']] ?? []]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.conversation.user')
+                ->import(0, $data, ['labelIDs' => $labels[$row['conversationID']][$row['participantID']] ?? []]);
         }
     }
 
@@ -1054,7 +1133,12 @@ class WBB4xExporter extends AbstractExporter
      */
     public function exportConversationAttachments($offset, $limit)
     {
-        $this->exportAttachments('com.woltlab.wcf.conversation.message', 'com.woltlab.wcf.conversation.attachment', $offset, $limit);
+        $this->exportAttachments(
+            'com.woltlab.wcf.conversation.message',
+            'com.woltlab.wcf.conversation.attachment',
+            $offset,
+            $limit
+        );
     }
 
     /**
@@ -1128,7 +1212,7 @@ class WBB4xExporter extends AbstractExporter
         }
 
         foreach ($this->boardCache[$parentID] as $board) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import($board['boardID'], [
+            $data = [
                 'parentID' => $board['parentID'],
                 'position' => $board['position'],
                 'boardType' => $board['boardType'],
@@ -1154,9 +1238,17 @@ class WBB4xExporter extends AbstractExporter
                 'clicks' => $board['clicks'],
                 'posts' => $board['posts'],
                 'threads' => $board['threads'],
-            ], [
-                'i18n' => ($board['i18n'] ?? []),
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.board')
+                ->import(
+                    $board['boardID'],
+                    $data,
+                    [
+                        'i18n' => ($board['i18n'] ?? []),
+                    ]
+                );
 
             $this->exportBoardsRecursively($board['boardID']);
         }
@@ -1267,7 +1359,9 @@ class WBB4xExporter extends AbstractExporter
                 $additionalData['tags'] = $tags[$row['threadID']];
             }
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.thread')->import($row['threadID'], $data, $additionalData);
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.thread')
+                ->import($row['threadID'], $data, $additionalData);
         }
     }
 
@@ -1294,7 +1388,7 @@ class WBB4xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.post')->import($row['postID'], [
+            $data = [
                 'threadID' => $row['threadID'],
                 'userID' => $row['userID'],
                 'username' => $row['username'],
@@ -1313,7 +1407,11 @@ class WBB4xExporter extends AbstractExporter
                 'enableHtml' => $row['enableHtml'],
                 'ipAddress' => $row['ipAddress'],
                 'deleteTime' => $row['deleteTime'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.post')
+                ->import($row['postID'], $data);
         }
     }
 
@@ -1333,7 +1431,12 @@ class WBB4xExporter extends AbstractExporter
      */
     public function exportPostAttachments($offset, $limit)
     {
-        $this->exportAttachments('com.woltlab.wbb.post', 'com.woltlab.wbb.attachment', $offset, $limit);
+        $this->exportAttachments(
+            'com.woltlab.wbb.post',
+            'com.woltlab.wbb.attachment',
+            $offset,
+            $limit
+        );
     }
 
     /**
@@ -1364,13 +1467,19 @@ class WBB4xExporter extends AbstractExporter
 			WHERE		objectTypeID = ?
 			ORDER BY	watchID";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
-        $statement->execute([$this->getObjectTypeID('com.woltlab.wcf.user.objectWatch', 'com.woltlab.wbb.thread')]);
+        $statement->execute([
+            $this->getObjectTypeID('com.woltlab.wcf.user.objectWatch', 'com.woltlab.wbb.thread'),
+        ]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.watchedThread')->import(0, [
+            $data = [
                 'objectID' => $row['objectID'],
                 'userID' => $row['userID'],
                 'notification' => $row['notification'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.watchedThread')
+                ->import(0, $data);
         }
     }
 
@@ -1383,7 +1492,9 @@ class WBB4xExporter extends AbstractExporter
 			FROM	wcf" . $this->dbNo . "_poll
 			WHERE	objectTypeID = ?";
         $statement = $this->database->prepareStatement($sql);
-        $statement->execute([$this->getObjectTypeID('com.woltlab.wcf.poll', 'com.woltlab.wbb.post')]);
+        $statement->execute([
+            $this->getObjectTypeID('com.woltlab.wcf.poll', 'com.woltlab.wbb.post'),
+        ]);
         $row = $statement->fetchArray();
 
         return $row['count'];
@@ -1404,7 +1515,7 @@ class WBB4xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([$this->getObjectTypeID('com.woltlab.wcf.poll', 'com.woltlab.wbb.post')]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll')->import($row['pollID'], [
+            $data = [
                 'objectID' => $row['objectID'],
                 'question' => $row['question'],
                 'time' => $row['time'],
@@ -1415,7 +1526,11 @@ class WBB4xExporter extends AbstractExporter
                 'resultsRequireVote' => $row['resultsRequireVote'],
                 'maxVotes' => $row['maxVotes'],
                 'votes' => $row['votes'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.poll')
+                ->import($row['pollID'], $data);
         }
     }
 
@@ -1432,7 +1547,9 @@ class WBB4xExporter extends AbstractExporter
 					WHERE	objectTypeID = ?
 				)";
         $statement = $this->database->prepareStatement($sql);
-        $statement->execute([$this->getObjectTypeID('com.woltlab.wcf.poll', 'com.woltlab.wbb.post')]);
+        $statement->execute([
+            $this->getObjectTypeID('com.woltlab.wcf.poll', 'com.woltlab.wbb.post'),
+        ]);
         $row = $statement->fetchArray();
 
         return $row['count'];
@@ -1455,14 +1572,20 @@ class WBB4xExporter extends AbstractExporter
 					)
 			ORDER BY	optionID";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
-        $statement->execute([$this->getObjectTypeID('com.woltlab.wcf.poll', 'com.woltlab.wbb.post')]);
+        $statement->execute([
+            $this->getObjectTypeID('com.woltlab.wcf.poll', 'com.woltlab.wbb.post'),
+        ]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll.option')->import($row['optionID'], [
+            $data = [
                 'pollID' => $row['pollID'],
                 'optionValue' => $row['optionValue'],
                 'showOrder' => $row['showOrder'],
                 'votes' => $row['votes'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.poll.option')
+                ->import($row['optionID'], $data);
         }
     }
 
@@ -1479,7 +1602,9 @@ class WBB4xExporter extends AbstractExporter
 					WHERE	objectTypeID = ?
 				)";
         $statement = $this->database->prepareStatement($sql);
-        $statement->execute([$this->getObjectTypeID('com.woltlab.wcf.poll', 'com.woltlab.wbb.post')]);
+        $statement->execute([
+            $this->getObjectTypeID('com.woltlab.wcf.poll', 'com.woltlab.wbb.post'),
+        ]);
         $row = $statement->fetchArray();
 
         return $row['count'];
@@ -1502,13 +1627,19 @@ class WBB4xExporter extends AbstractExporter
 					)
 			ORDER BY	optionID, userID";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
-        $statement->execute([$this->getObjectTypeID('com.woltlab.wcf.poll', 'com.woltlab.wbb.post')]);
+        $statement->execute([
+            $this->getObjectTypeID('com.woltlab.wcf.poll', 'com.woltlab.wbb.post'),
+        ]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll.option.vote')->import(0, [
+            $data = [
                 'pollID' => $row['pollID'],
                 'optionID' => $row['optionID'],
                 'userID' => $row['userID'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.poll.option.vote')
+                ->import(0, $data);
         }
     }
 
@@ -1528,7 +1659,12 @@ class WBB4xExporter extends AbstractExporter
      */
     public function exportPostLikes($offset, $limit)
     {
-        $this->exportLikes('com.woltlab.wbb.likeablePost', 'com.woltlab.wbb.like', $offset, $limit);
+        $this->exportLikes(
+            'com.woltlab.wbb.likeablePost',
+            'com.woltlab.wbb.like',
+            $offset,
+            $limit
+        );
     }
 
     /**
@@ -1582,7 +1718,9 @@ class WBB4xExporter extends AbstractExporter
 			FROM	wcf" . $this->dbNo . "_label_group_to_object
 			WHERE	objectTypeID = ?";
         $statement = $this->database->prepareStatement($sql);
-        $statement->execute([$this->getObjectTypeID('com.woltlab.wcf.label.objectType', 'com.woltlab.wbb.board')]);
+        $statement->execute([
+            $this->getObjectTypeID('com.woltlab.wcf.label.objectType', 'com.woltlab.wbb.board'),
+        ]);
         while ($row = $statement->fetchArray()) {
             if (!isset($boardIDs[$row['groupID']])) {
                 $boardIDs[$row['groupID']] = [];
@@ -1591,22 +1729,41 @@ class WBB4xExporter extends AbstractExporter
         }
 
         if (!empty($labelGroups)) {
-            $objectType = ObjectTypeCache::getInstance()->getObjectTypeByName('com.woltlab.wcf.label.objectType', 'com.woltlab.wbb.board');
+            $objectType = ObjectTypeCache::getInstance()
+                ->getObjectTypeByName('com.woltlab.wcf.label.objectType', 'com.woltlab.wbb.board');
 
             foreach ($labelGroups as $labelGroup) {
                 // import label group
-                ImportHandler::getInstance()->getImporter('com.woltlab.wcf.label.group')->import($labelGroup['groupID'], [
+                $data = [
                     'groupName' => $labelGroup['groupName'],
-                ], ['objects' => [$objectType->objectTypeID => !empty($boardIDs[$labelGroup['groupID']]) ? $boardIDs[$labelGroup['groupID']] : []]]);
+                ];
+
+                $additionalData = [
+                    'objects' => [
+                        $objectType->objectTypeID => !empty($boardIDs[$labelGroup['groupID']]) ? $boardIDs[$labelGroup['groupID']] : [],
+                    ],
+                ];
+
+                ImportHandler::getInstance()
+                    ->getImporter('com.woltlab.wcf.label.group')
+                    ->import(
+                        $labelGroup['groupID'],
+                        $data,
+                        $additionalData
+                    );
 
                 // import labels
                 if (!empty($labels[$labelGroup['groupID']])) {
                     foreach ($labels[$labelGroup['groupID']] as $label) {
-                        ImportHandler::getInstance()->getImporter('com.woltlab.wcf.label')->import($label['labelID'], [
+                        $data = [
                             'groupID' => $labelGroup['groupID'],
                             'label' => $label['label'],
                             'cssClassName' => $label['cssClassName'],
-                        ]);
+                        ];
+
+                        ImportHandler::getInstance()
+                            ->getImporter('com.woltlab.wcf.label')
+                            ->import($label['labelID'], $data);
                     }
                 }
             }
@@ -1669,7 +1826,13 @@ class WBB4xExporter extends AbstractExporter
                 $data['groupID'] = $row['groupID'];
             }
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.acl')->import(0, $data, ['optionName' => $row['optionName']]);
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.acl')
+                ->import(
+                    0,
+                    $data,
+                    ['optionName' => $row['optionName']]
+                );
         }
     }
 
@@ -1703,13 +1866,21 @@ class WBB4xExporter extends AbstractExporter
         while ($row = $statement->fetchArray()) {
             $fileLocation = $this->fileSystemPath . $row['smileyPath'];
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.smiley')->import($row['smileyID'], [
+            $data = [
                 'categoryID' => $row['categoryID'],
                 'smileyTitle' => $row['smileyTitle'],
                 'smileyCode' => $row['smileyCode'],
                 'aliases' => $row['aliases'],
                 'showOrder' => $row['showOrder'],
-            ], ['fileLocation' => $fileLocation]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.smiley')
+                ->import(
+                    $row['smileyID'],
+                    $data,
+                    ['fileLocation' => $fileLocation]
+                );
         }
     }
 
@@ -1722,7 +1893,9 @@ class WBB4xExporter extends AbstractExporter
 			FROM	wcf" . $this->dbNo . "_category
 			WHERE	objectTypeID = ?";
         $statement = $this->database->prepareStatement($sql);
-        $statement->execute([$this->getObjectTypeID('com.woltlab.wcf.category', 'com.woltlab.wcf.bbcode.smiley')]);
+        $statement->execute([
+            $this->getObjectTypeID('com.woltlab.wcf.category', 'com.woltlab.wcf.bbcode.smiley'),
+        ]);
         $row = $statement->fetchArray();
 
         return $row['count'];
@@ -1736,7 +1909,12 @@ class WBB4xExporter extends AbstractExporter
      */
     public function exportSmileyCategories($offset, $limit)
     {
-        $this->exportCategories('com.woltlab.wcf.bbcode.smiley', 'com.woltlab.wcf.smiley.category', $offset, $limit);
+        $this->exportCategories(
+            'com.woltlab.wcf.bbcode.smiley',
+            'com.woltlab.wcf.smiley.category',
+            $offset,
+            $limit
+        );
     }
 
     /**
@@ -1772,19 +1950,27 @@ class WBB4xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            $additionalData = [];
-            if ($row['languageCode']) {
-                $additionalData['languageCode'] = $row['languageCode'];
-            }
-
-            ImportHandler::getInstance()->getImporter('com.woltlab.blog.blog')->import($row['blogID'], [
+            $data = [
                 'userID' => $row['userID'],
                 'username' => $row['username'],
                 'title' => $row['title'],
                 'description' => $row['description'],
                 'accessLevel' => $row['accessLevel'],
                 'isFeatured' => $row['isFeatured'],
-            ], $additionalData);
+            ];
+
+            $additionalData = [];
+            if ($row['languageCode']) {
+                $additionalData['languageCode'] = $row['languageCode'];
+            }
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.blog.blog')
+                ->import(
+                    $row['blogID'],
+                    $data,
+                    $additionalData
+                );
         }
     }
 
@@ -1804,7 +1990,12 @@ class WBB4xExporter extends AbstractExporter
      */
     public function exportBlogCategories($offset, $limit)
     {
-        $this->exportCategories('com.woltlab.blog.category', 'com.woltlab.blog.category', $offset, $limit);
+        $this->exportCategories(
+            'com.woltlab.blog.category',
+            'com.woltlab.blog.category',
+            $offset,
+            $limit
+        );
     }
 
     /**
@@ -1823,8 +2014,16 @@ class WBB4xExporter extends AbstractExporter
      */
     public function exportBlogEntries($offset, $limit)
     {
-        $sourceVersion21 = \version_compare($this->getPackageVersion('com.woltlab.blog'), '2.1.0 Alpha 1', '>=');
-        $destVersion21 = \version_compare(BLOGCore::getInstance()->getPackage()->packageVersion, '2.1.0 Alpha 1', '>=');
+        $sourceVersion21 = \version_compare(
+            $this->getPackageVersion('com.woltlab.blog'),
+            '2.1.0 Alpha 1',
+            '>='
+        );
+        $destVersion21 = \version_compare(
+            BLOGCore::getInstance()->getPackage()->packageVersion,
+            '2.1.0 Alpha 1',
+            '>='
+        );
 
         // get entry ids
         $entryIDs = [];
@@ -1908,7 +2107,13 @@ class WBB4xExporter extends AbstractExporter
                 $data['blogID'] = $row['blogID'];
             }
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry')->import($row['entryID'], $data, $additionalData);
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.blog.entry')
+                ->import(
+                    $row['entryID'],
+                    $data,
+                    $additionalData
+                );
         }
     }
 
@@ -1928,7 +2133,12 @@ class WBB4xExporter extends AbstractExporter
      */
     public function exportBlogAttachments($offset, $limit)
     {
-        $this->exportAttachments('com.woltlab.blog.entry', 'com.woltlab.blog.entry.attachment', $offset, $limit);
+        $this->exportAttachments(
+            'com.woltlab.blog.entry',
+            'com.woltlab.blog.entry.attachment',
+            $offset,
+            $limit
+        );
     }
 
     /**
@@ -1947,7 +2157,12 @@ class WBB4xExporter extends AbstractExporter
      */
     public function exportBlogComments($offset, $limit)
     {
-        $this->exportComments('com.woltlab.blog.entryComment', 'com.woltlab.blog.entry.comment', $offset, $limit);
+        $this->exportComments(
+            'com.woltlab.blog.entryComment',
+            'com.woltlab.blog.entry.comment',
+            $offset,
+            $limit
+        );
     }
 
     /**
@@ -1966,7 +2181,12 @@ class WBB4xExporter extends AbstractExporter
      */
     public function exportBlogCommentResponses($offset, $limit)
     {
-        $this->exportCommentResponses('com.woltlab.blog.entryComment', 'com.woltlab.blog.entry.comment.response', $offset, $limit);
+        $this->exportCommentResponses(
+            'com.woltlab.blog.entryComment',
+            'com.woltlab.blog.entry.comment.response',
+            $offset,
+            $limit
+        );
     }
 
     /**
@@ -2004,8 +2224,16 @@ class WBB4xExporter extends AbstractExporter
      */
     public function exportGalleryAlbums($offset, $limit)
     {
-        $sourceVersion21 = \version_compare($this->getPackageVersion('com.woltlab.gallery'), '2.1.0 Alpha 1', '>=');
-        $destVersion21 = \version_compare(GALLERYCore::getInstance()->getPackage()->packageVersion, '2.1.0 Alpha 1', '>=');
+        $sourceVersion21 = \version_compare(
+            $this->getPackageVersion('com.woltlab.gallery'),
+            '2.1.0 Alpha 1',
+            '>='
+        );
+        $destVersion21 = \version_compare(
+            GALLERYCore::getInstance()->getPackage()->packageVersion,
+            '2.1.0 Alpha 1',
+            '>='
+        );
 
         $sql = "SELECT		*
 			FROM		gallery" . $this->dbNo . "_album
@@ -2026,7 +2254,9 @@ class WBB4xExporter extends AbstractExporter
                 $data['accessLevel'] = $row['accessLevel'];
             }
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.gallery.album')->import($row['albumID'], $data);
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.gallery.album')
+                ->import($row['albumID'], $data);
         }
     }
 
@@ -2046,7 +2276,12 @@ class WBB4xExporter extends AbstractExporter
      */
     public function exportGalleryCategories($offset, $limit)
     {
-        $this->exportCategories('com.woltlab.gallery.category', 'com.woltlab.gallery.category', $offset, $limit);
+        $this->exportCategories(
+            'com.woltlab.gallery.category',
+            'com.woltlab.gallery.category',
+            $offset,
+            $limit
+        );
     }
 
     /**
@@ -2065,8 +2300,16 @@ class WBB4xExporter extends AbstractExporter
      */
     public function exportGalleryImages($offset, $limit)
     {
-        $sourceVersion21 = \version_compare($this->getPackageVersion('com.woltlab.gallery'), '2.1.0 Alpha 1', '>=');
-        $destVersion21 = \version_compare(GALLERYCore::getInstance()->getPackage()->packageVersion, '2.1.0 Alpha 1', '>=');
+        $sourceVersion21 = \version_compare(
+            $this->getPackageVersion('com.woltlab.gallery'),
+            '2.1.0 Alpha 1',
+            '>='
+        );
+        $destVersion21 = \version_compare(
+            GALLERYCore::getInstance()->getPackage()->packageVersion,
+            '2.1.0 Alpha 1',
+            '>='
+        );
 
         // build path to gallery image directories
         $sql = "SELECT	packageDir
@@ -2128,14 +2371,17 @@ class WBB4xExporter extends AbstractExporter
             ];
 
             if ($sourceVersion21 && $destVersion21) {
-                $images[$row['imageID']] = \array_merge($images[$row['imageID']], [
-                    'enableHtml' => $row['enableHtml'],
-                    'rawExifData' => $row['rawExifData'],
-                    'hasEmbeddedObjects' => $row['hasEmbeddedObjects'],
-                    'hasMarkers' => $row['hasMarkers'],
-                    'showOrder' => $row['showOrder'],
-                    'hasOriginalWatermark' => $row['hasOriginalWatermark'],
-                ]);
+                $images[$row['imageID']] = \array_merge(
+                    $images[$row['imageID']],
+                    [
+                        'enableHtml' => $row['enableHtml'],
+                        'rawExifData' => $row['rawExifData'],
+                        'hasEmbeddedObjects' => $row['hasEmbeddedObjects'],
+                        'hasMarkers' => $row['hasMarkers'],
+                        'showOrder' => $row['showOrder'],
+                        'hasOriginalWatermark' => $row['hasOriginalWatermark'],
+                    ]
+                );
             }
         }
 
@@ -2175,7 +2421,13 @@ class WBB4xExporter extends AbstractExporter
                 $additionalData['tags'] = $tags[$imageID];
             }
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.gallery.image')->import($imageID, $imageData, $additionalData);
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.gallery.image')
+                ->import(
+                    $imageID,
+                    $imageData,
+                    $additionalData
+                );
         }
     }
 
@@ -2210,13 +2462,17 @@ class WBB4xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.gallery.image.marker')->import($row['markerID'], [
+            $data = [
                 'imageID' => $row['imageID'],
                 'positionX' => $row['positionX'],
                 'positionY' => $row['positionY'],
                 'userID' => $row['userID'],
                 'description' => $row['description'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.gallery.image.marker')
+                ->import($row['markerID'], $data);
         }
     }
 
@@ -2236,7 +2492,12 @@ class WBB4xExporter extends AbstractExporter
      */
     public function exportGalleryComments($offset, $limit)
     {
-        $this->exportComments('com.woltlab.gallery.imageComment', 'com.woltlab.gallery.image.comment', $offset, $limit);
+        $this->exportComments(
+            'com.woltlab.gallery.imageComment',
+            'com.woltlab.gallery.image.comment',
+            $offset,
+            $limit
+        );
     }
 
     /**
@@ -2255,7 +2516,12 @@ class WBB4xExporter extends AbstractExporter
      */
     public function exportGalleryCommentResponses($offset, $limit)
     {
-        $this->exportCommentResponses('com.woltlab.gallery.imageComment', 'com.woltlab.gallery.image.comment.response', $offset, $limit);
+        $this->exportCommentResponses(
+            'com.woltlab.gallery.imageComment',
+            'com.woltlab.gallery.image.comment.response',
+            $offset,
+            $limit
+        );
     }
 
     /**
@@ -2386,7 +2652,13 @@ class WBB4xExporter extends AbstractExporter
                 $data['categoryID'] = $row['categoryID'];
             }
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.calendar.event')->import($row['eventID'], $data, $additionalData);
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.calendar.event')
+                ->import(
+                    $row['eventID'],
+                    $data,
+                    $additionalData
+                );
         }
     }
 
@@ -2413,13 +2685,17 @@ class WBB4xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.calendar.event.date')->import($row['eventDateID'], [
+            $data = [
                 'eventID' => $row['eventID'],
                 'startTime' => $row['startTime'],
                 'endTime' => $row['endTime'],
                 'isFullDay' => $row['isFullDay'],
                 'participants' => $row['participants'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.calendar.event.date')
+                ->import($row['eventDateID'], $data);
         }
     }
 
@@ -2446,7 +2722,7 @@ class WBB4xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.calendar.event.date.participation')->import($row['participationID'], [
+            $data = [
                 'eventDateID' => $row['eventDateID'],
                 'userID' => $row['userID'],
                 'username' => $row['username'],
@@ -2454,7 +2730,11 @@ class WBB4xExporter extends AbstractExporter
                 'decisionTime' => $row['decisionTime'],
                 'participants' => $row['participants'],
                 'message' => $row['message'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.calendar.event.date.participation')
+                ->import($row['participationID'], $data);
         }
     }
 
@@ -2474,7 +2754,12 @@ class WBB4xExporter extends AbstractExporter
      */
     public function exportCalendarCategories($offset, $limit)
     {
-        $this->exportCategories('com.woltlab.calendar.category', 'com.woltlab.calendar.category', $offset, $limit);
+        $this->exportCategories(
+            'com.woltlab.calendar.category',
+            'com.woltlab.calendar.category',
+            $offset,
+            $limit
+        );
     }
 
     /**
@@ -2493,7 +2778,12 @@ class WBB4xExporter extends AbstractExporter
      */
     public function exportCalendarAttachments($offset, $limit)
     {
-        $this->exportAttachments('com.woltlab.calendar.event', 'com.woltlab.calendar.event.attachment', $offset, $limit);
+        $this->exportAttachments(
+            'com.woltlab.calendar.event',
+            'com.woltlab.calendar.event.attachment',
+            $offset,
+            $limit
+        );
     }
 
     /**
@@ -2512,7 +2802,12 @@ class WBB4xExporter extends AbstractExporter
      */
     public function exportCalendarEventDateComments($offset, $limit)
     {
-        $this->exportComments('com.woltlab.calendar.eventDateComment', 'com.woltlab.calendar.event.date.comment', $offset, $limit);
+        $this->exportComments(
+            'com.woltlab.calendar.eventDateComment',
+            'com.woltlab.calendar.event.date.comment',
+            $offset,
+            $limit
+        );
     }
 
     /**
@@ -2531,7 +2826,12 @@ class WBB4xExporter extends AbstractExporter
      */
     public function exportCalendarEventDateCommentResponses($offset, $limit)
     {
-        $this->exportCommentResponses('com.woltlab.calendar.eventDateComment', 'com.woltlab.calendar.event.date.comment.response', $offset, $limit);
+        $this->exportCommentResponses(
+            'com.woltlab.calendar.eventDateComment',
+            'com.woltlab.calendar.event.date.comment.response',
+            $offset,
+            $limit
+        );
     }
 
     /**
@@ -2550,7 +2850,12 @@ class WBB4xExporter extends AbstractExporter
      */
     public function exportCalendarEventLikes($offset, $limit)
     {
-        $this->exportLikes('com.woltlab.calendar.likeableEvent', 'com.woltlab.calendar.event.like', $offset, $limit);
+        $this->exportLikes(
+            'com.woltlab.calendar.likeableEvent',
+            'com.woltlab.calendar.event.like',
+            $offset,
+            $limit
+        );
     }
 
     /**
@@ -2569,7 +2874,12 @@ class WBB4xExporter extends AbstractExporter
      */
     public function exportFilebaseCategories($offset, $limit)
     {
-        $this->exportCategories('com.woltlab.filebase.category', 'com.woltlab.filebase.category', $offset, $limit);
+        $this->exportCategories(
+            'com.woltlab.filebase.category',
+            'com.woltlab.filebase.category',
+            $offset,
+            $limit
+        );
     }
 
     /**
@@ -2652,7 +2962,11 @@ class WBB4xExporter extends AbstractExporter
                 ],
             ];
 
-            $this->exportFilebaseFilesHelper($row, $contents, $categories[$row['fileID']] ?? [$row['categoryID']]);
+            $this->exportFilebaseFilesHelper(
+                $row,
+                $contents,
+                $categories[$row['fileID']] ?? [$row['categoryID']]
+            );
         }
     }
 
@@ -2766,7 +3080,13 @@ class WBB4xExporter extends AbstractExporter
             }
         }
 
-        ImportHandler::getInstance()->getImporter('com.woltlab.filebase.file')->import($row['fileID'], $data, $additionalData);
+        ImportHandler::getInstance()
+            ->getImporter('com.woltlab.filebase.file')
+            ->import(
+                $row['fileID'],
+                $data,
+                $additionalData
+            );
     }
 
     /**
@@ -2870,15 +3190,7 @@ class WBB4xExporter extends AbstractExporter
 
     protected function exportFilebaseFileVersionsHelper(array $row, array $contents = [])
     {
-        $additionalData = [
-            'contents' => $contents,
-            'fileLocation' => '',
-        ];
-        if (empty($row['downloadURL'])) {
-            $additionalData['fileLocation'] = $this->getFilebaseDir() . 'files/' . \substr($row['fileHash'], 0, 2) . '/' . $row['versionID'] . '-' . $row['fileHash'];
-        }
-
-        ImportHandler::getInstance()->getImporter('com.woltlab.filebase.file.version')->import($row['versionID'], [
+        $data = [
             'fileID' => $row['fileID'],
             'versionNumber' => $row['versionNumber'],
             'filename' => $row['filename'],
@@ -2893,7 +3205,23 @@ class WBB4xExporter extends AbstractExporter
             'deleteTime' => $row['deleteTime'],
             'ipAddress' => $row['ipAddress'],
             'enableHtml' => $row['enableHtml'],
-        ], $additionalData);
+        ];
+
+        $additionalData = [
+            'contents' => $contents,
+            'fileLocation' => '',
+        ];
+        if (empty($row['downloadURL'])) {
+            $additionalData['fileLocation'] = $this->getFilebaseDir() . 'files/' . \substr($row['fileHash'], 0, 2) . '/' . $row['versionID'] . '-' . $row['fileHash'];
+        }
+
+        ImportHandler::getInstance()
+            ->getImporter('com.woltlab.filebase.file.version')
+            ->import(
+                $row['versionID'],
+                $data,
+                $additionalData
+            );
     }
 
     /**
@@ -2912,7 +3240,12 @@ class WBB4xExporter extends AbstractExporter
      */
     public function exportFilebaseFileComments($offset, $limit)
     {
-        $this->exportComments('com.woltlab.filebase.fileComment', 'com.woltlab.filebase.file.comment', $offset, $limit);
+        $this->exportComments(
+            'com.woltlab.filebase.fileComment',
+            'com.woltlab.filebase.file.comment',
+            $offset,
+            $limit
+        );
     }
 
     /**
@@ -2931,7 +3264,12 @@ class WBB4xExporter extends AbstractExporter
      */
     public function exportFilebaseFileCommentResponses($offset, $limit)
     {
-        $this->exportCommentResponses('com.woltlab.filebase.fileComment', 'com.woltlab.filebase.file.comment.response', $offset, $limit);
+        $this->exportCommentResponses(
+            'com.woltlab.filebase.fileComment',
+            'com.woltlab.filebase.file.comment.response',
+            $offset,
+            $limit
+        );
     }
 
     /**
@@ -2950,7 +3288,12 @@ class WBB4xExporter extends AbstractExporter
      */
     public function exportFilebaseFileLikes($offset, $limit)
     {
-        $this->exportLikes('com.woltlab.filebase.likeableFile', 'com.woltlab.filebase.file.like', $offset, $limit);
+        $this->exportLikes(
+            'com.woltlab.filebase.likeableFile',
+            'com.woltlab.filebase.file.like',
+            $offset,
+            $limit
+        );
     }
 
     /**
@@ -2969,7 +3312,12 @@ class WBB4xExporter extends AbstractExporter
      */
     public function exportFilebaseFileVersionLikes($offset, $limit)
     {
-        $this->exportLikes('com.woltlab.filebase.likeableFileVersion', 'com.woltlab.filebase.file.version.like', $offset, $limit);
+        $this->exportLikes(
+            'com.woltlab.filebase.likeableFileVersion',
+            'com.woltlab.filebase.file.version.like',
+            $offset,
+            $limit
+        );
     }
 
     /**
@@ -2988,7 +3336,12 @@ class WBB4xExporter extends AbstractExporter
      */
     public function exportFilebaseFileAttachments($offset, $limit)
     {
-        $this->exportAttachments('com.woltlab.filebase.file', 'com.woltlab.filebase.file.attachment', $offset, $limit);
+        $this->exportAttachments(
+            'com.woltlab.filebase.file',
+            'com.woltlab.filebase.file.attachment',
+            $offset,
+            $limit
+        );
     }
 
     /**
@@ -3007,7 +3360,12 @@ class WBB4xExporter extends AbstractExporter
      */
     public function exportFilebaseFileVersionAttachments($offset, $limit)
     {
-        $this->exportAttachments('com.woltlab.filebase.version', 'com.woltlab.filebase.file.version.attachment', $offset, $limit);
+        $this->exportAttachments(
+            'com.woltlab.filebase.version',
+            'com.woltlab.filebase.file.version.attachment',
+            $offset,
+            $limit
+        );
     }
 
     /**
@@ -3086,7 +3444,7 @@ class WBB4xExporter extends AbstractExporter
                 continue;
             }
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.page')->import($row['pageID'], [
+            $data = [
                 'identifier' => $row['identifier'],
                 'name' => $row['name'],
                 'pageType' => $row['pageType'],
@@ -3095,9 +3453,17 @@ class WBB4xExporter extends AbstractExporter
                 'cssClassName' => ($row['cssClassName'] ?? ''),
                 'availableDuringOfflineMode' => ($row['availableDuringOfflineMode'] ?? 0),
                 'allowSpidersToIndex' => ($row['allowSpidersToIndex'] ?? 1),
-            ], [
-                'contents' => $contents[$row['pageID']],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.page')
+                ->import(
+                    $row['pageID'],
+                    $data,
+                    [
+                        'contents' => $contents[$row['pageID']],
+                    ]
+                );
         }
     }
 
@@ -3119,7 +3485,12 @@ class WBB4xExporter extends AbstractExporter
      */
     public function exportMediaCategories($offset, $limit)
     {
-        $this->exportCategories('com.woltlab.wcf.media.category', 'com.woltlab.wcf.media.category', $offset, $limit);
+        $this->exportCategories(
+            'com.woltlab.wcf.media.category',
+            'com.woltlab.wcf.media.category',
+            $offset,
+            $limit
+        );
     }
 
     /**
@@ -3189,15 +3560,9 @@ class WBB4xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute($conditionBuilder->getParameters());
         while ($row = $statement->fetchArray()) {
-            $additionalData = [
-                'fileLocation' => $this->fileSystemPath . 'media_files/' . \substr($row['fileHash'], 0, 2) . '/' . $row['mediaID'] . '-' . $row['fileHash'],
-                'languageCode' => $row['languageCode'],
-            ];
-            if (isset($contents[$row['mediaID']])) {
-                $additionalData['contents'] = $contents[$row['mediaID']];
-            }
+            $fileLocation = $this->fileSystemPath . 'media_files/' . \substr($row['fileHash'], 0, 2) . '/' . $row['mediaID'] . '-' . $row['fileHash'];
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.media')->import($row['mediaID'], [
+            $data = [
                 'categoryID' => (!empty($row['categoryID']) ? $row['categoryID'] : null),
                 'filename' => $row['filename'],
                 'filesize' => $row['filesize'],
@@ -3209,7 +3574,23 @@ class WBB4xExporter extends AbstractExporter
                 'isImage' => $row['isImage'],
                 'width' => $row['width'],
                 'height' => $row['height'],
-            ], $additionalData);
+            ];
+
+            $additionalData = [
+                'fileLocation' => $fileLocation,
+                'languageCode' => $row['languageCode'],
+            ];
+            if (isset($contents[$row['mediaID']])) {
+                $additionalData['contents'] = $contents[$row['mediaID']];
+            }
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.media')
+                ->import(
+                    $row['mediaID'],
+                    $data,
+                    $additionalData
+                );
         }
     }
 
@@ -3229,7 +3610,12 @@ class WBB4xExporter extends AbstractExporter
      */
     public function exportArticleCategories($offset, $limit)
     {
-        $this->exportCategories('com.woltlab.wcf.article.category', 'com.woltlab.wcf.article.category', $offset, $limit);
+        $this->exportCategories(
+            'com.woltlab.wcf.article.category',
+            'com.woltlab.wcf.article.category',
+            $offset,
+            $limit
+        );
     }
 
     /**
@@ -3305,7 +3691,7 @@ class WBB4xExporter extends AbstractExporter
                 continue;
             }
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.article')->import($row['articleID'], [
+            $data = [
                 'userID' => $row['userID'],
                 'username' => $row['username'],
                 'time' => $row['time'],
@@ -3315,9 +3701,17 @@ class WBB4xExporter extends AbstractExporter
                 'enableComments' => $row['enableComments'],
                 'views' => $row['views'],
                 'isDeleted' => ($row['isDeleted'] ?? 0),
-            ], [
-                'contents' => $contents[$row['articleID']],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.article')
+                ->import(
+                    $row['articleID'],
+                    $data,
+                    [
+                        'contents' => $contents[$row['articleID']],
+                    ]
+                );
         }
     }
 
@@ -3337,7 +3731,12 @@ class WBB4xExporter extends AbstractExporter
      */
     public function exportArticleComments($offset, $limit)
     {
-        $this->exportComments('com.woltlab.wcf.articleComment', 'com.woltlab.wcf.article.comment', $offset, $limit);
+        $this->exportComments(
+            'com.woltlab.wcf.articleComment',
+            'com.woltlab.wcf.article.comment',
+            $offset,
+            $limit
+        );
     }
 
     /**
@@ -3356,7 +3755,12 @@ class WBB4xExporter extends AbstractExporter
      */
     public function exportArticleCommentResponses($offset, $limit)
     {
-        $this->exportCommentResponses('com.woltlab.wcf.articleComment', 'com.woltlab.wcf.article.comment.response', $offset, $limit);
+        $this->exportCommentResponses(
+            'com.woltlab.wcf.articleComment',
+            'com.woltlab.wcf.article.comment.response',
+            $offset,
+            $limit
+        );
     }
 
     /**
@@ -3371,7 +3775,8 @@ class WBB4xExporter extends AbstractExporter
 			FROM	wcf" . $this->dbNo . "_comment
 			WHERE	objectTypeID = ?";
         $statement = $this->database->prepareStatement($sql);
-        $statement->execute([$this->getObjectTypeID('com.woltlab.wcf.comment.commentableContent', $objectType)]);
+        $statement->execute([
+            $this->getObjectTypeID('com.woltlab.wcf.comment.commentableContent', $objectType), ]);
         $row = $statement->fetchArray();
 
         return $row['count'];
@@ -3392,9 +3797,10 @@ class WBB4xExporter extends AbstractExporter
 			WHERE		objectTypeID = ?
 			ORDER BY	commentID";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
-        $statement->execute([$this->getObjectTypeID('com.woltlab.wcf.comment.commentableContent', $objectType)]);
+        $statement->execute([
+            $this->getObjectTypeID('com.woltlab.wcf.comment.commentableContent', $objectType), ]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter($importer)->import($row['commentID'], [
+            $data = [
                 'objectID' => $row['objectID'],
                 'userID' => $row['userID'],
                 'username' => $row['username'],
@@ -3402,7 +3808,11 @@ class WBB4xExporter extends AbstractExporter
                 'time' => $row['time'],
                 'enableHtml' => (isset($row['enableHtml'])) ? $row['enableHtml'] : 0,
                 'isDisabled' => (isset($row['isDisabled'])) ? $row['isDisabled'] : 0,
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter($importer)
+                ->import($row['commentID'], $data);
         }
     }
 
@@ -3418,7 +3828,8 @@ class WBB4xExporter extends AbstractExporter
 			FROM	wcf" . $this->dbNo . "_comment_response
 			WHERE	commentID IN (SELECT commentID FROM wcf" . $this->dbNo . "_comment WHERE objectTypeID = ?)";
         $statement = $this->database->prepareStatement($sql);
-        $statement->execute([$this->getObjectTypeID('com.woltlab.wcf.comment.commentableContent', $objectType)]);
+        $statement->execute([
+            $this->getObjectTypeID('com.woltlab.wcf.comment.commentableContent', $objectType), ]);
         $row = $statement->fetchArray();
 
         return $row['count'];
@@ -3439,9 +3850,10 @@ class WBB4xExporter extends AbstractExporter
 			WHERE		commentID IN (SELECT commentID FROM wcf" . $this->dbNo . "_comment WHERE objectTypeID = ?)
 			ORDER BY	responseID";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
-        $statement->execute([$this->getObjectTypeID('com.woltlab.wcf.comment.commentableContent', $objectType)]);
+        $statement->execute([
+            $this->getObjectTypeID('com.woltlab.wcf.comment.commentableContent', $objectType), ]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter($importer)->import($row['responseID'], [
+            $data = [
                 'commentID' => $row['commentID'],
                 'time' => $row['time'],
                 'userID' => $row['userID'],
@@ -3449,7 +3861,11 @@ class WBB4xExporter extends AbstractExporter
                 'message' => $row['message'],
                 'enableHtml' => (isset($row['enableHtml'])) ? $row['enableHtml'] : 0,
                 'isDisabled' => (isset($row['isDisabled'])) ? $row['isDisabled'] : 0,
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter($importer)
+                ->import($row['responseID'], $data);
         }
     }
 
@@ -3465,7 +3881,8 @@ class WBB4xExporter extends AbstractExporter
 			FROM	wcf" . $this->dbNo . "_like
 			WHERE	objectTypeID = ?";
         $statement = $this->database->prepareStatement($sql);
-        $statement->execute([$this->getObjectTypeID('com.woltlab.wcf.like.likeableObject', $objectType)]);
+        $statement->execute([
+            $this->getObjectTypeID('com.woltlab.wcf.like.likeableObject', $objectType), ]);
         $row = $statement->fetchArray();
 
         return $row['count'];
@@ -3486,15 +3903,20 @@ class WBB4xExporter extends AbstractExporter
 			WHERE		objectTypeID = ?
 			ORDER BY	likeID";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
-        $statement->execute([$this->getObjectTypeID('com.woltlab.wcf.like.likeableObject', $objectType)]);
+        $statement->execute([
+            $this->getObjectTypeID('com.woltlab.wcf.like.likeableObject', $objectType), ]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter($importer)->import(0, [
+            $data = [
                 'objectID' => $row['objectID'],
                 'objectUserID' => $row['objectUserID'],
                 'userID' => $row['userID'],
                 'likeValue' => $row['likeValue'],
                 'time' => $row['time'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter($importer)
+                ->import(0, $data);
         }
     }
 
@@ -3511,7 +3933,8 @@ class WBB4xExporter extends AbstractExporter
 			WHERE	objectTypeID = ?
 				AND objectID IS NOT NULL";
         $statement = $this->database->prepareStatement($sql);
-        $statement->execute([$this->getObjectTypeID('com.woltlab.wcf.attachment.objectType', $objectType)]);
+        $statement->execute([
+            $this->getObjectTypeID('com.woltlab.wcf.attachment.objectType', $objectType), ]);
         $row = $statement->fetchArray();
 
         return $row['count'];
@@ -3542,7 +3965,7 @@ class WBB4xExporter extends AbstractExporter
                 $fileLocation .= '.bin';
             }
 
-            ImportHandler::getInstance()->getImporter($importer)->import($row['attachmentID'], [
+            $data = [
                 'objectID' => $row['objectID'],
                 'userID' => $row['userID'] ?: null,
                 'filename' => $row['filename'],
@@ -3550,7 +3973,11 @@ class WBB4xExporter extends AbstractExporter
                 'lastDownloadTime' => $row['lastDownloadTime'],
                 'uploadTime' => $row['uploadTime'],
                 'showOrder' => $row['showOrder'],
-            ], ['fileLocation' => $fileLocation]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter($importer)
+                ->import($row['attachmentID'], $data, ['fileLocation' => $fileLocation]);
         }
     }
 
@@ -3607,8 +4034,14 @@ class WBB4xExporter extends AbstractExporter
     {
         $tags = [];
         $conditionBuilder = new PreparedStatementConditionBuilder();
-        $conditionBuilder->add('tag_to_object.objectTypeID = ?', [$this->getObjectTypeID('com.woltlab.wcf.tagging.taggableObject', $objectType)]);
-        $conditionBuilder->add('tag_to_object.objectID IN (?)', [$objectIDs]);
+        $conditionBuilder->add(
+            'tag_to_object.objectTypeID = ?',
+            [$this->getObjectTypeID('com.woltlab.wcf.tagging.taggableObject', $objectType)]
+        );
+        $conditionBuilder->add(
+            'tag_to_object.objectID IN (?)',
+            [$objectIDs]
+        );
 
         $sql = "SELECT		tag.name, tag_to_object.objectID
 			FROM		wcf" . $this->dbNo . "_tag_to_object tag_to_object
@@ -3638,8 +4071,14 @@ class WBB4xExporter extends AbstractExporter
     {
         $labels = [];
         $conditionBuilder = new PreparedStatementConditionBuilder();
-        $conditionBuilder->add('objectTypeID = ?', [$this->getObjectTypeID('com.woltlab.wcf.label.object', $objectType)]);
-        $conditionBuilder->add('objectID IN (?)', [$objectIDs]);
+        $conditionBuilder->add(
+            'objectTypeID = ?',
+            [$this->getObjectTypeID('com.woltlab.wcf.label.object', $objectType)]
+        );
+        $conditionBuilder->add(
+            'objectID IN (?)',
+            [$objectIDs]
+        );
 
         $sql = "SELECT		labelID, objectID
 			FROM		wcf" . $this->dbNo . "_label_object
@@ -3673,7 +4112,10 @@ class WBB4xExporter extends AbstractExporter
 					SELECT definitionID FROM wcf" . $this->dbNo . "_object_type_definition WHERE definitionName = ?
 				)";
         $statement = $this->database->prepareStatement($sql, 1);
-        $statement->execute([$objectTypeName, $definitionName]);
+        $statement->execute([
+            $objectTypeName,
+            $definitionName,
+        ]);
         $row = $statement->fetchArray();
         if ($row !== false) {
             return $row['objectTypeID'];
@@ -3692,7 +4134,9 @@ class WBB4xExporter extends AbstractExporter
 			FROM	wcf" . $this->dbNo . "_category
 			WHERE	objectTypeID = ?";
         $statement = $this->database->prepareStatement($sql);
-        $statement->execute([$this->getObjectTypeID('com.woltlab.wcf.category', $objectType)]);
+        $statement->execute([
+            $this->getObjectTypeID('com.woltlab.wcf.category', $objectType),
+        ]);
 
         return $statement->fetchColumn();
     }
@@ -3712,7 +4156,8 @@ class WBB4xExporter extends AbstractExporter
 			WHERE		objectTypeID = ?
 			ORDER BY	parentCategoryID, categoryID";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
-        $statement->execute([$this->getObjectTypeID('com.woltlab.wcf.category', $objectType)]);
+        $statement->execute([
+            $this->getObjectTypeID('com.woltlab.wcf.category', $objectType), ]);
         $categories = $i18nValues = [];
         while ($row = $statement->fetchArray()) {
             $categories[$row['categoryID']] = [
@@ -3743,7 +4188,13 @@ class WBB4xExporter extends AbstractExporter
                 $i18nData['description'] = $i18nValues[$categoryData['description']];
             }
 
-            ImportHandler::getInstance()->getImporter($importer)->import($categoryID, $categoryData, ['i18n' => $i18nData]);
+            ImportHandler::getInstance()
+                ->getImporter($importer)
+                ->import(
+                    $categoryID,
+                    $categoryData,
+                    ['i18n' => $i18nData]
+                );
         }
     }
 
