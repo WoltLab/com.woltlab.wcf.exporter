@@ -97,7 +97,11 @@ class IPB3xExporter extends AbstractExporter
      */
     public function validateFileAccess()
     {
-        if (\in_array('com.woltlab.wcf.user.avatar', $this->selectedData) || \in_array('com.woltlab.wbb.attachment', $this->selectedData) || \in_array('com.woltlab.wcf.conversation.attachment', $this->selectedData)) {
+        if (
+            \in_array('com.woltlab.wcf.user.avatar', $this->selectedData)
+            || \in_array('com.woltlab.wbb.attachment', $this->selectedData)
+            || \in_array('com.woltlab.wcf.conversation.attachment', $this->selectedData)
+        ) {
             if (empty($this->fileSystemPath) || !@\file_exists($this->fileSystemPath . 'conf_global.php')) {
                 return false;
             }
@@ -276,11 +280,20 @@ class IPB3xExporter extends AbstractExporter
             }
 
             // import user
-            $newUserID = ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user')->import($row['member_id'], $data, $additionalData);
+            $newUserID = ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.user')
+                ->import(
+                    $row['member_id'],
+                    $data,
+                    $additionalData
+                );
 
             // update password hash
             if ($newUserID) {
-                $passwordUpdateStatement->execute(['ipb3:' . $row['members_pass_hash'] . ':' . $row['members_pass_salt'], $newUserID]);
+                $passwordUpdateStatement->execute([
+                    'ipb3:' . $row['members_pass_hash'] . ':' . $row['members_pass_salt'],
+                    $newUserID,
+                ]);
             }
         }
     }
@@ -321,11 +334,19 @@ class IPB3xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute($conditionBuilder->getParameters());
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.option')->import($row['pf_id'], [
+            $data = [
                 'categoryName' => 'profile.personal',
                 'optionType' => 'textarea',
                 'askDuringRegistration' => $row['pf_show_on_reg'],
-            ], ['name' => $row['pf_title']]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.user.option')
+                ->import(
+                    $row['pf_id'],
+                    $data,
+                    ['name' => $row['pf_title']]
+                );
         }
     }
 
@@ -362,11 +383,15 @@ class IPB3xExporter extends AbstractExporter
                     break;
             }
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.group')->import($row['g_id'], [
+            $data = [
                 'groupName' => $row['g_title'],
                 'groupType' => $groupType,
                 'userOnlineMarking' => !empty($row['prefix']) ? ($row['prefix'] . '%s' . $row['suffix']) : '%s',
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.user.group')
+                ->import($row['g_id'], $data);
         }
     }
 
@@ -426,11 +451,20 @@ class IPB3xExporter extends AbstractExporter
             }
 
             $avatarExtension = \pathinfo($avatarName, \PATHINFO_EXTENSION);
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.avatar')->import($row['pp_member_id'], [
+
+            $data = [
                 'avatarName' => $avatarName,
                 'avatarExtension' => $avatarExtension,
                 'userID' => $row['pp_member_id'],
-            ], ['fileLocation' => $source]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.user.avatar')
+                ->import(
+                    $row['pp_member_id'],
+                    $data,
+                    ['fileLocation' => $source]
+                );
         }
     }
 
@@ -459,13 +493,17 @@ class IPB3xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.comment')->import($row['status_id'], [
+            $data = [
                 'objectID' => $row['status_member_id'],
                 'userID' => $row['status_author_id'],
                 'username' => $row['name'] ? self::fixSubject($row['name']) : '',
                 'message' => self::fixStatusUpdate($row['status_content']),
                 'time' => $row['status_date'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.user.comment')
+                ->import($row['status_id'], $data);
         }
     }
 
@@ -494,13 +532,17 @@ class IPB3xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.comment.response')->import($row['reply_id'], [
+            $data = [
                 'commentID' => $row['reply_status_id'],
                 'time' => $row['reply_date'],
                 'userID' => $row['reply_member_id'],
                 'username' => $row['name'] ? self::fixSubject($row['name']) : '',
                 'message' => self::fixStatusUpdate($row['reply_content']),
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.user.comment.response')
+                ->import($row['reply_id'], $data);
         }
     }
 
@@ -527,11 +569,15 @@ class IPB3xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.follower')->import(0, [
+            $data = [
                 'userID' => $row['friends_member_id'],
                 'followUserID' => $row['friends_friend_id'],
                 'time' => $row['friends_added'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.user.follower')
+                ->import(0, $data);
         }
     }
 
@@ -560,13 +606,17 @@ class IPB3xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import($row['mt_id'], [
+            $data = [
                 'subject' => self::fixSubject($row['mt_title']),
                 'time' => $row['mt_date'],
                 'userID' => $row['mt_starter_id'] ?: null,
                 'username' => $row['mt_is_system'] ? 'System' : ($row['name'] ? self::fixSubject($row['name']) : ''),
                 'isDraft' => $row['mt_is_draft'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.conversation')
+                ->import($row['mt_id'], $data);
         }
     }
 
@@ -595,13 +645,17 @@ class IPB3xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.message')->import($row['msg_id'], [
+            $data = [
                 'conversationID' => $row['msg_topic_id'],
                 'userID' => $row['msg_author_id'] ?: null,
                 'username' => $row['name'] ? self::fixSubject($row['name']) : '',
                 'message' => self::fixMessage($row['msg_post']),
                 'time' => $row['msg_date'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.conversation.message')
+                ->import($row['msg_id'], $data);
         }
     }
 
@@ -630,14 +684,18 @@ class IPB3xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.user')->import(0, [
+            $data = [
                 'conversationID' => $row['map_topic_id'],
                 'participantID' => $row['map_user_id'],
                 'username' => $row['name'] ? self::fixSubject($row['name']) : '',
                 'hideConversation' => $row['map_left_time'] ? 1 : 0,
                 'isInvisible' => 0,
                 'lastVisitTime' => $row['map_read_time'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.conversation.user')
+                ->import(0, $data);
         }
     }
 
@@ -706,10 +764,17 @@ class IPB3xExporter extends AbstractExporter
         }
 
         foreach ($this->boardCache[$parentID] as $board) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import($board['id'], [
+            $boardType = Board::TYPE_BOARD;
+            if ($board['redirect_on']) {
+                $boardType = Board::TYPE_LINK;
+            } elseif (!$board['sub_can_post']) {
+                $boardType = Board::TYPE_CATEGORY;
+            }
+
+            $data = [
                 'parentID' => $board['parent_id'] != -1 ? $board['parent_id'] : null,
                 'position' => $board['position'],
-                'boardType' => $board['redirect_on'] ? Board::TYPE_LINK : ($board['sub_can_post'] ? Board::TYPE_BOARD : Board::TYPE_CATEGORY),
+                'boardType' => $boardType,
                 'title' => self::fixSubject($board['name']),
                 'description' => $board['description'],
                 'externalURL' => $board['redirect_url'],
@@ -717,7 +782,11 @@ class IPB3xExporter extends AbstractExporter
                 'clicks' => $board['redirect_hits'],
                 'posts' => $board['posts'],
                 'threads' => $board['topics'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.board')
+                ->import($board['id'], $data);
 
             $this->exportBoardsRecursively($board['id']);
         }
@@ -783,12 +852,19 @@ class IPB3xExporter extends AbstractExporter
                 'deleteTime' => $row['tdelete_time'],
                 'lastPostTime' => $row['last_post'],
             ];
+
             $additionalData = [];
             if (isset($tags[$row['tid']])) {
                 $additionalData['tags'] = $tags[$row['tid']];
             }
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.thread')->import($row['tid'], $data, $additionalData);
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.thread')
+                ->import(
+                    $row['tid'],
+                    $data,
+                    $additionalData
+                );
         }
     }
 
@@ -815,7 +891,7 @@ class IPB3xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.post')->import($row['pid'], [
+            $data = [
                 'threadID' => $row['topic_id'],
                 'userID' => $row['author_id'],
                 'username' => $row['author_name'] ? self::fixSubject($row['author_name']) : '',
@@ -828,7 +904,11 @@ class IPB3xExporter extends AbstractExporter
                 'editReason' => $row['post_edit_reason'],
                 'ipAddress' => UserUtil::convertIPv4To6($row['ip_address']),
                 'deleteTime' => $row['pdelete_time'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.post')
+                ->import($row['pid'], $data);
         }
     }
 
@@ -864,10 +944,14 @@ class IPB3xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute(['forums', 'topics']);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.watchedThread')->import(0, [
+            $data = [
                 'objectID' => $row['like_rel_id'],
                 'userID' => $row['like_member_id'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.watchedThread')
+                ->import(0, $data);
         }
     }
 
@@ -905,23 +989,31 @@ class IPB3xExporter extends AbstractExporter
             }
 
             // import poll
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll')->import($row['pid'], [
+            $data = [
                 'objectID' => $row['topic_firstpost'],
                 'question' => self::fixSubject($data[1]['question']),
                 'time' => $row['start_date'],
                 'isPublic' => $row['poll_view_voters'],
                 'maxVotes' => !empty($data[1]['multi']) ? \count($data[1]['choice']) : 1,
                 'votes' => $row['votes'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.poll')
+                ->import($row['pid'], $data);
 
             // import poll options
             foreach ($data[1]['choice'] as $key => $choice) {
-                ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll.option')->import($row['pid'] . '-' . $key, [
+                $data = [
                     'pollID' => $row['pid'],
                     'optionValue' => $choice,
                     'showOrder' => $key,
                     'votes' => $data[1]['votes'][$key],
-                ]);
+                ];
+
+                ImportHandler::getInstance()
+                    ->getImporter('com.woltlab.wbb.poll.option')
+                    ->import($row['pid'] . '-' . $key, $data);
             }
         }
     }
@@ -960,11 +1052,15 @@ class IPB3xExporter extends AbstractExporter
             }
 
             foreach ($data[1] as $pollOptionKey) {
-                ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll.option.vote')->import(0, [
+                $data = [
                     'pollID' => $row['pid'],
                     'optionID' => $row['pid'] . '-' . $pollOptionKey,
                     'userID' => $row['member_id'],
-                ]);
+                ];
+
+                ImportHandler::getInstance()
+                    ->getImporter('com.woltlab.wbb.poll.option.vote')
+                    ->import(0, $data);
             }
         }
     }
@@ -1005,13 +1101,17 @@ class IPB3xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute(['forums', 'topics', 1]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.like')->import(0, [
+            $data = [
                 'objectID' => $row['topic_firstpost'],
                 'objectUserID' => $row['starter_id'] ?: null,
                 'userID' => $row['like_member_id'],
                 'likeValue' => Like::LIKE,
                 'time' => $row['like_added'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.like')
+                ->import(0, $data);
         }
     }
 
@@ -1073,13 +1173,21 @@ class IPB3xExporter extends AbstractExporter
         while ($row = $statement->fetchArray()) {
             $fileLocation = $this->fileSystemPath . 'uploads/' . $row['attach_location'];
 
-            ImportHandler::getInstance()->getImporter($objectType)->import($row['attach_id'], [
+            $data = [
                 'objectID' => $row['attach_rel_id'],
                 'userID' => $row['attach_member_id'] ?: null,
                 'filename' => $row['attach_file'],
                 'downloads' => $row['attach_hits'],
                 'uploadTime' => $row['attach_date'],
-            ], ['fileLocation' => $fileLocation]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter($objectType)
+                ->import(
+                    $row['attach_id'],
+                    $data,
+                    ['fileLocation' => $fileLocation]
+                );
         }
     }
 
@@ -1127,12 +1235,16 @@ class IPB3xExporter extends AbstractExporter
 
         // remove newlines, but preserve them in code blocks
         $codes = [];
-        $string = \preg_replace_callback('~<pre[^>]*>(.*?)</pre>~is', static function ($content) use (&$codes) {
-            $i = \count($codes);
-            $codes[$i] = $content[1];
+        $string = \preg_replace_callback(
+            '~<pre[^>]*>(.*?)</pre>~is',
+            static function ($content) use (&$codes) {
+                $i = \count($codes);
+                $codes[$i] = $content[1];
 
-            return '@@@WCF_CODE_BLOCK_' . $i . '@@@';
-        }, $string);
+                return '@@@WCF_CODE_BLOCK_' . $i . '@@@';
+            },
+            $string
+        );
         $string = \str_replace("\n", '', $string);
 
         // <br /> to newline
@@ -1167,42 +1279,64 @@ class IPB3xExporter extends AbstractExporter
         $string = \str_ireplace('</strike>', '[/s]', $string);
 
         // font face
-        $string = \preg_replace_callback('~<span style="font-family:(.*?)">(.*?)</span>~is', static function ($matches) {
-            return "[font='" . \str_replace(";", '', \str_replace("'", '', $matches[1])) . "']" . $matches[2] . "[/font]";
-        }, $string);
+        $string = \preg_replace_callback(
+            '~<span style="font-family:(.*?)">(.*?)</span>~is',
+            static function ($matches) {
+                $font = \str_replace(";", '', \str_replace("'", '', $matches[1]));
+
+                return "[font='" . $font . "']" . $matches[2] . "[/font]";
+            },
+            $string
+        );
 
         // font size
-        $string = \preg_replace('~<span style="font-size:(\d+)px;">(.*?)</span>~is', '[size=\\1]\\2[/size]', $string);
+        $string = \preg_replace(
+            '~<span style="font-size:(\d+)px;">(.*?)</span>~is',
+            '[size=\\1]\\2[/size]',
+            $string
+        );
 
         // font color
-        $string = \preg_replace_callback('~<span style="color:\s*([^";]+);?">(.*?)</span>~is', static function ($matches) {
-            if (\preg_match('~^rgb\((\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\)$~', $matches[1], $rgbMatches)) {
-                $r = \dechex($rgbMatches[1]);
-                if (\strlen($r) < 2) {
-                    $r = '0' . $r;
-                }
-                $g = \dechex($rgbMatches[2]);
-                if (\strlen($g) < 2) {
-                    $g = '0' . $g;
-                }
-                $b = \dechex($rgbMatches[3]);
-                if (\strlen($b) < 2) {
-                    $b = '0' . $b;
+        $string = \preg_replace_callback(
+            '~<span style="color:\s*([^";]+);?">(.*?)</span>~is',
+            static function ($matches) {
+                if (\preg_match('~^rgb\((\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\)$~', $matches[1], $rgbMatches)) {
+                    $r = \dechex($rgbMatches[1]);
+                    if (\strlen($r) < 2) {
+                        $r = '0' . $r;
+                    }
+                    $g = \dechex($rgbMatches[2]);
+                    if (\strlen($g) < 2) {
+                        $g = '0' . $g;
+                    }
+                    $b = \dechex($rgbMatches[3]);
+                    if (\strlen($b) < 2) {
+                        $b = '0' . $b;
+                    }
+
+                    $color = '#' . $r . $g . $b;
+                } elseif (\preg_match('~^(?:#(?:[0-9a-f]{3}|[0-9a-f]{6})|[a-z]+)$~', $matches[1])) {
+                    $color = $matches[1];
+                } else {
+                    return $matches[0];
                 }
 
-                $color = '#' . $r . $g . $b;
-            } elseif (\preg_match('~^(?:#(?:[0-9a-f]{3}|[0-9a-f]{6})|[a-z]+)$~', $matches[1])) {
-                $color = $matches[1];
-            } else {
-                return $matches[0];
-            }
-
-            return '[color=' . $color . ']' . $matches[2] . '[/color]';
-        }, $string);
+                return '[color=' . $color . ']' . $matches[2] . '[/color]';
+            },
+            $string
+        );
 
         // align
-        $string = \preg_replace('~<p style="text-align:(left|center|right);">(.*?)</p>~is', '[align=\\1]\\2[/align]', $string);
-        $string = \preg_replace('~<p class="bbc_center">(.*?)</p>~is', '[align=center]\\1[/align]', $string);
+        $string = \preg_replace(
+            '~<p style="text-align:(left|center|right);">(.*?)</p>~is',
+            '[align=\\1]\\2[/align]',
+            $string
+        );
+        $string = \preg_replace(
+            '~<p class="bbc_center">(.*?)</p>~is',
+            '[align=center]\\1[/align]',
+            $string
+        );
 
         // list
         $string = \str_ireplace('</ol>', '[/list]', $string);
@@ -1214,19 +1348,35 @@ class IPB3xExporter extends AbstractExporter
         $string = \str_ireplace('</li>', '', $string);
 
         // mails
-        $string = \preg_replace('~<a.*?href=(?:"|\')mailto:([^"]*)(?:"|\').*?>(.*?)</a>~is', '[email=\'\\1\']\\2[/email]', $string);
+        $string = \preg_replace(
+            '~<a.*?href=(?:"|\')mailto:([^"]*)(?:"|\').*?>(.*?)</a>~is',
+            '[email=\'\\1\']\\2[/email]',
+            $string
+        );
 
         // urls
-        $string = \preg_replace('~<a.*?href=(?:"|\')([^"\']*)(?:"|\').*?>(.*?)</a>~is', '[url=\'\\1\']\\2[/url]', $string);
+        $string = \preg_replace(
+            '~<a.*?href=(?:"|\')([^"\']*)(?:"|\').*?>(.*?)</a>~is',
+            '[url=\'\\1\']\\2[/url]',
+            $string
+        );
 
         // smileys
-        $string = \preg_replace('~<img src=\'[^\']+\' class=\'bbc_emoticon\' alt=\'([^\']+)\' ?/?>~is', '\\1', $string);
+        $string = \preg_replace(
+            '~<img src=\'[^\']+\' class=\'bbc_emoticon\' alt=\'([^\']+)\' ?/?>~is',
+            '\\1',
+            $string
+        );
 
         // images
         $string = \preg_replace('~<img[^>]+src=["\']([^"\']+)["\'][^>]*/?>~is', '[img]\\1[/img]', $string);
 
         // quotes
-        $string = \preg_replace('~<blockquote[^>]*data-author="([^"]+)"[^>]*>(.*?)</blockquote>~is', "[quote='\\1']\\2[/quote]", $string);
+        $string = \preg_replace(
+            '~<blockquote[^>]*data-author="([^"]+)"[^>]*>(.*?)</blockquote>~is',
+            "[quote='\\1']\\2[/quote]",
+            $string
+        );
         $string = \preg_replace('~<blockquote[^>]*>(.*?)</blockquote>~is', '[quote]\\1[/quote]', $string);
 
         // code
@@ -1249,35 +1399,39 @@ class IPB3xExporter extends AbstractExporter
         $string = \preg_replace('~\[quote name="([^\']+)".*?\]~si', "[quote='\\1']", $string);
 
         // fix size bbcodes
-        $string = \preg_replace_callback('/\[size=\'?(\d+)\'?\]/i', static function ($matches) {
-            $size = 10;
+        $string = \preg_replace_callback(
+            '/\[size=\'?(\d+)\'?\]/i',
+            static function ($matches) {
+                $size = 10;
 
-            switch ($matches[1]) {
-                case 1:
-                    $size = 8;
-                    break;
-                case 2:
-                    $size = 10;
-                    break;
-                case 3:
-                    $size = 12;
-                    break;
-                case 4:
-                    $size = 14;
-                    break;
-                case 5:
-                    $size = 18;
-                    break;
-                case 6:
-                    $size = 24;
-                    break;
-                case 7:
-                    $size = 36;
-                    break;
-            }
+                switch ($matches[1]) {
+                    case 1:
+                        $size = 8;
+                        break;
+                    case 2:
+                        $size = 10;
+                        break;
+                    case 3:
+                        $size = 12;
+                        break;
+                    case 4:
+                        $size = 14;
+                        break;
+                    case 5:
+                        $size = 18;
+                        break;
+                    case 6:
+                        $size = 24;
+                        break;
+                    case 7:
+                        $size = 36;
+                        break;
+                }
 
-            return '[size=' . $size . ']';
-        }, $string);
+                return '[size=' . $size . ']';
+            },
+            $string
+        );
 
         // remove html comments
         $string = \preg_replace('/<\!--.*?-->/is', '', $string);
