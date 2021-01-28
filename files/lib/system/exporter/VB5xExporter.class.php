@@ -335,8 +335,8 @@ class VB5xExporter extends AbstractExporter
             ];
 
             ImportHandler::getInstance()
-            ->getImporter('com.woltlab.wcf.user.group')
-            ->import($row['usergroupid'], $data);
+                ->getImporter('com.woltlab.wcf.user.group')
+                ->import($row['usergroupid'], $data);
         }
     }
 
@@ -446,8 +446,8 @@ class VB5xExporter extends AbstractExporter
 
             // import user
             $newUserID = ImportHandler::getInstance()
-            ->getImporter('com.woltlab.wcf.user')
-            ->import($row['userid'], $data, $additionalData);
+                ->getImporter('com.woltlab.wcf.user')
+                ->import($row['userid'], $data, $additionalData);
 
             // update password hash
             if ($newUserID) {
@@ -516,12 +516,12 @@ class VB5xExporter extends AbstractExporter
                 ];
 
                 ImportHandler::getInstance()
-                ->getImporter('com.woltlab.wcf.user.avatar')
-                ->import(
-                    $row['userid'],
-                    $data,
-                    ['fileLocation' => $file]
-                );
+                    ->getImporter('com.woltlab.wcf.user.avatar')
+                    ->import(
+                        $row['userid'],
+                        $data,
+                        ['fileLocation' => $file]
+                    );
 
                 if (!$this->readOption('usefileavatar')) {
                     \unlink($file);
@@ -755,7 +755,7 @@ class VB5xExporter extends AbstractExporter
             if ($board['channelOptions'] & self::CHANNELOPTIONS_CANCONTAINTHREADS) {
                 $boardType = Board::TYPE_BOARD;
             } else {
-                $boardType = Board::TYPE_CATEGORY
+                $boardType = Board::TYPE_CATEGORY;
             }
 
             $data = [
@@ -827,12 +827,12 @@ class VB5xExporter extends AbstractExporter
             $additionalData = [];
 
             ImportHandler::getInstance()
-            ->getImporter('com.woltlab.wbb.thread')
-            ->import(
-                $row['nodeid'],
-                $data,
-                $additionalData
-            );
+                ->getImporter('com.woltlab.wbb.thread')
+                ->import(
+                    $row['nodeid'],
+                    $data,
+                    $additionalData
+                );
         }
     }
 
@@ -888,8 +888,8 @@ class VB5xExporter extends AbstractExporter
             ];
 
             ImportHandler::getInstance()
-            ->getImporter('com.woltlab.wbb.post')
-            ->import($row['nodeid'], $data);
+                ->getImporter('com.woltlab.wbb.post')
+                ->import($row['nodeid'], $data);
         }
     }
 
@@ -961,12 +961,12 @@ class VB5xExporter extends AbstractExporter
                 ];
 
                 ImportHandler::getInstance()
-                ->getImporter('com.woltlab.wbb.attachment')
-                ->import(
-                    $row['nodeid'],
-                    $data,
-                    ['fileLocation' => $file]
-                );
+                    ->getImporter('com.woltlab.wbb.attachment')
+                    ->import(
+                        $row['nodeid'],
+                        $data,
+                        ['fileLocation' => $file]
+                    );
 
                 if ($this->readOption('attachfile') == self::ATTACHFILE_DATABASE) {
                     \unlink($file);
@@ -1019,8 +1019,8 @@ class VB5xExporter extends AbstractExporter
             ];
 
             ImportHandler::getInstance()
-            ->getImporter('com.woltlab.wbb.poll')
-            ->import($row['nodeid'], $data);
+                ->getImporter('com.woltlab.wbb.poll')
+                ->import($row['nodeid'], $data);
         }
     }
 
@@ -1056,8 +1056,8 @@ class VB5xExporter extends AbstractExporter
             ];
 
             ImportHandler::getInstance()
-            ->getImporter('com.woltlab.wbb.poll.option')
-            ->import($row['polloptionid'], $data);
+                ->getImporter('com.woltlab.wbb.poll.option')
+                ->import($row['polloptionid'], $data);
         }
     }
 
@@ -1091,8 +1091,8 @@ class VB5xExporter extends AbstractExporter
             ];
 
             ImportHandler::getInstance()
-            ->getImporter('com.woltlab.wbb.poll.option.vote')
-            ->import(0, $data);
+                ->getImporter('com.woltlab.wbb.poll.option.vote')
+                ->import(0, $data);
         }
     }
 
@@ -1234,12 +1234,12 @@ class VB5xExporter extends AbstractExporter
             ];
 
             ImportHandler::getInstance()
-            ->getImporter('com.woltlab.blog.entry')
-            ->import(
-                $row['nodeid'],
-                $data,
-                $additionalData
-            );
+                ->getImporter('com.woltlab.blog.entry')
+                ->import(
+                    $row['nodeid'],
+                    $data,
+                    $additionalData
+                );
         }
     }
 
@@ -1308,12 +1308,12 @@ class VB5xExporter extends AbstractExporter
                 ];
 
                 ImportHandler::getInstance()
-                ->getImporter('com.woltlab.blog.entry.attachment')
-                ->import(
-                    $row['nodeid'],
-                    $data,
-                    ['fileLocation' => $file]
-                );
+                    ->getImporter('com.woltlab.blog.entry.attachment')
+                    ->import(
+                        $row['nodeid'],
+                        $data,
+                        ['fileLocation' => $file]
+                    );
 
                 if ($this->readOption('attachfile') == self::ATTACHFILE_DATABASE) {
                     \unlink($file);
@@ -1370,8 +1370,8 @@ class VB5xExporter extends AbstractExporter
             ];
 
             ImportHandler::getInstance()
-            ->getImporter('com.woltlab.blog.entry.comment')
-            ->import($row['nodeid'], $data);
+                ->getImporter('com.woltlab.blog.entry.comment')
+                ->import($row['nodeid'], $data);
         }
     }
 
@@ -1477,12 +1477,12 @@ class VB5xExporter extends AbstractExporter
                 ];
 
                 ImportHandler::getInstance()
-                ->getImporter('com.woltlab.gallery.image')
-                ->import(
-                    $row['nodeid'],
-                    $data,
-                    ['fileLocation' => $file]
-                );
+                    ->getImporter('com.woltlab.gallery.image')
+                    ->import(
+                        $row['nodeid'],
+                        $data,
+                        ['fileLocation' => $file]
+                    );
             } finally {
                 if ($this->readOption('attachfile') == self::ATTACHFILE_DATABASE && $file) {
                     @\unlink($file);
@@ -1529,12 +1529,12 @@ class VB5xExporter extends AbstractExporter
             ];
 
             ImportHandler::getInstance()
-            ->getImporter('com.woltlab.wcf.smiley')
-            ->import(
-                $row['smilieid'],
-                $data,
-                ['fileLocation' => $fileLocation]
-            );
+                ->getImporter('com.woltlab.wcf.smiley')
+                ->import(
+                    $row['smilieid'],
+                    $data,
+                    ['fileLocation' => $fileLocation]
+                );
         }
     }
 
@@ -1575,8 +1575,8 @@ class VB5xExporter extends AbstractExporter
             ];
 
             ImportHandler::getInstance()
-            ->getImporter('com.woltlab.wcf.smiley.category')
-            ->import($row['imagecategoryid'], $data);
+                ->getImporter('com.woltlab.wcf.smiley.category')
+                ->import($row['imagecategoryid'], $data);
         }
     }
 
