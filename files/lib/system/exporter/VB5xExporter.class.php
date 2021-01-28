@@ -412,7 +412,7 @@ class VB5xExporter extends AbstractExporter {
 			// update password hash
 			if ($newUserID) {
 				if (StringUtil::startsWith($row['scheme'], 'blowfish')) {
-					$password = PasswordUtil::getSaltedHash($row['token'], $row['token']);
+					$password = 'Bcrypt:'.$row['token'];
 				}
 				else if (StringUtil::startsWith($row['scheme'], 'argon2')) {
 					$password = 'argon2:'.$row['token'];

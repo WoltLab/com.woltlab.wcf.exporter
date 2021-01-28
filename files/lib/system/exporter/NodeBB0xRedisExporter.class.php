@@ -210,7 +210,7 @@ class NodeBB0xRedisExporter extends AbstractExporter {
 			
 			// update password hash
 			if ($newUserID) {
-				$password = PasswordUtil::getSaltedHash($row['password'], $row['password']);
+				$password = 'Bcrypt:'.$row['password'];
 				$passwordUpdateStatement->execute([$password, $newUserID]);
 			}
 		}
