@@ -171,7 +171,10 @@ class VB5xExporter extends AbstractExporter
     public function validateFileAccess()
     {
         if (\in_array('com.woltlab.wcf.smiley', $this->selectedData)) {
-            if (empty($this->fileSystemPath) || !@\file_exists($this->fileSystemPath . 'includes/version_vbulletin.php')) {
+            if (
+                empty($this->fileSystemPath)
+                || !@\file_exists($this->fileSystemPath . 'includes/version_vbulletin.php')
+            ) {
                 return false;
             }
         }
@@ -324,12 +327,16 @@ class VB5xExporter extends AbstractExporter
                     break;
             }
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.group')->import($row['usergroupid'], [
+            $data = [
                 'groupName' => $row['title'],
                 'groupDescription' => $row['description'],
                 'groupType' => $groupType,
                 'userOnlineMarking' => $row['opentag'] . '%s' . $row['closetag'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+            ->getImporter('com.woltlab.wcf.user.group')
+            ->import($row['usergroupid'], $data);
         }
     }
 
@@ -415,7 +422,10 @@ class VB5xExporter extends AbstractExporter
                 $optionID = $userOption['profilefieldid'];
                 if (isset($row['field' . $optionID])) {
                     $userOptionValue = $row['field' . $optionID];
-                    if ($userOptionValue && ($userOption['type'] == 'select_multiple' || $userOption['type'] == 'checkbox')) {
+                    if (
+                        $userOptionValue
+                        && ($userOption['type'] == 'select_multiple' || $userOption['type'] == 'checkbox')
+                    ) {
                         if (\is_array($userOption['data'])) {
                             $newUserOptionValue = '';
                             foreach ($userOption['data'] as $key => $value) {
@@ -435,7 +445,9 @@ class VB5xExporter extends AbstractExporter
             }
 
             // import user
-            $newUserID = ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user')->import($row['userid'], $data, $additionalData);
+            $newUserID = ImportHandler::getInstance()
+            ->getImporter('com.woltlab.wcf.user')
+            ->import($row['userid'], $data, $additionalData);
 
             // update password hash
             if ($newUserID) {
@@ -495,13 +507,21 @@ class VB5xExporter extends AbstractExporter
                     \file_put_contents($file, $row['filedata']);
                 }
 
-                ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.avatar')->import($row['userid'], [
+                $data = [
                     'avatarName' => $row['filename'],
                     'avatarExtension' => \pathinfo($row['filename'], \PATHINFO_EXTENSION),
                     'width' => $row['width'],
                     'height' => $row['height'],
                     'userID' => $row['userid'],
-                ], ['fileLocation' => $file]);
+                ];
+
+                ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.user.avatar')
+                ->import(
+                    $row['userid'],
+                    $data,
+                    ['fileLocation' => $file]
+                );
 
                 if (!$this->readOption('usefileavatar')) {
                     \unlink($file);
@@ -561,7 +581,12 @@ class VB5xExporter extends AbstractExporter
 
             // get select options
             $selectOptions = [];
-            if ($row['type'] == 'radio' || $row['type'] == 'select' || $row['type'] == 'select_multiple' || $row['type'] == 'checkbox') {
+            if (
+                $row['type'] == 'radio'
+                || $row['type'] == 'select'
+                || $row['type'] == 'select_multiple'
+                || $row['type'] == 'checkbox'
+            ) {
                 $selectOptions = @\unserialize($row['data']);
 
                 if (!\is_array($selectOptions)) {
@@ -635,7 +660,7 @@ class VB5xExporter extends AbstractExporter
                 $fieldName = $row2['text'];
             }
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.option')->import($row['profilefieldid'], [
+            $data = [
                 'categoryName' => 'profile.personal',
                 'optionType' => $optionType,
                 'defaultValue' => $defaultValue,
@@ -647,7 +672,15 @@ class VB5xExporter extends AbstractExporter
                 'editable' => $editable,
                 'visible' => $visible,
                 'showOrder' => $row['displayorder'],
-            ], ['name' => $fieldName]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.user.option')
+                ->import(
+                    $row['profilefieldid'],
+                    $data,
+                    ['name' => $fieldName]
+                );
         }
     }
 
@@ -719,16 +752,26 @@ class VB5xExporter extends AbstractExporter
         }
 
         foreach ($this->boardCache[$parentID] as $board) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import($board['nodeid'], [
+            if ($board['channelOptions'] & self::CHANNELOPTIONS_CANCONTAINTHREADS) {
+                $boardType = Board::TYPE_BOARD;
+            } else {
+                $boardType = Board::TYPE_CATEGORY
+            }
+
+            $data = [
                 'parentID' => $board['parentid'] ?: null,
                 'position' => $board['displayorder'] ?: 0,
-                'boardType' => $board['channelOptions'] & self::CHANNELOPTIONS_CANCONTAINTHREADS ? Board::TYPE_BOARD : Board::TYPE_CATEGORY,
+                'boardType' => $boardType,
                 'title' => $board['title'],
                 'description' => $board['description'],
                 'descriptionUseHtml' => 0,
                 'enableMarkingAsDone' => 0,
                 'ignorable' => 1,
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.board')
+                ->import($board['nodeid'], $data);
 
             $this->exportBoardsRecursively($board['nodeid']);
         }
@@ -783,7 +826,13 @@ class VB5xExporter extends AbstractExporter
             ];
             $additionalData = [];
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.thread')->import($row['nodeid'], $data, $additionalData);
+            ImportHandler::getInstance()
+            ->getImporter('com.woltlab.wbb.thread')
+            ->import(
+                $row['nodeid'],
+                $data,
+                $additionalData
+            );
         }
     }
 
@@ -818,7 +867,7 @@ class VB5xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute(['Text', 'Poll', $offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.post')->import($row['nodeid'], [
+            $data = [
                 'threadID' => $row['isFirstPost'] ? $row['nodeid'] : $row['parentid'],
                 'userID' => $row['userid'],
                 'username' => $row['authorname'] ?: '',
@@ -836,7 +885,11 @@ class VB5xExporter extends AbstractExporter
                 'editReason' => '',
                 'enableHtml' => (isset($row['htmlState']) && $row['htmlState'] != 'off') ? 1 : 0,
                 'ipAddress' => UserUtil::convertIPv4To6($row['ipaddress']),
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+            ->getImporter('com.woltlab.wbb.post')
+            ->import($row['nodeid'], $data);
         }
     }
 
@@ -898,14 +951,22 @@ class VB5xExporter extends AbstractExporter
                     continue;
                 }
 
-                ImportHandler::getInstance()->getImporter('com.woltlab.wbb.attachment')->import($row['nodeid'], [
+                $data = [
                     'objectID' => $row['parentid'],
                     'userID' => $row['userid'] ?: null,
                     'filename' => $row['filename'],
                     'downloads' => $row['counter'],
                     'uploadTime' => $row['dateline'],
                     'showOrder' => $row['displayOrder'] ?? 0,
-                ], ['fileLocation' => $file]);
+                ];
+
+                ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.attachment')
+                ->import(
+                    $row['nodeid'],
+                    $data,
+                    ['fileLocation' => $file]
+                );
 
                 if ($this->readOption('attachfile') == self::ATTACHFILE_DATABASE) {
                     \unlink($file);
@@ -945,7 +1006,7 @@ class VB5xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll')->import($row['nodeid'], [
+            $data = [
                 'objectID' => $row['nodeid'],
                 'question' => $row['title'],
                 'time' => $row['created'],
@@ -955,7 +1016,11 @@ class VB5xExporter extends AbstractExporter
                 'sortByVotes' => 0,
                 'maxVotes' => $row['multiple'] ? $row['numberoptions'] : 1,
                 'votes' => $row['votes'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+            ->getImporter('com.woltlab.wbb.poll')
+            ->import($row['nodeid'], $data);
         }
     }
 
@@ -984,11 +1049,15 @@ class VB5xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll.option')->import($row['polloptionid'], [
+            $data = [
                 'pollID' => $row['nodeid'],
                 'optionValue' => $row['title'],
                 'votes' => $row['votes'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+            ->getImporter('com.woltlab.wbb.poll.option')
+            ->import($row['polloptionid'], $data);
         }
     }
 
@@ -1015,11 +1084,15 @@ class VB5xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll.option.vote')->import(0, [
+            $data = [
                 'pollID' => $row['nodeid'],
                 'optionID' => $row['polloptionid'],
                 'userID' => $row['userid'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+            ->getImporter('com.woltlab.wbb.poll.option.vote')
+            ->import(0, $data);
         }
     }
 
@@ -1069,7 +1142,8 @@ class VB5xExporter extends AbstractExporter
             }
         }
 
-        // If the blog root could not be found then we skip, because we don't want to import boards as blogs.
+        // If the blog root could not be found then we skip, because we don't
+        // want to import boards as blogs.
         if ($blogRoot === 0) {
             return;
         }
@@ -1089,12 +1163,16 @@ class VB5xExporter extends AbstractExporter
         }
 
         foreach ($this->blogCache[$parentID] as $blog) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.blog.blog')->import($blog['nodeid'], [
+            $data = [
                 'userID' => $blog['userid'],
                 'username' => $blog['authorname'] ?: '',
                 'title' => $blog['title'],
                 'description' => $blog['description'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.blog.blog')
+                ->import($blog['nodeid'], $data);
 
             $this->exportBlogsRecursively($blog['nodeid']);
         }
@@ -1155,7 +1233,13 @@ class VB5xExporter extends AbstractExporter
                 'blogID' => $row['parentid'],
             ];
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry')->import($row['nodeid'], $data, $additionalData);
+            ImportHandler::getInstance()
+            ->getImporter('com.woltlab.blog.entry')
+            ->import(
+                $row['nodeid'],
+                $data,
+                $additionalData
+            );
         }
     }
 
@@ -1214,14 +1298,22 @@ class VB5xExporter extends AbstractExporter
                     continue;
                 }
 
-                ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry.attachment')->import($row['nodeid'], [
+                $data = [
                     'objectID' => $row['parentid'],
                     'userID' => $row['userid'] ?: null,
                     'filename' => $row['filename'],
                     'downloads' => $row['counter'],
                     'uploadTime' => $row['dateline'],
                     'showOrder' => $row['displayOrder'] ?? 0,
-                ], ['fileLocation' => $file]);
+                ];
+
+                ImportHandler::getInstance()
+                ->getImporter('com.woltlab.blog.entry.attachment')
+                ->import(
+                    $row['nodeid'],
+                    $data,
+                    ['fileLocation' => $file]
+                );
 
                 if ($this->readOption('attachfile') == self::ATTACHFILE_DATABASE) {
                     \unlink($file);
@@ -1269,13 +1361,17 @@ class VB5xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute(['Text', 'Text', $offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry.comment')->import($row['nodeid'], [
+            $data = [
                 'objectID' => $row['parentid'],
                 'userID' => $row['userid'] ?: null,
                 'username' => $row['authorname'] ?: '',
                 'message' => self::fixBBCodes($row['rawtext']),
                 'time' => $row['created'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+            ->getImporter('com.woltlab.blog.entry.comment')
+            ->import($row['nodeid'], $data);
         }
     }
 
@@ -1315,7 +1411,9 @@ class VB5xExporter extends AbstractExporter
                 'accessLevel' => Album::ACCESS_EVERYONE, // TODO: Check whether this is sane.
             ];
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.gallery.album')->import($row['nodeid'], $data);
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.gallery.album')
+                ->import($row['nodeid'], $data);
         }
     }
 
@@ -1369,14 +1467,22 @@ class VB5xExporter extends AbstractExporter
                     continue;
                 }
 
-                ImportHandler::getInstance()->getImporter('com.woltlab.gallery.image')->import($row['nodeid'], [
+                $data = [
                     'userID' => $row['userid'],
                     'username' => $row['authorname'] ?: '',
                     'albumID' => $row['parentid'],
                     'title' => $row['title'],
                     'description' => ($row['title'] != $row['caption'] ? $row['caption'] : ''),
                     'uploadTime' => $row['created'],
-                ], ['fileLocation' => $file]);
+                ];
+
+                ImportHandler::getInstance()
+                ->getImporter('com.woltlab.gallery.image')
+                ->import(
+                    $row['nodeid'],
+                    $data,
+                    ['fileLocation' => $file]
+                );
             } finally {
                 if ($this->readOption('attachfile') == self::ATTACHFILE_DATABASE && $file) {
                     @\unlink($file);
@@ -1415,12 +1521,20 @@ class VB5xExporter extends AbstractExporter
         while ($row = $statement->fetchArray()) {
             $fileLocation = $this->fileSystemPath . $row['smiliepath'];
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.smiley')->import($row['smilieid'], [
+            $data = [
                 'smileyTitle' => $row['title'],
                 'smileyCode' => $row['smilietext'],
                 'showOrder' => $row['displayorder'],
                 'categoryID' => !empty($row['imagecategoryid']) ? $row['imagecategoryid'] : null,
-            ], ['fileLocation' => $fileLocation]);
+            ];
+
+            ImportHandler::getInstance()
+            ->getImporter('com.woltlab.wcf.smiley')
+            ->import(
+                $row['smilieid'],
+                $data,
+                ['fileLocation' => $fileLocation]
+            );
         }
     }
 
@@ -1454,11 +1568,15 @@ class VB5xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([3]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.smiley.category')->import($row['imagecategoryid'], [
+            $data = [
                 'title' => $row['title'],
                 'parentCategoryID' => 0,
                 'showOrder' => $row['displayorder'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+            ->getImporter('com.woltlab.wcf.smiley.category')
+            ->import($row['imagecategoryid'], $data);
         }
     }
 
@@ -1550,7 +1668,10 @@ class VB5xExporter extends AbstractExporter
                 return $matches[0];
             };
 
-            $attachRegex = new Regex('\[attach=(?:json\](\{.*?\})|config\]([0-9]+))\[/attach\]', Regex::CASE_INSENSITIVE);
+            $attachRegex = new Regex(
+                '\[attach=(?:json\](\{.*?\})|config\]([0-9]+))\[/attach\]',
+                Regex::CASE_INSENSITIVE
+            );
             $attachCallback = static function ($matches) {
                 if (!empty($matches[1])) {
                     // json
@@ -1574,7 +1695,10 @@ class VB5xExporter extends AbstractExporter
                 }
             };
 
-            $tableRegex = new Regex('\[TABLE(?:="[a-z0-9_-]+:\s*[a-z0-9_-]+(?:,\s*[a-z0-9_-]+:\s*[a-z0-9_-]+)*")?\]', Regex::CASE_INSENSITIVE);
+            $tableRegex = new Regex(
+                '\[TABLE(?:="[a-z0-9_-]+:\s*[a-z0-9_-]+(?:,\s*[a-z0-9_-]+:\s*[a-z0-9_-]+)*")?\]',
+                Regex::CASE_INSENSITIVE
+            );
         }
 
         // use proper WCF 2 bbcode
@@ -1610,34 +1734,38 @@ class VB5xExporter extends AbstractExporter
         $message = $tableRegex->replace($message, '[table]');
 
         // fix size bbcodes
-        $message = \preg_replace_callback('/\[size=\'?(\d+)(px)?\'?\]/i', static function ($matches) {
-            $unit = 'scalar';
-            if (!empty($matches[2])) {
-                $unit = $matches[2];
-            }
+        $message = \preg_replace_callback(
+            '/\[size=\'?(\d+)(px)?\'?\]/i',
+            static function ($matches) {
+                $unit = 'scalar';
+                if (!empty($matches[2])) {
+                    $unit = $matches[2];
+                }
 
-            $validSizes = [8, 10, 12, 14, 18, 24, 36];
-            $size = 36;
-            switch ($unit) {
-                case 'px':
-                    foreach ($validSizes as $pt) {
-                        // 1 Point equals roughly 4/3 Pixels
-                        if ($pt >= ($matches[1] / 4 * 3)) {
-                            $size = $pt;
-                            break;
+                $validSizes = [8, 10, 12, 14, 18, 24, 36];
+                $size = 36;
+                switch ($unit) {
+                    case 'px':
+                        foreach ($validSizes as $pt) {
+                            // 1 Point equals roughly 4/3 Pixels
+                            if ($pt >= ($matches[1] / 4 * 3)) {
+                                $size = $pt;
+                                break;
+                            }
                         }
-                    }
-                    break;
-                case 'scalar':
-                default:
-                    if ($matches[1] >= 1 && $matches[1] <= 6) {
-                        $size = $validSizes[$matches[1] - 1];
-                    }
-                    break;
-            }
+                        break;
+                    case 'scalar':
+                    default:
+                        if ($matches[1] >= 1 && $matches[1] <= 6) {
+                            $size = $validSizes[$matches[1] - 1];
+                        }
+                        break;
+                }
 
-            return '[size=' . $size . ']';
-        }, $message);
+                return '[size=' . $size . ']';
+            },
+            $message
+        );
 
         // media
         $message = $mediaRegex->replace($message, '[media]');
