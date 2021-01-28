@@ -102,7 +102,8 @@ class WordPress3xExporter extends AbstractExporter
     {
         parent::validateDatabaseAccess();
 
-        $sql = "SELECT COUNT(*) FROM " . $this->databasePrefix . "posts";
+        $sql = "SELECT  COUNT(*)
+                FROM    " . $this->databasePrefix . "posts";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
     }
@@ -146,16 +147,16 @@ class WordPress3xExporter extends AbstractExporter
     public function exportUsers($offset, $limit)
     {
         // prepare password update
-        $sql = "UPDATE	wcf" . WCF_N . "_user
-			SET	password = ?
-			WHERE	userID = ?";
+        $sql = "UPDATE  wcf" . WCF_N . "_user
+                SET     password = ?
+                WHERE   userID = ?";
         $passwordUpdateStatement = WCF::getDB()->prepareStatement($sql);
 
         // get users
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "users
-			WHERE		ID BETWEEN ? AND ?
-			ORDER BY	ID";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "users
+                WHERE       ID BETWEEN ? AND ?
+                ORDER BY    ID";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -183,9 +184,9 @@ class WordPress3xExporter extends AbstractExporter
      */
     public function countBlogCategories()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "term_taxonomy
-			WHERE	taxonomy = ?";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "term_taxonomy
+                WHERE   taxonomy = ?";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute(['category']);
         $row = $statement->fetchArray();
@@ -201,12 +202,12 @@ class WordPress3xExporter extends AbstractExporter
      */
     public function exportBlogCategories($offset, $limit)
     {
-        $sql = "SELECT		term_taxonomy.*, term.name
-			FROM		" . $this->databasePrefix . "term_taxonomy term_taxonomy
-			LEFT JOIN	" . $this->databasePrefix . "terms term
-			ON		(term.term_id = term_taxonomy.term_id)
-			WHERE		term_taxonomy.taxonomy = ?
-			ORDER BY	term_taxonomy.parent, term_taxonomy.term_id";
+        $sql = "SELECT      term_taxonomy.*, term.name
+                FROM        " . $this->databasePrefix . "term_taxonomy term_taxonomy
+                LEFT JOIN   " . $this->databasePrefix . "terms term
+                ON          (term.term_id = term_taxonomy.term_id)
+                WHERE       term_taxonomy.taxonomy = ?
+                ORDER BY    term_taxonomy.parent, term_taxonomy.term_id";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute(['category']);
         while ($row = $statement->fetchArray()) {
@@ -247,10 +248,10 @@ class WordPress3xExporter extends AbstractExporter
      */
     public function countBlogEntries()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "posts
-			WHERE	post_type = ?
-				AND post_status IN (?, ?, ?, ?, ?)";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "posts
+                WHERE   post_type = ?
+                    AND post_status IN (?, ?, ?, ?, ?)";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute(['post', 'publish', 'pending', 'draft', 'future', 'private']);
         $row = $statement->fetchArray();
@@ -268,11 +269,11 @@ class WordPress3xExporter extends AbstractExporter
     {
         // get entry ids
         $entryIDs = [];
-        $sql = "SELECT		ID
-			FROM		" . $this->databasePrefix . "posts
-			WHERE		post_type = ?
-					AND post_status IN (?, ?, ?, ?, ?)
-			ORDER BY	ID";
+        $sql = "SELECT      ID
+                FROM        " . $this->databasePrefix . "posts
+                WHERE       post_type = ?
+                        AND post_status IN (?, ?, ?, ?, ?)
+                ORDER BY    ID";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute(['post', 'publish', 'pending', 'draft', 'future', 'private']);
         while ($row = $statement->fetchArray()) {
@@ -286,12 +287,12 @@ class WordPress3xExporter extends AbstractExporter
         $conditionBuilder->add('term_relationships.object_id IN (?)', [$entryIDs]);
         $conditionBuilder->add('term_taxonomy.taxonomy = ?', ['post_tag']);
         $conditionBuilder->add('term.term_id IS NOT NULL');
-        $sql = "SELECT		term.name, term_relationships.object_id
-			FROM		" . $this->databasePrefix . "term_relationships term_relationships,
-					" . $this->databasePrefix . "term_taxonomy term_taxonomy
-			LEFT JOIN	" . $this->databasePrefix . "terms term
-			ON		(term.term_id = term_taxonomy.term_id)
-			" . $conditionBuilder;
+        $sql = "SELECT      term.name, term_relationships.object_id
+                FROM        " . $this->databasePrefix . "term_relationships term_relationships,
+                            " . $this->databasePrefix . "term_taxonomy term_taxonomy
+                LEFT JOIN   " . $this->databasePrefix . "terms term
+                ON          (term.term_id = term_taxonomy.term_id)
+                " . $conditionBuilder;
         $statement = $this->database->prepareStatement($sql);
         $statement->execute($conditionBuilder->getParameters());
         while ($row = $statement->fetchArray()) {
@@ -307,10 +308,10 @@ class WordPress3xExporter extends AbstractExporter
         $conditionBuilder->add('term_taxonomy.term_taxonomy_id = term_relationships.term_taxonomy_id');
         $conditionBuilder->add('term_relationships.object_id IN (?)', [$entryIDs]);
         $conditionBuilder->add('term_taxonomy.taxonomy = ?', ['category']);
-        $sql = "SELECT		term_taxonomy.term_id, term_relationships.object_id
-			FROM		" . $this->databasePrefix . "term_relationships term_relationships,
-					" . $this->databasePrefix . "term_taxonomy term_taxonomy
-			" . $conditionBuilder;
+        $sql = "SELECT  term_taxonomy.term_id, term_relationships.object_id
+                FROM    " . $this->databasePrefix . "term_relationships term_relationships,
+                        " . $this->databasePrefix . "term_taxonomy term_taxonomy
+                " . $conditionBuilder;
         $statement = $this->database->prepareStatement($sql);
         $statement->execute($conditionBuilder->getParameters());
         while ($row = $statement->fetchArray()) {
@@ -324,12 +325,18 @@ class WordPress3xExporter extends AbstractExporter
         $conditionBuilder = new PreparedStatementConditionBuilder();
         $conditionBuilder->add('post.ID IN (?)', [$entryIDs]);
 
-        $sql = "SELECT		post.*, user.user_login,
-					(SELECT meta_value FROM " . $this->databasePrefix . "postmeta WHERE post_id = post.ID AND meta_key = '_thumbnail_id' LIMIT 1) AS imageID
-			FROM		" . $this->databasePrefix . "posts post
-			LEFT JOIN	" . $this->databasePrefix . "users user
-			ON		(user.ID = post.post_author)
-			" . $conditionBuilder;
+        $sql = "SELECT      post.*, user.user_login,
+                            (
+                                SELECT  meta_value
+                                FROM    " . $this->databasePrefix . "postmeta
+                                WHERE   post_id = post.ID
+                                    AND meta_key = '_thumbnail_id'
+                                LIMIT   1
+                            ) AS imageID
+                FROM        " . $this->databasePrefix . "posts post
+                LEFT JOIN   " . $this->databasePrefix . "users user
+                ON          (user.ID = post.post_author)
+                " . $conditionBuilder;
         $statement = $this->database->prepareStatement($sql);
         $statement->execute($conditionBuilder->getParameters());
         while ($row = $statement->fetchArray()) {
@@ -372,9 +379,9 @@ class WordPress3xExporter extends AbstractExporter
      */
     public function countBlogComments()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "comments
-			WHERE	comment_approved = ?";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "comments
+                WHERE   comment_approved = ?";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([1]);
         $row = $statement->fetchArray();
@@ -390,15 +397,15 @@ class WordPress3xExporter extends AbstractExporter
      */
     public function exportBlogComments($offset, $limit)
     {
-        $sql = "SELECT	comment_ID, comment_parent
-			FROM	" . $this->databasePrefix . "comments
-			WHERE	comment_ID = ?";
+        $sql = "SELECT  comment_ID, comment_parent
+                FROM    " . $this->databasePrefix . "comments
+                WHERE   comment_ID = ?";
         $parentCommentStatement = $this->database->prepareStatement($sql, $limit, $offset);
 
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "comments
-			WHERE	        comment_approved = ?
-			ORDER BY	comment_parent, comment_ID";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "comments
+                WHERE       comment_approved = ?
+                ORDER BY    comment_parent, comment_ID";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([1]);
         while ($row = $statement->fetchArray()) {
@@ -445,15 +452,15 @@ class WordPress3xExporter extends AbstractExporter
      */
     public function countMedia()
     {
-        $sql = "SELECT		COUNT(*) AS count
-			FROM		" . $this->databasePrefix . "posts
-			WHERE		post_type = ?
-					AND post_parent IN (
-						SELECT	ID
-						FROM	" . $this->databasePrefix . "posts
-						WHERE	post_type IN (?, ?)
-							AND post_status IN (?, ?, ?, ?, ?, ?)
-					)";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "posts
+                WHERE   post_type = ?
+                    AND post_parent IN (
+                            SELECT  ID
+                            FROM    " . $this->databasePrefix . "posts
+                            WHERE   post_type IN (?, ?)
+                                AND post_status IN (?, ?, ?, ?, ?, ?)
+                        )";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([
             'attachment',
@@ -481,18 +488,18 @@ class WordPress3xExporter extends AbstractExporter
      */
     public function exportMedia($offset, $limit)
     {
-        $sql = "SELECT		posts.*, postmeta.*
-			FROM		" . $this->databasePrefix . "posts posts
-			LEFT JOIN	" . $this->databasePrefix . "postmeta postmeta
-			ON		(postmeta.post_id = posts.ID AND postmeta.meta_key = ?)
-			WHERE		post_type = ?
-					AND post_parent IN (
-						SELECT	ID
-						FROM	" . $this->databasePrefix . "posts
-						WHERE	post_type IN (?, ?)
-							AND post_status IN (?, ?, ?, ?, ?, ?)
-					)
-			ORDER BY	ID";
+        $sql = "SELECT      posts.*, postmeta.*
+                FROM        " . $this->databasePrefix . "posts posts
+                LEFT JOIN   " . $this->databasePrefix . "postmeta postmeta
+                ON          (postmeta.post_id = posts.ID AND postmeta.meta_key = ?)
+                WHERE       post_type = ?
+                        AND post_parent IN (
+                                SELECT  ID
+                                FROM    " . $this->databasePrefix . "posts
+                                WHERE   post_type IN (?, ?)
+                                    AND post_status IN (?, ?, ?, ?, ?, ?)
+                            )
+                ORDER BY    ID";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([
             '_wp_attached_file',
@@ -564,10 +571,10 @@ class WordPress3xExporter extends AbstractExporter
      */
     public function countPages()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "posts
-			WHERE	post_type = ?
-				AND post_status IN (?, ?, ?, ?, ?)";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "posts
+                WHERE   post_type = ?
+                    AND post_status IN (?, ?, ?, ?, ?)";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([
             'page',
@@ -591,11 +598,11 @@ class WordPress3xExporter extends AbstractExporter
      */
     public function exportPages($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "posts
-			WHERE		post_type = ?
-					AND post_status IN (?, ?, ?, ?, ?)
-			ORDER BY	ID";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "posts
+                WHERE       post_type = ?
+                        AND post_status IN (?, ?, ?, ?, ?)
+                ORDER BY    ID";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([
             'page',

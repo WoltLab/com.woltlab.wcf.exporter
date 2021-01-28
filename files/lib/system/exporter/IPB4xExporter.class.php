@@ -98,7 +98,8 @@ class IPB4xExporter extends AbstractExporter
     {
         parent::validateDatabaseAccess();
 
-        $sql = "SELECT COUNT(*) FROM " . $this->databasePrefix . "core_admin_permission_rows";
+        $sql = "SELECT  COUNT(*)
+                FROM    " . $this->databasePrefix . "core_admin_permission_rows";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
     }
@@ -200,8 +201,8 @@ class IPB4xExporter extends AbstractExporter
     {
         // cache profile fields
         $profileFields = [];
-        $sql = "SELECT	*
-			FROM	" . $this->databasePrefix . "core_pfields_data";
+        $sql = "SELECT  *
+                FROM    " . $this->databasePrefix . "core_pfields_data";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -209,18 +210,18 @@ class IPB4xExporter extends AbstractExporter
         }
 
         // prepare password update
-        $sql = "UPDATE	wcf" . WCF_N . "_user
-			SET	password = ?
-			WHERE	userID = ?";
+        $sql = "UPDATE  wcf" . WCF_N . "_user
+                SET     password = ?
+                WHERE   userID = ?";
         $passwordUpdateStatement = WCF::getDB()->prepareStatement($sql);
 
         // get users
-        $sql = "SELECT		pfields_content.*, members.*
-			FROM		" . $this->databasePrefix . "core_members members
-			LEFT JOIN	" . $this->databasePrefix . "core_pfields_content pfields_content
-			ON		(pfields_content.member_id = members.member_id)
-			WHERE		members.member_id BETWEEN ? AND ?
-			ORDER BY	members.member_id";
+        $sql = "SELECT      pfields_content.*, members.*
+                FROM        " . $this->databasePrefix . "core_members members
+                LEFT JOIN   " . $this->databasePrefix . "core_pfields_content pfields_content
+                ON          (pfields_content.member_id = members.member_id)
+                WHERE       members.member_id BETWEEN ? AND ?
+                ORDER BY    members.member_id";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -277,8 +278,8 @@ class IPB4xExporter extends AbstractExporter
      */
     public function countUserOptions()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "core_pfields_data";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "core_pfields_data";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -294,9 +295,9 @@ class IPB4xExporter extends AbstractExporter
      */
     public function exportUserOptions($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "core_pfields_data
-			ORDER BY	pf_id";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "core_pfields_data
+                ORDER BY    pf_id";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -324,10 +325,10 @@ class IPB4xExporter extends AbstractExporter
      */
     public function exportUserGroups($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "core_groups
-			WHERE		g_id BETWEEN ? AND ?
-			ORDER BY	g_id";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "core_groups
+                WHERE       g_id BETWEEN ? AND ?
+                ORDER BY    g_id";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -354,9 +355,9 @@ class IPB4xExporter extends AbstractExporter
      */
     public function countUserAvatars()
     {
-        $sql = "SELECT	MAX(member_id) AS maxID
-			FROM	" . $this->databasePrefix . "core_members
-			WHERE	pp_main_photo <> ''";
+        $sql = "SELECT  MAX(member_id) AS maxID
+                FROM    " . $this->databasePrefix . "core_members
+                WHERE   pp_main_photo <> ''";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -375,11 +376,11 @@ class IPB4xExporter extends AbstractExporter
      */
     public function exportUserAvatars($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "core_members
-			WHERE		member_id BETWEEN ? AND ?
-					AND pp_main_photo <> ''
-			ORDER BY	member_id";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "core_members
+                WHERE       member_id BETWEEN ? AND ?
+                        AND pp_main_photo <> ''
+                ORDER BY    member_id";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -410,12 +411,12 @@ class IPB4xExporter extends AbstractExporter
      */
     public function exportStatusUpdates($offset, $limit)
     {
-        $sql = "SELECT		status_updates.*, members.name
-			FROM		" . $this->databasePrefix . "core_member_status_updates status_updates
-			LEFT JOIN	" . $this->databasePrefix . "core_members members
-			ON		(members.member_id = status_updates.status_author_id)
-			WHERE		status_updates.status_id BETWEEN ? AND ?
-			ORDER BY	status_updates.status_id";
+        $sql = "SELECT      status_updates.*, members.name
+                FROM        " . $this->databasePrefix . "core_member_status_updates status_updates
+                LEFT JOIN   " . $this->databasePrefix . "core_members members
+                ON          (members.member_id = status_updates.status_author_id)
+                WHERE       status_updates.status_id BETWEEN ? AND ?
+                ORDER BY    status_updates.status_id";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -445,12 +446,12 @@ class IPB4xExporter extends AbstractExporter
      */
     public function exportStatusReplies($offset, $limit)
     {
-        $sql = "SELECT		member_status_replies.*, members.name
-			FROM		" . $this->databasePrefix . "core_member_status_replies member_status_replies
-			LEFT JOIN	" . $this->databasePrefix . "core_members members
-			ON		(members.member_id = member_status_replies.reply_member_id)
-			WHERE		member_status_replies.reply_id BETWEEN ? AND ?
-			ORDER BY	member_status_replies.reply_id";
+        $sql = "SELECT      member_status_replies.*, members.name
+                FROM        " . $this->databasePrefix . "core_member_status_replies member_status_replies
+                LEFT JOIN   " . $this->databasePrefix . "core_members members
+                ON          (members.member_id = member_status_replies.reply_member_id)
+                WHERE       member_status_replies.reply_id BETWEEN ? AND ?
+                ORDER BY    member_status_replies.reply_id";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -469,10 +470,10 @@ class IPB4xExporter extends AbstractExporter
      */
     public function countFollowers()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "core_follow
-			WHERE	follow_app = ?
-				AND follow_area = ?";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "core_follow
+                WHERE   follow_app = ?
+                    AND follow_area = ?";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute(['core', 'member']);
         $row = $statement->fetchArray();
@@ -488,11 +489,11 @@ class IPB4xExporter extends AbstractExporter
      */
     public function exportFollowers($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "core_follow
-			WHERE		follow_app = ?
-					AND follow_area = ?
-			ORDER BY	follow_id";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "core_follow
+                WHERE       follow_app = ?
+                        AND follow_area = ?
+                ORDER BY    follow_id";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute(['core', 'member']);
         while ($row = $statement->fetchArray()) {
@@ -520,12 +521,12 @@ class IPB4xExporter extends AbstractExporter
      */
     public function exportConversations($offset, $limit)
     {
-        $sql = "SELECT		message_topics.*, members.name
-			FROM		" . $this->databasePrefix . "core_message_topics message_topics
-			LEFT JOIN	" . $this->databasePrefix . "core_members members
-			ON		(members.member_id = message_topics.mt_starter_id)
-			WHERE		message_topics.mt_id BETWEEN ? AND ?
-			ORDER BY	message_topics.mt_id";
+        $sql = "SELECT      message_topics.*, members.name
+                FROM        " . $this->databasePrefix . "core_message_topics message_topics
+                LEFT JOIN   " . $this->databasePrefix . "core_members members
+                ON          (members.member_id = message_topics.mt_starter_id)
+                WHERE       message_topics.mt_id BETWEEN ? AND ?
+                ORDER BY    message_topics.mt_id";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -555,12 +556,12 @@ class IPB4xExporter extends AbstractExporter
      */
     public function exportConversationMessages($offset, $limit)
     {
-        $sql = "SELECT		message_posts.*, members.name
-			FROM		" . $this->databasePrefix . "core_message_posts message_posts
-			LEFT JOIN	" . $this->databasePrefix . "core_members members
-			ON		(members.member_id = message_posts.msg_author_id)
-			WHERE		message_posts.msg_id BETWEEN ? AND ?
-			ORDER BY	message_posts.msg_id";
+        $sql = "SELECT      message_posts.*, members.name
+                FROM        " . $this->databasePrefix . "core_message_posts message_posts
+                LEFT JOIN   " . $this->databasePrefix . "core_members members
+                ON          (members.member_id = message_posts.msg_author_id)
+                WHERE       message_posts.msg_id BETWEEN ? AND ?
+                ORDER BY    message_posts.msg_id";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -590,12 +591,12 @@ class IPB4xExporter extends AbstractExporter
      */
     public function exportConversationUsers($offset, $limit)
     {
-        $sql = "SELECT		message_topic_user_map.*, members.name
-			FROM		" . $this->databasePrefix . "core_message_topic_user_map message_topic_user_map
-			LEFT JOIN	" . $this->databasePrefix . "core_members members
-			ON		(members.member_id = message_topic_user_map.map_user_id)
-			WHERE		message_topic_user_map.map_id BETWEEN ? AND ?
-			ORDER BY	message_topic_user_map.map_id";
+        $sql = "SELECT      message_topic_user_map.*, members.name
+                FROM        " . $this->databasePrefix . "core_message_topic_user_map message_topic_user_map
+                LEFT JOIN   " . $this->databasePrefix . "core_members members
+                ON          (members.member_id = message_topic_user_map.map_user_id)
+                WHERE       message_topic_user_map.map_id BETWEEN ? AND ?
+                ORDER BY    message_topic_user_map.map_id";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -634,8 +635,8 @@ class IPB4xExporter extends AbstractExporter
      */
     public function countBoards()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "forums_forums";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "forums_forums";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -651,9 +652,9 @@ class IPB4xExporter extends AbstractExporter
      */
     public function exportBoards($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "forums_forums
-			ORDER BY	parent_id, id";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "forums_forums
+                ORDER BY    parent_id, id";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -711,10 +712,10 @@ class IPB4xExporter extends AbstractExporter
     {
         // get thread ids
         $threadIDs = [];
-        $sql = "SELECT		tid
-			FROM		" . $this->databasePrefix . "forums_topics
-			WHERE		tid BETWEEN ? AND ?
-			ORDER BY	tid";
+        $sql = "SELECT      tid
+                FROM        " . $this->databasePrefix . "forums_topics
+                WHERE       tid BETWEEN ? AND ?
+                ORDER BY    tid";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -728,9 +729,9 @@ class IPB4xExporter extends AbstractExporter
         $conditionBuilder = new PreparedStatementConditionBuilder();
         $conditionBuilder->add('topics.tid IN (?)', [$threadIDs]);
 
-        $sql = "SELECT		topics.*
-			FROM		" . $this->databasePrefix . "forums_topics topics
-			" . $conditionBuilder;
+        $sql = "SELECT      topics.*
+                FROM        " . $this->databasePrefix . "forums_topics topics
+                " . $conditionBuilder;
         $statement = $this->database->prepareStatement($sql);
         $statement->execute($conditionBuilder->getParameters());
         while ($row = $statement->fetchArray()) {
@@ -773,10 +774,10 @@ class IPB4xExporter extends AbstractExporter
      */
     public function exportPosts($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "forums_posts
-			WHERE		pid BETWEEN ? AND ?
-			ORDER BY	pid";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "forums_posts
+                WHERE       pid BETWEEN ? AND ?
+                ORDER BY    pid";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -802,10 +803,10 @@ class IPB4xExporter extends AbstractExporter
      */
     public function countWatchedThreads()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "core_follow
-			WHERE	follow_app = ?
-				AND follow_area = ?";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "core_follow
+                WHERE   follow_app = ?
+                    AND follow_area = ?";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute(['forums', 'topic']);
         $row = $statement->fetchArray();
@@ -821,11 +822,11 @@ class IPB4xExporter extends AbstractExporter
      */
     public function exportWatchedThreads($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "core_follow
-			WHERE		follow_app = ?
-					AND follow_area = ?
-			ORDER BY	follow_id";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "core_follow
+                WHERE       follow_app = ?
+                        AND follow_area = ?
+                ORDER BY    follow_id";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute(['forums', 'topic']);
         while ($row = $statement->fetchArray()) {
@@ -852,12 +853,12 @@ class IPB4xExporter extends AbstractExporter
      */
     public function exportPolls($offset, $limit)
     {
-        $sql = "SELECT		polls.*, topics.topic_firstpost
-			FROM		" . $this->databasePrefix . "core_polls polls
-			LEFT JOIN	" . $this->databasePrefix . "forums_topics topics
-			ON		(topics.poll_state = polls.pid)
-			WHERE		pid BETWEEN ? AND ?
-			ORDER BY	pid";
+        $sql = "SELECT      polls.*, topics.topic_firstpost
+                FROM        " . $this->databasePrefix . "core_polls polls
+                LEFT JOIN   " . $this->databasePrefix . "forums_topics topics
+                ON          (topics.poll_state = polls.pid)
+                WHERE       pid BETWEEN ? AND ?
+                ORDER BY    pid";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -915,12 +916,12 @@ class IPB4xExporter extends AbstractExporter
      */
     public function exportPollOptionVotes($offset, $limit)
     {
-        $sql = "SELECT		polls.*, voters.*
-			FROM		" . $this->databasePrefix . "core_voters voters
-			LEFT JOIN	" . $this->databasePrefix . "core_polls polls
-			ON		(polls.pid = voters.poll)
-			WHERE		voters.vid BETWEEN ? AND ?
-			ORDER BY	voters.vid";
+        $sql = "SELECT      polls.*, voters.*
+                FROM        " . $this->databasePrefix . "core_voters voters
+                LEFT JOIN   " . $this->databasePrefix . "core_polls polls
+                ON          (polls.pid = voters.poll)
+                WHERE       voters.vid BETWEEN ? AND ?
+                ORDER BY    voters.vid";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -955,10 +956,10 @@ class IPB4xExporter extends AbstractExporter
      */
     public function countLikes()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "core_reputation_index
-			WHERE	app = ?
-				AND type = ?";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "core_reputation_index
+                WHERE   app = ?
+                    AND type = ?";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute(['forums', 'pid']);
         $row = $statement->fetchArray();
@@ -974,13 +975,13 @@ class IPB4xExporter extends AbstractExporter
      */
     public function exportLikes($offset, $limit)
     {
-        $sql = "SELECT		core_reputation_index.*, forums_posts.author_id
-			FROM		" . $this->databasePrefix . "core_reputation_index core_reputation_index
-			LEFT JOIN	" . $this->databasePrefix . "forums_posts forums_posts
-			ON		(forums_posts.pid = core_reputation_index.type_id)
-			WHERE		core_reputation_index.app = ?
-					AND core_reputation_index.type = ?
-			ORDER BY	core_reputation_index.id";
+        $sql = "SELECT      core_reputation_index.*, forums_posts.author_id
+                FROM        " . $this->databasePrefix . "core_reputation_index core_reputation_index
+                LEFT JOIN   " . $this->databasePrefix . "forums_posts forums_posts
+                ON          (forums_posts.pid = core_reputation_index.type_id)
+                WHERE       core_reputation_index.app = ?
+                        AND core_reputation_index.type = ?
+                ORDER BY    core_reputation_index.id";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute(['forums', 'pid']);
         while ($row = $statement->fetchArray()) {
@@ -1021,10 +1022,10 @@ class IPB4xExporter extends AbstractExporter
      */
     private function countAttachments($type)
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "core_attachments_map
-			WHERE	location_key = ?
-				AND id2 IS NOT NULL";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "core_attachments_map
+                WHERE   location_key = ?
+                    AND id2 IS NOT NULL";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$type]);
         $row = $statement->fetchArray();
@@ -1042,13 +1043,13 @@ class IPB4xExporter extends AbstractExporter
      */
     private function exportAttachments($type, $objectType, $offset, $limit)
     {
-        $sql = "SELECT		core_attachments.*, core_attachments_map.id2
-			FROM		" . $this->databasePrefix . "core_attachments_map core_attachments_map
-			LEFT JOIN	" . $this->databasePrefix . "core_attachments core_attachments
-			ON		(core_attachments.attach_id = core_attachments_map.attachment_id)
-			WHERE		core_attachments_map.location_key = ?
-					AND core_attachments_map.id2 IS NOT NULL
-			ORDER BY	core_attachments_map.attachment_id";
+        $sql = "SELECT      core_attachments.*, core_attachments_map.id2
+                FROM        " . $this->databasePrefix . "core_attachments_map core_attachments_map
+                LEFT JOIN   " . $this->databasePrefix . "core_attachments core_attachments
+                ON          (core_attachments.attach_id = core_attachments_map.attachment_id)
+                WHERE       core_attachments_map.location_key = ?
+                        AND core_attachments_map.id2 IS NOT NULL
+                ORDER BY    core_attachments_map.attachment_id";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([$type]);
         while ($row = $statement->fetchArray()) {
@@ -1085,9 +1086,9 @@ class IPB4xExporter extends AbstractExporter
         $conditionBuilder->add('tag_meta_id IN (?)', [$objectIDs]);
 
         // get taggable id
-        $sql = "SELECT		tag_meta_id, tag_text
-			FROM		" . $this->databasePrefix . "core_tags
-			" . $conditionBuilder;
+        $sql = "SELECT  tag_meta_id, tag_text
+                FROM    " . $this->databasePrefix . "core_tags
+                " . $conditionBuilder;
         $statement = $this->database->prepareStatement($sql);
         $statement->execute($conditionBuilder->getParameters());
         while ($row = $statement->fetchArray()) {
@@ -1108,9 +1109,9 @@ class IPB4xExporter extends AbstractExporter
     private function getDefaultLanguageID()
     {
         if ($this->defaultLanguageID === null) {
-            $sql = "SELECT	lang_id
-				FROM	" . $this->databasePrefix . "core_sys_lang
-				WHERE	lang_default = ?";
+            $sql = "SELECT  lang_id
+                    FROM    " . $this->databasePrefix . "core_sys_lang
+                    WHERE   lang_default = ?";
             $statement = $this->database->prepareStatement($sql);
             $statement->execute([1]);
             $row = $statement->fetchArray();
@@ -1135,10 +1136,10 @@ class IPB4xExporter extends AbstractExporter
     private function getLanguageVar($prefix, $id, $suffix = '')
     {
         if ($this->languageStatement === null) {
-            $sql = "SELECT	word_custom
-				FROM	" . $this->databasePrefix . "core_sys_lang_words
-				WHERE	lang_id = ?
-					AND word_key = ?";
+            $sql = "SELECT  word_custom
+                    FROM    " . $this->databasePrefix . "core_sys_lang_words
+                    WHERE   lang_id = ?
+                        AND word_key = ?";
             $this->languageStatement = $this->database->prepareStatement($sql, 1);
         }
         $this->languageStatement->execute([$this->getDefaultLanguageID(), $prefix . '_' . $id . ($suffix ? ('_' . $suffix) : '')]);

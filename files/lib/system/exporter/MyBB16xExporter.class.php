@@ -115,9 +115,9 @@ class MyBB16xExporter extends AbstractExporter
     {
         parent::validateDatabaseAccess();
 
-        $sql = "SELECT	cache
-			FROM	" . $this->databasePrefix . "datacache
-			WHERE	title = ?";
+        $sql = "SELECT  cache
+                FROM    " . $this->databasePrefix . "datacache
+                WHERE   title = ?";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute(['version']);
         $row = $statement->fetchArray();
@@ -241,10 +241,10 @@ class MyBB16xExporter extends AbstractExporter
      */
     public function exportUserGroups($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "usergroups
-			WHERE		gid BETWEEN ? AND ?
-			ORDER BY	gid";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "usergroups
+                WHERE       gid BETWEEN ? AND ?
+                ORDER BY    gid";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -288,8 +288,8 @@ class MyBB16xExporter extends AbstractExporter
     {
         // cache profile fields
         $profileFields = $knownProfileFields = [];
-        $sql = "SELECT	*
-			FROM	" . $this->databasePrefix . "profilefields";
+        $sql = "SELECT  *
+                FROM    " . $this->databasePrefix . "profilefields";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -301,20 +301,22 @@ class MyBB16xExporter extends AbstractExporter
         }
 
         // prepare password update
-        $sql = "UPDATE	wcf" . WCF_N . "_user
-			SET	password = ?
-			WHERE	userID = ?";
+        $sql = "UPDATE  wcf" . WCF_N . "_user
+                SET     password = ?
+                WHERE   userID = ?";
         $passwordUpdateStatement = WCF::getDB()->prepareStatement($sql);
 
         // get users
-        $sql = "SELECT		userfields_table.*, user_table.*, ban_table.reason AS banReason, ban_table.lifted AS banExpires
-			FROM		" . $this->databasePrefix . "users user_table
-			LEFT JOIN	" . $this->databasePrefix . "userfields userfields_table
-			ON		user_table.uid = userfields_table.ufid
-			LEFT JOIN	" . $this->databasePrefix . "banned ban_table
-			ON		user_table.uid = ban_table.uid
-			WHERE		user_table.uid BETWEEN ? AND ?
-			ORDER BY	user_table.uid";
+        $sql = "SELECT      userfields_table.*,
+                            user_table.*,
+                            ban_table.reason AS banReason, ban_table.lifted AS banExpires
+                FROM        " . $this->databasePrefix . "users user_table
+                LEFT JOIN   " . $this->databasePrefix . "userfields userfields_table
+                ON          user_table.uid = userfields_table.ufid
+                LEFT JOIN   " . $this->databasePrefix . "banned ban_table
+                ON          user_table.uid = ban_table.uid
+                WHERE       user_table.uid BETWEEN ? AND ?
+                ORDER BY    user_table.uid";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -386,9 +388,9 @@ class MyBB16xExporter extends AbstractExporter
         $conditionBuilder = new PreparedStatementConditionBuilder();
         $conditionBuilder->add('name NOT IN (?)', [self::$knownProfileFields]);
 
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "profilefields
-			" . $conditionBuilder;
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "profilefields
+                " . $conditionBuilder;
         $statement = $this->database->prepareStatement($sql);
         $statement->execute($conditionBuilder->getParameters());
         $row = $statement->fetchArray();
@@ -407,10 +409,10 @@ class MyBB16xExporter extends AbstractExporter
         $conditionBuilder = new PreparedStatementConditionBuilder();
         $conditionBuilder->add('name NOT IN (?)', [self::$knownProfileFields]);
 
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "profilefields
-			" . $conditionBuilder . "
-			ORDER BY	fid";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "profilefields
+                " . $conditionBuilder . "
+                ORDER BY    fid";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute($conditionBuilder->getParameters());
         while ($row = $statement->fetchArray()) {
@@ -458,8 +460,14 @@ class MyBB16xExporter extends AbstractExporter
      */
     public function countUserRanks()
     {
-        $sql = "SELECT	(SELECT COUNT(*) FROM " . $this->databasePrefix . "usertitles)
-				+ (SELECT COUNT(*) FROM " . $this->databasePrefix . "usergroups WHERE usertitle <> ? AND gid <> ?) AS count";
+        $sql = "SELECT  (
+                            SELECT  COUNT(*)
+                            FROM    " . $this->databasePrefix . "usertitles
+                        ) + (
+                            SELECT  COUNT(*)
+                            FROM    " . $this->databasePrefix . "usergroups
+                            WHERE   usertitle <> ? AND gid <> ?
+                        ) AS count";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute(['', 1]);
         $row = $statement->fetchArray();
@@ -476,17 +484,17 @@ class MyBB16xExporter extends AbstractExporter
     public function exportUserRanks($offset, $limit)
     {
         $sql = "(
-				SELECT		utid, 0 AS gid, posts, title, starimage, stars
-				FROM		" . $this->databasePrefix . "usertitles
-			)
-			UNION
-			(
-				SELECT		0 AS utid, gid, 0 AS posts, usertitle AS title, starimage, stars
-				FROM		" . $this->databasePrefix . "usergroups
-				WHERE		usertitle <> ?
-					AND	gid <> ?
-			)
-			ORDER BY	utid";
+                    SELECT      utid, 0 AS gid, posts, title, starimage, stars
+                    FROM        " . $this->databasePrefix . "usertitles
+                )
+                UNION
+                (
+                    SELECT      0 AS utid, gid, 0 AS posts, usertitle AS title, starimage, stars
+                    FROM        " . $this->databasePrefix . "usergroups
+                    WHERE       usertitle <> ?
+                            AND gid <> ?
+                )
+                ORDER BY    utid";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute(['', 1]);
         while ($row = $statement->fetchArray()) {
@@ -506,9 +514,9 @@ class MyBB16xExporter extends AbstractExporter
      */
     public function countFollowers()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "users
-			WHERE	buddylist <> ?";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "users
+                WHERE   buddylist <> ?";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute(['']);
         $row = $statement->fetchArray();
@@ -524,10 +532,10 @@ class MyBB16xExporter extends AbstractExporter
      */
     public function exportFollowers($offset, $limit)
     {
-        $sql = "SELECT		uid, buddylist
-			FROM		" . $this->databasePrefix . "users
-			WHERE		buddylist <> ?
-			ORDER BY	uid";
+        $sql = "SELECT      uid, buddylist
+                FROM        " . $this->databasePrefix . "users
+                WHERE       buddylist <> ?
+                ORDER BY    uid";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute(['']);
         while ($row = $statement->fetchArray()) {
@@ -547,10 +555,10 @@ class MyBB16xExporter extends AbstractExporter
      */
     public function countUserAvatars()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "users
-			WHERE		avatar <> ?
-				AND	avatartype IN (?, ?)";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "users
+                WHERE   avatar <> ?
+                    AND avatartype IN (?, ?)";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute(['', 'upload', 'gallery']);
         $row = $statement->fetchArray();
@@ -566,11 +574,11 @@ class MyBB16xExporter extends AbstractExporter
      */
     public function exportUserAvatars($offset, $limit)
     {
-        $sql = "SELECT		uid, avatar, avatardimensions, avatartype
-			FROM		" . $this->databasePrefix . "users
-			WHERE		avatar <> ?
-					AND avatartype IN (?, ?)
-			ORDER BY	uid";
+        $sql = "SELECT      uid, avatar, avatardimensions, avatartype
+                FROM        " . $this->databasePrefix . "users
+                WHERE       avatar <> ?
+                        AND avatartype IN (?, ?)
+                ORDER BY    uid";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute(['', 'upload', 'gallery']);
 
@@ -604,9 +612,9 @@ class MyBB16xExporter extends AbstractExporter
      */
     public function exportConversationFolders($offset, $limit)
     {
-        $sql = "SELECT		uid, pmfolders
-			FROM		" . $this->databasePrefix . "users
-			ORDER BY	uid";
+        $sql = "SELECT      uid, pmfolders
+                FROM        " . $this->databasePrefix . "users
+                ORDER BY    uid";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -644,17 +652,17 @@ class MyBB16xExporter extends AbstractExporter
      */
     public function exportConversations($offset, $limit)
     {
-        $sql = "SELECT		message_table.*, user_table.username
-			FROM		" . $this->databasePrefix . "privatemessages message_table
-			LEFT JOIN	" . $this->databasePrefix . "users user_table
-			ON		user_table.uid = message_table.fromid
-			WHERE		pmid BETWEEN ? AND ?
-					AND pmid IN (
-						SELECT		MIN(pmID)
-						FROM		" . $this->databasePrefix . "privatemessages
-						GROUP BY	fromid, dateline
-					)
-			ORDER BY	pmid";
+        $sql = "SELECT      message_table.*, user_table.username
+                FROM        " . $this->databasePrefix . "privatemessages message_table
+                LEFT JOIN   " . $this->databasePrefix . "users user_table
+                ON          user_table.uid = message_table.fromid
+                WHERE       pmid BETWEEN ? AND ?
+                        AND pmid IN (
+                                SELECT      MIN(pmID)
+                                FROM        " . $this->databasePrefix . "privatemessages
+                                GROUP BY    fromid, dateline
+                            )
+                ORDER BY    pmid";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -694,12 +702,12 @@ class MyBB16xExporter extends AbstractExporter
      */
     public function exportConversationUsers($offset, $limit)
     {
-        $sql = "SELECT		message_table.*, user_table.username
-			FROM		" . $this->databasePrefix . "privatemessages message_table
-			LEFT JOIN	" . $this->databasePrefix . "users user_table
-			ON		user_table.uid = message_table.uid
-			WHERE		pmid BETWEEN ? AND ?
-			ORDER BY	pmid";
+        $sql = "SELECT      message_table.*, user_table.username
+                FROM        " . $this->databasePrefix . "privatemessages message_table
+                LEFT JOIN   " . $this->databasePrefix . "users user_table
+                ON          user_table.uid = message_table.uid
+                WHERE       pmid BETWEEN ? AND ?
+                ORDER BY    pmid";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -720,8 +728,8 @@ class MyBB16xExporter extends AbstractExporter
      */
     public function countBoards()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "forums";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "forums";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -737,9 +745,9 @@ class MyBB16xExporter extends AbstractExporter
      */
     public function exportBoards($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "forums
-			ORDER BY	pid, disporder, fid";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "forums
+                ORDER BY    pid, disporder, fid";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -796,10 +804,10 @@ class MyBB16xExporter extends AbstractExporter
      */
     public function exportThreads($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "threads
-			WHERE		tid BETWEEN ? AND ?
-			ORDER BY	tid";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "threads
+                WHERE       tid BETWEEN ? AND ?
+                ORDER BY    tid";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -842,12 +850,12 @@ class MyBB16xExporter extends AbstractExporter
      */
     public function exportPosts($offset, $limit)
     {
-        $sql = "SELECT		post_table.*, user_table.username AS editor
-			FROM		" . $this->databasePrefix . "posts post_table
-			LEFT JOIN	" . $this->databasePrefix . "users user_table
-			ON		user_table.uid = post_table.edituid
-			WHERE		pid BETWEEN ? AND ?
-			ORDER BY	pid";
+        $sql = "SELECT      post_table.*, user_table.username AS editor
+                FROM        " . $this->databasePrefix . "posts post_table
+                LEFT JOIN   " . $this->databasePrefix . "users user_table
+                ON          user_table.uid = post_table.edituid
+                WHERE       pid BETWEEN ? AND ?
+                ORDER BY    pid";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -888,9 +896,9 @@ class MyBB16xExporter extends AbstractExporter
     {
         static $uploadsPath = null;
         if ($uploadsPath === null) {
-            $sql = "SELECT	value
-				FROM	" . $this->databasePrefix . "settings
-				WHERE	name = ?";
+            $sql = "SELECT  value
+                    FROM    " . $this->databasePrefix . "settings
+                    WHERE   name = ?";
             $statement = $this->database->prepareStatement($sql);
             $statement->execute(['uploadspath']);
             $row = $statement->fetchArray();
@@ -899,10 +907,10 @@ class MyBB16xExporter extends AbstractExporter
                 $uploadsPath = \realpath($this->fileSystemPath . $uploadsPath);
             }
         }
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "attachments
-			WHERE		aid BETWEEN ? AND ?
-			ORDER BY	aid";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "attachments
+                WHERE       aid BETWEEN ? AND ?
+                ORDER BY    aid";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -934,10 +942,10 @@ class MyBB16xExporter extends AbstractExporter
      */
     public function exportWatchedThreads($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "threadsubscriptions
-			WHERE		sid BETWEEN ? AND ?
-			ORDER BY	sid";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "threadsubscriptions
+                WHERE       sid BETWEEN ? AND ?
+                ORDER BY    sid";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -965,12 +973,12 @@ class MyBB16xExporter extends AbstractExporter
      */
     public function exportPolls($offset, $limit)
     {
-        $sql = "SELECT		poll_table.*, thread_table.firstpost
-			FROM		" . $this->databasePrefix . "polls poll_table
-			LEFT JOIN	" . $this->databasePrefix . "threads thread_table
-			ON		poll_table.tid = thread_table.tid
-			WHERE		pid BETWEEN ? AND ?
-			ORDER BY	pid";
+        $sql = "SELECT      poll_table.*, thread_table.firstpost
+                FROM        " . $this->databasePrefix . "polls poll_table
+                LEFT JOIN   " . $this->databasePrefix . "threads thread_table
+                ON          poll_table.tid = thread_table.tid
+                WHERE       pid BETWEEN ? AND ?
+                ORDER BY    pid";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -1003,9 +1011,9 @@ class MyBB16xExporter extends AbstractExporter
      */
     public function exportPollOptions($offset, $limit)
     {
-        $sql = "SELECT		pid, options, votes
-			FROM		" . $this->databasePrefix . "polls
-			ORDER BY	pid";
+        $sql = "SELECT      pid, options, votes
+                FROM        " . $this->databasePrefix . "polls
+                ORDER BY    pid";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -1030,8 +1038,8 @@ class MyBB16xExporter extends AbstractExporter
      */
     public function countPollOptionVotes()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "pollvotes";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "pollvotes";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -1047,9 +1055,9 @@ class MyBB16xExporter extends AbstractExporter
      */
     public function exportPollOptionVotes($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "pollvotes
-			ORDER BY	vid";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "pollvotes
+                ORDER BY    vid";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
 
@@ -1067,11 +1075,11 @@ class MyBB16xExporter extends AbstractExporter
      */
     public function countLikes()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "reputation
-			WHERE		pid <> ?
-				AND	adduid <> ?
-				AND	reputation <> ?";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "reputation
+                WHERE   pid <> ?
+                    AND adduid <> ?
+                    AND reputation <> ?";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([0, 0, 0]);
         $row = $statement->fetchArray();
@@ -1087,12 +1095,12 @@ class MyBB16xExporter extends AbstractExporter
      */
     public function exportLikes($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "reputation
-			WHERE		pid <> ?
-					AND adduid <> ?
-					AND reputation <> ?
-			ORDER BY	rid";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "reputation
+                WHERE       pid <> ?
+                        AND adduid <> ?
+                        AND reputation <> ?
+                ORDER BY    rid";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([0, 0, 0]);
         while ($row = $statement->fetchArray()) {
@@ -1111,8 +1119,8 @@ class MyBB16xExporter extends AbstractExporter
      */
     public function countLabels()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "threadprefixes";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "threadprefixes";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -1131,8 +1139,8 @@ class MyBB16xExporter extends AbstractExporter
         $prefixMap = [];
         $boardIDs = \array_keys(BoardCache::getInstance()->getBoards());
 
-        $sql = "SELECT	*
-			FROM	" . $this->databasePrefix . "threadprefixes";
+        $sql = "SELECT  *
+                FROM    " . $this->databasePrefix . "threadprefixes";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -1184,8 +1192,13 @@ class MyBB16xExporter extends AbstractExporter
      */
     public function countACLs()
     {
-        $sql = "SELECT	(SELECT COUNT(*) FROM " . $this->databasePrefix . "moderators)
-				+ (SELECT COUNT(*) FROM " . $this->databasePrefix . "forumpermissions) AS count";
+        $sql = "SELECT  (
+                            SELECT  COUNT(*)
+                            FROM    " . $this->databasePrefix . "moderators
+                        ) + (
+                            SELECT  COUNT(*)
+                            FROM    " . $this->databasePrefix . "forumpermissions
+                        ) AS count";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -1204,15 +1217,15 @@ class MyBB16xExporter extends AbstractExporter
         // get ids
         $mod = $user = $group = [];
         $sql = "(
-				SELECT	mid AS id, 'mod' AS type
-				FROM	" . $this->databasePrefix . "moderators
-			)
-			UNION
-			(
-				SELECT	pid AS id, 'group' AS type
-				FROM " . $this->databasePrefix . "forumpermissions
-			)
-			ORDER BY	type, id";
+                    SELECT  mid AS id, 'mod' AS type
+                    FROM    " . $this->databasePrefix . "moderators
+                )
+                UNION
+                (
+                    SELECT  pid AS id, 'group' AS type
+                    FROM    " . $this->databasePrefix . "forumpermissions
+                )
+                ORDER BY    type, id";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -1257,9 +1270,9 @@ class MyBB16xExporter extends AbstractExporter
             $conditionBuilder = new PreparedStatementConditionBuilder();
             $conditionBuilder->add('mid IN (?)', [$mod]);
 
-            $sql = "SELECT	*
-				FROM	" . $this->databasePrefix . "moderators
-				" . $conditionBuilder;
+            $sql = "SELECT  *
+                    FROM    " . $this->databasePrefix . "moderators
+                    " . $conditionBuilder;
             $statement = $this->database->prepareStatement($sql);
             $statement->execute($conditionBuilder->getParameters());
             while ($row = $statement->fetchArray()) {
@@ -1306,9 +1319,9 @@ class MyBB16xExporter extends AbstractExporter
             $conditionBuilder = new PreparedStatementConditionBuilder();
             $conditionBuilder->add('pid IN (?)', [$group]);
 
-            $sql = "SELECT	*
-				FROM	" . $this->databasePrefix . "forumpermissions
-				" . $conditionBuilder;
+            $sql = "SELECT  *
+                    FROM    " . $this->databasePrefix . "forumpermissions
+                    " . $conditionBuilder;
             $statement = $this->database->prepareStatement($sql);
             $statement->execute($conditionBuilder->getParameters());
 
@@ -1333,8 +1346,8 @@ class MyBB16xExporter extends AbstractExporter
      */
     public function countSmilies()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "smilies";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "smilies";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -1350,9 +1363,9 @@ class MyBB16xExporter extends AbstractExporter
      */
     public function exportSmilies($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "smilies
-			ORDER BY	sid";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "smilies
+                ORDER BY    sid";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([]);
         while ($row = $statement->fetchArray()) {

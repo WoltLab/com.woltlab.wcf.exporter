@@ -151,7 +151,8 @@ class PhpBB31xExporter extends AbstractExporter
     {
         parent::validateDatabaseAccess();
 
-        $sql = "SELECT COUNT(*) FROM " . $this->databasePrefix . "zebra";
+        $sql = "SELECT  COUNT(*)
+                FROM    " . $this->databasePrefix . "zebra";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
     }
@@ -267,10 +268,10 @@ class PhpBB31xExporter extends AbstractExporter
      */
     public function exportUserGroups($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "groups
-			WHERE		group_id BETWEEN ? AND ?
-			ORDER BY	group_id";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "groups
+                WHERE       group_id BETWEEN ? AND ?
+                ORDER BY    group_id";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -304,9 +305,9 @@ class PhpBB31xExporter extends AbstractExporter
      */
     public function countUsers()
     {
-        $sql = "SELECT	MAX(user_id) AS maxID
-			FROM	" . $this->databasePrefix . "users
-			WHERE	user_type <> ?";
+        $sql = "SELECT  MAX(user_id) AS maxID
+                FROM    " . $this->databasePrefix . "users
+                WHERE   user_type <> ?";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([self::USER_TYPE_USER_IGNORE]);
         $row = $statement->fetchArray();
@@ -327,8 +328,8 @@ class PhpBB31xExporter extends AbstractExporter
     {
         // cache profile fields
         $profileFields = [];
-        $sql = "SELECT	*
-			FROM	" . $this->databasePrefix . "profile_fields";
+        $sql = "SELECT  *
+                FROM    " . $this->databasePrefix . "profile_fields";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -336,28 +337,28 @@ class PhpBB31xExporter extends AbstractExporter
         }
 
         // prepare password update
-        $sql = "UPDATE	wcf" . WCF_N . "_user
-			SET	password = ?
-			WHERE	userID = ?";
+        $sql = "UPDATE  wcf" . WCF_N . "_user
+                SET     password = ?
+                WHERE   userID = ?";
         $passwordUpdateStatement = WCF::getDB()->prepareStatement($sql);
 
         // get users
-        $sql = "SELECT		fields_table.*, user_table.*, ban_table.ban_give_reason AS banReason,
-					(
-						SELECT	GROUP_CONCAT(group_table.group_id)
-						FROM	" . $this->databasePrefix . "user_group group_table
-						WHERE		group_table.user_id = user_table.user_id
-							AND	user_pending = ?
-					) AS groupIDs
-			FROM		" . $this->databasePrefix . "users user_table
-			LEFT JOIN	" . $this->databasePrefix . "banlist ban_table
-			ON			user_table.user_id = ban_table.ban_userid
-					AND	ban_table.ban_end = ?
-			LEFT JOIN	" . $this->databasePrefix . "profile_fields_data fields_table
-			ON		user_table.user_id = fields_table.user_id
-			WHERE		user_table.user_type <> ?
-					AND user_table.user_id BETWEEN ? AND ?
-			ORDER BY	user_table.user_id";
+        $sql = "SELECT      fields_table.*, user_table.*, ban_table.ban_give_reason AS banReason,
+                            (
+                                SELECT  GROUP_CONCAT(group_table.group_id)
+                                FROM    " . $this->databasePrefix . "user_group group_table
+                                WHERE   group_table.user_id = user_table.user_id
+                                    AND user_pending = ?
+                            ) AS groupIDs
+                FROM        " . $this->databasePrefix . "users user_table
+                LEFT JOIN   " . $this->databasePrefix . "banlist ban_table
+                ON          user_table.user_id = ban_table.ban_userid
+                        AND ban_table.ban_end = ?
+                LEFT JOIN   " . $this->databasePrefix . "profile_fields_data fields_table
+                ON          user_table.user_id = fields_table.user_id
+                WHERE       user_table.user_type <> ?
+                        AND user_table.user_id BETWEEN ? AND ?
+                ORDER BY    user_table.user_id";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([0, 0, self::USER_TYPE_USER_IGNORE, $offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -448,8 +449,8 @@ class PhpBB31xExporter extends AbstractExporter
      */
     public function countUserOptions()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "profile_fields";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "profile_fields";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -468,17 +469,23 @@ class PhpBB31xExporter extends AbstractExporter
         $condition = new PreparedStatementConditionBuilder();
         $condition->add('field_name NOT IN (?)', [self::$knownProfileFields]);
 
-        $sql = "SELECT		fields.*,
-					(
-						SELECT	GROUP_CONCAT(('_' || (lang.option_id + 1) || ':' || lang.lang_value) SEPARATOR '\n')
-						FROM		" . $this->databasePrefix . "profile_fields_lang lang
-						WHERE		lang.field_id = fields.field_id
-							AND	lang.field_type = ?
-							AND	lang.lang_id = (SELECT MIN(lang_id) FROM " . $this->databasePrefix . "profile_fields_lang)
-					) AS selectOptions
-			FROM		" . $this->databasePrefix . "profile_fields fields
-			" . $condition . "
-			ORDER BY	fields.field_id";
+        $sql = "SELECT      fields.*,
+                            (
+                                SELECT  GROUP_CONCAT(
+                                            ('_' || (lang.option_id + 1) || ':' || lang.lang_value)
+                                            SEPARATOR '\n'
+                                        )
+                                FROM    " . $this->databasePrefix . "profile_fields_lang lang
+                                WHERE   lang.field_id = fields.field_id
+                                    AND lang.field_type = ?
+                                    AND lang.lang_id = (
+                                            SELECT  MIN(lang_id)
+                                            FROM    " . $this->databasePrefix . "profile_fields_lang
+                                        )
+                            ) AS selectOptions
+                FROM        " . $this->databasePrefix . "profile_fields fields
+                " . $condition . "
+                ORDER BY    fields.field_id";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute(\array_merge(['profilefields.type.dropdown'], $condition->getParameters()));
         while ($row = $statement->fetchArray()) {
@@ -542,9 +549,9 @@ class PhpBB31xExporter extends AbstractExporter
      */
     public function countUserRanks()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "ranks
-			WHERE	rank_special = ?";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "ranks
+                WHERE   rank_special = ?";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([0]);
         $row = $statement->fetchArray();
@@ -560,10 +567,10 @@ class PhpBB31xExporter extends AbstractExporter
      */
     public function exportUserRanks($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "ranks
-			WHERE		rank_special = ?
-			ORDER BY	rank_id";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "ranks
+                WHERE       rank_special = ?
+                ORDER BY    rank_id";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([0]);
         while ($row = $statement->fetchArray()) {
@@ -583,10 +590,10 @@ class PhpBB31xExporter extends AbstractExporter
      */
     public function countFollowers()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "zebra
-			WHERE		friend = ?
-				AND	foe = ?";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "zebra
+                WHERE   friend = ?
+                    AND foe = ?";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([1, 0]);
         $row = $statement->fetchArray();
@@ -602,11 +609,11 @@ class PhpBB31xExporter extends AbstractExporter
      */
     public function exportFollowers($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "zebra
-			WHERE			friend = ?
-					AND	foe = ?
-			ORDER BY	user_id, zebra_id";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "zebra
+                WHERE       friend = ?
+                        AND foe = ?
+                ORDER BY    user_id, zebra_id";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([1, 0]);
         while ($row = $statement->fetchArray()) {
@@ -622,9 +629,9 @@ class PhpBB31xExporter extends AbstractExporter
      */
     public function countUserAvatars()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "users
-			WHERE	user_avatar_type IN (?, ?)";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "users
+                WHERE   user_avatar_type IN (?, ?)";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([self::AVATAR_TYPE_GALLERY, self::AVATAR_TYPE_UPLOADED]);
         $row = $statement->fetchArray();
@@ -642,9 +649,9 @@ class PhpBB31xExporter extends AbstractExporter
     {
         static $avatar_salt = null, $avatar_path = null, $avatar_gallery_path = null;
         if ($avatar_salt === null) {
-            $sql = "SELECT	config_name, config_value
-				FROM	" . $this->databasePrefix . "config
-				WHERE	config_name IN (?, ?, ?)";
+            $sql = "SELECT  config_name, config_value
+                    FROM    " . $this->databasePrefix . "config
+                    WHERE   config_name IN (?, ?, ?)";
             $statement = $this->database->prepareStatement($sql);
             $statement->execute(['avatar_path', 'avatar_salt', 'avatar_gallery_path']);
             while ($row = $statement->fetchArray()) {
@@ -654,10 +661,10 @@ class PhpBB31xExporter extends AbstractExporter
             }
         }
 
-        $sql = "SELECT		user_id, user_avatar, user_avatar_type, user_avatar_width, user_avatar_height
-			FROM		" . $this->databasePrefix . "users
-			WHERE		user_avatar_type IN (?, ?)
-			ORDER BY	user_id";
+        $sql = "SELECT      user_id, user_avatar, user_avatar_type, user_avatar_width, user_avatar_height
+                FROM        " . $this->databasePrefix . "users
+                WHERE       user_avatar_type IN (?, ?)
+                ORDER BY    user_id";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([self::AVATAR_TYPE_GALLERY, self::AVATAR_TYPE_UPLOADED]);
         while ($row = $statement->fetchArray()) {
@@ -685,8 +692,8 @@ class PhpBB31xExporter extends AbstractExporter
      */
     public function countConversationFolders()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "privmsgs_folder";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "privmsgs_folder";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -702,9 +709,9 @@ class PhpBB31xExporter extends AbstractExporter
      */
     public function exportConversationFolders($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "privmsgs_folder
-			ORDER BY	folder_id";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "privmsgs_folder
+                ORDER BY    folder_id";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -740,8 +747,8 @@ class PhpBB31xExporter extends AbstractExporter
      */
     public function countConversations()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "privmsgs";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "privmsgs";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -758,38 +765,38 @@ class PhpBB31xExporter extends AbstractExporter
     public function exportConversations($offset, $limit)
     {
         $sql = "(
-				SELECT		msg_table.msg_id,
-						msg_table.root_level,
-						msg_table.message_subject,
-						msg_table.message_time,
-						msg_table.author_id,
-						0 AS isDraft,
-						user_table.username,
-						(
-							SELECT	GROUP_CONCAT(to_table.user_id)
-							FROM	" . $this->databasePrefix . "privmsgs_to to_table
-							WHERE	msg_table.msg_id = to_table.msg_id
-						) AS participants
-				FROM		" . $this->databasePrefix . "privmsgs msg_table
-				LEFT JOIN	" . $this->databasePrefix . "users user_table
-				ON		msg_table.author_id = user_table.user_id
-			)
-			UNION
-			(
-				SELECT		draft_table.draft_id AS msg_id,
-						0 AS root_level,
-						draft_table.draft_subject AS message_subject,
-						draft_table.save_time AS message_time,
-						draft_table.user_id AS author_id,
-						1 AS isDraft,
-						user_table.username,
-						'' AS participants
-				FROM		" . $this->databasePrefix . "drafts draft_table
-				LEFT JOIN	" . $this->databasePrefix . "users user_table
-				ON		draft_table.user_id = user_table.user_id
-				WHERE		forum_id = ?
-			)
-			ORDER BY	isDraft, msg_id";
+                    SELECT      msg_table.msg_id,
+                                msg_table.root_level,
+                                msg_table.message_subject,
+                                msg_table.message_time,
+                                msg_table.author_id,
+                                0 AS isDraft,
+                                user_table.username,
+                                (
+                                    SELECT  GROUP_CONCAT(to_table.user_id)
+                                    FROM    " . $this->databasePrefix . "privmsgs_to to_table
+                                    WHERE   msg_table.msg_id = to_table.msg_id
+                                ) AS participants
+                    FROM        " . $this->databasePrefix . "privmsgs msg_table
+                    LEFT JOIN   " . $this->databasePrefix . "users user_table
+                    ON          msg_table.author_id = user_table.user_id
+                )
+                UNION
+                (
+                    SELECT      draft_table.draft_id AS msg_id,
+                                0 AS root_level,
+                                draft_table.draft_subject AS message_subject,
+                                draft_table.save_time AS message_time,
+                                draft_table.user_id AS author_id,
+                                1 AS isDraft,
+                                user_table.username,
+                                '' AS participants
+                    FROM        " . $this->databasePrefix . "drafts draft_table
+                    LEFT JOIN   " . $this->databasePrefix . "users user_table
+                    ON          draft_table.user_id = user_table.user_id
+                    WHERE       forum_id = ?
+                )
+                ORDER BY    isDraft, msg_id";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([0]);
         while ($row = $statement->fetchArray()) {
@@ -819,8 +826,8 @@ class PhpBB31xExporter extends AbstractExporter
      */
     public function countConversationMessages()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "privmsgs";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "privmsgs";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -837,46 +844,51 @@ class PhpBB31xExporter extends AbstractExporter
     public function exportConversationMessages($offset, $limit)
     {
         $sql = "(
-				SELECT		msg_table.root_level,
-						msg_table.msg_id,
-						msg_table.author_id,
-						user_table.username,
-						msg_table.message_text,
-						msg_table.bbcode_uid,
-						msg_table.message_time,
-						msg_table.enable_smilies,
-						msg_table.enable_bbcode,
-						msg_table.enable_sig,
-						(SELECT COUNT(*) FROM " . $this->databasePrefix . "attachments attachment_table WHERE attachment_table.post_msg_id = msg_table.msg_id AND in_message = ?) AS attachments,
-						(
-							SELECT	GROUP_CONCAT(to_table.user_id)
-							FROM	" . $this->databasePrefix . "privmsgs_to to_table
-							WHERE	msg_table.msg_id = to_table.msg_id
-						) AS participants
-				FROM		" . $this->databasePrefix . "privmsgs msg_table
-				LEFT JOIN	" . $this->databasePrefix . "users user_table
-				ON		msg_table.author_id = user_table.user_id
-			)
-			UNION
-			(
-				SELECT		0 AS root_level,
-						('draft-' || draft_table.draft_id) AS msg_id,
-						draft_table.user_id AS author_id,
-						user_table.username,
-						draft_table.draft_message AS message_text,
-						'' AS bbcode_uid,
-						draft_table.save_time AS message_time,
-						1 AS enable_smilies,
-						1 AS enable_bbcode,
-						1 AS enable_sig,
-						0 AS attachments,
-						'' AS participants
-				FROM		" . $this->databasePrefix . "drafts draft_table
-				LEFT JOIN	" . $this->databasePrefix . "users user_table
-				ON		draft_table.user_id = user_table.user_id
-				WHERE		forum_id = ?
-			)
-			ORDER BY	msg_id";
+                    SELECT      msg_table.root_level,
+                                msg_table.msg_id,
+                                msg_table.author_id,
+                                user_table.username,
+                                msg_table.message_text,
+                                msg_table.bbcode_uid,
+                                msg_table.message_time,
+                                msg_table.enable_smilies,
+                                msg_table.enable_bbcode,
+                                msg_table.enable_sig,
+                                (
+                                    SELECT  COUNT(*)
+                                    FROM    " . $this->databasePrefix . "attachments attachment_table
+                                    WHERE   attachment_table.post_msg_id = msg_table.msg_id
+                                        AND in_message = ?
+                                ) AS attachments,
+                                (
+                                    SELECT  GROUP_CONCAT(to_table.user_id)
+                                    FROM    " . $this->databasePrefix . "privmsgs_to to_table
+                                    WHERE   msg_table.msg_id = to_table.msg_id
+                                ) AS participants
+                    FROM        " . $this->databasePrefix . "privmsgs msg_table
+                    LEFT JOIN   " . $this->databasePrefix . "users user_table
+                    ON          msg_table.author_id = user_table.user_id
+                )
+                UNION
+                (
+                    SELECT      0 AS root_level,
+                                ('draft-' || draft_table.draft_id) AS msg_id,
+                                draft_table.user_id AS author_id,
+                                user_table.username,
+                                draft_table.draft_message AS message_text,
+                                '' AS bbcode_uid,
+                                draft_table.save_time AS message_time,
+                                1 AS enable_smilies,
+                                1 AS enable_bbcode,
+                                1 AS enable_sig,
+                                0 AS attachments,
+                                '' AS participants
+                    FROM        " . $this->databasePrefix . "drafts draft_table
+                    LEFT JOIN   " . $this->databasePrefix . "users user_table
+                    ON          draft_table.user_id = user_table.user_id
+                    WHERE       forum_id = ?
+                )
+                ORDER BY        msg_id";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([1, 0]);
         while ($row = $statement->fetchArray()) {
@@ -900,8 +912,8 @@ class PhpBB31xExporter extends AbstractExporter
      */
     public function countConversationUsers()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "privmsgs_to";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "privmsgs_to";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -917,18 +929,20 @@ class PhpBB31xExporter extends AbstractExporter
      */
     public function exportConversationUsers($offset, $limit)
     {
-        $sql = "SELECT		to_table.*, msg_table.root_level, msg_table.author_id, msg_table.bcc_address, user_table.username, msg_table.message_time,
-					(
-						SELECT	GROUP_CONCAT(to_table2.user_id)
-						FROM	" . $this->databasePrefix . "privmsgs_to to_table2
-						WHERE	to_table.msg_id = to_table2.msg_id
-					) AS participants
-			FROM		" . $this->databasePrefix . "privmsgs_to to_table
-			LEFT JOIN	" . $this->databasePrefix . "privmsgs msg_table
-			ON		(msg_table.msg_id = to_table.msg_id)
-			LEFT JOIN	" . $this->databasePrefix . "users user_table
-			ON		to_table.user_id = user_table.user_id
-			ORDER BY	to_table.msg_id, to_table.user_id";
+        $sql = "SELECT      to_table.*,
+                            msg_table.root_level, msg_table.author_id, msg_table.bcc_address,
+                            user_table.username, msg_table.message_time,
+                            (
+                                SELECT  GROUP_CONCAT(to_table2.user_id)
+                                FROM    " . $this->databasePrefix . "privmsgs_to to_table2
+                                WHERE   to_table.msg_id = to_table2.msg_id
+                            ) AS participants
+                FROM        " . $this->databasePrefix . "privmsgs_to to_table
+                LEFT JOIN   " . $this->databasePrefix . "privmsgs msg_table
+                ON          (msg_table.msg_id = to_table.msg_id)
+                LEFT JOIN   " . $this->databasePrefix . "users user_table
+                ON          to_table.user_id = user_table.user_id
+                ORDER BY    to_table.msg_id, to_table.user_id";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -972,8 +986,8 @@ class PhpBB31xExporter extends AbstractExporter
      */
     public function countBoards()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "forums";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "forums";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -989,9 +1003,9 @@ class PhpBB31xExporter extends AbstractExporter
      */
     public function exportBoards($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "forums
-			ORDER BY	parent_id, left_id, forum_id";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "forums
+                ORDER BY    parent_id, left_id, forum_id";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -1053,10 +1067,10 @@ class PhpBB31xExporter extends AbstractExporter
     {
         $boardIDs = \array_keys(BoardCache::getInstance()->getBoards());
 
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "topics
-			WHERE		topic_id BETWEEN ? AND ?
-			ORDER BY	topic_id";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "topics
+                WHERE       topic_id BETWEEN ? AND ?
+                ORDER BY    topic_id";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -1104,15 +1118,20 @@ class PhpBB31xExporter extends AbstractExporter
      */
     public function exportPosts($offset, $limit)
     {
-        $sql = "SELECT		post_table.*, user_table.username, editor.username AS editorName,
-					(SELECT COUNT(*) FROM " . $this->databasePrefix . "attachments attachment_table WHERE attachment_table.post_msg_id = post_table.post_id AND in_message = ?) AS attachments
-			FROM		" . $this->databasePrefix . "posts post_table
-			LEFT JOIN	" . $this->databasePrefix . "users user_table
-			ON		post_table.poster_id = user_table.user_id
-			LEFT JOIN	" . $this->databasePrefix . "users editor
-			ON		post_table.post_edit_user = editor.user_id
-			WHERE		post_id BETWEEN ? AND ?
-			ORDER BY	post_id";
+        $sql = "SELECT      post_table.*, user_table.username, editor.username AS editorName,
+                            (
+                                SELECT  COUNT(*)
+                                FROM    " . $this->databasePrefix . "attachments attachment_table
+                                WHERE   attachment_table.post_msg_id = post_table.post_id
+                                    AND in_message = ?
+                            ) AS attachments
+                FROM        " . $this->databasePrefix . "posts post_table
+                LEFT JOIN   " . $this->databasePrefix . "users user_table
+                ON          post_table.poster_id = user_table.user_id
+                LEFT JOIN   " . $this->databasePrefix . "users editor
+                ON          post_table.post_edit_user = editor.user_id
+                WHERE       post_id BETWEEN ? AND ?
+                ORDER BY    post_id";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([0, $offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -1163,8 +1182,8 @@ class PhpBB31xExporter extends AbstractExporter
      */
     public function countWatchedThreads()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "topics_watch";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "topics_watch";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -1182,9 +1201,9 @@ class PhpBB31xExporter extends AbstractExporter
     {
         // TODO: This is untested. I cannot find the button to watch a topic.
         // TODO: Import bookmarks as watched threads as well?
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "topics_watch
-			ORDER BY	topic_id, user_id";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "topics_watch
+                ORDER BY    topic_id, user_id";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -1201,9 +1220,9 @@ class PhpBB31xExporter extends AbstractExporter
      */
     public function countPolls()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "topics
-			WHERE	poll_start <> ?";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "topics
+                WHERE   poll_start <> ?";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([0]);
         $row = $statement->fetchArray();
@@ -1219,11 +1238,16 @@ class PhpBB31xExporter extends AbstractExporter
      */
     public function exportPolls($offset, $limit)
     {
-        $sql = "SELECT		topic_id, topic_first_post_id, poll_title, poll_start, poll_length, poll_max_options, poll_vote_change,
-					(SELECT COUNT(DISTINCT vote_user_id) FROM " . $this->databasePrefix . "poll_votes votes WHERE votes.topic_id = topic.topic_id) AS poll_votes
-			FROM		" . $this->databasePrefix . "topics topic
-			WHERE		poll_start <> ?
-			ORDER BY	topic_id";
+        $sql = "SELECT      topic_id, topic_first_post_id, poll_title, poll_start,
+                            poll_length, poll_max_options, poll_vote_change,
+                            (
+                                SELECT  COUNT(DISTINCT vote_user_id)
+                                FROM    " . $this->databasePrefix . "poll_votes votes
+                                WHERE   votes.topic_id = topic.topic_id
+                            ) AS poll_votes
+                FROM        " . $this->databasePrefix . "topics topic
+                WHERE       poll_start <> ?
+                ORDER BY    topic_id";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([0]);
         while ($row = $statement->fetchArray()) {
@@ -1245,8 +1269,8 @@ class PhpBB31xExporter extends AbstractExporter
      */
     public function countPollOptions()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "poll_options";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "poll_options";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -1262,9 +1286,9 @@ class PhpBB31xExporter extends AbstractExporter
      */
     public function exportPollOptions($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "poll_options
-			ORDER BY	poll_option_id";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "poll_options
+                ORDER BY    poll_option_id";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -1282,9 +1306,9 @@ class PhpBB31xExporter extends AbstractExporter
      */
     public function countPollOptionVotes()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "poll_votes
-			WHERE	vote_user_id <> ?";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "poll_votes
+                WHERE   vote_user_id <> ?";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([0]);
         $row = $statement->fetchArray();
@@ -1300,10 +1324,10 @@ class PhpBB31xExporter extends AbstractExporter
      */
     public function exportPollOptionVotes($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "poll_votes
-			WHERE		vote_user_id <> ?
-			ORDER BY	poll_option_id, vote_user_id";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "poll_votes
+                WHERE       vote_user_id <> ?
+                ORDER BY    poll_option_id, vote_user_id";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([0]);
         while ($row = $statement->fetchArray()) {
@@ -1320,8 +1344,15 @@ class PhpBB31xExporter extends AbstractExporter
      */
     public function countACLs()
     {
-        $sql = "SELECT	(SELECT COUNT(*) FROM " . $this->databasePrefix . "acl_users WHERE forum_id <> ?)
-				+ (SELECT COUNT(*) FROM " . $this->databasePrefix . "acl_groups WHERE forum_id <> ?) AS count";
+        $sql = "SELECT  (
+                    SELECT  COUNT(*)
+                    FROM    " . $this->databasePrefix . "acl_users
+                    WHERE   forum_id <> ?
+                ) + (
+                    SELECT  COUNT(*)
+                    FROM    " . $this->databasePrefix . "acl_groups
+                    WHERE   forum_id <> ?
+                ) AS count";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([0, 0]);
         $row = $statement->fetchArray();
@@ -1337,9 +1368,9 @@ class PhpBB31xExporter extends AbstractExporter
      */
     public function exportACLs($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "acl_options
-			WHERE		is_local = ?";
+        $sql = "SELECT  *
+                FROM    " . $this->databasePrefix . "acl_options
+                WHERE   is_local = ?";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([1]);
         $options = [];
@@ -1349,9 +1380,9 @@ class PhpBB31xExporter extends AbstractExporter
 
         $condition = new PreparedStatementConditionBuilder();
         $condition->add('auth_option_id IN (?)', [\array_keys($options)]);
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "acl_roles_data
-			" . $condition;
+        $sql = "SELECT  *
+                FROM    " . $this->databasePrefix . "acl_roles_data
+                " . $condition;
         $statement = $this->database->prepareStatement($sql);
         $statement->execute($condition->getParameters());
         $roles = [];
@@ -1363,19 +1394,19 @@ class PhpBB31xExporter extends AbstractExporter
         $key = '';
         if ($offset == 0) {
             // groups
-            $sql = "SELECT		*
-				FROM		" . $this->databasePrefix . "acl_groups
-				WHERE		forum_id <> ?
-				ORDER BY	auth_role_id DESC";
+            $sql = "SELECT      *
+                    FROM        " . $this->databasePrefix . "acl_groups
+                    WHERE       forum_id <> ?
+                    ORDER BY    auth_role_id DESC";
             $statement = $this->database->prepareStatement($sql);
             $statement->execute([0]);
             $key = 'group';
         } elseif ($offset == 1) {
             // users
-            $sql = "SELECT		*
-				FROM		" . $this->databasePrefix . "acl_users
-				WHERE		forum_id <> ?
-				ORDER BY	auth_role_id DESC";
+            $sql = "SELECT      *
+                    FROM        " . $this->databasePrefix . "acl_users
+                    WHERE       forum_id <> ?
+                    ORDER BY    auth_role_id DESC";
             $statement = $this->database->prepareStatement($sql);
             $statement->execute([0]);
             $key = 'user';
@@ -1482,8 +1513,8 @@ class PhpBB31xExporter extends AbstractExporter
      */
     public function countSmilies()
     {
-        $sql = "SELECT	COUNT(DISTINCT smiley_url) AS count
-			FROM	" . $this->databasePrefix . "smilies";
+        $sql = "SELECT  COUNT(DISTINCT smiley_url) AS count
+                FROM    " . $this->databasePrefix . "smilies";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -1499,14 +1530,14 @@ class PhpBB31xExporter extends AbstractExporter
      */
     public function exportSmilies($offset, $limit)
     {
-        $sql = "SELECT		MIN(smiley_id) AS smiley_id,
-					GROUP_CONCAT(code SEPARATOR '\n') AS aliases,
-					smiley_url,
-					MIN(smiley_order) AS smiley_order,
-					GROUP_CONCAT(emotion SEPARATOR '\n') AS emotion
-			FROM		" . $this->databasePrefix . "smilies
-			GROUP BY	smiley_url
-			ORDER BY	smiley_id";
+        $sql = "SELECT      MIN(smiley_id) AS smiley_id,
+                            GROUP_CONCAT(code SEPARATOR '\n') AS aliases,
+                            smiley_url,
+                            MIN(smiley_order) AS smiley_order,
+                            GROUP_CONCAT(emotion SEPARATOR '\n') AS emotion
+                FROM        " . $this->databasePrefix . "smilies
+                GROUP BY    smiley_url
+                ORDER BY    smiley_id";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([]);
         while ($row = $statement->fetchArray()) {
@@ -1533,9 +1564,9 @@ class PhpBB31xExporter extends AbstractExporter
      */
     protected function countAttachments($conversation)
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "attachments
-			WHERE	in_message = ?";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "attachments
+                WHERE   in_message = ?";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$conversation ? 1 : 0]);
         $row = $statement->fetchArray();
@@ -1554,9 +1585,9 @@ class PhpBB31xExporter extends AbstractExporter
     {
         static $upload_path = null;
         if ($upload_path === null) {
-            $sql = "SELECT	config_name, config_value
-				FROM	" . $this->databasePrefix . "config
-				WHERE	config_name IN (?)";
+            $sql = "SELECT  config_name, config_value
+                    FROM    " . $this->databasePrefix . "config
+                    WHERE   config_name IN (?)";
             $statement = $this->database->prepareStatement($sql);
             $statement->execute(['upload_path']);
             while ($row = $statement->fetchArray()) {
@@ -1566,10 +1597,10 @@ class PhpBB31xExporter extends AbstractExporter
             }
         }
 
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "attachments
-			WHERE		in_message = ?
-			ORDER BY	attach_id DESC";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "attachments
+                WHERE       in_message = ?
+                ORDER BY    attach_id DESC";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([$conversation ? 1 : 0]);
         while ($row = $statement->fetchArray()) {

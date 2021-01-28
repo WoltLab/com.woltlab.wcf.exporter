@@ -89,7 +89,8 @@ class WBB2xExporter extends AbstractExporter
     {
         parent::validateDatabaseAccess();
 
-        $sql = "SELECT COUNT(*) FROM " . $this->databasePrefix . "posts";
+        $sql = "SELECT  COUNT(*)
+                FROM    " . $this->databasePrefix . "posts";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
     }
@@ -223,8 +224,8 @@ class WBB2xExporter extends AbstractExporter
      */
     public function countUserGroups()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "groups";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "groups";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -240,9 +241,9 @@ class WBB2xExporter extends AbstractExporter
      */
     public function exportUserGroups($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "groups
-			ORDER BY	groupid";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "groups
+                ORDER BY    groupid";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -290,9 +291,9 @@ class WBB2xExporter extends AbstractExporter
     {
         // cache profile fields
         $profileFields = [];
-        $sql = "SELECT	profilefieldid
-			FROM	" . $this->databasePrefix . "profilefields
-			WHERE	profilefieldid > 3";
+        $sql = "SELECT  profilefieldid
+                FROM    " . $this->databasePrefix . "profilefields
+                WHERE   profilefieldid > 3";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -300,23 +301,23 @@ class WBB2xExporter extends AbstractExporter
         }
 
         // prepare password update
-        $sql = "UPDATE	wcf" . WCF_N . "_user
-			SET	password = ?
-			WHERE	userID = ?";
+        $sql = "UPDATE  wcf" . WCF_N . "_user
+                SET     password = ?
+                WHERE   userID = ?";
         $passwordUpdateStatement = WCF::getDB()->prepareStatement($sql);
 
         // get users
-        $sql = "SELECT		userfields.*, user.*,
-					(
-						SELECT	GROUP_CONCAT(groupid)
-						FROM	" . $this->databasePrefix . "user2groups
-						WHERE	userid = user.userid
-					) AS groupIDs
-			FROM		" . $this->databasePrefix . "users user
-			LEFT JOIN	" . $this->databasePrefix . "userfields userfields
-			ON		(userfields.userid = user.userid)
-			WHERE		user.userid BETWEEN ? AND ?
-			ORDER BY	user.userid";
+        $sql = "SELECT      userfields.*, user.*,
+                            (
+                                SELECT  GROUP_CONCAT(groupid)
+                                FROM    " . $this->databasePrefix . "user2groups
+                                WHERE   userid = user.userid
+                            ) AS groupIDs
+                FROM        " . $this->databasePrefix . "users user
+                LEFT JOIN   " . $this->databasePrefix . "userfields userfields
+                ON          (userfields.userid = user.userid)
+                WHERE       user.userid BETWEEN ? AND ?
+                ORDER BY    user.userid";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -384,8 +385,8 @@ class WBB2xExporter extends AbstractExporter
      */
     public function countUserRanks()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "ranks";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "ranks";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -401,9 +402,9 @@ class WBB2xExporter extends AbstractExporter
      */
     public function exportUserRanks($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "ranks
-			ORDER BY	rankid";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "ranks
+                ORDER BY    rankid";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -425,9 +426,9 @@ class WBB2xExporter extends AbstractExporter
      */
     public function countUserAvatars()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "avatars
-			WHERE	userid <> ?";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "avatars
+                WHERE   userid <> ?";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([0]);
         $row = $statement->fetchArray();
@@ -443,10 +444,10 @@ class WBB2xExporter extends AbstractExporter
      */
     public function exportUserAvatars($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "avatars
-			WHERE		userid <> ?
-			ORDER BY	avatarid";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "avatars
+                WHERE       userid <> ?
+                ORDER BY    avatarid";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([0]);
         while ($row = $statement->fetchArray()) {
@@ -475,9 +476,9 @@ class WBB2xExporter extends AbstractExporter
      */
     public function countUserOptions()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "profilefields
-			WHERE	profilefieldid > ?";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "profilefields
+                WHERE   profilefieldid > ?";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([3]);
         $row = $statement->fetchArray();
@@ -493,10 +494,10 @@ class WBB2xExporter extends AbstractExporter
      */
     public function exportUserOptions($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "profilefields
-			WHERE		profilefieldid > ?
-			ORDER BY	profilefieldid";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "profilefields
+                WHERE       profilefieldid > ?
+                ORDER BY    profilefieldid";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([3]);
         while ($row = $statement->fetchArray()) {
@@ -541,8 +542,8 @@ class WBB2xExporter extends AbstractExporter
      */
     public function countConversationFolders()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "folders";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "folders";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -558,9 +559,9 @@ class WBB2xExporter extends AbstractExporter
      */
     public function exportConversationFolders($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "folders
-			ORDER BY	folderid";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "folders
+                ORDER BY    folderid";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -591,12 +592,12 @@ class WBB2xExporter extends AbstractExporter
      */
     public function exportConversations($offset, $limit)
     {
-        $sql = "SELECT		pm.*, user_table.username
-			FROM		" . $this->databasePrefix . "privatemessage pm
-			LEFT JOIN	" . $this->databasePrefix . "users user_table
-			ON		(user_table.userid = pm.senderid)
-			WHERE		pm.privatemessageid BETWEEN ? AND ?
-			ORDER BY	pm.privatemessageid";
+        $sql = "SELECT      pm.*, user_table.username
+                FROM        " . $this->databasePrefix . "privatemessage pm
+                LEFT JOIN   " . $this->databasePrefix . "users user_table
+                ON          (user_table.userid = pm.senderid)
+                WHERE       pm.privatemessageid BETWEEN ? AND ?
+                ORDER BY    pm.privatemessageid";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -633,8 +634,8 @@ class WBB2xExporter extends AbstractExporter
      */
     public function countConversationUsers()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "privatemessagereceipts";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "privatemessagereceipts";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -650,9 +651,9 @@ class WBB2xExporter extends AbstractExporter
      */
     public function exportConversationUsers($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "privatemessagereceipts
-			ORDER BY	privatemessageid DESC, recipientid";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "privatemessagereceipts
+                ORDER BY    privatemessageid DESC, recipientid";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -699,8 +700,8 @@ class WBB2xExporter extends AbstractExporter
      */
     public function countBoards()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "boards";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "boards";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -716,9 +717,9 @@ class WBB2xExporter extends AbstractExporter
      */
     public function exportBoards($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "boards
-			ORDER BY	parentid, boardorder";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "boards
+                ORDER BY    parentid, boardorder";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -778,9 +779,9 @@ class WBB2xExporter extends AbstractExporter
     {
         // get global prefixes
         $globalPrefixes = '';
-        $sql = "SELECT	value
-			FROM	" . $this->databasePrefix . "options
-			WHERE	varname = ?";
+        $sql = "SELECT  value
+                FROM    " . $this->databasePrefix . "options
+                WHERE   varname = ?";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute(['default_prefix']);
         $row = $statement->fetchArray();
@@ -791,9 +792,9 @@ class WBB2xExporter extends AbstractExporter
         // get boards
         $boardPrefixes = [];
 
-        $sql = "SELECT	boardid, prefix, prefixuse
-			FROM	" . $this->databasePrefix . "boards
-			WHERE	prefixuse > ?";
+        $sql = "SELECT  boardid, prefix, prefixuse
+                FROM    " . $this->databasePrefix . "boards
+                WHERE   prefixuse > ?";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([0]);
         while ($row = $statement->fetchArray()) {
@@ -820,10 +821,10 @@ class WBB2xExporter extends AbstractExporter
 
         // get thread ids
         $threadIDs = $announcementIDs = [];
-        $sql = "SELECT		threadid, important
-			FROM		" . $this->databasePrefix . "threads
-			WHERE		threadid BETWEEN ? AND ?
-			ORDER BY	threadid";
+        $sql = "SELECT      threadid, important
+                FROM        " . $this->databasePrefix . "threads
+                WHERE       threadid BETWEEN ? AND ?
+                ORDER BY    threadid";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -839,9 +840,9 @@ class WBB2xExporter extends AbstractExporter
             $conditionBuilder = new PreparedStatementConditionBuilder();
             $conditionBuilder->add('threadid IN (?)', [$announcementIDs]);
 
-            $sql = "SELECT		boardid, threadid
-				FROM		" . $this->databasePrefix . "announcements
-				" . $conditionBuilder;
+            $sql = "SELECT  boardid, threadid
+                    FROM    " . $this->databasePrefix . "announcements
+                    " . $conditionBuilder;
             $statement = $this->database->prepareStatement($sql);
             $statement->execute($conditionBuilder->getParameters());
             while ($row = $statement->fetchArray()) {
@@ -860,9 +861,9 @@ class WBB2xExporter extends AbstractExporter
         $conditionBuilder = new PreparedStatementConditionBuilder();
         $conditionBuilder->add('threadid IN (?)', [$threadIDs]);
 
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "threads
-			" . $conditionBuilder;
+        $sql = "SELECT  *
+                FROM    " . $this->databasePrefix . "threads
+                " . $conditionBuilder;
         $statement = $this->database->prepareStatement($sql);
         $statement->execute($conditionBuilder->getParameters());
         while ($row = $statement->fetchArray()) {
@@ -914,10 +915,10 @@ class WBB2xExporter extends AbstractExporter
      */
     public function exportPosts($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "posts
-			WHERE		postid BETWEEN ? AND ?
-			ORDER BY	postid";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "posts
+                WHERE       postid BETWEEN ? AND ?
+                ORDER BY    postid";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -968,8 +969,8 @@ class WBB2xExporter extends AbstractExporter
      */
     public function countWatchedThreads()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "subscribethreads";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "subscribethreads";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -985,9 +986,9 @@ class WBB2xExporter extends AbstractExporter
      */
     public function exportWatchedThreads($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "subscribethreads
-			ORDER BY	userid, threadid";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "subscribethreads
+                ORDER BY    userid, threadid";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -1007,8 +1008,8 @@ class WBB2xExporter extends AbstractExporter
      */
     public function countPolls()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "polls";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "polls";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -1025,20 +1026,20 @@ class WBB2xExporter extends AbstractExporter
     public function exportPolls($offset, $limit)
     {
         // prepare statements
-        $sql = "SELECT		postid
-			FROM		" . $this->databasePrefix . "posts
-			WHERE		threadid = ?
-			ORDER BY	posttime";
+        $sql = "SELECT      postid
+                FROM        " . $this->databasePrefix . "posts
+                WHERE       threadid = ?
+                ORDER BY    posttime";
         $firstPostStatement = $this->database->prepareStatement($sql, 1);
-        $sql = "SELECT		COUNT(*) AS votes
-			FROM		" . $this->databasePrefix . "votes
-			WHERE		id = ?
-					AND votemode = 1";
+        $sql = "SELECT  COUNT(*) AS votes
+                FROM    " . $this->databasePrefix . "votes
+                WHERE   id = ?
+                    AND votemode = 1";
         $votesStatement = $this->database->prepareStatement($sql);
 
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "polls poll
-			ORDER BY	pollid";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "polls poll
+                ORDER BY    pollid";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -1080,8 +1081,8 @@ class WBB2xExporter extends AbstractExporter
      */
     public function countPollOptions()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "polloptions";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "polloptions";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([]);
         $row = $statement->fetchArray();
@@ -1097,9 +1098,9 @@ class WBB2xExporter extends AbstractExporter
      */
     public function exportPollOptions($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "polloptions
-			ORDER BY	polloptionid";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "polloptions
+                ORDER BY    polloptionid";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([]);
         while ($row = $statement->fetchArray()) {
@@ -1120,9 +1121,9 @@ class WBB2xExporter extends AbstractExporter
      */
     public function countLabels()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "boards
-			WHERE	prefixuse > ?";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "boards
+                WHERE   prefixuse > ?";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([0]);
         $row = $statement->fetchArray();
@@ -1142,9 +1143,9 @@ class WBB2xExporter extends AbstractExporter
 
         // get global prefixes
         $globalPrefixes = '';
-        $sql = "SELECT	value
-			FROM	" . $this->databasePrefix . "options
-			WHERE	varname = ?";
+        $sql = "SELECT  value
+                FROM    " . $this->databasePrefix . "options
+                WHERE   varname = ?";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute(['default_prefix']);
         $row = $statement->fetchArray();
@@ -1153,9 +1154,9 @@ class WBB2xExporter extends AbstractExporter
         }
 
         // get boards
-        $sql = "SELECT	boardid, prefix, prefixuse
-			FROM	" . $this->databasePrefix . "boards
-			WHERE	prefixuse > ?";
+        $sql = "SELECT  boardid, prefix, prefixuse
+                FROM    " . $this->databasePrefix . "boards
+                WHERE   prefixuse > ?";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([0]);
         while ($row = $statement->fetchArray()) {
@@ -1239,8 +1240,8 @@ class WBB2xExporter extends AbstractExporter
      */
     public function countACLs()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "permissions";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "permissions";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -1256,9 +1257,9 @@ class WBB2xExporter extends AbstractExporter
      */
     public function exportACLs($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "permissions
-			ORDER BY	boardid, groupid";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "permissions
+                ORDER BY    boardid, groupid";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -1294,8 +1295,8 @@ class WBB2xExporter extends AbstractExporter
      */
     public function countSmilies()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "smilies";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "smilies";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -1311,9 +1312,9 @@ class WBB2xExporter extends AbstractExporter
      */
     public function exportSmilies($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "smilies
-			ORDER BY	smilieid";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "smilies
+                ORDER BY    smilieid";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -1349,9 +1350,9 @@ class WBB2xExporter extends AbstractExporter
      */
     private function countAttachments($indexName)
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "attachments
-			WHERE	" . $indexName . " > ?";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "attachments
+                WHERE   " . $indexName . " > ?";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([0]);
         $row = $statement->fetchArray();
@@ -1369,10 +1370,10 @@ class WBB2xExporter extends AbstractExporter
      */
     private function exportAttachments($indexName, $objectType, $offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "attachments
-			WHERE		" . $indexName . " > ?
-			ORDER BY	attachmentid DESC";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "attachments
+                WHERE       " . $indexName . " > ?
+                ORDER BY    attachmentid DESC";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([0]);
         while ($row = $statement->fetchArray()) {
