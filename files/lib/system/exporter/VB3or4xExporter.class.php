@@ -384,8 +384,8 @@ class VB3or4xExporter extends AbstractExporter
         if (\in_array('com.woltlab.blog.entry', $this->selectedData)) {
             try {
                 // Check whether the blog appears to be available.
-                $sql = "SELECT	COUNT(*)
-					FROM	" . $this->databasePrefix . "blog";
+                $sql = "SELECT  COUNT(*)
+                        FROM    " . $this->databasePrefix . "blog";
                 $statement = $this->database->prepareStatement($sql);
                 $statement->execute();
                 $dummy = $statement->fetchSingleColumn();
@@ -412,8 +412,8 @@ class VB3or4xExporter extends AbstractExporter
      */
     public function countUserGroups()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "usergroup";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "usergroup";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -429,9 +429,9 @@ class VB3or4xExporter extends AbstractExporter
      */
     public function exportUserGroups($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "usergroup
-			ORDER BY	usergroupid";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "usergroup
+                ORDER BY    usergroupid";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -474,8 +474,8 @@ class VB3or4xExporter extends AbstractExporter
     {
         // cache user options
         $userOptions = [];
-        $sql = "SELECT	*
-			FROM	" . $this->databasePrefix . "profilefield";
+        $sql = "SELECT  *
+                FROM    " . $this->databasePrefix . "profilefield";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -487,24 +487,26 @@ class VB3or4xExporter extends AbstractExporter
         }
 
         // prepare password update
-        $sql = "UPDATE	wcf" . WCF_N . "_user
-			SET	password = ?
-			WHERE	userID = ?";
+        $sql = "UPDATE  wcf" . WCF_N . "_user
+                SET     password = ?
+                WHERE   userID = ?";
         $passwordUpdateStatement = WCF::getDB()->prepareStatement($sql);
 
         // get users
-        $sql = "SELECT		userfield.*, user_table.*, textfield.*, useractivation.type AS activationType, useractivation.emailchange, userban.liftdate, userban.reason AS banReason
-			FROM		" . $this->databasePrefix . "user user_table
-			LEFT JOIN	" . $this->databasePrefix . "usertextfield textfield
-			ON		user_table.userid = textfield.userid
-			LEFT JOIN	" . $this->databasePrefix . "useractivation useractivation
-			ON		user_table.userid = useractivation.userid
-			LEFT JOIN	" . $this->databasePrefix . "userban userban
-			ON		user_table.userid = userban.userid
-			LEFT JOIN	" . $this->databasePrefix . "userfield userfield
-			ON		userfield.userid = user_table.userid
-			WHERE		user_table.userid BETWEEN ? AND ?
-			ORDER BY	user_table.userid";
+        $sql = "SELECT      userfield.*, user_table.*, textfield.*,
+                            useractivation.type AS activationType, useractivation.emailchange,
+                            userban.liftdate, userban.reason AS banReason
+                FROM        " . $this->databasePrefix . "user user_table
+                LEFT JOIN   " . $this->databasePrefix . "usertextfield textfield
+                ON          user_table.userid = textfield.userid
+                LEFT JOIN   " . $this->databasePrefix . "useractivation useractivation
+                ON          user_table.userid = useractivation.userid
+                LEFT JOIN   " . $this->databasePrefix . "userban userban
+                ON          user_table.userid = userban.userid
+                LEFT JOIN   " . $this->databasePrefix . "userfield userfield
+                ON          userfield.userid = user_table.userid
+                WHERE       user_table.userid BETWEEN ? AND ?
+                ORDER BY    user_table.userid";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -572,18 +574,15 @@ class VB3or4xExporter extends AbstractExporter
      */
     public function countUserRanks()
     {
-        $sql = "SELECT
-			(
-				SELECT	COUNT(*)
-				FROM	" . $this->databasePrefix . "usertitle
-			)
-			+
-			(
-				SELECT COUNT(*)
-				FROM	" . $this->databasePrefix . "usergroup
-				WHERE		usergroupid NOT IN(?, ?)
-					AND	usertitle <> ?
-			) AS count";
+        $sql = "SELECT (
+                    SELECT  COUNT(*)
+                    FROM    " . $this->databasePrefix . "usertitle
+                ) + (
+                    SELECT  COUNT(*)
+                    FROM    " . $this->databasePrefix . "usergroup
+                    WHERE   usergroupid NOT IN(?, ?)
+                        AND usertitle <> ?
+                ) AS count";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([1, 2, '']);
         $row = $statement->fetchArray();
@@ -600,17 +599,18 @@ class VB3or4xExporter extends AbstractExporter
     public function exportUserRanks($offset, $limit)
     {
         $sql = "(
-				SELECT	usertitleid, 2 AS groupID, minposts, title
-				FROM	" . $this->databasePrefix . "usertitle
-			)
-			UNION
-			(
-				SELECT	('g-' || usergroupid) AS usertitleid, usergroupid AS groupID, 0 AS minposts, usertitle AS title
-				FROM	" . $this->databasePrefix . "usergroup
-				WHERE		usergroupid NOT IN(?, ?)
-					AND	usertitle <> ?
-			)
-			ORDER BY	usertitleid";
+                    SELECT  usertitleid, 2 AS groupID, minposts, title
+                    FROM    " . $this->databasePrefix . "usertitle
+                )
+                UNION
+                (
+                    SELECT  ('g-' || usergroupid) AS usertitleid, usergroupid AS groupID,
+                            0 AS minposts, usertitle AS title
+                    FROM    " . $this->databasePrefix . "usergroup
+                    WHERE   usergroupid NOT IN(?, ?)
+                        AND usertitle <> ?
+                )
+                ORDER BY    usertitleid";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([1, 2, '']);
         while ($row = $statement->fetchArray()) {
@@ -627,9 +627,9 @@ class VB3or4xExporter extends AbstractExporter
      */
     public function countFollowers()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "usertextfield
-			WHERE	buddylist <> ?";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "usertextfield
+                WHERE   buddylist <> ?";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute(['']);
         $row = $statement->fetchArray();
@@ -645,10 +645,10 @@ class VB3or4xExporter extends AbstractExporter
      */
     public function exportFollowers($offset, $limit)
     {
-        $sql = "SELECT		userid, buddylist
-			FROM		" . $this->databasePrefix . "usertextfield
-			WHERE		buddylist <> ?
-			ORDER BY	userid";
+        $sql = "SELECT      userid, buddylist
+                FROM        " . $this->databasePrefix . "usertextfield
+                WHERE       buddylist <> ?
+                ORDER BY    userid";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute(['']);
         while ($row = $statement->fetchArray()) {
@@ -678,10 +678,10 @@ class VB3or4xExporter extends AbstractExporter
      */
     public function exportGuestbookEntries($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "visitormessage
-			WHERE		vmid BETWEEN ? AND ?
-			ORDER BY	vmid";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "visitormessage
+                WHERE       vmid BETWEEN ? AND ?
+                ORDER BY    vmid";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -700,8 +700,8 @@ class VB3or4xExporter extends AbstractExporter
      */
     public function countUserAvatars()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "customavatar";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "customavatar";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -718,11 +718,11 @@ class VB3or4xExporter extends AbstractExporter
      */
     public function exportUserAvatars($offset, $limit)
     {
-        $sql = "SELECT		customavatar.*, user.avatarrevision
-			FROM		" . $this->databasePrefix . "customavatar customavatar
-			LEFT JOIN	" . $this->databasePrefix . "user user
-			ON		user.userid = customavatar.userid
-			ORDER BY	customavatar.userid";
+        $sql = "SELECT      customavatar.*, user.avatarrevision
+                FROM        " . $this->databasePrefix . "customavatar customavatar
+                LEFT JOIN   " . $this->databasePrefix . "user user
+                ON          user.userid = customavatar.userid
+                ORDER BY    customavatar.userid";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -766,8 +766,8 @@ class VB3or4xExporter extends AbstractExporter
      */
     public function countUserOptions()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "profilefield";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "profilefield";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -783,8 +783,8 @@ class VB3or4xExporter extends AbstractExporter
      */
     public function exportUserOptions($offset, $limit)
     {
-        $sql = "SELECT	*
-			FROM	" . $this->databasePrefix . "profilefield";
+        $sql = "SELECT  *
+                FROM    " . $this->databasePrefix . "profilefield";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -869,10 +869,10 @@ class VB3or4xExporter extends AbstractExporter
 
             // get field name
             $fieldName = 'field' . $row['profilefieldid'];
-            $sql = "SELECT	text
-				FROM	" . $this->databasePrefix . "phrase
-				WHERE	languageid = ?
-					AND varname = ?";
+            $sql = "SELECT  text
+                    FROM    " . $this->databasePrefix . "phrase
+                    WHERE   languageid = ?
+                        AND varname = ?";
             $statement2 = $this->database->prepareStatement($sql);
             $statement2->execute([0, 'field' . $row['profilefieldid'] . '_title']);
             $row2 = $statement2->fetchArray();
@@ -901,10 +901,10 @@ class VB3or4xExporter extends AbstractExporter
      */
     public function countConversationFolders()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "usertextfield
-			WHERE		pmfolders IS NOT NULL
-				AND	pmfolders <> ?";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "usertextfield
+                WHERE   pmfolders IS NOT NULL
+                    AND pmfolders <> ?";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute(['']);
         $row = $statement->fetchArray();
@@ -920,11 +920,11 @@ class VB3or4xExporter extends AbstractExporter
      */
     public function exportConversationFolders($offset, $limit)
     {
-        $sql = "SELECT		userid, pmfolders
-			FROM		" . $this->databasePrefix . "usertextfield
-			WHERE		pmfolders IS NOT NULL
-				AND	pmfolders <> ?
-			ORDER BY	userid";
+        $sql = "SELECT      userid, pmfolders
+                FROM        " . $this->databasePrefix . "usertextfield
+                WHERE       pmfolders IS NOT NULL
+                        AND pmfolders <> ?
+                ORDER BY    userid";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute(['']);
         while ($row = $statement->fetchArray()) {
@@ -993,17 +993,17 @@ class VB3or4xExporter extends AbstractExporter
      */
     public function exportConversations($offset, $limit)
     {
-        $sql = "SELECT		pm.*, text.*,
-					(
-						SELECT	GROUP_CONCAT(pm2.userid)
-						FROM	" . $this->databasePrefix . "pm pm2
-						WHERE	pm.pmtextid = pm2.pmtextid
-					) AS participants
-			FROM		" . $this->databasePrefix . "pm pm
-			INNER JOIN	" . $this->databasePrefix . "pmtext text
-			ON		pm.pmtextid = text.pmtextid
-			WHERE		pm.pmid BETWEEN ? AND ?
-			ORDER BY	pm.pmid";
+        $sql = "SELECT      pm.*, text.*,
+                            (
+                                SELECT  GROUP_CONCAT(pm2.userid)
+                                FROM    " . $this->databasePrefix . "pm pm2
+                                WHERE   pm.pmtextid = pm2.pmtextid
+                            ) AS participants
+                FROM        " . $this->databasePrefix . "pm pm
+                INNER JOIN  " . $this->databasePrefix . "pmtext text
+                ON          pm.pmtextid = text.pmtextid
+                WHERE       pm.pmid BETWEEN ? AND ?
+                ORDER BY    pm.pmid";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -1041,18 +1041,22 @@ class VB3or4xExporter extends AbstractExporter
      */
     public function exportConversationMessages($offset, $limit)
     {
-        $sql = "SELECT		pmtext.*,
-					(
-					" . $this->database->handleLimitParameter("SELECT IF(pm.parentpmid = 0, pm.pmid, pm.parentpmid) FROM " . $this->databasePrefix . "pm pm WHERE pmtext.pmtextid = pm.pmtextid", 1) . "
-					) AS conversationID,
-					(
-						SELECT	GROUP_CONCAT(pm.userid)
-						FROM	" . $this->databasePrefix . "pm pm
-						WHERE	pmtext.pmtextid = pm.pmtextid
-					) AS participants
-			FROM		" . $this->databasePrefix . "pmtext pmtext
-			WHERE		pmtext.pmtextid BETWEEN ? AND ?
-			ORDER BY	pmtext.pmtextid";
+        $sql = "SELECT      pmtext.*,
+                            (
+                                " . $this->database->handleLimitParameter("
+                                    SELECT  IF(pm.parentpmid = 0, pm.pmid, pm.parentpmid)
+                                    FROM    " . $this->databasePrefix . "pm pm
+                                    WHERE   pmtext.pmtextid = pm.pmtextid
+                                ", 1) . "
+                            ) AS conversationID,
+                            (
+                                SELECT  GROUP_CONCAT(pm.userid)
+                                FROM    " . $this->databasePrefix . "pm pm
+                                WHERE   pmtext.pmtextid = pm.pmtextid
+                            ) AS participants
+                FROM        " . $this->databasePrefix . "pmtext pmtext
+                WHERE       pmtext.pmtextid BETWEEN ? AND ?
+                ORDER BY    pmtext.pmtextid";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -1075,8 +1079,8 @@ class VB3or4xExporter extends AbstractExporter
      */
     public function countConversationUsers()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "pm";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "pm";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -1092,18 +1096,18 @@ class VB3or4xExporter extends AbstractExporter
      */
     public function exportConversationUsers($offset, $limit)
     {
-        $sql = "SELECT		pm.*, user.username, pmtext.touserarray, pmtext.dateline, pmtext.fromuserid,
-					(
-						SELECT	GROUP_CONCAT(pm2.userid)
-						FROM	" . $this->databasePrefix . "pm pm2
-						WHERE	pm.pmtextid = pm2.pmtextid
-					) AS participants
-			FROM		" . $this->databasePrefix . "pm pm
-			INNER JOIN	" . $this->databasePrefix . "user user
-			ON		pm.userid = user.userid
-			INNER JOIN	" . $this->databasePrefix . "pmtext pmtext
-			ON		pmtext.pmtextid = pm.pmtextid
-			ORDER BY	pm.pmid";
+        $sql = "SELECT      pm.*, user.username, pmtext.touserarray, pmtext.dateline, pmtext.fromuserid,
+                            (
+                                SELECT  GROUP_CONCAT(pm2.userid)
+                                FROM    " . $this->databasePrefix . "pm pm2
+                                WHERE   pm.pmtextid = pm2.pmtextid
+                            ) AS participants
+                FROM        " . $this->databasePrefix . "pm pm
+                INNER JOIN  " . $this->databasePrefix . "user user
+                ON          pm.userid = user.userid
+                INNER JOIN  " . $this->databasePrefix . "pmtext pmtext
+                ON          pmtext.pmtextid = pm.pmtextid
+                ORDER BY    pm.pmid";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -1135,8 +1139,8 @@ class VB3or4xExporter extends AbstractExporter
      */
     public function countBoards()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "forum";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "forum";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -1152,9 +1156,9 @@ class VB3or4xExporter extends AbstractExporter
      */
     public function exportBoards($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "forum
-			ORDER BY	forumid";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "forum
+                ORDER BY    forumid";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -1231,16 +1235,16 @@ class VB3or4xExporter extends AbstractExporter
      */
     public function exportThreads($offset, $limit)
     {
-        $sql = "SELECT		thread.*,
-					(
-						SELECT	MAX(dateline)
-						FROM	" . $this->databasePrefix . "moderatorlog moderatorlog
-						WHERE		thread.threadid = moderatorlog.threadid
-							AND	type = ?
-					) AS deleteTime
-			FROM		" . $this->databasePrefix . "thread thread
-			WHERE		thread.threadid BETWEEN ? AND ?
-			ORDER BY	thread.threadid";
+        $sql = "SELECT      thread.*,
+                            (
+                                SELECT  MAX(dateline)
+                                FROM    " . $this->databasePrefix . "moderatorlog moderatorlog
+                                WHERE   thread.threadid = moderatorlog.threadid
+                                    AND type = ?
+                            ) AS deleteTime
+                FROM        " . $this->databasePrefix . "thread thread
+                WHERE       thread.threadid BETWEEN ? AND ?
+                ORDER BY    thread.threadid";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([14, $offset + 1, $offset + $limit]); // 14 = soft delete
         while ($row = $statement->fetchArray()) {
@@ -1291,23 +1295,25 @@ class VB3or4xExporter extends AbstractExporter
      */
     public function exportPosts($offset, $limit)
     {
-        $sql = "SELECT		post.*,
-					postedithistory.dateline AS lastEditTime, postedithistory.username AS editor, postedithistory.userid AS editorID,
-					postedithistory.reason AS editReason,
-					(
-						SELECT	COUNT(*) - 1
-						FROM	" . $this->databasePrefix . "postedithistory postedithistory3
-						WHERE	postedithistory3.postid = post.postid
-					) AS editCount
-			FROM		" . $this->databasePrefix . "post post
-			LEFT JOIN	" . $this->databasePrefix . "postedithistory postedithistory
-			ON		postedithistory.postedithistoryid = (
-						SELECT	MAX(postedithistoryid)
-						FROM	" . $this->databasePrefix . "postedithistory postedithistory2
-						WHERE	postedithistory2.postid = post.postid
-					)
-			WHERE		post.postid BETWEEN ? AND ?
-			ORDER BY	post.postid";
+        $sql = "SELECT      post.*,
+                            postedithistory.dateline AS lastEditTime,
+                            postedithistory.username AS editor,
+                            postedithistory.userid AS editorID,
+                            postedithistory.reason AS editReason,
+                            (
+                                SELECT  COUNT(*) - 1
+                                FROM    " . $this->databasePrefix . "postedithistory postedithistory3
+                                WHERE   postedithistory3.postid = post.postid
+                            ) AS editCount
+                FROM        " . $this->databasePrefix . "post post
+                LEFT JOIN   " . $this->databasePrefix . "postedithistory postedithistory
+                ON          postedithistory.postedithistoryid = (
+                                SELECT  MAX(postedithistoryid)
+                                FROM    " . $this->databasePrefix . "postedithistory postedithistory2
+                                WHERE   postedithistory2.postid = post.postid
+                            )
+                WHERE       post.postid BETWEEN ? AND ?
+                ORDER BY    post.postid";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -1373,10 +1379,10 @@ class VB3or4xExporter extends AbstractExporter
      */
     public function exportWatchedThreads($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "subscribethread
-			WHERE		subscribethreadid BETWEEN ? AND ?
-			ORDER BY	subscribethreadid";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "subscribethread
+                WHERE       subscribethreadid BETWEEN ? AND ?
+                ORDER BY    subscribethreadid";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -1392,8 +1398,8 @@ class VB3or4xExporter extends AbstractExporter
      */
     public function countPolls()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "poll";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "poll";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([]);
         $row = $statement->fetchArray();
@@ -1409,12 +1415,12 @@ class VB3or4xExporter extends AbstractExporter
      */
     public function exportPolls($offset, $limit)
     {
-        $sql = "SELECT		poll.*, thread.firstpostid
-			FROM		" . $this->databasePrefix . "poll poll
-			LEFT JOIN	" . $this->databasePrefix . "thread thread
-			ON			poll.pollid = thread.pollid
-					AND	thread.open <> ?
-			ORDER BY	poll.pollid";
+        $sql = "SELECT      poll.*, thread.firstpostid
+                FROM        " . $this->databasePrefix . "poll poll
+                LEFT JOIN   " . $this->databasePrefix . "thread thread
+                ON          poll.pollid = thread.pollid
+                        AND thread.open <> ?
+                ORDER BY    poll.pollid";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([10]);
         while ($row = $statement->fetchArray()) {
@@ -1448,9 +1454,9 @@ class VB3or4xExporter extends AbstractExporter
      */
     public function exportPollOptions($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "poll
-			ORDER BY	pollid";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "poll
+                ORDER BY    pollid";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -1491,10 +1497,10 @@ class VB3or4xExporter extends AbstractExporter
      */
     public function exportPollOptionVotes($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "pollvote
-			WHERE		pollvoteid BETWEEN ? AND ?
-			ORDER BY	pollvoteid";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "pollvote
+                WHERE       pollvoteid BETWEEN ? AND ?
+                ORDER BY    pollvoteid";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -1522,10 +1528,10 @@ class VB3or4xExporter extends AbstractExporter
      */
     public function exportLikes($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "reputation
-			WHERE		reputationid BETWEEN ? AND ?
-			ORDER BY	reputationid";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "reputation
+                WHERE       reputationid BETWEEN ? AND ?
+                ORDER BY    reputationid";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -1544,8 +1550,8 @@ class VB3or4xExporter extends AbstractExporter
      */
     public function countLabels()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "prefix";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "prefix";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
 
@@ -1566,9 +1572,9 @@ class VB3or4xExporter extends AbstractExporter
             $boardIDs = \array_keys(BoardCache::getInstance()->getBoards());
             $objectType = ObjectTypeCache::getInstance()->getObjectTypeByName('com.woltlab.wcf.label.objectType', 'com.woltlab.wbb.board');
 
-            $sql = "SELECT		*
-				FROM		" . $this->databasePrefix . "prefixset
-				ORDER BY	prefixsetid";
+            $sql = "SELECT      *
+                    FROM        " . $this->databasePrefix . "prefixset
+                    ORDER BY    prefixsetid";
             $statement = $this->database->prepareStatement($sql);
             $statement->execute();
 
@@ -1579,9 +1585,9 @@ class VB3or4xExporter extends AbstractExporter
             }
         }
 
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "prefix
-			ORDER BY	prefixid";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "prefix
+                ORDER BY    prefixid";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -1597,8 +1603,8 @@ class VB3or4xExporter extends AbstractExporter
      */
     public function countACLs()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "forumpermission";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "forumpermission";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -1630,9 +1636,9 @@ class VB3or4xExporter extends AbstractExporter
             'canVotePoll' => self::FORUMPERMISSIONS_CANVOTE,
         ];
 
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "forumpermission
-			ORDER BY	forumpermissionid";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "forumpermission
+                ORDER BY    forumpermissionid";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
 
@@ -1654,8 +1660,8 @@ class VB3or4xExporter extends AbstractExporter
      */
     public function countSmilies()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "smilie";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "smilie";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -1671,9 +1677,9 @@ class VB3or4xExporter extends AbstractExporter
      */
     public function exportSmilies($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "smilie
-			ORDER BY	smilieid";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "smilie
+                ORDER BY    smilieid";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([]);
         while ($row = $statement->fetchArray()) {
@@ -1693,9 +1699,9 @@ class VB3or4xExporter extends AbstractExporter
      */
     public function countSmileyCategories()
     {
-        $sql = "SELECT		COUNT(*) AS count
-			FROM		" . $this->databasePrefix . "imagecategory
-			WHERE		imagetype = ?";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "imagecategory
+                WHERE   imagetype = ?";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([3]);
         $row = $statement->fetchArray();
@@ -1711,10 +1717,10 @@ class VB3or4xExporter extends AbstractExporter
      */
     public function exportSmileyCategories($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "imagecategory
-			WHERE		imagetype = ?
-			ORDER BY	imagecategoryid";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "imagecategory
+                WHERE       imagetype = ?
+                ORDER BY    imagecategoryid";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([3]);
         while ($row = $statement->fetchArray()) {
@@ -1731,8 +1737,8 @@ class VB3or4xExporter extends AbstractExporter
      */
     public function countGalleryAlbums()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "album";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "album";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -1748,11 +1754,11 @@ class VB3or4xExporter extends AbstractExporter
      */
     public function exportGalleryAlbums($offset, $limit)
     {
-        $sql = "SELECT		album.*, user.username
-			FROM		" . $this->databasePrefix . "album album
-			LEFT JOIN	" . $this->databasePrefix . "user user
-			ON		album.userid = user.userid
-			ORDER BY	albumid";
+        $sql = "SELECT      album.*, user.username
+                FROM        " . $this->databasePrefix . "album album
+                LEFT JOIN   " . $this->databasePrefix . "user user
+                ON          album.userid = user.userid
+                ORDER BY    albumid";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -1772,14 +1778,18 @@ class VB3or4xExporter extends AbstractExporter
     public function countGalleryImages()
     {
         try {
-            $sql = "SELECT	COUNT(*) AS count
-				FROM	" . $this->databasePrefix . "picture";
+            $sql = "SELECT  COUNT(*) AS count
+                    FROM    " . $this->databasePrefix . "picture";
             $statement = $this->database->prepareStatement($sql);
             $statement->execute();
         } catch (DatabaseException $e) {
-            $sql = "SELECT	COUNT(*) AS count
-				FROM	" . $this->databasePrefix . "attachment
-				WHERE	contenttypeid = (SELECT contenttypeid FROM " . $this->databasePrefix . "contenttype WHERE class = 'Album')";
+            $sql = "SELECT  COUNT(*) AS count
+                    FROM    " . $this->databasePrefix . "attachment
+                    WHERE   contenttypeid = (
+                                SELECT  contenttypeid
+                                FROM    " . $this->databasePrefix . "contenttype
+                                WHERE   class = 'Album'
+                            )";
             $statement = $this->database->prepareStatement($sql);
             $statement->execute();
         }
@@ -1800,28 +1810,32 @@ class VB3or4xExporter extends AbstractExporter
     {
         try {
             // vb 3
-            $sql = "SELECT		picture.*, album.albumid, album.dateline, user.username
-				FROM		" . $this->databasePrefix . "picture picture
-				LEFT JOIN	" . $this->databasePrefix . "albumpicture album
-				ON		picture.pictureid = album.pictureid
-				LEFT JOIN	" . $this->databasePrefix . "user user
-				ON		picture.userid = user.userid
-				ORDER BY	picture.pictureid";
+            $sql = "SELECT      picture.*, album.albumid, album.dateline, user.username
+                    FROM        " . $this->databasePrefix . "picture picture
+                    LEFT JOIN   " . $this->databasePrefix . "albumpicture album
+                    ON          picture.pictureid = album.pictureid
+                    LEFT JOIN   " . $this->databasePrefix . "user user
+                    ON          picture.userid = user.userid
+                    ORDER BY    picture.pictureid";
             $statement = $this->database->prepareStatement($sql, $limit, $offset);
             $statement->execute();
 
             $vB = 3;
         } catch (DatabaseException $e) {
             // vb 4
-            $sql = "SELECT		attachment.*, attachment.contentid AS albumid, filedata.filedata, filedata.extension,
-						filedata.filesize, filedata.width, filedata.height, user.username
-				FROM		" . $this->databasePrefix . "attachment attachment
-				LEFT JOIN	" . $this->databasePrefix . "filedata filedata
-				ON		attachment.filedataid = filedata.filedataid
-				LEFT JOIN	" . $this->databasePrefix . "user user
-				ON		attachment.userid = user.userid
-				WHERE		attachment.contenttypeid = (SELECT contenttypeid FROM " . $this->databasePrefix . "contenttype contenttype WHERE contenttype.class = 'Album')
-				ORDER BY	attachment.attachmentid";
+            $sql = "SELECT      attachment.*, attachment.contentid AS albumid, filedata.filedata, filedata.extension,
+                                filedata.filesize, filedata.width, filedata.height, user.username
+                    FROM        " . $this->databasePrefix . "attachment attachment
+                    LEFT JOIN   " . $this->databasePrefix . "filedata filedata
+                    ON          attachment.filedataid = filedata.filedataid
+                    LEFT JOIN   " . $this->databasePrefix . "user user
+                    ON          attachment.userid = user.userid
+                    WHERE       attachment.contenttypeid = (
+                                    SELECT  contenttypeid
+                                    FROM    " . $this->databasePrefix . "contenttype contenttype
+                                    WHERE   contenttype.class = 'Album'
+                                )
+                    ORDER BY    attachment.attachmentid";
             $statement = $this->database->prepareStatement($sql, $limit, $offset);
             $statement->execute();
 
@@ -1919,12 +1933,12 @@ class VB3or4xExporter extends AbstractExporter
      */
     public function exportGalleryComments($offset, $limit)
     {
-        $sql = "SELECT		comment.*, user.username
-			FROM		" . $this->databasePrefix . "picturecomment comment
-			LEFT JOIN	" . $this->databasePrefix . "user user
-			ON		comment.postuserid = user.userid
-			WHERE		comment.commentid BETWEEN ? AND ?
-			ORDER BY	comment.commentid";
+        $sql = "SELECT      comment.*, user.username
+                FROM        " . $this->databasePrefix . "picturecomment comment
+                LEFT JOIN   " . $this->databasePrefix . "user user
+                ON          comment.postuserid = user.userid
+                WHERE       comment.commentid BETWEEN ? AND ?
+                ORDER BY    comment.commentid";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -1943,8 +1957,8 @@ class VB3or4xExporter extends AbstractExporter
      */
     public function countCalendarCategories()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "calendar";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "calendar";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -1960,9 +1974,9 @@ class VB3or4xExporter extends AbstractExporter
      */
     public function exportCalendarCategories($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "calendar
-			ORDER BY	calendarid";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "calendar
+                ORDER BY    calendarid";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -1991,12 +2005,12 @@ class VB3or4xExporter extends AbstractExporter
      */
     public function exportCalendarEvents($offset, $limit)
     {
-        $sql = "SELECT		event.*, user.username
-			FROM		" . $this->databasePrefix . "event event
-			LEFT JOIN	" . $this->databasePrefix . "user user
-			ON		event.userid = user.userid
-			WHERE		eventid BETWEEN ? AND ?
-			ORDER BY	eventid";
+        $sql = "SELECT      event.*, user.username
+                FROM        " . $this->databasePrefix . "event event
+                LEFT JOIN   " . $this->databasePrefix . "user user
+                ON          event.userid = user.userid
+                WHERE       eventid BETWEEN ? AND ?
+                ORDER BY    eventid";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
 
@@ -2120,12 +2134,12 @@ class VB3or4xExporter extends AbstractExporter
      */
     public function exportBlogEntries($offset, $limit)
     {
-        $sql = "SELECT		blog_text.*, blog.*
-			FROM		" . $this->databasePrefix . "blog blog
-			LEFT JOIN       " . $this->databasePrefix . "blog_text blog_text
-			ON		blog_text.blogtextid = blog.firstblogtextid
-			WHERE		blog.blogid BETWEEN ? AND ?
-			ORDER BY	blog.blogid";
+        $sql = "SELECT      blog_text.*, blog.*
+                FROM        " . $this->databasePrefix . "blog blog
+                LEFT JOIN   " . $this->databasePrefix . "blog_text blog_text
+                ON          blog_text.blogtextid = blog.firstblogtextid
+                WHERE       blog.blogid BETWEEN ? AND ?
+                ORDER BY    blog.blogid";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -2159,11 +2173,14 @@ class VB3or4xExporter extends AbstractExporter
      */
     public function exportBlogComments($offset, $limit)
     {
-        $sql = "SELECT		blog_text.*
-			FROM		" . $this->databasePrefix . "blog_text blog_text
-			WHERE		blogtextid BETWEEN ? AND ?
-					AND blogtextid NOT IN (SELECT firstblogtextid FROM " . $this->databasePrefix . "blog)
-			ORDER BY	blogtextid";
+        $sql = "SELECT      blog_text.*
+                FROM        " . $this->databasePrefix . "blog_text blog_text
+                WHERE       blogtextid BETWEEN ? AND ?
+                        AND blogtextid NOT IN (
+                                SELECT  firstblogtextid
+                                FROM " . $this->databasePrefix . "blog
+                            )
+                ORDER BY    blogtextid";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -2207,9 +2224,13 @@ class VB3or4xExporter extends AbstractExporter
     {
         try {
             // vb 4
-            $sql = "SELECT	COUNT(*) AS count
-				FROM	" . $this->databasePrefix . "attachment
-				WHERE	contenttypeid = (SELECT contenttypeid FROM " . $this->databasePrefix . "contenttype WHERE class = ?)";
+            $sql = "SELECT  COUNT(*) AS count
+                    FROM    " . $this->databasePrefix . "attachment
+                    WHERE   contenttypeid = (
+                                SELECT  contenttypeid
+                                FROM    " . $this->databasePrefix . "contenttype
+                                WHERE class = ?
+                            )";
             $statement = $this->database->prepareStatement($sql);
             $statement->execute([$contentType]);
         } catch (DatabaseException $e) {
@@ -2218,8 +2239,8 @@ class VB3or4xExporter extends AbstractExporter
                 return 0;
             }
 
-            $sql = "SELECT	COUNT(*) AS count
-				FROM	" . $this->databasePrefix . "attachment";
+            $sql = "SELECT  COUNT(*) AS count
+                    FROM    " . $this->databasePrefix . "attachment";
             $statement = $this->database->prepareStatement($sql);
             $statement->execute();
         }
@@ -2240,12 +2261,16 @@ class VB3or4xExporter extends AbstractExporter
     {
         try {
             // vb 4
-            $sql = "SELECT		attachment.*, filedata.filedata
-				FROM		" . $this->databasePrefix . "attachment attachment
-				LEFT JOIN	" . $this->databasePrefix . "filedata filedata
-				ON		attachment.filedataid = filedata.filedataid
-				WHERE		attachment.contenttypeid = (SELECT contenttypeid FROM " . $this->databasePrefix . "contenttype contenttype WHERE contenttype.class = ?)
-				ORDER BY	attachment.attachmentid";
+            $sql = "SELECT      attachment.*, filedata.filedata
+                    FROM        " . $this->databasePrefix . "attachment attachment
+                    LEFT JOIN   " . $this->databasePrefix . "filedata filedata
+                    ON          attachment.filedataid = filedata.filedataid
+                    WHERE       attachment.contenttypeid = (
+                                    SELECT  contenttypeid
+                                    FROM    " . $this->databasePrefix . "contenttype contenttype
+                                    WHERE   contenttype.class = ?
+                                )
+                    ORDER BY    attachment.attachmentid";
             $statement = $this->database->prepareStatement($sql, $limit, $offset);
             $statement->execute([$contentType]);
         } catch (DatabaseException $e) {
@@ -2254,9 +2279,9 @@ class VB3or4xExporter extends AbstractExporter
                 return;
             }
 
-            $sql = "SELECT		attachment.*, attachment.postid AS contentid
-				FROM		" . $this->databasePrefix . "attachment attachment
-				ORDER BY	attachment.attachmentid";
+            $sql = "SELECT      attachment.*, attachment.postid AS contentid
+                    FROM        " . $this->databasePrefix . "attachment attachment
+                    ORDER BY    attachment.attachmentid";
             $statement = $this->database->prepareStatement($sql, $limit, $offset);
             $statement->execute();
         }
@@ -2326,9 +2351,9 @@ class VB3or4xExporter extends AbstractExporter
         static $optionCache = [];
 
         if (!isset($optionCache[$optionName])) {
-            $sql = "SELECT	value
-				FROM	" . $this->databasePrefix . "setting
-				WHERE	varname = ?";
+            $sql = "SELECT  value
+                    FROM    " . $this->databasePrefix . "setting
+                    WHERE   varname = ?";
             $statement = $this->database->prepareStatement($sql);
             $statement->execute([$optionName]);
             $row = $statement->fetchArray();

@@ -109,7 +109,8 @@ class Kunena3xExporter extends AbstractExporter
     {
         parent::validateDatabaseAccess();
 
-        $sql = "SELECT COUNT(*) FROM " . $this->databasePrefix . "kunena_users";
+        $sql = "SELECT  COUNT(*)
+                FROM    " . $this->databasePrefix . "kunena_users";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
     }
@@ -150,10 +151,10 @@ class Kunena3xExporter extends AbstractExporter
      */
     public function exportUserGroups($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "usergroups
-			WHERE		id BETWEEN ? AND ?
-			ORDER BY	id";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "usergroups
+                WHERE       id BETWEEN ? AND ?
+                ORDER BY    id";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -186,10 +187,10 @@ class Kunena3xExporter extends AbstractExporter
      */
     public function countUsers()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "kunena_users kunena_users,
-				" . $this->databasePrefix . "users users
-			WHERE	users.id = kunena_users.userid";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "kunena_users kunena_users,
+                    " . $this->databasePrefix . "users users
+                WHERE   users.id = kunena_users.userid";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -206,22 +207,22 @@ class Kunena3xExporter extends AbstractExporter
     public function exportUsers($offset, $limit)
     {
         // prepare password update
-        $sql = "UPDATE	wcf" . WCF_N . "_user
-			SET	password = ?
-			WHERE	userID = ?";
+        $sql = "UPDATE  wcf" . WCF_N . "_user
+                SET     password = ?
+                WHERE   userID = ?";
         $passwordUpdateStatement = WCF::getDB()->prepareStatement($sql);
 
         // get users
-        $sql = "SELECT		kunena_users.*, users.*,
-					(
-						SELECT	GROUP_CONCAT(user_usergroup_map.group_id)
-						FROM	" . $this->databasePrefix . "user_usergroup_map user_usergroup_map
-						WHERE	user_usergroup_map.user_id = kunena_users.userid
-					) AS groupIDs
-			FROM		" . $this->databasePrefix . "kunena_users kunena_users,
-					" . $this->databasePrefix . "users users
-			WHERE		users.id = kunena_users.userid
-			ORDER BY	kunena_users.userid";
+        $sql = "SELECT      kunena_users.*, users.*,
+                            (
+                                SELECT  GROUP_CONCAT(user_usergroup_map.group_id)
+                                FROM    " . $this->databasePrefix . "user_usergroup_map user_usergroup_map
+                                WHERE   user_usergroup_map.user_id = kunena_users.userid
+                            ) AS groupIDs
+                FROM        " . $this->databasePrefix . "kunena_users kunena_users,
+                            " . $this->databasePrefix . "users users
+                WHERE       users.id = kunena_users.userid
+                ORDER BY    kunena_users.userid";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -280,9 +281,9 @@ class Kunena3xExporter extends AbstractExporter
      */
     public function countUserRanks()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "kunena_ranks
-			WHERE	rank_special = ?";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "kunena_ranks
+                WHERE   rank_special = ?";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([0]);
         $row = $statement->fetchArray();
@@ -298,10 +299,10 @@ class Kunena3xExporter extends AbstractExporter
      */
     public function exportUserRanks($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "kunena_ranks
-			WHERE		rank_special = ?
-			ORDER BY	rank_id";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "kunena_ranks
+                WHERE       rank_special = ?
+                ORDER BY    rank_id";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([0]);
         while ($row = $statement->fetchArray()) {
@@ -325,9 +326,9 @@ class Kunena3xExporter extends AbstractExporter
      */
     public function countUserAvatars()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "kunena_users
-			WHERE	avatar <> ''";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "kunena_users
+                WHERE   avatar <> ''";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -343,10 +344,10 @@ class Kunena3xExporter extends AbstractExporter
      */
     public function exportUserAvatars($offset, $limit)
     {
-        $sql = "SELECT		userid, avatar
-			FROM		" . $this->databasePrefix . "kunena_users
-			WHERE		avatar <> ''
-			ORDER BY	userid";
+        $sql = "SELECT      userid, avatar
+                FROM        " . $this->databasePrefix . "kunena_users
+                WHERE       avatar <> ''
+                ORDER BY    userid";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -376,8 +377,8 @@ class Kunena3xExporter extends AbstractExporter
      */
     public function countBoards()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "kunena_categories";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "kunena_categories";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -393,9 +394,9 @@ class Kunena3xExporter extends AbstractExporter
      */
     public function exportBoards($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "kunena_categories
-			ORDER BY	parent_id, ordering, id";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "kunena_categories
+                ORDER BY    parent_id, ordering, id";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -450,10 +451,10 @@ class Kunena3xExporter extends AbstractExporter
      */
     public function exportThreads($offset, $limit)
     {
-        $sql = "SELECT		kunena_topics.*
-			FROM		" . $this->databasePrefix . "kunena_topics kunena_topics
-			WHERE		id BETWEEN ? AND ?
-			ORDER BY	id";
+        $sql = "SELECT      kunena_topics.*
+                FROM        " . $this->databasePrefix . "kunena_topics kunena_topics
+                WHERE       id BETWEEN ? AND ?
+                ORDER BY    id";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -491,12 +492,12 @@ class Kunena3xExporter extends AbstractExporter
      */
     public function exportPosts($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "kunena_messages kunena_messages
-			LEFT JOIN	" . $this->databasePrefix . "kunena_messages_text kunena_messages_text
-			ON		(kunena_messages_text.mesid = kunena_messages.id)
-			WHERE		id BETWEEN ? AND ?
-			ORDER BY	id";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "kunena_messages kunena_messages
+                LEFT JOIN   " . $this->databasePrefix . "kunena_messages_text kunena_messages_text
+                ON          (kunena_messages_text.mesid = kunena_messages.id)
+                WHERE       id BETWEEN ? AND ?
+                ORDER BY    id";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -534,10 +535,10 @@ class Kunena3xExporter extends AbstractExporter
      */
     public function exportAttachments($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "kunena_attachments
-			WHERE		id BETWEEN ? AND ?
-			ORDER BY	id";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "kunena_attachments
+                WHERE       id BETWEEN ? AND ?
+                ORDER BY    id";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {

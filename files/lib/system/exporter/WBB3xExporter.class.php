@@ -184,7 +184,8 @@ class WBB3xExporter extends AbstractExporter
     {
         parent::validateDatabaseAccess();
 
-        $sql = "SELECT COUNT(*) FROM wbb" . $this->dbNo . "_" . $this->instanceNo . "_post";
+        $sql = "SELECT  COUNT(*)
+                FROM    wbb" . $this->dbNo . "_" . $this->instanceNo . "_post";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
     }
@@ -372,10 +373,10 @@ class WBB3xExporter extends AbstractExporter
      */
     public function exportUserGroups($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		wcf" . $this->dbNo . "_group
-			WHERE		groupID BETWEEN ? AND ?
-			ORDER BY	groupID";
+        $sql = "SELECT      *
+                FROM        wcf" . $this->dbNo . "_group
+                WHERE       groupID BETWEEN ? AND ?
+                ORDER BY    groupID";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -406,9 +407,9 @@ class WBB3xExporter extends AbstractExporter
     {
         // cache existing user options
         $existingUserOptions = [];
-        $sql = "SELECT	optionName, optionID
-			FROM	wcf" . WCF_N . "_user_option
-			WHERE	optionName NOT LIKE 'option%'";
+        $sql = "SELECT  optionName, optionID
+                FROM    wcf" . WCF_N . "_user_option
+                WHERE   optionName NOT LIKE 'option%'";
         $statement = WCF::getDB()->prepareStatement($sql);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -417,8 +418,8 @@ class WBB3xExporter extends AbstractExporter
 
         // cache user options
         $userOptions = [];
-        $sql = "SELECT	optionName, optionID
-			FROM	wcf" . $this->dbNo . "_user_option";
+        $sql = "SELECT  optionName, optionID
+                FROM    wcf" . $this->dbNo . "_user_option";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -426,16 +427,21 @@ class WBB3xExporter extends AbstractExporter
         }
 
         // prepare password update
-        $sql = "UPDATE	wcf" . WCF_N . "_user
-			SET	password = ?
-			WHERE	userID = ?";
+        $sql = "UPDATE  wcf" . WCF_N . "_user
+                SET     password = ?
+                WHERE   userID = ?";
         $passwordUpdateStatement = WCF::getDB()->prepareStatement($sql);
 
         // get password encryption
         $encryption = 'wcf1';
-        $sql = "SELECT	optionName, optionValue
-			FROM	wcf" . $this->dbNo . "_option
-			WHERE	optionName IN ('encryption_enable_salting', 'encryption_encrypt_before_salting', 'encryption_method', 'encryption_salt_position')";
+        $sql = "SELECT  optionName, optionValue
+                FROM    wcf" . $this->dbNo . "_option
+                WHERE   optionName IN (
+                            'encryption_enable_salting',
+                            'encryption_encrypt_before_salting',
+                            'encryption_method',
+                            'encryption_salt_position'
+                        )";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $encryptionData = [];
@@ -455,24 +461,24 @@ class WBB3xExporter extends AbstractExporter
         }
 
         // get users
-        $sql = "SELECT		user_option_value.*, user_table.*,
-					(
-						SELECT	GROUP_CONCAT(groupID)
-						FROM	wcf" . $this->dbNo . "_user_to_groups
-						WHERE	userID = user_table.userID
-					) AS groupIDs,
-					(
-						SELECT		GROUP_CONCAT(language.languageCode)
-						FROM		wcf" . $this->dbNo . "_user_to_languages user_to_languages
-						LEFT JOIN	wcf" . $this->dbNo . "_language language
-						ON		(language.languageID = user_to_languages.languageID)
-						WHERE		user_to_languages.userID = user_table.userID
-					) AS languageCodes
-			FROM		wcf" . $this->dbNo . "_user user_table
-			LEFT JOIN	wcf" . $this->dbNo . "_user_option_value user_option_value
-			ON		(user_option_value.userID = user_table.userID)
-			WHERE		user_table.userID BETWEEN ? AND ?
-			ORDER BY	user_table.userID";
+        $sql = "SELECT      user_option_value.*, user_table.*,
+                            (
+                                SELECT  GROUP_CONCAT(groupID)
+                                FROM    wcf" . $this->dbNo . "_user_to_groups
+                                WHERE   userID = user_table.userID
+                            ) AS groupIDs,
+                            (
+                                SELECT      GROUP_CONCAT(language.languageCode)
+                                FROM        wcf" . $this->dbNo . "_user_to_languages user_to_languages
+                                LEFT JOIN   wcf" . $this->dbNo . "_language language
+                                ON          (language.languageID = user_to_languages.languageID)
+                                WHERE       user_to_languages.userID = user_table.userID
+                            ) AS languageCodes
+                FROM        wcf" . $this->dbNo . "_user user_table
+                LEFT JOIN   wcf" . $this->dbNo . "_user_option_value user_option_value
+                ON          (user_option_value.userID = user_table.userID)
+                WHERE       user_table.userID BETWEEN ? AND ?
+                ORDER BY    user_table.userID";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -540,10 +546,10 @@ class WBB3xExporter extends AbstractExporter
      */
     public function exportUserRanks($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		wcf" . $this->dbNo . "_user_rank
-			WHERE		rankID BETWEEN ? AND ?
-			ORDER BY	rankID";
+        $sql = "SELECT      *
+                FROM        wcf" . $this->dbNo . "_user_rank
+                WHERE       rankID BETWEEN ? AND ?
+                ORDER BY    rankID";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -563,8 +569,8 @@ class WBB3xExporter extends AbstractExporter
      */
     public function countFollowers()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	wcf" . $this->dbNo . "_user_whitelist";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    wcf" . $this->dbNo . "_user_whitelist";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -580,9 +586,9 @@ class WBB3xExporter extends AbstractExporter
      */
     public function exportFollowers($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		wcf" . $this->dbNo . "_user_whitelist
-			ORDER BY	userID, whiteUserID";
+        $sql = "SELECT      *
+                FROM        wcf" . $this->dbNo . "_user_whitelist
+                ORDER BY    userID, whiteUserID";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -610,10 +616,10 @@ class WBB3xExporter extends AbstractExporter
      */
     public function exportGuestbookEntries($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		wcf" . $this->dbNo . "_user_guestbook
-			WHERE		entryID BETWEEN ? AND ?
-			ORDER BY	entryID";
+        $sql = "SELECT      *
+                FROM        wcf" . $this->dbNo . "_user_guestbook
+                WHERE       entryID BETWEEN ? AND ?
+                ORDER BY    entryID";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -632,9 +638,9 @@ class WBB3xExporter extends AbstractExporter
      */
     public function countGuestbookResponses()
     {
-        $sql = "SELECT	MAX(entryID) AS maxID
-			FROM	wcf" . $this->dbNo . "_user_guestbook
-			WHERE	commentTime > ?";
+        $sql = "SELECT  MAX(entryID) AS maxID
+                FROM    wcf" . $this->dbNo . "_user_guestbook
+                WHERE   commentTime > ?";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([0]);
         $row = $statement->fetchArray();
@@ -653,13 +659,13 @@ class WBB3xExporter extends AbstractExporter
      */
     public function exportGuestbookResponses($offset, $limit)
     {
-        $sql = "SELECT		user_guestbook.*, user_table.username AS ownerName
-			FROM		wcf" . $this->dbNo . "_user_guestbook user_guestbook
-			LEFT JOIN	wcf" . $this->dbNo . "_user user_table
-			ON		(user_table.userID = user_guestbook.ownerID)
-			WHERE		user_guestbook.commentTime > ?
-					AND user_guestbook.entryID BETWEEN ? AND ?
-			ORDER BY	user_guestbook.entryID";
+        $sql = "SELECT      user_guestbook.*, user_table.username AS ownerName
+                FROM        wcf" . $this->dbNo . "_user_guestbook user_guestbook
+                LEFT JOIN   wcf" . $this->dbNo . "_user user_table
+                ON          (user_table.userID = user_guestbook.ownerID)
+                WHERE       user_guestbook.commentTime > ?
+                        AND user_guestbook.entryID BETWEEN ? AND ?
+                ORDER BY    user_guestbook.entryID";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([0, $offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -678,9 +684,9 @@ class WBB3xExporter extends AbstractExporter
      */
     public function countUserAvatars()
     {
-        $sql = "SELECT	MAX(avatarID) AS maxID
-			FROM	wcf" . $this->dbNo . "_avatar
-			WHERE	userID <> ?";
+        $sql = "SELECT  MAX(avatarID) AS maxID
+                FROM    wcf" . $this->dbNo . "_avatar
+                WHERE   userID <> ?";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([0]);
         $row = $statement->fetchArray();
@@ -699,11 +705,11 @@ class WBB3xExporter extends AbstractExporter
      */
     public function exportUserAvatars($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		wcf" . $this->dbNo . "_avatar
-			WHERE		userID <> ?
-					AND avatarID BETWEEN ? AND ?
-			ORDER BY	avatarID";
+        $sql = "SELECT      *
+                FROM        wcf" . $this->dbNo . "_avatar
+                WHERE       userID <> ?
+                        AND avatarID BETWEEN ? AND ?
+                ORDER BY    avatarID";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([0, $offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -726,14 +732,18 @@ class WBB3xExporter extends AbstractExporter
         $optionsNames = $this->getExistingUserOptions();
 
         $conditionBuilder = new PreparedStatementConditionBuilder();
-        $conditionBuilder->add('categoryName IN (SELECT categoryName FROM wcf' . $this->dbNo . '_user_option_category WHERE parentCategoryName = ?)', ['profile']);
+        $conditionBuilder->add('categoryName IN (
+            SELECT  categoryName
+            FROM    wcf' . $this->dbNo . '_user_option_category
+            WHERE   parentCategoryName = ?
+        )', ['profile']);
         if (!empty($optionsNames)) {
             $conditionBuilder->add('optionName NOT IN (?)', [$optionsNames]);
         }
 
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	wcf" . $this->dbNo . "_user_option
-			" . $conditionBuilder;
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    wcf" . $this->dbNo . "_user_option
+                " . $conditionBuilder;
         $statement = $this->database->prepareStatement($sql);
         $statement->execute($conditionBuilder->getParameters());
         $row = $statement->fetchArray();
@@ -753,24 +763,28 @@ class WBB3xExporter extends AbstractExporter
         $optionsNames = $this->getExistingUserOptions();
 
         $conditionBuilder = new PreparedStatementConditionBuilder();
-        $conditionBuilder->add('categoryName IN (SELECT categoryName FROM wcf' . $this->dbNo . '_user_option_category WHERE parentCategoryName = ?)', ['profile']);
+        $conditionBuilder->add('categoryName IN (
+            SELECT  categoryName
+            FROM    wcf' . $this->dbNo . '_user_option_category
+            WHERE   parentCategoryName = ?
+        )', ['profile']);
         if (!empty($optionsNames)) {
             $conditionBuilder->add('optionName NOT IN (?)', [$optionsNames]);
         }
 
-        $sql = "SELECT	user_option.*, (
-					SELECT	languageItemValue
-					FROM	wcf" . $this->dbNo . "_language_item
-					WHERE	languageItem = CONCAT('wcf.user.option.', user_option.optionName)
-						AND languageID = (
-							SELECT	languageID
-							FROM	wcf" . $this->dbNo . "_language
-							WHERE	isDefault = 1
-						)
-					LIMIT	1
-				) AS name
-			FROM	wcf" . $this->dbNo . "_user_option user_option
-			" . $conditionBuilder;
+        $sql = "SELECT  user_option.*, (
+                            SELECT  languageItemValue
+                            FROM    wcf" . $this->dbNo . "_language_item
+                            WHERE   languageItem = CONCAT('wcf.user.option.', user_option.optionName)
+                                AND languageID = (
+                                        SELECT  languageID
+                                        FROM    wcf" . $this->dbNo . "_language
+                                        WHERE   isDefault = 1
+                                    )
+                            LIMIT   1
+                        ) AS name
+                FROM    wcf" . $this->dbNo . "_user_option user_option
+                " . $conditionBuilder;
         $statement = $this->database->prepareStatement($sql);
         $statement->execute($conditionBuilder->getParameters());
         while ($row = $statement->fetchArray()) {
@@ -862,10 +876,10 @@ class WBB3xExporter extends AbstractExporter
      */
     public function exportConversationFolders($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		wcf" . $this->dbNo . "_pm_folder
-			WHERE		folderID BETWEEN ? AND ?
-			ORDER BY	folderID";
+        $sql = "SELECT      *
+                FROM        wcf" . $this->dbNo . "_pm_folder
+                WHERE       folderID BETWEEN ? AND ?
+                ORDER BY    folderID";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -925,15 +939,15 @@ class WBB3xExporter extends AbstractExporter
      */
     public function exportConversations($offset, $limit)
     {
-        $sql = "SELECT		pm.*,
-					(
-						SELECT	GROUP_CONCAT(pm_to_user.recipientID)
-						FROM	wcf" . $this->dbNo . "_pm_to_user pm_to_user
-						WHERE	pm_to_user.pmID = pm.pmID
-					) AS participants
-			FROM		wcf" . $this->dbNo . "_pm pm
-			WHERE		pm.pmID BETWEEN ? AND ?
-			ORDER BY	pm.pmID";
+        $sql = "SELECT      pm.*,
+                            (
+                                SELECT  GROUP_CONCAT(pm_to_user.recipientID)
+                                FROM    wcf" . $this->dbNo . "_pm_to_user pm_to_user
+                                WHERE   pm_to_user.pmID = pm.pmID
+                            ) AS participants
+                FROM        wcf" . $this->dbNo . "_pm pm
+                WHERE       pm.pmID BETWEEN ? AND ?
+                ORDER BY    pm.pmID";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -971,15 +985,15 @@ class WBB3xExporter extends AbstractExporter
      */
     public function exportConversationMessages($offset, $limit)
     {
-        $sql = "SELECT		pm.*,
-					(
-						SELECT	GROUP_CONCAT(pm_to_user.recipientID)
-						FROM	wcf" . $this->dbNo . "_pm_to_user pm_to_user
-						WHERE	pm_to_user.pmID = pm.pmID
-					) AS participants
-			FROM		wcf" . $this->dbNo . "_pm pm
-			WHERE		pm.pmID BETWEEN ? AND ?
-			ORDER BY	pm.pmID";
+        $sql = "SELECT      pm.*,
+                            (
+                                SELECT  GROUP_CONCAT(pm_to_user.recipientID)
+                                FROM    wcf" . $this->dbNo . "_pm_to_user pm_to_user
+                                WHERE   pm_to_user.pmID = pm.pmID
+                            ) AS participants
+                FROM        wcf" . $this->dbNo . "_pm pm
+                WHERE       pm.pmID BETWEEN ? AND ?
+                ORDER BY    pm.pmID";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -1004,8 +1018,8 @@ class WBB3xExporter extends AbstractExporter
      */
     public function countConversationUsers()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	wcf" . $this->dbNo . "_pm_to_user";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    wcf" . $this->dbNo . "_pm_to_user";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -1021,20 +1035,20 @@ class WBB3xExporter extends AbstractExporter
      */
     public function exportConversationUsers($offset, $limit)
     {
-        $sql = "SELECT		pm_to_user.*,
-					pm.isDraft,
-					pm.parentPmID,
-					(
-						SELECT	GROUP_CONCAT(pm_to_user.recipientID)
-						FROM	wcf" . $this->dbNo . "_pm_to_user pm_to_user
-						WHERE	pm_to_user.pmID = pm.pmID
-					) AS participants,
-					pm.userID AS sender
-			FROM		wcf" . $this->dbNo . "_pm_to_user pm_to_user
-			FORCE INDEX(PRIMARY)
-			LEFT JOIN	wcf" . $this->dbNo . "_pm pm
-			ON		(pm.pmID = pm_to_user.pmID)
-			ORDER BY	pm_to_user.pmID DESC, pm_to_user.recipientID DESC";
+        $sql = "SELECT      pm_to_user.*,
+                            pm.isDraft,
+                            pm.parentPmID,
+                            (
+                                SELECT  GROUP_CONCAT(pm_to_user.recipientID)
+                                FROM    wcf" . $this->dbNo . "_pm_to_user pm_to_user
+                                WHERE   pm_to_user.pmID = pm.pmID
+                            ) AS participants,
+                            pm.userID AS sender
+                FROM        wcf" . $this->dbNo . "_pm_to_user pm_to_user
+                FORCE INDEX(PRIMARY)
+                LEFT JOIN   wcf" . $this->dbNo . "_pm pm
+                ON          (pm.pmID = pm_to_user.pmID)
+                ORDER BY    pm_to_user.pmID DESC, pm_to_user.recipientID DESC";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -1081,8 +1095,8 @@ class WBB3xExporter extends AbstractExporter
      */
     public function countBoards()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	wbb" . $this->dbNo . "_" . $this->instanceNo . "_board";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    wbb" . $this->dbNo . "_" . $this->instanceNo . "_board";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -1098,11 +1112,11 @@ class WBB3xExporter extends AbstractExporter
      */
     public function exportBoards($offset, $limit)
     {
-        $sql = "SELECT		board.*, structure.position
-			FROM		wbb" . $this->dbNo . "_" . $this->instanceNo . "_board board
-			LEFT JOIN	wbb" . $this->dbNo . "_" . $this->instanceNo . "_board_structure structure
-			ON		(structure.boardID = board.boardID)
-			ORDER BY	board.parentID, structure.position";
+        $sql = "SELECT      board.*, structure.position
+                FROM        wbb" . $this->dbNo . "_" . $this->instanceNo . "_board board
+                LEFT JOIN   wbb" . $this->dbNo . "_" . $this->instanceNo . "_board_structure structure
+                ON          (structure.boardID = board.boardID)
+                ORDER BY    board.parentID, structure.position";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -1178,9 +1192,9 @@ class WBB3xExporter extends AbstractExporter
     {
         // get global prefixes
         $globalPrefixes = '';
-        $sql = "SELECT	optionValue
-			FROM	wcf" . $this->dbNo . "_option
-			WHERE	optionName = ?";
+        $sql = "SELECT  optionValue
+                FROM    wcf" . $this->dbNo . "_option
+                WHERE   optionName = ?";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute(['thread_default_prefixes']);
         $row = $statement->fetchArray();
@@ -1192,15 +1206,15 @@ class WBB3xExporter extends AbstractExporter
         $boardPrefixes = [];
 
         if (\substr($this->getPackageVersion('com.woltlab.wcf'), 0, 3) == '1.1') {
-            $sql = "SELECT		boardID, prefixes, prefixMode
-				FROM		wbb" . $this->dbNo . "_" . $this->instanceNo . "_board
-				WHERE		prefixMode > ?";
+            $sql = "SELECT  boardID, prefixes, prefixMode
+                    FROM    wbb" . $this->dbNo . "_" . $this->instanceNo . "_board
+                    WHERE   prefixMode > ?";
             $statement = $this->database->prepareStatement($sql);
             $statement->execute([0]);
         } else {
-            $sql = "SELECT		boardID, prefixes, 2 AS prefixMode
-				FROM		wbb" . $this->dbNo . "_" . $this->instanceNo . "_board
-				WHERE		prefixes <> ?";
+            $sql = "SELECT  boardID, prefixes, 2 AS prefixMode
+                    FROM    wbb" . $this->dbNo . "_" . $this->instanceNo . "_board
+                    WHERE   prefixes <> ?";
             $statement = $this->database->prepareStatement($sql);
             $statement->execute(['']);
         }
@@ -1229,10 +1243,10 @@ class WBB3xExporter extends AbstractExporter
 
         // get thread ids
         $threadIDs = $announcementIDs = [];
-        $sql = "SELECT		threadID, isAnnouncement
-			FROM		wbb" . $this->dbNo . "_" . $this->instanceNo . "_thread
-			WHERE		threadID BETWEEN ? AND ?
-			ORDER BY	threadID";
+        $sql = "SELECT      threadID, isAnnouncement
+                FROM        wbb" . $this->dbNo . "_" . $this->instanceNo . "_thread
+                WHERE       threadID BETWEEN ? AND ?
+                ORDER BY    threadID";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -1251,9 +1265,9 @@ class WBB3xExporter extends AbstractExporter
             $conditionBuilder = new PreparedStatementConditionBuilder();
             $conditionBuilder->add('threadID IN (?)', [$announcementIDs]);
 
-            $sql = "SELECT		boardID, threadID
-				FROM		wbb" . $this->dbNo . "_" . $this->instanceNo . "_thread_announcement
-				" . $conditionBuilder;
+            $sql = "SELECT  boardID, threadID
+                    FROM    wbb" . $this->dbNo . "_" . $this->instanceNo . "_thread_announcement
+                    " . $conditionBuilder;
             $statement = $this->database->prepareStatement($sql);
             $statement->execute($conditionBuilder->getParameters());
             while ($row = $statement->fetchArray()) {
@@ -1271,11 +1285,11 @@ class WBB3xExporter extends AbstractExporter
         $conditionBuilder = new PreparedStatementConditionBuilder();
         $conditionBuilder->add('threadID IN (?)', [$threadIDs]);
 
-        $sql = "SELECT		thread.*, language.languageCode
-			FROM		wbb" . $this->dbNo . "_" . $this->instanceNo . "_thread thread
-			LEFT JOIN	wcf" . $this->dbNo . "_language language
-			ON		(language.languageID = thread.languageID)
-			" . $conditionBuilder;
+        $sql = "SELECT      thread.*, language.languageCode
+                FROM        wbb" . $this->dbNo . "_" . $this->instanceNo . "_thread thread
+                LEFT JOIN   wcf" . $this->dbNo . "_language language
+                ON          (language.languageID = thread.languageID)
+                " . $conditionBuilder;
         $statement = $this->database->prepareStatement($sql);
         $statement->execute($conditionBuilder->getParameters());
         while ($row = $statement->fetchArray()) {
@@ -1331,10 +1345,10 @@ class WBB3xExporter extends AbstractExporter
      */
     public function exportPosts($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		wbb" . $this->dbNo . "_" . $this->instanceNo . "_post
-			WHERE		postID BETWEEN ? AND ?
-			ORDER BY	postID";
+        $sql = "SELECT      *
+                FROM        wbb" . $this->dbNo . "_" . $this->instanceNo . "_post
+                WHERE       postID BETWEEN ? AND ?
+                ORDER BY    postID";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -1385,8 +1399,8 @@ class WBB3xExporter extends AbstractExporter
      */
     public function countWatchedThreads()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	wbb" . $this->dbNo . "_" . $this->instanceNo . "_thread_subscription";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    wbb" . $this->dbNo . "_" . $this->instanceNo . "_thread_subscription";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -1402,9 +1416,9 @@ class WBB3xExporter extends AbstractExporter
      */
     public function exportWatchedThreads($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		wbb" . $this->dbNo . "_" . $this->instanceNo . "_thread_subscription
-			ORDER BY	userID, threadID";
+        $sql = "SELECT      *
+                FROM        wbb" . $this->dbNo . "_" . $this->instanceNo . "_thread_subscription
+                ORDER BY    userID, threadID";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -1421,9 +1435,9 @@ class WBB3xExporter extends AbstractExporter
      */
     public function countPolls()
     {
-        $sql = "SELECT	MAX(pollID) AS maxID
-			FROM	wcf" . $this->dbNo . "_poll
-			WHERE	messageType = ?";
+        $sql = "SELECT  MAX(pollID) AS maxID
+                FROM    wcf" . $this->dbNo . "_poll
+                WHERE   messageType = ?";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute(['post']);
         $row = $statement->fetchArray();
@@ -1442,11 +1456,11 @@ class WBB3xExporter extends AbstractExporter
      */
     public function exportPolls($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		wcf" . $this->dbNo . "_poll
-			WHERE		messageType = ?
-					AND pollID BETWEEN ? AND ?
-			ORDER BY	pollID";
+        $sql = "SELECT      *
+                FROM        wcf" . $this->dbNo . "_poll
+                WHERE       messageType = ?
+                        AND pollID BETWEEN ? AND ?
+                ORDER BY    pollID";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute(['post', $offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -1469,13 +1483,13 @@ class WBB3xExporter extends AbstractExporter
      */
     public function countPollOptions()
     {
-        $sql = "SELECT	MAX(pollOptionID) AS maxID
-			FROM	wcf" . $this->dbNo . "_poll_option
-			WHERE	pollID IN (
-					SELECT	pollID
-					FROM	wcf" . $this->dbNo . "_poll
-					WHERE	messageType = ?
-				)";
+        $sql = "SELECT  MAX(pollOptionID) AS maxID
+                FROM    wcf" . $this->dbNo . "_poll_option
+                WHERE   pollID IN (
+                            SELECT  pollID
+                            FROM    wcf" . $this->dbNo . "_poll
+                            WHERE   messageType = ?
+                        )";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute(['post']);
         $row = $statement->fetchArray();
@@ -1494,15 +1508,15 @@ class WBB3xExporter extends AbstractExporter
      */
     public function exportPollOptions($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		wcf" . $this->dbNo . "_poll_option
-			WHERE		pollID IN (
-						SELECT	pollID
-						FROM	wcf" . $this->dbNo . "_poll
-						WHERE	messageType = ?
-					)
-					AND pollOptionID BETWEEN ? AND ?
-			ORDER BY	pollOptionID";
+        $sql = "SELECT      *
+                FROM        wcf" . $this->dbNo . "_poll_option
+                WHERE       pollID IN (
+                                SELECT  pollID
+                                FROM    wcf" . $this->dbNo . "_poll
+                                WHERE   messageType = ?
+                            )
+                        AND pollOptionID BETWEEN ? AND ?
+                ORDER BY    pollOptionID";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute(['post', $offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -1520,14 +1534,14 @@ class WBB3xExporter extends AbstractExporter
      */
     public function countPollOptionVotes()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	wcf" . $this->dbNo . "_poll_option_vote
-			WHERE	pollID IN (
-					SELECT	pollID
-					FROM	wcf" . $this->dbNo . "_poll
-					WHERE	messageType = ?
-				)
-				AND userID <> ?";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    wcf" . $this->dbNo . "_poll_option_vote
+                WHERE   pollID IN (
+                            SELECT  pollID
+                            FROM    wcf" . $this->dbNo . "_poll
+                            WHERE   messageType = ?
+                        )
+                    AND userID <> ?";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute(['post', 0]);
         $row = $statement->fetchArray();
@@ -1543,15 +1557,15 @@ class WBB3xExporter extends AbstractExporter
      */
     public function exportPollOptionVotes($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		wcf" . $this->dbNo . "_poll_option_vote
-			WHERE		pollID IN (
-						SELECT	pollID
-						FROM	wcf" . $this->dbNo . "_poll
-						WHERE	messageType = ?
-					)
-					AND userID <> ?
-			ORDER BY	pollOptionID, userID";
+        $sql = "SELECT      *
+                FROM        wcf" . $this->dbNo . "_poll_option_vote
+                WHERE       pollID IN (
+                                SELECT  pollID
+                                FROM    wcf" . $this->dbNo . "_poll
+                                WHERE   messageType = ?
+                            )
+                        AND userID <> ?
+                ORDER BY    pollOptionID, userID";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute(['post', 0]);
         while ($row = $statement->fetchArray()) {
@@ -1568,10 +1582,10 @@ class WBB3xExporter extends AbstractExporter
      */
     public function countThreadRatings()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	wbb" . $this->dbNo . "_" . $this->instanceNo . "_thread_rating
-			WHERE	userID <> ?
-				AND rating NOT IN (?, ?)";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    wbb" . $this->dbNo . "_" . $this->instanceNo . "_thread_rating
+                WHERE   userID <> ?
+                    AND rating NOT IN (?, ?)";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([0, 0, 3]);
         $row = $statement->fetchArray();
@@ -1587,14 +1601,14 @@ class WBB3xExporter extends AbstractExporter
      */
     public function exportThreadRatings($offset, $limit)
     {
-        $sql = "SELECT		thread_rating.*, thread.firstPostID, thread.userID AS objectUserID,
-					thread.time
-			FROM		wbb" . $this->dbNo . "_" . $this->instanceNo . "_thread_rating thread_rating
-			LEFT JOIN	wbb" . $this->dbNo . "_" . $this->instanceNo . "_thread thread
-			ON		(thread.threadID = thread_rating.threadID)
-			WHERE		thread_rating.userID <> ?
-					AND thread_rating.rating NOT IN (?, ?)
-			ORDER BY	thread_rating.threadID, thread_rating.userID";
+        $sql = "SELECT      thread_rating.*,
+                            thread.firstPostID, thread.userID AS objectUserID, thread.time
+                FROM        wbb" . $this->dbNo . "_" . $this->instanceNo . "_thread_rating thread_rating
+                LEFT JOIN   wbb" . $this->dbNo . "_" . $this->instanceNo . "_thread thread
+                ON          (thread.threadID = thread_rating.threadID)
+                WHERE       thread_rating.userID <> ?
+                        AND thread_rating.rating NOT IN (?, ?)
+                ORDER BY    thread_rating.threadID, thread_rating.userID";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([0, 0, 3]);
         while ($row = $statement->fetchArray()) {
@@ -1614,15 +1628,15 @@ class WBB3xExporter extends AbstractExporter
     public function countLabels()
     {
         if (\substr($this->getPackageVersion('com.woltlab.wcf'), 0, 3) == '1.1') {
-            $sql = "SELECT	COUNT(*) AS count
-				FROM	wbb" . $this->dbNo . "_" . $this->instanceNo . "_board
-				WHERE	prefixMode > ?";
+            $sql = "SELECT  COUNT(*) AS count
+                    FROM    wbb" . $this->dbNo . "_" . $this->instanceNo . "_board
+                    WHERE   prefixMode > ?";
             $statement = $this->database->prepareStatement($sql);
             $statement->execute([0]);
         } else {
-            $sql = "SELECT	COUNT(*) AS count
-				FROM	wbb" . $this->dbNo . "_" . $this->instanceNo . "_board
-				WHERE	prefixes <> ?";
+            $sql = "SELECT  COUNT(*) AS count
+                    FROM    wbb" . $this->dbNo . "_" . $this->instanceNo . "_board
+                    WHERE   prefixes <> ?";
             $statement = $this->database->prepareStatement($sql);
             $statement->execute(['']);
         }
@@ -1644,9 +1658,9 @@ class WBB3xExporter extends AbstractExporter
 
         // get global prefixes
         $globalPrefixes = '';
-        $sql = "SELECT	optionValue
-			FROM	wcf" . $this->dbNo . "_option
-			WHERE	optionName = ?";
+        $sql = "SELECT  optionValue
+                FROM    wcf" . $this->dbNo . "_option
+                WHERE   optionName = ?";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute(['thread_default_prefixes']);
         $row = $statement->fetchArray();
@@ -1656,15 +1670,15 @@ class WBB3xExporter extends AbstractExporter
 
         // get boards
         if (\substr($this->getPackageVersion('com.woltlab.wcf'), 0, 3) == '1.1') {
-            $sql = "SELECT		boardID, prefixes, prefixMode
-				FROM		wbb" . $this->dbNo . "_" . $this->instanceNo . "_board
-				WHERE		prefixMode > ?";
+            $sql = "SELECT  boardID, prefixes, prefixMode
+                    FROM    wbb" . $this->dbNo . "_" . $this->instanceNo . "_board
+                    WHERE   prefixMode > ?";
             $statement = $this->database->prepareStatement($sql);
             $statement->execute([0]);
         } else {
-            $sql = "SELECT		boardID, prefixes, 2 AS prefixMode
-				FROM		wbb" . $this->dbNo . "_" . $this->instanceNo . "_board
-				WHERE		prefixes <> ?";
+            $sql = "SELECT  boardID, prefixes, 2 AS prefixMode
+                    FROM    wbb" . $this->dbNo . "_" . $this->instanceNo . "_board
+                    WHERE   prefixes <> ?";
             $statement = $this->database->prepareStatement($sql);
             $statement->execute(['']);
         }
@@ -1731,9 +1745,16 @@ class WBB3xExporter extends AbstractExporter
      */
     public function countACLs()
     {
-        $sql = "SELECT	(SELECT COUNT(*) FROM wbb" . $this->dbNo . "_" . $this->instanceNo . "_board_moderator)
-				+ (SELECT COUNT(*) FROM wbb" . $this->dbNo . "_" . $this->instanceNo . "_board_to_group)
-				+ (SELECT COUNT(*) FROM wbb" . $this->dbNo . "_" . $this->instanceNo . "_board_to_user) AS count";
+        $sql = "SELECT  (
+                    SELECT  COUNT(*)
+                    FROM    wbb" . $this->dbNo . "_" . $this->instanceNo . "_board_moderator
+                ) + (
+                    SELECT  COUNT(*)
+                    FROM    wbb" . $this->dbNo . "_" . $this->instanceNo . "_board_to_group
+                ) + (
+                    SELECT  COUNT(*)
+                    FROM    wbb" . $this->dbNo . "_" . $this->instanceNo . "_board_to_user
+                ) AS count";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -1752,21 +1773,21 @@ class WBB3xExporter extends AbstractExporter
         // get ids
         $mod = $user = $group = [];
         $sql = "(
-				SELECT	boardID, userID, groupID, 'mod' AS type
-				FROM	wbb" . $this->dbNo . "_" . $this->instanceNo . "_board_moderator
-				WHERE	userID <> 0
-			)
-			UNION
-			(
-				SELECT	boardID, 0 AS userID, groupID, 'group' AS type
-				FROM	wbb" . $this->dbNo . "_" . $this->instanceNo . "_board_to_group
-			)
-			UNION
-			(
-				SELECT	boardID, userID, 0 AS groupID, 'user' AS type
-				FROM	wbb" . $this->dbNo . "_" . $this->instanceNo . "_board_to_user
-			)
-			ORDER BY	boardID, userID, groupID, type";
+                    SELECT  boardID, userID, groupID, 'mod' AS type
+                    FROM    wbb" . $this->dbNo . "_" . $this->instanceNo . "_board_moderator
+                    WHERE   userID <> 0
+                )
+                UNION
+                (
+                    SELECT  boardID, 0 AS userID, groupID, 'group' AS type
+                    FROM    wbb" . $this->dbNo . "_" . $this->instanceNo . "_board_to_group
+                )
+                UNION
+                (
+                    SELECT  boardID, userID, 0 AS groupID, 'user' AS type
+                    FROM    wbb" . $this->dbNo . "_" . $this->instanceNo . "_board_to_user
+                )
+                ORDER BY    boardID, userID, groupID, type";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -1781,9 +1802,9 @@ class WBB3xExporter extends AbstractExporter
                 $conditionBuilder->add('(boardID = ? AND userID = ? AND groupID = ?)', [$row['boardID'], $row['userID'], $row['groupID']]);
             }
 
-            $sql = "SELECT	*
-				FROM	wbb" . $this->dbNo . "_" . $this->instanceNo . "_board_moderator
-				" . $conditionBuilder;
+            $sql = "SELECT  *
+                    FROM    wbb" . $this->dbNo . "_" . $this->instanceNo . "_board_moderator
+                    " . $conditionBuilder;
             $statement = $this->database->prepareStatement($sql);
             $statement->execute($conditionBuilder->getParameters());
             while ($row = $statement->fetchArray()) {
@@ -1815,9 +1836,9 @@ class WBB3xExporter extends AbstractExporter
                 $conditionBuilder->add('(boardID = ? AND groupID = ?)', [$row['boardID'], $row['groupID']]);
             }
 
-            $sql = "SELECT	*
-				FROM	wbb" . $this->dbNo . "_" . $this->instanceNo . "_board_to_group
-				" . $conditionBuilder;
+            $sql = "SELECT  *
+                    FROM    wbb" . $this->dbNo . "_" . $this->instanceNo . "_board_to_group
+                    " . $conditionBuilder;
             $statement = $this->database->prepareStatement($sql);
             $statement->execute($conditionBuilder->getParameters());
             while ($row = $statement->fetchArray()) {
@@ -1845,9 +1866,9 @@ class WBB3xExporter extends AbstractExporter
                 $conditionBuilder->add('(boardID = ? AND userID = ?)', [$row['boardID'], $row['userID']]);
             }
 
-            $sql = "SELECT	*
-				FROM	wbb" . $this->dbNo . "_" . $this->instanceNo . "_board_to_user
-				" . $conditionBuilder;
+            $sql = "SELECT  *
+                    FROM    wbb" . $this->dbNo . "_" . $this->instanceNo . "_board_to_user
+                    " . $conditionBuilder;
             $statement = $this->database->prepareStatement($sql);
             $statement->execute($conditionBuilder->getParameters());
             while ($row = $statement->fetchArray()) {
@@ -1874,8 +1895,8 @@ class WBB3xExporter extends AbstractExporter
      */
     public function countSmilies()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	wcf" . $this->dbNo . "_smiley";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    wcf" . $this->dbNo . "_smiley";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -1891,9 +1912,9 @@ class WBB3xExporter extends AbstractExporter
      */
     public function exportSmilies($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		wcf" . $this->dbNo . "_smiley
-			ORDER BY	smileyID";
+        $sql = "SELECT      *
+                FROM        wcf" . $this->dbNo . "_smiley
+                ORDER BY    smileyID";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -1913,8 +1934,8 @@ class WBB3xExporter extends AbstractExporter
      */
     public function countSmileyCategories()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	wcf" . $this->dbNo . "_smiley_category";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    wcf" . $this->dbNo . "_smiley_category";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -1930,9 +1951,9 @@ class WBB3xExporter extends AbstractExporter
      */
     public function exportSmileyCategories($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		wcf" . $this->dbNo . "_smiley_category
-			ORDER BY	smileyCategoryID";
+        $sql = "SELECT      *
+                FROM        wcf" . $this->dbNo . "_smiley_category
+                ORDER BY    smileyCategoryID";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -1949,9 +1970,9 @@ class WBB3xExporter extends AbstractExporter
      */
     public function countBlogCategories()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	wcf" . $this->dbNo . "_user_blog_category
-			WHERE	userID = ?";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    wcf" . $this->dbNo . "_user_blog_category
+                WHERE   userID = ?";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([0]);
         $row = $statement->fetchArray();
@@ -1967,10 +1988,10 @@ class WBB3xExporter extends AbstractExporter
      */
     public function exportBlogCategories($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		wcf" . $this->dbNo . "_user_blog_category
-			WHERE		userID = ?
-			ORDER BY	categoryID";
+        $sql = "SELECT      *
+                FROM        wcf" . $this->dbNo . "_user_blog_category
+                WHERE       userID = ?
+                ORDER BY    categoryID";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([0]);
         while ($row = $statement->fetchArray()) {
@@ -2000,10 +2021,10 @@ class WBB3xExporter extends AbstractExporter
     {
         // get entry ids
         $entryIDs = [];
-        $sql = "SELECT		entryID
-			FROM		wcf" . $this->dbNo . "_user_blog
-			WHERE		entryID BETWEEN ? AND ?
-			ORDER BY	entryID";
+        $sql = "SELECT      entryID
+                FROM        wcf" . $this->dbNo . "_user_blog
+                WHERE       entryID BETWEEN ? AND ?
+                ORDER BY    entryID";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -2022,11 +2043,11 @@ class WBB3xExporter extends AbstractExporter
         $conditionBuilder->add('entry_to_category.entryID IN (?)', [$entryIDs]);
         $conditionBuilder->add('category.userID = ?', [0]);
 
-        $sql = "SELECT		entry_to_category.* 
-			FROM		wcf" . $this->dbNo . "_user_blog_entry_to_category entry_to_category
-			LEFT JOIN	wcf" . $this->dbNo . "_user_blog_category category
-			ON		(category.categoryID = entry_to_category.categoryID)
-			" . $conditionBuilder;
+        $sql = "SELECT      entry_to_category.* 
+                FROM        wcf" . $this->dbNo . "_user_blog_entry_to_category entry_to_category
+                LEFT JOIN   wcf" . $this->dbNo . "_user_blog_category category
+                ON          (category.categoryID = entry_to_category.categoryID)
+                " . $conditionBuilder;
         $statement = $this->database->prepareStatement($sql);
         $statement->execute($conditionBuilder->getParameters());
         while ($row = $statement->fetchArray()) {
@@ -2040,11 +2061,11 @@ class WBB3xExporter extends AbstractExporter
         $conditionBuilder = new PreparedStatementConditionBuilder();
         $conditionBuilder->add('user_blog.entryID IN (?)', [$entryIDs]);
 
-        $sql = "SELECT		user_blog.*, language.languageCode
-			FROM		wcf" . $this->dbNo . "_user_blog user_blog
-			LEFT JOIN	wcf" . $this->dbNo . "_language language
-			ON		(language.languageID = user_blog.languageID)
-			" . $conditionBuilder;
+        $sql = "SELECT      user_blog.*, language.languageCode
+                FROM        wcf" . $this->dbNo . "_user_blog user_blog
+                LEFT JOIN   wcf" . $this->dbNo . "_language language
+                ON          (language.languageID = user_blog.languageID)
+                " . $conditionBuilder;
         $statement = $this->database->prepareStatement($sql);
         $statement->execute($conditionBuilder->getParameters());
         while ($row = $statement->fetchArray()) {
@@ -2110,10 +2131,10 @@ class WBB3xExporter extends AbstractExporter
      */
     public function exportBlogComments($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		wcf" . $this->dbNo . "_user_blog_comment
-			WHERE		commentID BETWEEN ? AND ?
-			ORDER BY	commentID";
+        $sql = "SELECT      *
+                FROM        wcf" . $this->dbNo . "_user_blog_comment
+                WHERE       commentID BETWEEN ? AND ?
+                ORDER BY    commentID";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -2132,11 +2153,11 @@ class WBB3xExporter extends AbstractExporter
      */
     public function countBlogEntryLikes()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	wcf" . $this->dbNo . "_rating
-			WHERE	objectName = ?
-				AND userID <> ?
-				AND rating NOT IN (?, ?)";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    wcf" . $this->dbNo . "_rating
+                WHERE   objectName = ?
+                    AND userID <> ?
+                    AND rating NOT IN (?, ?)";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute(['com.woltlab.wcf.user.blog.entry', 0, 0, 3]);
         $row = $statement->fetchArray();
@@ -2152,14 +2173,14 @@ class WBB3xExporter extends AbstractExporter
      */
     public function exportBlogEntryLikes($offset, $limit)
     {
-        $sql = "SELECT		rating.*, blog.userID AS objectUserID
-			FROM		wcf" . $this->dbNo . "_rating rating
-			LEFT JOIN	wcf" . $this->dbNo . "_user_blog blog
-			ON		(blog.entryID = rating.objectID)
-			WHERE		rating.objectName = ?
-					AND rating.userID <> ?
-					AND rating.rating NOT IN (?, ?)
-			ORDER BY	rating.objectID, rating.userID";
+        $sql = "SELECT      rating.*, blog.userID AS objectUserID
+                FROM        wcf" . $this->dbNo . "_rating rating
+                LEFT JOIN   wcf" . $this->dbNo . "_user_blog blog
+                ON          (blog.entryID = rating.objectID)
+                WHERE       rating.objectName = ?
+                        AND rating.userID <> ?
+                        AND rating.rating NOT IN (?, ?)
+                ORDER BY    rating.objectID, rating.userID";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute(['com.woltlab.wcf.user.blog.entry', 0, 0, 3]);
         while ($row = $statement->fetchArray()) {
@@ -2177,8 +2198,8 @@ class WBB3xExporter extends AbstractExporter
      */
     public function countGalleryCategories()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	wcf" . $this->dbNo . "_user_gallery_category";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    wcf" . $this->dbNo . "_user_gallery_category";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -2194,9 +2215,9 @@ class WBB3xExporter extends AbstractExporter
      */
     public function exportGalleryCategories($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		wcf" . $this->dbNo . "_user_gallery_category
-			ORDER BY	categoryID";
+        $sql = "SELECT      *
+                FROM        wcf" . $this->dbNo . "_user_gallery_category
+                ORDER BY    categoryID";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -2226,12 +2247,12 @@ class WBB3xExporter extends AbstractExporter
     {
         $destVersion21 = \version_compare(GALLERYCore::getInstance()->getPackage()->packageVersion, '2.1.0 Alpha 1', '>=');
 
-        $sql = "SELECT		gallery_album.*, user_table.username
-			FROM		wcf" . $this->dbNo . "_user_gallery_album gallery_album
-			LEFT JOIN	wcf" . $this->dbNo . "_user user_table
-			ON		(user_table.userID = gallery_album.ownerID)
-			WHERE		gallery_album.albumID BETWEEN ? AND ?
-			ORDER BY	albumID";
+        $sql = "SELECT      gallery_album.*, user_table.username
+                FROM        wcf" . $this->dbNo . "_user_gallery_album gallery_album
+                LEFT JOIN   wcf" . $this->dbNo . "_user user_table
+                ON          (user_table.userID = gallery_album.ownerID)
+                WHERE       gallery_album.albumID BETWEEN ? AND ?
+                ORDER BY    albumID";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -2268,10 +2289,10 @@ class WBB3xExporter extends AbstractExporter
     {
         // get ids
         $imageIDs = [];
-        $sql = "SELECT		photoID
-			FROM		wcf" . $this->dbNo . "_user_gallery
-			WHERE		photoID BETWEEN ? AND ?
-			ORDER BY	photoID";
+        $sql = "SELECT      photoID
+                FROM        wcf" . $this->dbNo . "_user_gallery
+                WHERE       photoID BETWEEN ? AND ?
+                ORDER BY    photoID";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -2290,11 +2311,11 @@ class WBB3xExporter extends AbstractExporter
         $conditionBuilder->add('photo_to_category.objectType = ?', ['photo']);
         $conditionBuilder->add('photo_to_category.objectID IN (?)', [$imageIDs]);
 
-        $sql = "SELECT		photo_to_category.*
-			FROM		wcf" . $this->dbNo . "_user_gallery_category_to_object photo_to_category
-			LEFT JOIN	wcf" . $this->dbNo . "_user_gallery_category category
-			ON		(category.categoryID = photo_to_category.categoryID)
-			" . $conditionBuilder;
+        $sql = "SELECT      photo_to_category.*
+                FROM        wcf" . $this->dbNo . "_user_gallery_category_to_object photo_to_category
+                LEFT JOIN   wcf" . $this->dbNo . "_user_gallery_category category
+                ON          (category.categoryID = photo_to_category.categoryID)
+                " . $conditionBuilder;
         $statement = $this->database->prepareStatement($sql);
         $statement->execute($conditionBuilder->getParameters());
         while ($row = $statement->fetchArray()) {
@@ -2308,9 +2329,9 @@ class WBB3xExporter extends AbstractExporter
         $conditionBuilder = new PreparedStatementConditionBuilder();
         $conditionBuilder->add('user_gallery.photoID IN (?)', [$imageIDs]);
 
-        $sql = "SELECT		user_gallery.*
-			FROM		wcf" . $this->dbNo . "_user_gallery user_gallery
-			" . $conditionBuilder;
+        $sql = "SELECT  user_gallery.*
+                FROM    wcf" . $this->dbNo . "_user_gallery user_gallery
+                " . $conditionBuilder;
         $statement = $this->database->prepareStatement($sql);
         $statement->execute($conditionBuilder->getParameters());
         while ($row = $statement->fetchArray()) {
@@ -2362,10 +2383,10 @@ class WBB3xExporter extends AbstractExporter
      */
     public function exportGalleryComments($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		wcf" . $this->dbNo . "_user_gallery_comment
-			WHERE		commentID BETWEEN ? AND ?
-			ORDER BY	commentID";
+        $sql = "SELECT      *
+                FROM        wcf" . $this->dbNo . "_user_gallery_comment
+                WHERE       commentID BETWEEN ? AND ?
+                ORDER BY    commentID";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -2384,11 +2405,11 @@ class WBB3xExporter extends AbstractExporter
      */
     public function countGalleryImageLikes()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	wcf" . $this->dbNo . "_rating
-			WHERE	objectName = ?
-				AND userID <> ?
-				AND rating NOT IN (?, ?)";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    wcf" . $this->dbNo . "_rating
+                WHERE   objectName = ?
+                    AND userID <> ?
+                    AND rating NOT IN (?, ?)";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute(['com.woltlab.wcf.user.gallery.photo', 0, 0, 3]);
         $row = $statement->fetchArray();
@@ -2404,14 +2425,14 @@ class WBB3xExporter extends AbstractExporter
      */
     public function exportGalleryImageLikes($offset, $limit)
     {
-        $sql = "SELECT		rating.*, photo.ownerID AS objectUserID
-			FROM		wcf" . $this->dbNo . "_rating rating
-			LEFT JOIN	wcf" . $this->dbNo . "_user_gallery photo
-			ON		(photo.photoID = rating.objectID)
-			WHERE		rating.objectName = ?
-					AND rating.userID <> ?
-					AND rating.rating NOT IN (?, ?)
-			ORDER BY	rating.objectID, rating.userID";
+        $sql = "SELECT      rating.*, photo.ownerID AS objectUserID
+                FROM        wcf" . $this->dbNo . "_rating rating
+                LEFT JOIN   wcf" . $this->dbNo . "_user_gallery photo
+                ON          (photo.photoID = rating.objectID)
+                WHERE       rating.objectName = ?
+                        AND rating.userID <> ?
+                        AND rating.rating NOT IN (?, ?)
+                ORDER BY    rating.objectID, rating.userID";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute(['com.woltlab.wcf.user.gallery.photo', 0, 0, 3]);
         while ($row = $statement->fetchArray()) {
@@ -2429,10 +2450,13 @@ class WBB3xExporter extends AbstractExporter
      */
     public function countCalendarCategories()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	wcf" . $this->dbNo . "_calendar
-			WHERE	calendarID IN (SELECT calendarID FROM wcf" . $this->dbNo . "_calendar_to_group)
-				AND className <> ?";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    wcf" . $this->dbNo . "_calendar
+                WHERE   calendarID IN (
+                            SELECT  calendarID
+                            FROM    wcf" . $this->dbNo . "_calendar_to_group
+                        )
+                    AND className <> ?";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute(['BirthdayEvent']);
         $row = $statement->fetchArray();
@@ -2448,11 +2472,14 @@ class WBB3xExporter extends AbstractExporter
      */
     public function exportCalendarCategories($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		wcf" . $this->dbNo . "_calendar
-			WHERE		calendarID IN (SELECT calendarID FROM wcf" . $this->dbNo . "_calendar_to_group)
-					AND className <> ?
-			ORDER BY	calendarID";
+        $sql = "SELECT      *
+                FROM        wcf" . $this->dbNo . "_calendar
+                WHERE       calendarID IN (
+                                SELECT  calendarID
+                                FROM    wcf" . $this->dbNo . "_calendar_to_group
+                            )
+                        AND className <> ?
+                ORDER BY    calendarID";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute(['BirthdayEvent']);
         while ($row = $statement->fetchArray()) {
@@ -2480,14 +2507,14 @@ class WBB3xExporter extends AbstractExporter
      */
     public function exportCalendarEvents($offset, $limit)
     {
-        $sql = "SELECT		calendar_event_participation.*, calendar_event_message.*, calendar_event.*
-			FROM		wcf" . $this->dbNo . "_calendar_event calendar_event
-			LEFT JOIN	wcf" . $this->dbNo . "_calendar_event_message calendar_event_message
-			ON		(calendar_event_message.messageID = calendar_event.messageID)
-			LEFT JOIN	wcf" . $this->dbNo . "_calendar_event_participation calendar_event_participation
-			ON		(calendar_event_participation.eventID = calendar_event.eventID)
-			WHERE		calendar_event.eventID BETWEEN ? AND ?
-			ORDER BY	calendar_event.eventID";
+        $sql = "SELECT      calendar_event_participation.*, calendar_event_message.*, calendar_event.*
+                FROM        wcf" . $this->dbNo . "_calendar_event calendar_event
+                LEFT JOIN   wcf" . $this->dbNo . "_calendar_event_message calendar_event_message
+                ON          (calendar_event_message.messageID = calendar_event.messageID)
+                LEFT JOIN   wcf" . $this->dbNo . "_calendar_event_participation calendar_event_participation
+                ON          (calendar_event_participation.eventID = calendar_event.eventID)
+                WHERE       calendar_event.eventID BETWEEN ? AND ?
+                ORDER BY    calendar_event.eventID";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -2626,17 +2653,27 @@ class WBB3xExporter extends AbstractExporter
     public function exportCalendarAttachments($offset, $limit)
     {
         if (\substr($this->getPackageVersion('com.woltlab.wcf'), 0, 3) == '1.1') {
-            $sql = "SELECT		attachment.*, (SELECT eventID FROM wcf" . $this->dbNo . "_calendar_event WHERE messageID = attachment.containerID) AS eventID
-				FROM		wcf" . $this->dbNo . "_attachment attachment
-				WHERE		containerType = ?
-						AND containerID > ?
-				ORDER BY	attachmentID DESC";
+            $sql = "SELECT      attachment.*,
+                                (
+                                    SELECT  eventID
+                                    FROM    wcf" . $this->dbNo . "_calendar_event
+                                    WHERE   messageID = attachment.containerID
+                                ) AS eventID
+                    FROM        wcf" . $this->dbNo . "_attachment attachment
+                    WHERE       containerType = ?
+                            AND containerID > ?
+                    ORDER BY    attachmentID DESC";
         } else {
-            $sql = "SELECT		attachment.*, (SELECT eventID FROM wcf" . $this->dbNo . "_calendar_event WHERE messageID = attachment.messageID) AS eventID
-				FROM		wcf" . $this->dbNo . "_attachment attachment
-				WHERE		messageType = ?
-						AND messageID > ?
-				ORDER BY	attachmentID DESC";
+            $sql = "SELECT      attachment.*,
+                                (
+                                    SELECT  eventID
+                                    FROM    wcf" . $this->dbNo . "_calendar_event
+                                    WHERE   messageID = attachment.messageID
+                                ) AS eventID
+                    FROM        wcf" . $this->dbNo . "_attachment attachment
+                    WHERE       messageType = ?
+                            AND messageID > ?
+                    ORDER BY    attachmentID DESC";
         }
 
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
@@ -2661,8 +2698,8 @@ class WBB3xExporter extends AbstractExporter
      */
     public function countCalendarEventDates()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	wcf" . $this->dbNo . "_calendar_event_date";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    wcf" . $this->dbNo . "_calendar_event_date";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -2678,9 +2715,9 @@ class WBB3xExporter extends AbstractExporter
      */
     public function exportCalendarEventDates($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		wcf" . $this->dbNo . "_calendar_event_date
-			ORDER BY	eventID, startTime";
+        $sql = "SELECT      *
+                FROM        wcf" . $this->dbNo . "_calendar_event_date
+                ORDER BY    eventID, startTime";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -2698,9 +2735,12 @@ class WBB3xExporter extends AbstractExporter
      */
     public function countCalendarEventDateComments()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	wcf" . $this->dbNo . "_calendar_event_message
-			WHERE	messageID NOT IN (SELECT messageID FROM wcf" . $this->dbNo . "_calendar_event)";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    wcf" . $this->dbNo . "_calendar_event_message
+                WHERE   messageID NOT IN (
+                            SELECT  messageID
+                            FROM    wcf" . $this->dbNo . "_calendar_event
+                        )";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -2716,16 +2756,19 @@ class WBB3xExporter extends AbstractExporter
      */
     public function exportCalendarEventDateComments($offset, $limit)
     {
-        $sql = "SELECT		startTime
-			FROM		wcf" . $this->dbNo . "_calendar_event_date
-			WHERE		eventID = ?
-			ORDER BY	startTime";
+        $sql = "SELECT      startTime
+                FROM        wcf" . $this->dbNo . "_calendar_event_date
+                WHERE       eventID = ?
+                ORDER BY    startTime";
         $firstEventDateStatement = $this->database->prepareStatement($sql, 1);
 
-        $sql = "SELECT		event_message.*
-			FROM		wcf" . $this->dbNo . "_calendar_event_message event_message
-			WHERE		event_message.messageID NOT IN (SELECT messageID FROM wcf" . $this->dbNo . "_calendar_event)
-			ORDER BY	event_message.messageID";
+        $sql = "SELECT      event_message.*
+                FROM        wcf" . $this->dbNo . "_calendar_event_message event_message
+                WHERE       event_message.messageID NOT IN (
+                                SELECT  messageID
+                                FROM    wcf" . $this->dbNo . "_calendar_event
+                            )
+                ORDER BY    event_message.messageID";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -2748,8 +2791,8 @@ class WBB3xExporter extends AbstractExporter
      */
     public function countCalendarEventDateParticipation()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	wcf" . $this->dbNo . "_calendar_event_participation_to_user";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    wcf" . $this->dbNo . "_calendar_event_participation_to_user";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -2765,17 +2808,17 @@ class WBB3xExporter extends AbstractExporter
      */
     public function exportCalendarEventDateParticipation($offset, $limit)
     {
-        $sql = "SELECT		startTime
-			FROM		wcf" . $this->dbNo . "_calendar_event_date
-			WHERE		eventID = ?
-			ORDER BY	startTime";
+        $sql = "SELECT      startTime
+                FROM        wcf" . $this->dbNo . "_calendar_event_date
+                WHERE       eventID = ?
+                ORDER BY    startTime";
         $firstEventDateStatement = $this->database->prepareStatement($sql, 1);
 
-        $sql = "SELECT		participation_to_user.*, participation.eventID
-			FROM		wcf" . $this->dbNo . "_calendar_event_participation_to_user participation_to_user
-			LEFT JOIN	wcf" . $this->dbNo . "_calendar_event_participation participation
-			ON		(participation.participationID = participation_to_user.participationID)
-			ORDER BY	participation_to_user.participationID, participation_to_user.userID";
+        $sql = "SELECT      participation_to_user.*, participation.eventID
+                FROM        wcf" . $this->dbNo . "_calendar_event_participation_to_user participation_to_user
+                LEFT JOIN   wcf" . $this->dbNo . "_calendar_event_participation participation
+                ON          (participation.participationID = participation_to_user.participationID)
+                ORDER BY    participation_to_user.participationID, participation_to_user.userID";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -2805,15 +2848,15 @@ class WBB3xExporter extends AbstractExporter
     private function countAttachments($type)
     {
         if (\substr($this->getPackageVersion('com.woltlab.wcf'), 0, 3) == '1.1') {
-            $sql = "SELECT	COUNT(*) AS count
-				FROM	wcf" . $this->dbNo . "_attachment
-				WHERE	containerType = ?
-					AND containerID > ?";
+            $sql = "SELECT  COUNT(*) AS count
+                    FROM    wcf" . $this->dbNo . "_attachment
+                    WHERE   containerType = ?
+                        AND containerID > ?";
         } else {
-            $sql = "SELECT	COUNT(*) AS count
-				FROM	wcf" . $this->dbNo . "_attachment
-				WHERE	messageType = ?
-					AND messageID > ?";
+            $sql = "SELECT  COUNT(*) AS count
+                    FROM    wcf" . $this->dbNo . "_attachment
+                    WHERE   messageType = ?
+                        AND messageID > ?";
         }
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$type, 0]);
@@ -2833,17 +2876,17 @@ class WBB3xExporter extends AbstractExporter
     private function exportAttachments($type, $objectType, $offset, $limit)
     {
         if (\substr($this->getPackageVersion('com.woltlab.wcf'), 0, 3) == '1.1') {
-            $sql = "SELECT		*
-				FROM		wcf" . $this->dbNo . "_attachment
-				WHERE		containerType = ?
-						AND containerID > ?
-				ORDER BY	attachmentID DESC";
+            $sql = "SELECT      *
+                    FROM        wcf" . $this->dbNo . "_attachment
+                    WHERE       containerType = ?
+                            AND containerID > ?
+                    ORDER BY    attachmentID DESC";
         } else {
-            $sql = "SELECT		*
-				FROM		wcf" . $this->dbNo . "_attachment
-				WHERE		messageType = ?
-						AND messageID > ?
-				ORDER BY	attachmentID DESC";
+            $sql = "SELECT      *
+                    FROM        wcf" . $this->dbNo . "_attachment
+                    WHERE       messageType = ?
+                            AND messageID > ?
+                    ORDER BY    attachmentID DESC";
         }
 
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
@@ -2871,9 +2914,9 @@ class WBB3xExporter extends AbstractExporter
     private function getExistingUserOptions()
     {
         $optionsNames = [];
-        $sql = "SELECT	optionName
-			FROM	wcf" . WCF_N . "_user_option
-			WHERE	optionName NOT LIKE ?";
+        $sql = "SELECT  optionName
+                FROM    wcf" . WCF_N . "_user_option
+                WHERE   optionName NOT LIKE ?";
         $statement = WCF::getDB()->prepareStatement($sql);
         $statement->execute(['option%']);
         while ($row = $statement->fetchArray()) {
@@ -2892,9 +2935,9 @@ class WBB3xExporter extends AbstractExporter
      */
     private function getPackageVersion($name)
     {
-        $sql = "SELECT	packageVersion
-			FROM	wcf" . $this->dbNo . "_package
-			WHERE	package = ?";
+        $sql = "SELECT  packageVersion
+                FROM    wcf" . $this->dbNo . "_package
+                WHERE   package = ?";
         $statement = $this->database->prepareStatement($sql, 1);
         $statement->execute([$name]);
         $row = $statement->fetchArray();
@@ -2917,10 +2960,10 @@ class WBB3xExporter extends AbstractExporter
         $tags = [];
         if (\substr($this->getPackageVersion('com.woltlab.wcf'), 0, 3) == '1.1' && $this->getPackageVersion('com.woltlab.wcf.tagging')) {
             // get taggable id
-            $sql = "SELECT		taggableID
-				FROM		wcf" . $this->dbNo . "_tag_taggable
-				WHERE		name = ?
-				ORDER BY	packageID";
+            $sql = "SELECT      taggableID
+                    FROM        wcf" . $this->dbNo . "_tag_taggable
+                    WHERE       name = ?
+                    ORDER BY    packageID";
             $statement = $this->database->prepareStatement($sql, 1);
             $statement->execute([$name]);
             $taggableID = $statement->fetchColumn();
@@ -2929,11 +2972,11 @@ class WBB3xExporter extends AbstractExporter
                 $conditionBuilder->add('tag_to_object.taggableID = ?', [$taggableID]);
                 $conditionBuilder->add('tag_to_object.objectID IN (?)', [$objectIDs]);
 
-                $sql = "SELECT		tag.name, tag_to_object.objectID
-					FROM		wcf" . $this->dbNo . "_tag_to_object tag_to_object
-					LEFT JOIN	wcf" . $this->dbNo . "_tag tag
-					ON		(tag.tagID = tag_to_object.tagID)
-					" . $conditionBuilder;
+                $sql = "SELECT      tag.name, tag_to_object.objectID
+                        FROM        wcf" . $this->dbNo . "_tag_to_object tag_to_object
+                        LEFT JOIN   wcf" . $this->dbNo . "_tag tag
+                        ON          (tag.tagID = tag_to_object.tagID)
+                        " . $conditionBuilder;
                 $statement = $this->database->prepareStatement($sql);
                 $statement->execute($conditionBuilder->getParameters());
                 while ($row = $statement->fetchArray()) {

@@ -65,7 +65,8 @@ class XoborExporter extends AbstractExporter
     {
         parent::validateDatabaseAccess();
 
-        $sql = "SELECT COUNT(*) FROM forum_user";
+        $sql = "SELECT  COUNT(*)
+                FROM    forum_user";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
     }
@@ -122,10 +123,10 @@ class XoborExporter extends AbstractExporter
     public function exportUsers($offset, $limit)
     {
         // get users
-        $sql = "SELECT		*
-			FROM		forum_user
-			WHERE		id BETWEEN ? AND ?
-			ORDER BY	id";
+        $sql = "SELECT      *
+                FROM        forum_user
+                WHERE       id BETWEEN ? AND ?
+                ORDER BY    id";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -173,8 +174,8 @@ class XoborExporter extends AbstractExporter
      */
     public function countBoards()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	forum_foren";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    forum_foren";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -190,9 +191,9 @@ class XoborExporter extends AbstractExporter
      */
     public function exportBoards($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		forum_foren
-			ORDER BY	zuid, sort, id";
+        $sql = "SELECT      *
+                FROM        forum_foren
+                ORDER BY    zuid, sort, id";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -244,10 +245,10 @@ class XoborExporter extends AbstractExporter
      */
     public function exportThreads($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		forum_threads
-			WHERE		id BETWEEN ? AND ?
-			ORDER BY	id";
+        $sql = "SELECT      *
+                FROM        forum_threads
+                WHERE       id BETWEEN ? AND ?
+                ORDER BY    id";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -283,10 +284,10 @@ class XoborExporter extends AbstractExporter
      */
     public function exportPosts($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		forum_posts
-			WHERE		id BETWEEN ? AND ?
-			ORDER BY	id";
+        $sql = "SELECT      *
+                FROM        forum_posts
+                WHERE       id BETWEEN ? AND ?
+                ORDER BY    id";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -321,12 +322,12 @@ class XoborExporter extends AbstractExporter
      */
     public function exportPostAttachments($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		forum_posts
-			WHERE		id BETWEEN ? AND ?
-				AND	files <> ?
-				AND	files <> ?
-			ORDER BY	id";
+        $sql = "SELECT      *
+                FROM        forum_posts
+                WHERE       id BETWEEN ? AND ?
+                        AND files <> ?
+                        AND files <> ?
+                ORDER BY    id";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit, '', \serialize([])]);
 

@@ -308,10 +308,10 @@ class VB5xExporter extends AbstractExporter
      */
     public function exportUserGroups($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "usergroup
-			WHERE		usergroupid BETWEEN ? AND ?
-			ORDER BY	usergroupid";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "usergroup
+                WHERE       usergroupid BETWEEN ? AND ?
+                ORDER BY    usergroupid";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -358,8 +358,8 @@ class VB5xExporter extends AbstractExporter
     {
         // cache user options
         $userOptions = [];
-        $sql = "SELECT	*
-			FROM	" . $this->databasePrefix . "profilefield";
+        $sql = "SELECT  *
+                FROM    " . $this->databasePrefix . "profilefield";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -371,24 +371,26 @@ class VB5xExporter extends AbstractExporter
         }
 
         // prepare password update
-        $sql = "UPDATE	wcf" . WCF_N . "_user
-			SET	password = ?
-			WHERE	userID = ?";
+        $sql = "UPDATE  wcf" . WCF_N . "_user
+                SET     password = ?
+                WHERE   userID = ?";
         $passwordUpdateStatement = WCF::getDB()->prepareStatement($sql);
 
         // get users
-        $sql = "SELECT		userfield.*, user_table.*, textfield.*, useractivation.type AS activationType, useractivation.emailchange, userban.liftdate, userban.reason AS banReason
-			FROM		" . $this->databasePrefix . "user user_table
-			LEFT JOIN	" . $this->databasePrefix . "usertextfield textfield
-			ON		user_table.userid = textfield.userid
-			LEFT JOIN	" . $this->databasePrefix . "useractivation useractivation
-			ON		user_table.userid = useractivation.userid
-			LEFT JOIN	" . $this->databasePrefix . "userban userban
-			ON		user_table.userid = userban.userid
-			LEFT JOIN	" . $this->databasePrefix . "userfield userfield
-			ON		userfield.userid = user_table.userid
-			WHERE		user_table.userid BETWEEN ? AND ?
-			ORDER BY	user_table.userid";
+        $sql = "SELECT      userfield.*, user_table.*, textfield.*,
+                            useractivation.type AS activationType, useractivation.emailchange,
+                            userban.liftdate, userban.reason AS banReason
+                FROM        " . $this->databasePrefix . "user user_table
+                LEFT JOIN   " . $this->databasePrefix . "usertextfield textfield
+                ON          user_table.userid = textfield.userid
+                LEFT JOIN   " . $this->databasePrefix . "useractivation useractivation
+                ON          user_table.userid = useractivation.userid
+                LEFT JOIN   " . $this->databasePrefix . "userban userban
+                ON          user_table.userid = userban.userid
+                LEFT JOIN   " . $this->databasePrefix . "userfield userfield
+                ON          userfield.userid = user_table.userid
+                WHERE       user_table.userid BETWEEN ? AND ?
+                ORDER BY    user_table.userid";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -483,12 +485,12 @@ class VB5xExporter extends AbstractExporter
      */
     public function exportUserAvatars($offset, $limit)
     {
-        $sql = "SELECT		customavatar.*, user.avatarrevision
-			FROM		" . $this->databasePrefix . "customavatar customavatar
-			LEFT JOIN	" . $this->databasePrefix . "user user
-			ON		user.userid = customavatar.userid
-			WHERE		customavatar.userid BETWEEN ? AND ?
-			ORDER BY	customavatar.userid";
+        $sql = "SELECT      customavatar.*, user.avatarrevision
+                FROM        " . $this->databasePrefix . "customavatar customavatar
+                LEFT JOIN   " . $this->databasePrefix . "user user
+                ON          user.userid = customavatar.userid
+                WHERE       customavatar.userid BETWEEN ? AND ?
+                ORDER BY    customavatar.userid";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -541,8 +543,8 @@ class VB5xExporter extends AbstractExporter
      */
     public function countUserOptions()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "profilefield";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "profilefield";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -558,8 +560,8 @@ class VB5xExporter extends AbstractExporter
      */
     public function exportUserOptions($offset, $limit)
     {
-        $sql = "SELECT	*
-			FROM	" . $this->databasePrefix . "profilefield";
+        $sql = "SELECT  *
+                FROM    " . $this->databasePrefix . "profilefield";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -649,10 +651,10 @@ class VB5xExporter extends AbstractExporter
 
             // get field name
             $fieldName = 'field' . $row['profilefieldid'];
-            $sql = "SELECT	text
-				FROM	" . $this->databasePrefix . "phrase
-				WHERE	languageid = ?
-					AND varname = ?";
+            $sql = "SELECT  text
+                    FROM    " . $this->databasePrefix . "phrase
+                    WHERE   languageid = ?
+                        AND varname = ?";
             $statement2 = $this->database->prepareStatement($sql);
             $statement2->execute([0, 'field' . $row['profilefieldid'] . '_title']);
             $row2 = $statement2->fetchArray();
@@ -689,11 +691,14 @@ class VB5xExporter extends AbstractExporter
      */
     public function countBoards()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "node node
-			
-			INNER JOIN	(SELECT contenttypeid FROM " . $this->databasePrefix . "contenttype WHERE class = ?) x
-			ON		x.contenttypeid = node.contenttypeid";
+        $sql = "SELECT      COUNT(*) AS count
+                FROM        " . $this->databasePrefix . "node node
+                INNER JOIN  (
+                                SELECT  contenttypeid
+                                FROM    " . $this->databasePrefix . "contenttype
+                                WHERE   class = ?
+                            ) x
+                ON          x.contenttypeid = node.contenttypeid";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute(['Channel']);
         $row = $statement->fetchArray();
@@ -709,16 +714,17 @@ class VB5xExporter extends AbstractExporter
      */
     public function exportBoards($offset, $limit)
     {
-        $sql = "SELECT		node.*, channel.guid, channel.options AS channelOptions
-			FROM		" . $this->databasePrefix . "node node
-			
-			INNER JOIN	(SELECT contenttypeid FROM " . $this->databasePrefix . "contenttype WHERE class = ?) x
-			ON		x.contenttypeid = node.contenttypeid
-			
-			INNER JOIN	" . $this->databasePrefix . "channel channel
-			ON		channel.nodeid = node.nodeid
-			
-			ORDER BY	parentid, displayorder";
+        $sql = "SELECT      node.*, channel.guid, channel.options AS channelOptions
+                FROM        " . $this->databasePrefix . "node node
+                INNER JOIN  (
+                                SELECT  contenttypeid
+                                FROM    " . $this->databasePrefix . "contenttype
+                                WHERE   class = ?
+                            ) x
+                ON          x.contenttypeid = node.contenttypeid
+                INNER JOIN  " . $this->databasePrefix . "channel channel
+                ON          channel.nodeid = node.nodeid
+                ORDER BY    parentid, displayorder";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute(['Channel']);
 
@@ -793,20 +799,26 @@ class VB5xExporter extends AbstractExporter
      */
     public function exportThreads($offset, $limit)
     {
-        $sql = "SELECT		child.*, view.count AS views
-			FROM		" . $this->databasePrefix . "node child
-			INNER JOIN	" . $this->databasePrefix . "node parent
-			ON		child.parentid = parent.nodeid
-			LEFT JOIN	" . $this->databasePrefix . "nodeview view
-			ON		child.nodeid = view.nodeid
-			
-			INNER JOIN	(SELECT contenttypeid FROM " . $this->databasePrefix . "contenttype WHERE class = ?) x
-			ON		x.contenttypeid = parent.contenttypeid
-			INNER JOIN	(SELECT contenttypeid FROM " . $this->databasePrefix . "contenttype WHERE class IN (?, ?)) y
-			ON		y.contenttypeid = child.contenttypeid
-			
-			WHERE		child.nodeid BETWEEN ? AND ?
-			ORDER BY	child.nodeid ASC";
+        $sql = "SELECT      child.*, view.count AS views
+                FROM        " . $this->databasePrefix . "node child
+                INNER JOIN  " . $this->databasePrefix . "node parent
+                ON          child.parentid = parent.nodeid
+                LEFT JOIN   " . $this->databasePrefix . "nodeview view
+                ON          child.nodeid = view.nodeid
+                INNER JOIN  (
+                                SELECT  contenttypeid
+                                FROM    " . $this->databasePrefix . "contenttype
+                                WHERE   class = ?
+                            ) x
+                ON          x.contenttypeid = parent.contenttypeid
+                INNER JOIN  (
+                                SELECT  contenttypeid
+                                FROM    " . $this->databasePrefix . "contenttype
+                                WHERE   class IN (?, ?)
+                            ) y
+                ON          y.contenttypeid = child.contenttypeid
+                WHERE       child.nodeid BETWEEN ? AND ?
+                ORDER BY    child.nodeid ASC";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute(['Channel', 'Text', 'Poll', $offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -852,18 +864,20 @@ class VB5xExporter extends AbstractExporter
      */
     public function exportPosts($offset, $limit)
     {
-        $sql = "SELECT		child.*, IF(parent.contenttypeid = child.contenttypeid, 0, 1) AS isFirstPost, text.*
-			FROM		" . $this->databasePrefix . "node child
-			INNER JOIN	" . $this->databasePrefix . "text text
-			ON		child.nodeid = text.nodeid
-			INNER JOIN	" . $this->databasePrefix . "node parent
-			ON		child.parentid = parent.nodeid
-			
-			INNER JOIN	(SELECT contenttypeid FROM " . $this->databasePrefix . "contenttype WHERE class IN(?, ?)) x
-			ON		x.contenttypeid = child.contenttypeid
-			
-			WHERE		child.nodeid BETWEEN ? AND ?
-			ORDER BY	child.nodeid ASC";
+        $sql = "SELECT      child.*, IF(parent.contenttypeid = child.contenttypeid, 0, 1) AS isFirstPost, text.*
+                FROM        " . $this->databasePrefix . "node child
+                INNER JOIN  " . $this->databasePrefix . "text text
+                ON          child.nodeid = text.nodeid
+                INNER JOIN  " . $this->databasePrefix . "node parent
+                ON          child.parentid = parent.nodeid
+                INNER JOIN  (
+                                SELECT  contenttypeid
+                                FROM    " . $this->databasePrefix . "contenttype
+                                WHERE   class IN(?, ?)
+                            ) x
+                ON          x.contenttypeid = child.contenttypeid
+                WHERE       child.nodeid BETWEEN ? AND ?
+                ORDER BY    child.nodeid ASC";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute(['Text', 'Poll', $offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -910,26 +924,36 @@ class VB5xExporter extends AbstractExporter
      */
     public function exportPostAttachments($offset, $limit)
     {
-        $sql = "SELECT		child.*, attach.*, filedata.*
-			FROM		" . $this->databasePrefix . "node child
-			INNER JOIN	" . $this->databasePrefix . "node parent
-			ON		child.parentid = parent.nodeid
-			INNER JOIN	" . $this->databasePrefix . "node grandparent
-			ON		parent.parentid = grandparent.nodeid
-			INNER JOIN	" . $this->databasePrefix . "attach attach
-			ON		child.nodeid = attach.nodeid
-			INNER JOIN	" . $this->databasePrefix . "filedata filedata
-			ON		attach.filedataid = filedata.filedataid
-			
-			INNER JOIN	(SELECT contenttypeid FROM " . $this->databasePrefix . "contenttype WHERE class IN(?, ?, ?)) x
-			ON		x.contenttypeid = grandparent.contenttypeid
-			INNER JOIN	(SELECT contenttypeid FROM " . $this->databasePrefix . "contenttype WHERE class = ?) y
-			ON		y.contenttypeid = parent.contenttypeid
-			INNER JOIN	(SELECT contenttypeid FROM " . $this->databasePrefix . "contenttype WHERE class = ?) z
-			ON		z.contenttypeid = child.contenttypeid
-			
-			WHERE		child.nodeid BETWEEN ? AND ?
-			ORDER BY	child.nodeid ASC";
+        $sql = "SELECT      child.*, attach.*, filedata.*
+                FROM        " . $this->databasePrefix . "node child
+                INNER JOIN  " . $this->databasePrefix . "node parent
+                ON          child.parentid = parent.nodeid
+                INNER JOIN  " . $this->databasePrefix . "node grandparent
+                ON          parent.parentid = grandparent.nodeid
+                INNER JOIN  " . $this->databasePrefix . "attach attach
+                ON          child.nodeid = attach.nodeid
+                INNER JOIN  " . $this->databasePrefix . "filedata filedata
+                ON          attach.filedataid = filedata.filedataid
+                INNER JOIN  (
+                                SELECT  contenttypeid
+                                FROM    " . $this->databasePrefix . "contenttype
+                                WHERE   class IN(?, ?, ?)
+                            ) x
+                ON          x.contenttypeid = grandparent.contenttypeid
+                INNER JOIN  (
+                                SELECT  contenttypeid
+                                FROM    " . $this->databasePrefix . "contenttype
+                                WHERE   class = ?
+                            ) y
+                ON          y.contenttypeid = parent.contenttypeid
+                INNER JOIN  (
+                                SELECT  contenttypeid
+                                FROM    " . $this->databasePrefix . "contenttype
+                                WHERE class = ?
+                            ) z
+                ON          z.contenttypeid = child.contenttypeid
+                WHERE       child.nodeid BETWEEN ? AND ?
+                ORDER BY    child.nodeid ASC";
         $statement = $this->database->prepareStatement($sql);
 
         // Text in a Text or Poll should be a post
@@ -997,12 +1021,12 @@ class VB5xExporter extends AbstractExporter
      */
     public function exportPolls($offset, $limit)
     {
-        $sql = "SELECT		poll.*, node.title, node.created
-			FROM		" . $this->databasePrefix . "poll poll
-			INNER JOIN	" . $this->databasePrefix . "node node
-			ON		poll.nodeid = node.nodeid
-			WHERE		poll.nodeid BETWEEN ? AND ?
-			ORDER BY	poll.nodeid";
+        $sql = "SELECT      poll.*, node.title, node.created
+                FROM        " . $this->databasePrefix . "poll poll
+                INNER JOIN  " . $this->databasePrefix . "node node
+                ON          poll.nodeid = node.nodeid
+                WHERE       poll.nodeid BETWEEN ? AND ?
+                ORDER BY    poll.nodeid";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -1040,12 +1064,12 @@ class VB5xExporter extends AbstractExporter
      */
     public function exportPollOptions($offset, $limit)
     {
-        $sql = "SELECT		polloption.*, poll.nodeid
-			FROM		" . $this->databasePrefix . "polloption polloption
-			LEFT JOIN	" . $this->databasePrefix . "poll poll
-			ON		poll.nodeid = polloption.nodeid
-			WHERE		polloption.polloptionid BETWEEN ? AND ?
-			ORDER BY	polloption.polloptionid";
+        $sql = "SELECT      polloption.*, poll.nodeid
+                FROM        " . $this->databasePrefix . "polloption polloption
+                LEFT JOIN   " . $this->databasePrefix . "poll poll
+                ON          poll.nodeid = polloption.nodeid
+                WHERE       polloption.polloptionid BETWEEN ? AND ?
+                ORDER BY    polloption.polloptionid";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -1077,10 +1101,10 @@ class VB5xExporter extends AbstractExporter
      */
     public function exportPollOptionVotes($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "pollvote
-			WHERE		pollvoteid BETWEEN ? AND ?
-			ORDER BY	pollvoteid";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "pollvote
+                WHERE       pollvoteid BETWEEN ? AND ?
+                ORDER BY    pollvoteid";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -1101,11 +1125,14 @@ class VB5xExporter extends AbstractExporter
      */
     public function countBlogs()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "node node
-			
-			INNER JOIN	(SELECT contenttypeid FROM " . $this->databasePrefix . "contenttype WHERE class = ?) x
-			ON		x.contenttypeid = node.contenttypeid";
+        $sql = "SELECT      COUNT(*) AS count
+                FROM        " . $this->databasePrefix . "node node
+                INNER JOIN  (
+                                SELECT  contenttypeid
+                                FROM    " . $this->databasePrefix . "contenttype
+                                WHERE   class = ?
+                            ) x
+                ON          x.contenttypeid = node.contenttypeid";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute(['Channel']);
         $row = $statement->fetchArray();
@@ -1121,16 +1148,17 @@ class VB5xExporter extends AbstractExporter
      */
     public function exportBlogs($offset, $limit)
     {
-        $sql = "SELECT		node.*, channel.guid
-			FROM		" . $this->databasePrefix . "node node
-			
-			INNER JOIN	(SELECT contenttypeid FROM " . $this->databasePrefix . "contenttype WHERE class = ?) x
-			ON		x.contenttypeid = node.contenttypeid
-			
-			INNER JOIN	" . $this->databasePrefix . "channel channel
-			ON		channel.nodeid = node.nodeid
-			
-			ORDER BY	nodeid";
+        $sql = "SELECT      node.*, channel.guid
+                FROM        " . $this->databasePrefix . "node node
+                INNER JOIN  (
+                                SELECT  contenttypeid
+                                FROM    " . $this->databasePrefix . "contenttype
+                                WHERE   class = ?
+                            ) x
+                ON          x.contenttypeid = node.contenttypeid
+                INNER JOIN  " . $this->databasePrefix . "channel channel
+                ON          channel.nodeid = node.nodeid
+                ORDER BY    nodeid";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute(['Channel']);
 
@@ -1194,22 +1222,28 @@ class VB5xExporter extends AbstractExporter
      */
     public function exportBlogEntries($offset, $limit)
     {
-        $sql = "SELECT		child.*, view.count AS views, text.*
-			FROM		" . $this->databasePrefix . "node child
-			INNER JOIN	" . $this->databasePrefix . "node parent
-			ON		child.parentid = parent.nodeid
-			LEFT JOIN	" . $this->databasePrefix . "nodeview view
-			ON		child.nodeid = view.nodeid
-			INNER JOIN	" . $this->databasePrefix . "text text
-			ON		child.nodeid = text.nodeid
-			
-			INNER JOIN	(SELECT contenttypeid FROM " . $this->databasePrefix . "contenttype WHERE class = ?) x
-			ON		x.contenttypeid = parent.contenttypeid
-			INNER JOIN	(SELECT contenttypeid FROM " . $this->databasePrefix . "contenttype WHERE class IN (?)) y
-			ON		y.contenttypeid = child.contenttypeid
-			
-			WHERE		child.nodeid BETWEEN ? AND ?
-			ORDER BY	child.nodeid ASC";
+        $sql = "SELECT      child.*, view.count AS views, text.*
+                FROM        " . $this->databasePrefix . "node child
+                INNER JOIN  " . $this->databasePrefix . "node parent
+                ON          child.parentid = parent.nodeid
+                LEFT JOIN   " . $this->databasePrefix . "nodeview view
+                ON          child.nodeid = view.nodeid
+                INNER JOIN  " . $this->databasePrefix . "text text
+                ON          child.nodeid = text.nodeid
+                INNER JOIN  (
+                                SELECT  contenttypeid
+                                FROM    " . $this->databasePrefix . "contenttype
+                                WHERE   class = ?
+                            ) x
+                ON          x.contenttypeid = parent.contenttypeid
+                INNER JOIN  (
+                                SELECT  contenttypeid
+                                FROM    " . $this->databasePrefix . "contenttype
+                                WHERE   class IN (?)
+                            ) y
+                ON          y.contenttypeid = child.contenttypeid
+                WHERE       child.nodeid BETWEEN ? AND ?
+                ORDER BY    child.nodeid ASC";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute(['Channel', 'Text', $offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -1259,26 +1293,36 @@ class VB5xExporter extends AbstractExporter
      */
     public function exportBlogAttachments($offset, $limit)
     {
-        $sql = "SELECT		child.*, attach.*, filedata.*
-			FROM		" . $this->databasePrefix . "node child
-			INNER JOIN	" . $this->databasePrefix . "node parent
-			ON		child.parentid = parent.nodeid
-			INNER JOIN	" . $this->databasePrefix . "node grandparent
-			ON		parent.parentid = grandparent.nodeid
-			INNER JOIN	" . $this->databasePrefix . "attach attach
-			ON		child.nodeid = attach.nodeid
-			INNER JOIN	" . $this->databasePrefix . "filedata filedata
-			ON		attach.filedataid = filedata.filedataid
-			
-			INNER JOIN	(SELECT contenttypeid FROM " . $this->databasePrefix . "contenttype WHERE class IN(?)) x
-			ON		x.contenttypeid = grandparent.contenttypeid
-			INNER JOIN	(SELECT contenttypeid FROM " . $this->databasePrefix . "contenttype WHERE class = ?) y
-			ON		y.contenttypeid = parent.contenttypeid
-			INNER JOIN	(SELECT contenttypeid FROM " . $this->databasePrefix . "contenttype WHERE class = ?) z
-			ON		z.contenttypeid = child.contenttypeid
-			
-			WHERE		child.nodeid BETWEEN ? AND ?
-			ORDER BY	child.nodeid ASC";
+        $sql = "SELECT      child.*, attach.*, filedata.*
+                FROM        " . $this->databasePrefix . "node child
+                INNER JOIN  " . $this->databasePrefix . "node parent
+                ON          child.parentid = parent.nodeid
+                INNER JOIN  " . $this->databasePrefix . "node grandparent
+                ON          parent.parentid = grandparent.nodeid
+                INNER JOIN  " . $this->databasePrefix . "attach attach
+                ON          child.nodeid = attach.nodeid
+                INNER JOIN  " . $this->databasePrefix . "filedata filedata
+                ON          attach.filedataid = filedata.filedataid
+                INNER JOIN  (
+                                SELECT  contenttypeid
+                                FROM    " . $this->databasePrefix . "contenttype
+                                WHERE   class IN(?)
+                            ) x
+                ON          x.contenttypeid = grandparent.contenttypeid
+                INNER JOIN  (
+                                SELECT  contenttypeid
+                                FROM    " . $this->databasePrefix . "contenttype
+                                WHERE   class = ?
+                            ) y
+                ON          y.contenttypeid = parent.contenttypeid
+                INNER JOIN  (
+                                SELECT  contenttypeid
+                                FROM    " . $this->databasePrefix . "contenttype
+                                WHERE   class = ?
+                            ) z
+                ON          z.contenttypeid = child.contenttypeid
+                WHERE       child.nodeid BETWEEN ? AND ?
+                ORDER BY    child.nodeid ASC";
         $statement = $this->database->prepareStatement($sql);
 
         $statement->execute(['Channel', 'Text', 'Attach', $offset + 1, $offset + $limit]);
@@ -1344,20 +1388,26 @@ class VB5xExporter extends AbstractExporter
      */
     public function exportBlogComments($offset, $limit)
     {
-        $sql = "SELECT		child.*, text.*
-			FROM		" . $this->databasePrefix . "node child
-			INNER JOIN	" . $this->databasePrefix . "node parent
-			ON		child.parentid = parent.nodeid
-			INNER JOIN	" . $this->databasePrefix . "text text
-			ON		child.nodeid = text.nodeid
-			
-			INNER JOIN	(SELECT contenttypeid FROM " . $this->databasePrefix . "contenttype WHERE class = ?) x
-			ON		x.contenttypeid = parent.contenttypeid
-			INNER JOIN	(SELECT contenttypeid FROM " . $this->databasePrefix . "contenttype WHERE class IN (?)) y
-			ON		y.contenttypeid = child.contenttypeid
-			
-			WHERE		child.nodeid BETWEEN ? AND ?
-			ORDER BY	child.nodeid ASC";
+        $sql = "SELECT      child.*, text.*
+                FROM        " . $this->databasePrefix . "node child
+                INNER JOIN  " . $this->databasePrefix . "node parent
+                ON          child.parentid = parent.nodeid
+                INNER JOIN  " . $this->databasePrefix . "text text
+                ON          child.nodeid = text.nodeid
+                INNER JOIN  (
+                                SELECT  contenttypeid
+                                FROM    " . $this->databasePrefix . "contenttype
+                                WHERE class = ?
+                            ) x
+                ON          x.contenttypeid = parent.contenttypeid
+                INNER JOIN  (
+                                SELECT  contenttypeid
+                                FROM    " . $this->databasePrefix . "contenttype
+                                WHERE   class IN (?)
+                            ) y
+                ON          y.contenttypeid = child.contenttypeid
+                WHERE       child.nodeid BETWEEN ? AND ?
+                ORDER BY    child.nodeid ASC";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute(['Text', 'Text', $offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -1391,14 +1441,16 @@ class VB5xExporter extends AbstractExporter
      */
     public function exportGalleryAlbums($offset, $limit)
     {
-        $sql = "SELECT		node.*
-			FROM		" . $this->databasePrefix . "node node
-			
-			INNER JOIN	(SELECT contenttypeid FROM " . $this->databasePrefix . "contenttype WHERE class = ?) x
-			ON		x.contenttypeid = node.contenttypeid
-			
-			WHERE		node.nodeid BETWEEN ? AND ?
-			ORDER BY	node.nodeid ASC";
+        $sql = "SELECT      node.*
+                FROM        " . $this->databasePrefix . "node node
+                INNER JOIN  (
+                                SELECT  contenttypeid
+                                FROM    " . $this->databasePrefix . "contenttype
+                                WHERE   class = ?
+                            ) x
+                ON          x.contenttypeid = node.contenttypeid
+                WHERE       node.nodeid BETWEEN ? AND ?
+                ORDER BY    node.nodeid ASC";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute(['Gallery', $offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -1433,22 +1485,28 @@ class VB5xExporter extends AbstractExporter
      */
     public function exportGalleryImages($offset, $limit)
     {
-        $sql = "SELECT		child.*, photo.*, filedata.*
-			FROM		" . $this->databasePrefix . "node child
-			INNER JOIN	" . $this->databasePrefix . "node parent
-			ON		child.parentid = parent.nodeid
-			INNER JOIN	" . $this->databasePrefix . "photo photo
-			ON		child.nodeid = photo.nodeid
-			INNER JOIN	" . $this->databasePrefix . "filedata filedata
-			ON		photo.filedataid = filedata.filedataid
-			
-			INNER JOIN	(SELECT contenttypeid FROM " . $this->databasePrefix . "contenttype WHERE class = ?) x
-			ON		x.contenttypeid = parent.contenttypeid
-			INNER JOIN	(SELECT contenttypeid FROM " . $this->databasePrefix . "contenttype WHERE class IN (?)) y
-			ON		y.contenttypeid = child.contenttypeid
-			
-			WHERE		child.nodeid BETWEEN ? AND ?
-			ORDER BY	child.nodeid ASC";
+        $sql = "SELECT      child.*, photo.*, filedata.*
+                FROM        " . $this->databasePrefix . "node child
+                INNER JOIN  " . $this->databasePrefix . "node parent
+                ON          child.parentid = parent.nodeid
+                INNER JOIN  " . $this->databasePrefix . "photo photo
+                ON          child.nodeid = photo.nodeid
+                INNER JOIN  " . $this->databasePrefix . "filedata filedata
+                ON          photo.filedataid = filedata.filedataid
+                INNER JOIN  (
+                                SELECT  contenttypeid
+                                FROM    " . $this->databasePrefix . "contenttype
+                                WHERE   class = ?
+                            ) x
+                ON          x.contenttypeid = parent.contenttypeid
+                INNER JOIN  (
+                                SELECT  contenttypeid
+                                FROM    " . $this->databasePrefix . "contenttype
+                                WHERE   class IN (?)
+                            ) y
+                ON          y.contenttypeid = child.contenttypeid
+                WHERE       child.nodeid BETWEEN ? AND ?
+                ORDER BY    child.nodeid ASC";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute(['Gallery', 'Photo', $offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -1496,8 +1554,8 @@ class VB5xExporter extends AbstractExporter
      */
     public function countSmilies()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "smilie";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "smilie";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -1513,9 +1571,9 @@ class VB5xExporter extends AbstractExporter
      */
     public function exportSmilies($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "smilie
-			ORDER BY	smilieid";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "smilie
+                ORDER BY    smilieid";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -1543,9 +1601,9 @@ class VB5xExporter extends AbstractExporter
      */
     public function countSmileyCategories()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "imagecategory
-			WHERE	imagetype = ?";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "imagecategory
+                WHERE   imagetype = ?";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([3]);
         $row = $statement->fetchArray();
@@ -1561,10 +1619,10 @@ class VB5xExporter extends AbstractExporter
      */
     public function exportSmileyCategories($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "imagecategory
-			WHERE		imagetype = ?
-			ORDER BY	imagecategoryid";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "imagecategory
+                WHERE       imagetype = ?
+                ORDER BY    imagecategoryid";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([3]);
         while ($row = $statement->fetchArray()) {
@@ -1591,9 +1649,9 @@ class VB5xExporter extends AbstractExporter
         static $optionCache = [];
 
         if (!isset($optionCache[$optionName])) {
-            $sql = "SELECT	value
-				FROM	" . $this->databasePrefix . "setting
-				WHERE	varname = ?";
+            $sql = "SELECT  value
+                    FROM    " . $this->databasePrefix . "setting
+                    WHERE   varname = ?";
             $statement = $this->database->prepareStatement($sql);
             $statement->execute([$optionName]);
             $row = $statement->fetchArray();

@@ -224,8 +224,8 @@ class SMF2xExporter extends AbstractExporter
      */
     public function countUserGroups()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "membergroups";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "membergroups";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -255,9 +255,9 @@ class SMF2xExporter extends AbstractExporter
             'groupType' => UserGroup::USERS,
         ]);
 
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "membergroups
-			ORDER BY	id_group";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "membergroups
+                ORDER BY    id_group";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -291,8 +291,8 @@ class SMF2xExporter extends AbstractExporter
     {
         // cache profile fields
         $profileFields = [];
-        $sql = "SELECT	col_name, id_field
-			FROM	" . $this->databasePrefix . "custom_fields";
+        $sql = "SELECT  col_name, id_field
+                FROM    " . $this->databasePrefix . "custom_fields";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -300,17 +300,17 @@ class SMF2xExporter extends AbstractExporter
         }
 
         // prepare password update
-        $sql = "UPDATE	wcf" . WCF_N . "_user
-			SET	password = ?
-			WHERE	userID = ?";
+        $sql = "UPDATE  wcf" . WCF_N . "_user
+                SET     password = ?
+                WHERE   userID = ?";
         $passwordUpdateStatement = WCF::getDB()->prepareStatement($sql);
 
         // get userIDs
         $userIDs = [];
-        $sql = "SELECT		id_member
-			FROM		" . $this->databasePrefix . "members
-			WHERE		id_member BETWEEN ? AND ?
-			ORDER BY	id_member";
+        $sql = "SELECT      id_member
+                FROM        " . $this->databasePrefix . "members
+                WHERE       id_member BETWEEN ? AND ?
+                ORDER BY    id_member";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -328,9 +328,9 @@ class SMF2xExporter extends AbstractExporter
             $condition = new PreparedStatementConditionBuilder();
             $condition->add('id_member IN(?)', [$userIDs]);
             $condition->add('variable IN(?)', [\array_keys($profileFields)]);
-            $sql = "SELECT	*
-				FROM	" . $this->databasePrefix . "themes
-				" . $condition;
+            $sql = "SELECT  *
+                    FROM    " . $this->databasePrefix . "themes
+                    " . $condition;
             $statement = $this->database->prepareStatement($sql);
             $statement->execute($condition->getParameters());
             while ($row = $statement->fetchArray()) {
@@ -344,14 +344,19 @@ class SMF2xExporter extends AbstractExporter
         // get users
         $condition = new PreparedStatementConditionBuilder();
         $condition->add('member.id_member IN(?)', [$userIDs]);
-        $sql = "SELECT		member.*, ban_group.ban_time, ban_group.expire_time AS banExpire, ban_group.reason AS banReason,
-					(SELECT COUNT(*) FROM " . $this->databasePrefix . "moderators moderator WHERE member.id_member = moderator.id_member) AS isMod
-			FROM		" . $this->databasePrefix . "members member
-			LEFT JOIN	" . $this->databasePrefix . "ban_items ban_item
-			ON		(member.id_member = ban_item.id_member)
-			LEFT JOIN	" . $this->databasePrefix . "ban_groups ban_group
-			ON		(ban_item.id_ban_group = ban_group.id_ban_group)
-			" . $condition;
+        $sql = "SELECT      member.*,
+                            ban_group.ban_time, ban_group.expire_time AS banExpire, ban_group.reason AS banReason,
+                            (
+                                SELECT  COUNT(*)
+                                FROM    " . $this->databasePrefix . "moderators moderator
+                                WHERE   member.id_member = moderator.id_member
+                            ) AS isMod
+                FROM        " . $this->databasePrefix . "members member
+                LEFT JOIN   " . $this->databasePrefix . "ban_items ban_item
+                ON          (member.id_member = ban_item.id_member)
+                LEFT JOIN   " . $this->databasePrefix . "ban_groups ban_group
+                ON          (ban_item.id_ban_group = ban_group.id_ban_group)
+                " . $condition;
         $statement = $this->database->prepareStatement($sql);
         $statement->execute($condition->getParameters());
         while ($row = $statement->fetchArray()) {
@@ -425,8 +430,8 @@ class SMF2xExporter extends AbstractExporter
      */
     public function countUserOptions()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "custom_fields";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "custom_fields";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -442,9 +447,9 @@ class SMF2xExporter extends AbstractExporter
      */
     public function exportUserOptions($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "custom_fields
-			ORDER BY	id_field";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "custom_fields
+                ORDER BY    id_field";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -510,10 +515,10 @@ class SMF2xExporter extends AbstractExporter
      */
     public function countUserRanks()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "membergroups
-			WHERE	min_posts <> ?
-				AND stars <> ?";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "membergroups
+                WHERE   min_posts <> ?
+                    AND stars <> ?";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([-1, '']);
         $row = $statement->fetchArray();
@@ -529,11 +534,11 @@ class SMF2xExporter extends AbstractExporter
      */
     public function exportUserRanks($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "membergroups
-			WHERE		min_posts <> ?
-					AND stars <> ?
-			ORDER BY	id_group";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "membergroups
+                WHERE       min_posts <> ?
+                        AND stars <> ?
+                ORDER BY    id_group";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([-1, '']);
         while ($row = $statement->fetchArray()) {
@@ -560,9 +565,9 @@ class SMF2xExporter extends AbstractExporter
      */
     public function countFollowers()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "members
-			WHERE	buddy_list <> ?";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "members
+                WHERE   buddy_list <> ?";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute(['']);
         $row = $statement->fetchArray();
@@ -578,10 +583,10 @@ class SMF2xExporter extends AbstractExporter
      */
     public function exportFollowers($offset, $limit)
     {
-        $sql = "SELECT		id_member, buddy_list
-			FROM		" . $this->databasePrefix . "members
-			WHERE		buddy_list <> ?
-			ORDER BY	id_member";
+        $sql = "SELECT      id_member, buddy_list
+                FROM        " . $this->databasePrefix . "members
+                WHERE       buddy_list <> ?
+                ORDER BY    id_member";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute(['']);
         while ($row = $statement->fetchArray()) {
@@ -605,8 +610,15 @@ class SMF2xExporter extends AbstractExporter
      */
     public function countUserAvatars()
     {
-        $sql = "SELECT	(SELECT COUNT(*) AS count FROM " . $this->databasePrefix . "attachments WHERE id_member <> ?)
-				+ (SELECT COUNT(*) AS count FROM " . $this->databasePrefix . "members WHERE avatar <> ?) AS count";
+        $sql = "SELECT  (
+                    SELECT  COUNT(*) AS count
+                    FROM    " . $this->databasePrefix . "attachments
+                    WHERE   id_member <> ?
+                ) + (
+                    SELECT  COUNT(*) AS count
+                    FROM    " . $this->databasePrefix . "members
+                    WHERE   avatar <> ?
+                ) AS count";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute(['', 0]);
         $row = $statement->fetchArray();
@@ -623,16 +635,28 @@ class SMF2xExporter extends AbstractExporter
     public function exportUserAvatars($offset, $limit)
     {
         $sql = "(
-				SELECT		id_member, 'attachment' AS type, filename AS avatarName, (id_attach || '_' || file_hash) AS filename, id_attach, file_hash, id_folder
-				FROM		" . $this->databasePrefix . "attachments
-				WHERE		id_member <> ?
-			)
-			UNION
-			(
-				SELECT		id_member, 'user' AS type, avatar AS avatarName, avatar AS filename, '' AS id_attach, '' AS file_hash, '' AS id_folder
-				FROM		" . $this->databasePrefix . "members
-				WHERE		avatar <> ?
-			)";
+                    SELECT  id_member,
+                            'attachment' AS type,
+                            filename AS avatarName,
+                            (id_attach || '_' || file_hash) AS filename,
+                            id_attach,
+                            file_hash,
+                            id_folder
+                    FROM    " . $this->databasePrefix . "attachments
+                    WHERE   id_member <> ?
+                )
+                UNION
+                (
+                    SELECT  id_member,
+                            'user' AS type,
+                            avatar AS avatarName,
+                            avatar AS filename,
+                            '' AS id_attach,
+                            '' AS file_hash,
+                            '' AS id_folder
+                    FROM    " . $this->databasePrefix . "members
+                    WHERE   avatar <> ?
+                )";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute(['', 0]);
 
@@ -676,9 +700,9 @@ class SMF2xExporter extends AbstractExporter
      */
     public function countConversationFolders()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "members
-			WHERE	message_labels <> ?";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "members
+                WHERE   message_labels <> ?";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute(['']);
         $row = $statement->fetchArray();
@@ -694,10 +718,10 @@ class SMF2xExporter extends AbstractExporter
      */
     public function exportConversationFolders($offset, $limit)
     {
-        $sql = "SELECT		id_member, message_labels
-			FROM		" . $this->databasePrefix . "members
-			WHERE		message_labels <> ?
-			ORDER BY	id_member";
+        $sql = "SELECT      id_member, message_labels
+                FROM        " . $this->databasePrefix . "members
+                WHERE       message_labels <> ?
+                ORDER BY    id_member";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute(['']);
         while ($row = $statement->fetchArray()) {
@@ -756,15 +780,15 @@ class SMF2xExporter extends AbstractExporter
      */
     public function exportConversations($offset, $limit)
     {
-        $sql = "SELECT		pm.*,
-					(
-						SELECT	GROUP_CONCAT(recipients.id_member)
-						FROM	" . $this->databasePrefix . "pm_recipients recipients
-						WHERE	pm.id_pm = recipients.id_pm
-					) AS participants
-			FROM		" . $this->databasePrefix . "personal_messages pm
-			WHERE		pm.id_pm BETWEEN ? AND ?
-			ORDER BY	pm.id_pm";
+        $sql = "SELECT      pm.*,
+                            (
+                                SELECT  GROUP_CONCAT(recipients.id_member)
+                                FROM    " . $this->databasePrefix . "pm_recipients recipients
+                                WHERE   pm.id_pm = recipients.id_pm
+                            ) AS participants
+                FROM        " . $this->databasePrefix . "personal_messages pm
+                WHERE       pm.id_pm BETWEEN ? AND ?
+                ORDER BY    pm.id_pm";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -806,15 +830,15 @@ class SMF2xExporter extends AbstractExporter
      */
     public function exportConversationMessages($offset, $limit)
     {
-        $sql = "SELECT		pm.*,
-					(
-						SELECT	GROUP_CONCAT(recipients.id_member)
-						FROM	" . $this->databasePrefix . "pm_recipients recipients
-						WHERE	pm.id_pm = recipients.id_pm
-					) AS participants
-			FROM		" . $this->databasePrefix . "personal_messages pm
-			WHERE		pm.id_pm BETWEEN ? AND ?
-			ORDER BY	pm.id_pm";
+        $sql = "SELECT      pm.*,
+                            (
+                                SELECT  GROUP_CONCAT(recipients.id_member)
+                                FROM    " . $this->databasePrefix . "pm_recipients recipients
+                                WHERE   pm.id_pm = recipients.id_pm
+                            ) AS participants
+                FROM        " . $this->databasePrefix . "personal_messages pm
+                WHERE       pm.id_pm BETWEEN ? AND ?
+                ORDER BY    pm.id_pm";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -842,8 +866,8 @@ class SMF2xExporter extends AbstractExporter
      */
     public function countConversationUsers()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "pm_recipients";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "pm_recipients";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -859,18 +883,18 @@ class SMF2xExporter extends AbstractExporter
      */
     public function exportConversationUsers($offset, $limit)
     {
-        $sql = "SELECT		recipients.*, pm.id_pm_head, members.member_name, pm.msgtime, pm.id_member_from,
-					(
-						SELECT	GROUP_CONCAT(recipients2.id_member)
-						FROM	" . $this->databasePrefix . "pm_recipients recipients2
-						WHERE	recipients.id_pm = recipients2.id_pm
-					) AS participants
-			FROM		" . $this->databasePrefix . "pm_recipients recipients
-			LEFT JOIN	" . $this->databasePrefix . "personal_messages pm
-			ON		(pm.id_pm = recipients.id_pm)
-			LEFT JOIN	" . $this->databasePrefix . "members members
-			ON		(recipients.id_member = members.id_member)
-			ORDER BY	recipients.id_pm, recipients.id_member";
+        $sql = "SELECT      recipients.*, pm.id_pm_head, members.member_name, pm.msgtime, pm.id_member_from,
+                            (
+                                SELECT  GROUP_CONCAT(recipients2.id_member)
+                                FROM    " . $this->databasePrefix . "pm_recipients recipients2
+                                WHERE   recipients.id_pm = recipients2.id_pm
+                            ) AS participants
+                FROM        " . $this->databasePrefix . "pm_recipients recipients
+                LEFT JOIN   " . $this->databasePrefix . "personal_messages pm
+                ON          (pm.id_pm = recipients.id_pm)
+                LEFT JOIN   " . $this->databasePrefix . "members members
+                ON          (recipients.id_member = members.id_member)
+                ORDER BY    recipients.id_pm, recipients.id_member";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -909,8 +933,13 @@ class SMF2xExporter extends AbstractExporter
      */
     public function countBoards()
     {
-        $sql = "SELECT	(SELECT COUNT(*) FROM " . $this->databasePrefix . "boards)
-				+ (SELECT COUNT(*) FROM " . $this->databasePrefix . "categories) AS count";
+        $sql = "SELECT  (
+                    SELECT  COUNT(*)
+                    FROM    " . $this->databasePrefix . "boards
+                ) + (
+                    SELECT  COUNT(*)
+                    FROM    " . $this->databasePrefix . "categories
+                ) AS count";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -926,9 +955,9 @@ class SMF2xExporter extends AbstractExporter
      */
     public function exportBoards($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "categories
-			ORDER BY	id_cat";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "categories
+                ORDER BY    id_cat";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -944,9 +973,9 @@ class SMF2xExporter extends AbstractExporter
                 ->import('cat-' . $row['id_cat'], $data);
         }
 
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "boards
-			ORDER BY	id_board";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "boards
+                ORDER BY    id_board";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -1007,12 +1036,12 @@ class SMF2xExporter extends AbstractExporter
     public function exportThreads($offset, $limit)
     {
         // get threads
-        $sql = "SELECT		topic.*, post.subject, post.poster_time AS time, post.poster_name AS username
-			FROM		" . $this->databasePrefix . "topics topic
-			LEFT JOIN	" . $this->databasePrefix . "messages post
-			ON		(post.id_msg = topic.id_first_msg)
-			WHERE		topic.id_topic BETWEEN ? AND ?
-			ORDER BY	topic.id_topic";
+        $sql = "SELECT      topic.*, post.subject, post.poster_time AS time, post.poster_name AS username
+                FROM        " . $this->databasePrefix . "topics topic
+                LEFT JOIN   " . $this->databasePrefix . "messages post
+                ON          (post.id_msg = topic.id_first_msg)
+                WHERE       topic.id_topic BETWEEN ? AND ?
+                ORDER BY    topic.id_topic";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -1053,12 +1082,12 @@ class SMF2xExporter extends AbstractExporter
      */
     public function exportPosts($offset, $limit)
     {
-        $sql = "SELECT		message.*, member.id_member AS editorID
-			FROM		" . $this->databasePrefix . "messages message
-			LEFT JOIN	" . $this->databasePrefix . "members member
-			ON		(message.modified_name = member.real_name)
-			WHERE		message.id_msg BETWEEN ? AND ?
-			ORDER BY	message.id_msg";
+        $sql = "SELECT      message.*, member.id_member AS editorID
+                FROM        " . $this->databasePrefix . "messages message
+                LEFT JOIN   " . $this->databasePrefix . "members member
+                ON          (message.modified_name = member.real_name)
+                WHERE       message.id_msg BETWEEN ? AND ?
+                ORDER BY    message.id_msg";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -1090,10 +1119,10 @@ class SMF2xExporter extends AbstractExporter
      */
     public function countPostAttachments()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "attachments
-			WHERE		id_member = ?
-				AND	id_msg <> ?";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "attachments
+                WHERE   id_member = ?
+                    AND id_msg <> ?";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([0, 0]);
         $row = $statement->fetchArray();
@@ -1109,13 +1138,13 @@ class SMF2xExporter extends AbstractExporter
      */
     public function exportPostAttachments($offset, $limit)
     {
-        $sql = "SELECT		attachment.*, message.id_member, message.poster_time
-			FROM		" . $this->databasePrefix . "attachments attachment
-			INNER JOIN	" . $this->databasePrefix . "messages message
-			ON		(message.id_msg = attachment.id_msg)
-			WHERE		attachment.id_member = ?
-				AND	attachment.id_msg <> ?
-			ORDER BY	attachment.id_attach";
+        $sql = "SELECT      attachment.*, message.id_member, message.poster_time
+                FROM        " . $this->databasePrefix . "attachments attachment
+                INNER JOIN  " . $this->databasePrefix . "messages message
+                ON          (message.id_msg = attachment.id_msg)
+                WHERE       attachment.id_member = ?
+                        AND attachment.id_msg <> ?
+                ORDER BY    attachment.id_attach";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([0, 0]);
         while ($row = $statement->fetchArray()) {
@@ -1153,10 +1182,10 @@ class SMF2xExporter extends AbstractExporter
      */
     public function countWatchedThreads()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "log_notify
-			WHERE		id_topic <> ?
-				AND	id_board = ?";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "log_notify
+                WHERE   id_topic <> ?
+                    AND id_board = ?";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([0, 0]);
         $row = $statement->fetchArray();
@@ -1172,11 +1201,11 @@ class SMF2xExporter extends AbstractExporter
      */
     public function exportWatchedThreads($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "log_notify
-			WHERE			id_topic <> ?
-					AND	id_board = ?
-			ORDER BY	id_member, id_topic";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "log_notify
+                WHERE       id_topic <> ?
+                        AND id_board = ?
+                ORDER BY    id_member, id_topic";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([0, 0]);
         while ($row = $statement->fetchArray()) {
@@ -1196,8 +1225,8 @@ class SMF2xExporter extends AbstractExporter
      */
     public function countPolls()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "polls";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "polls";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -1213,12 +1242,16 @@ class SMF2xExporter extends AbstractExporter
      */
     public function exportPolls($offset, $limit)
     {
-        $sql = "SELECT		poll.*, topic.id_first_msg,
-					(SELECT COUNT(DISTINCT id_member) FROM " . $this->databasePrefix . "log_polls vote WHERE poll.id_poll = vote.id_poll) AS votes
-			FROM		" . $this->databasePrefix . "polls poll
-			INNER JOIN	" . $this->databasePrefix . "topics topic
-			ON		(topic.id_poll = poll.id_poll)
-			ORDER BY	id_poll";
+        $sql = "SELECT      poll.*, topic.id_first_msg,
+                            (
+                                SELECT  COUNT(DISTINCT id_member)
+                                FROM    " . $this->databasePrefix . "log_polls vote
+                                WHERE   poll.id_poll = vote.id_poll
+                            ) AS votes
+                FROM        " . $this->databasePrefix . "polls poll
+                INNER JOIN  " . $this->databasePrefix . "topics topic
+                ON          (topic.id_poll = poll.id_poll)
+                ORDER BY    id_poll";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -1243,8 +1276,8 @@ class SMF2xExporter extends AbstractExporter
      */
     public function countPollOptions()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "poll_choices";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "poll_choices";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -1260,9 +1293,9 @@ class SMF2xExporter extends AbstractExporter
      */
     public function exportPollOptions($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "poll_choices
-			ORDER BY	id_poll, id_choice";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "poll_choices
+                ORDER BY    id_poll, id_choice";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -1287,9 +1320,9 @@ class SMF2xExporter extends AbstractExporter
      */
     public function countPollOptionVotes()
     {
-        $sql = "SELECT	COUNT(*) AS count
-			FROM	" . $this->databasePrefix . "log_polls
-			WHERE	id_member <> ?";
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "log_polls
+                WHERE   id_member <> ?";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([0]);
         $row = $statement->fetchArray();
@@ -1305,10 +1338,10 @@ class SMF2xExporter extends AbstractExporter
      */
     public function exportPollOptionVotes($offset, $limit)
     {
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "log_polls
-			WHERE		id_member <> ?
-			ORDER BY	id_poll, id_member, id_choice";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "log_polls
+                WHERE       id_member <> ?
+                ORDER BY    id_poll, id_member, id_choice";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([0]);
         while ($row = $statement->fetchArray()) {
@@ -1345,10 +1378,14 @@ class SMF2xExporter extends AbstractExporter
         $boardToGroup = [];
         $boardToMod = [];
 
-        $sql = "SELECT		id_board, id_profile, member_groups,
-					(SELECT GROUP_CONCAT(id_member) FROM " . $this->databasePrefix . "moderators moderator WHERE moderator.id_board = board.id_board) AS moderators
-			FROM		" . $this->databasePrefix . "boards board
-			ORDER BY	id_board";
+        $sql = "SELECT      id_board, id_profile, member_groups,
+                            (
+                                SELECT  GROUP_CONCAT(id_member)
+                                FROM    " . $this->databasePrefix . "moderators moderator
+                                WHERE   moderator.id_board = board.id_board
+                            ) AS moderators
+                FROM        " . $this->databasePrefix . "boards board
+                ORDER BY    id_board";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -1460,9 +1497,9 @@ class SMF2xExporter extends AbstractExporter
             'view_attachments' => ['canDownloadAttachment', 'canViewAttachmentPreview'],
         ];
 
-        $sql = "SELECT		*
-			FROM		" . $this->databasePrefix . "board_permissions
-			ORDER BY	id_group, id_profile, permission";
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "board_permissions
+                ORDER BY    id_group, id_profile, permission";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
@@ -1525,8 +1562,8 @@ class SMF2xExporter extends AbstractExporter
      */
     public function countSmilies()
     {
-        $sql = "SELECT	COUNT(DISTINCT filename) AS count
-			FROM	" . $this->databasePrefix . "smileys";
+        $sql = "SELECT  COUNT(DISTINCT filename) AS count
+                FROM    " . $this->databasePrefix . "smileys";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -1542,14 +1579,14 @@ class SMF2xExporter extends AbstractExporter
      */
     public function exportSmilies($offset, $limit)
     {
-        $sql = "SELECT		MIN(id_smiley) AS id_smiley,
-					GROUP_CONCAT(code SEPARATOR '\n') AS aliases,
-					filename,
-					MIN(smiley_order) AS smiley_order,
-					GROUP_CONCAT(description SEPARATOR '\n') AS description
-			FROM		" . $this->databasePrefix . "smileys
-			GROUP BY	filename
-			ORDER BY	id_smiley";
+        $sql = "SELECT      MIN(id_smiley) AS id_smiley,
+                            GROUP_CONCAT(code SEPARATOR '\n') AS aliases,
+                            filename,
+                            MIN(smiley_order) AS smiley_order,
+                            GROUP_CONCAT(description SEPARATOR '\n') AS description
+                FROM        " . $this->databasePrefix . "smileys
+                GROUP BY    filename
+                ORDER BY    id_smiley";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([]);
         while ($row = $statement->fetchArray()) {
@@ -1592,9 +1629,9 @@ class SMF2xExporter extends AbstractExporter
         static $optionCache = [];
 
         if (!isset($optionCache[$optionName])) {
-            $sql = "SELECT	value
-				FROM	" . $this->databasePrefix . "settings
-				WHERE	variable = ?";
+            $sql = "SELECT  value
+                    FROM    " . $this->databasePrefix . "settings
+                    WHERE   variable = ?";
             $statement = $this->database->prepareStatement($sql);
             $statement->execute([$optionName]);
             $row = $statement->fetchArray();
