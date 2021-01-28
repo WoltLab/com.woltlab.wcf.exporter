@@ -8,6 +8,7 @@ use wcf\data\user\option\UserOption;
 use wcf\system\database\DatabaseException;
 use wcf\system\database\util\PreparedStatementConditionBuilder;
 use wcf\system\importer\ImportHandler;
+use wcf\system\option\user\SelectOptionsUserOptionOutput;
 use wcf\system\Regex;
 use wcf\system\request\LinkHandler;
 use wcf\system\WCF;
@@ -127,7 +128,11 @@ class SMF2xExporter extends AbstractExporter
      */
     public function validateFileAccess()
     {
-        if (\in_array('com.woltlab.wcf.user.avatar', $this->selectedData) || \in_array('com.woltlab.wbb.attachment', $this->selectedData) || \in_array('com.woltlab.wcf.smiley', $this->selectedData)) {
+        if (
+            \in_array('com.woltlab.wcf.user.avatar', $this->selectedData)
+            || \in_array('com.woltlab.wbb.attachment', $this->selectedData)
+            || \in_array('com.woltlab.wcf.smiley', $this->selectedData)
+        ) {
             if (empty($this->fileSystemPath) || !@\file_exists($this->fileSystemPath . 'SSI.php')) {
                 return false;
             }
@@ -256,11 +261,15 @@ class SMF2xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.group')->import($row['id_group'], [
+            $data = [
                 'groupName' => $row['group_name'],
                 'groupType' => UserGroup::OTHER,
                 'userOnlineMarking' => '<span style="color: ' . $row['online_color'] . ';">%s</span>',
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.user.group')
+                ->import($row['id_group'], $data);
         }
     }
 
@@ -351,9 +360,11 @@ class SMF2xExporter extends AbstractExporter
                 'password' => null,
                 'email' => $row['email_address'],
                 'registrationDate' => $row['date_registered'],
-                'banned' => ($row['ban_time'] && $row['banExpire'] === null) ? 1 : 0, // only permabans are imported
+                // only permabans are imported
+                'banned' => ($row['ban_time'] && $row['banExpire'] === null) ? 1 : 0,
                 'banReason' => $row['banReason'],
-                'activationCode' => $row['validation_code'] ? UserRegistrationUtil::getActivationCode() : 0, // smf's codes are strings
+                // smf's codes are strings
+                'activationCode' => $row['validation_code'] ? UserRegistrationUtil::getActivationCode() : 0,
                 'registrationIpAddress' => $row['member_ip'], // member_ip2 is HTTP_X_FORWARDED_FOR
                 'signature' => $row['signature'],
                 'userTitle' => StringUtil::decodeHTML($row['usertitle']),
@@ -389,13 +400,22 @@ class SMF2xExporter extends AbstractExporter
             }
 
             // import user
-            $newUserID = ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user')->import($row['id_member'], $data, $additionalData);
+            $newUserID = ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.user')
+                ->import(
+                    $row['id_member'],
+                    $data,
+                    $additionalData
+                );
 
             // update password hash
             if ($newUserID) {
                 // The lowered username is used for the salt. The column `passwd_salt` is in fact used
                 // for the auto login.
-                $passwordUpdateStatement->execute(['smf2:' . $row['passwd'] . ':' . \mb_strtolower($row['member_name']), $newUserID]);
+                $passwordUpdateStatement->execute([
+                    'smf2:' . $row['passwd'] . ':' . \mb_strtolower($row['member_name']),
+                    $newUserID,
+                ]);
             }
         }
     }
@@ -463,7 +483,7 @@ class SMF2xExporter extends AbstractExporter
                     $editable = UserOption::EDITABILITY_ADMINISTRATOR;
             }
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.option')->import($row['id_field'], [
+            $data = [
                 'categoryName' => 'profile.personal',
                 'optionType' => $row['field_type'],
                 'editable' => $editable,
@@ -471,9 +491,17 @@ class SMF2xExporter extends AbstractExporter
                 'selectOptions' => \implode("\n", \explode(',', $row['field_options'])),
                 'visible' => $visible,
                 'searchable' => $row['can_search'] ? 1 : 0,
-                'outputClass' => $row['field_type'] == 'select' ? 'wcf\system\option\user\SelectOptionsUserOptionOutput' : '',
+                'outputClass' => $row['field_type'] == 'select' ? SelectOptionsUserOptionOutput::class : '',
                 'defaultValue' => $row['default_value'],
-            ], ['name' => $row['field_name']]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.user.option')
+                ->import(
+                    $row['id_field'],
+                    $data,
+                    ['name' => $row['field_name']]
+                );
         }
     }
 
@@ -510,13 +538,20 @@ class SMF2xExporter extends AbstractExporter
         $statement->execute([-1, '']);
         while ($row = $statement->fetchArray()) {
             [$repeatImage, $rankImage] = \explode('#', $row['stars'], 2);
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.rank')->import($row['id_group'] == self::GROUP_USER ? self::GROUP_USER_FAKE : $row['id_group'], [
-                'groupID' => $row['id_group'] == self::GROUP_USER ? self::GROUP_USER_FAKE : $row['id_group'],
+
+            $groupID = $row['id_group'] == self::GROUP_USER ? self::GROUP_USER_FAKE : $row['id_group'];
+
+            $data = [
+                'groupID' => $groupID,
                 'requiredPoints' => $row['min_posts'] * 5,
                 'rankTitle' => $row['group_name'],
                 'rankImage' => $rankImage,
                 'repeatImage' => $repeatImage,
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.user.rank')
+                ->import($groupID, $data);
         }
     }
 
@@ -553,10 +588,14 @@ class SMF2xExporter extends AbstractExporter
             $buddylist = \array_unique(ArrayUtil::toIntegerArray(\explode(',', $row['buddy_list'])));
 
             foreach ($buddylist as $buddy) {
-                ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.follower')->import(0, [
+                $data = [
                     'userID' => $row['id_member'],
                     'followUserID' => $buddy,
-                ]);
+                ];
+
+                ImportHandler::getInstance()
+                    ->getImporter('com.woltlab.wcf.user.follower')
+                    ->import(0, $data);
             }
         }
     }
@@ -600,7 +639,12 @@ class SMF2xExporter extends AbstractExporter
         while ($row = $statement->fetchArray()) {
             switch ($row['type']) {
                 case 'attachment':
-                    $fileLocation = $this->getAttachmentFilename($row['id_attach'], $row['id_folder'], $row['file_hash'], $row['filename']);
+                    $fileLocation = $this->getAttachmentFilename(
+                        $row['id_attach'],
+                        $row['id_folder'],
+                        $row['file_hash'],
+                        $row['filename']
+                    );
                     break;
                 case 'user':
                     if (FileUtil::isURL($row['filename'])) {
@@ -610,12 +654,20 @@ class SMF2xExporter extends AbstractExporter
                     break;
             }
 
-            /** @noinspection PhpUndefinedVariableInspection */
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.avatar')->import(0, [
+            $data = [
                 'avatarName' => \basename($row['avatarName']),
                 'avatarExtension' => \pathinfo($row['avatarName'], \PATHINFO_EXTENSION),
                 'userID' => $row['id_member'],
-            ], ['fileLocation' => $fileLocation]);
+            ];
+
+            /** @noinspection PhpUndefinedVariableInspection */
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.user.avatar')
+                ->import(
+                    0,
+                    $data,
+                    ['fileLocation' => $fileLocation]
+                );
         }
     }
 
@@ -653,10 +705,17 @@ class SMF2xExporter extends AbstractExporter
 
             $i = 0;
             foreach ($labels as $label) {
-                ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.label')->import($row['id_member'] . '-' . ($i++), [
+                $data = [
                     'userID' => $row['id_member'],
                     'label' => \mb_substr($label, 0, 80),
-                ]);
+                ];
+
+                ImportHandler::getInstance()
+                    ->getImporter('com.woltlab.wcf.conversation.label')
+                    ->import(
+                        ($row['id_member'] . '-' . ($i++)),
+                        $data
+                    );
             }
         }
     }
@@ -717,13 +776,17 @@ class SMF2xExporter extends AbstractExporter
                 continue;
             }
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import($conversationID, [
+            $data = [
                 'subject' => $row['subject'],
                 'time' => $row['msgtime'],
                 'userID' => $row['id_member_from'],
                 'username' => $row['from_name'],
                 'isDraft' => 0,
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.conversation')
+                ->import($conversationID, $data);
         }
     }
 
@@ -759,14 +822,18 @@ class SMF2xExporter extends AbstractExporter
             $participants[] = $row['id_member_from'];
             $conversationID = $this->getConversationID($row['id_pm_head'], $participants);
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.message')->import($row['id_pm'], [
+            $data = [
                 'conversationID' => $conversationID,
                 'userID' => $row['id_member_from'],
                 'username' => $row['from_name'],
                 'message' => self::fixBBCodes($row['body']),
                 'time' => $row['msgtime'],
                 'attachments' => 0, // not supported
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.conversation.message')
+                ->import($row['id_pm'], $data);
         }
     }
 
@@ -818,14 +885,22 @@ class SMF2xExporter extends AbstractExporter
                 return $item != '-1';
             });
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.user')->import(0, [
+            $data = [
                 'conversationID' => $conversationID,
                 'participantID' => $row['id_member'],
                 'username' => ($row['member_name'] ?: ''),
                 'hideConversation' => $row['deleted'] ? 1 : 0,
                 'isInvisible' => $row['bcc'] ? 1 : 0,
                 'lastVisitTime' => $row['is_new'] ? 0 : $row['msgtime'],
-            ], ['labelIDs' => $labels]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.conversation.user')
+                ->import(
+                    0,
+                    $data,
+                    ['labelIDs' => $labels]
+                );
         }
     }
 
@@ -857,12 +932,16 @@ class SMF2xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import('cat-' . $row['id_cat'], [
+            $data = [
                 'parentID' => null,
                 'position' => $row['cat_order'],
                 'boardType' => Board::TYPE_CATEGORY,
                 'title' => $row['name'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.board')
+                ->import('cat-' . $row['id_cat'], $data);
         }
 
         $sql = "SELECT		*
@@ -889,7 +968,7 @@ class SMF2xExporter extends AbstractExporter
         }
 
         foreach ($this->boardCache[$parentID] as $board) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import($board['id_board'], [
+            $data = [
                 'parentID' => $board['id_parent'] ?: 'cat-' . $board['id_cat'],
                 'position' => $board['board_order'],
                 'boardType' => $board['redirect'] ? Board::TYPE_LINK : Board::TYPE_BOARD,
@@ -901,7 +980,11 @@ class SMF2xExporter extends AbstractExporter
                 'clicks' => $board['num_posts'],
                 'posts' => $board['num_posts'],
                 'threads' => $board['num_topics'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.board')
+                ->import($board['id_board'], $data);
 
             $this->exportBoardsRecursively($board['id_board']);
         }
@@ -933,7 +1016,7 @@ class SMF2xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.thread')->import($row['id_topic'], [
+            $data = [
                 'boardID' => $row['id_board'],
                 'topic' => StringUtil::decodeHTML($row['subject']),
                 'time' => $row['time'],
@@ -946,7 +1029,11 @@ class SMF2xExporter extends AbstractExporter
                 'isClosed' => $row['locked'] ? 1 : 0,
                 'movedThreadID' => null,
                 'movedTime' => 0,
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.thread')
+                ->import($row['id_topic'], $data);
         }
     }
 
@@ -975,7 +1062,7 @@ class SMF2xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.post')->import($row['id_msg'], [
+            $data = [
                 'threadID' => $row['id_topic'],
                 'userID' => $row['id_member'],
                 'username' => $row['poster_name'],
@@ -990,7 +1077,11 @@ class SMF2xExporter extends AbstractExporter
                 'editReason' => !empty($row['editReason']) ? $row['editReason'] : '',
                 'enableHtml' => 0,
                 'ipAddress' => UserUtil::convertIPv4To6($row['poster_ip']),
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.post')
+                ->import($row['id_msg'], $data);
         }
     }
 
@@ -1032,15 +1123,28 @@ class SMF2xExporter extends AbstractExporter
                 continue; // ignore thumbnails
             }
 
-            $fileLocation = $this->getAttachmentFilename($row['id_attach'], $row['id_folder'], $row['file_hash'], $row['filename']);
+            $fileLocation = $this->getAttachmentFilename(
+                $row['id_attach'],
+                $row['id_folder'],
+                $row['file_hash'],
+                $row['filename']
+            );
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.attachment')->import($row['id_attach'], [
+            $data = [
                 'objectID' => $row['id_msg'],
                 'userID' => $row['id_member'] ?: null,
                 'filename' => $row['filename'],
                 'downloads' => $row['downloads'],
                 'uploadTime' => $row['poster_time'],
-            ], ['fileLocation' => $fileLocation]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.attachment')
+                ->import(
+                    $row['id_attach'],
+                    $data,
+                    ['fileLocation' => $fileLocation]
+                );
         }
     }
 
@@ -1076,10 +1180,14 @@ class SMF2xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([0, 0]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.watchedThread')->import(0, [
+            $data = [
                 'objectID' => $row['id_topic'],
                 'userID' => $row['id_member'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.watchedThread')
+                ->import(0, $data);
         }
     }
 
@@ -1114,7 +1222,7 @@ class SMF2xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll')->import($row['id_poll'], [
+            $data = [
                 'objectID' => $row['id_first_msg'],
                 'question' => $row['question'],
                 'endTime' => $row['expire_time'],
@@ -1122,7 +1230,11 @@ class SMF2xExporter extends AbstractExporter
                 'isPublic' => $row['hide_results'] ? 0 : 1,
                 'maxVotes' => $row['max_votes'],
                 'votes' => $row['votes'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.poll')
+                ->import($row['id_poll'], $data);
         }
     }
 
@@ -1154,12 +1266,19 @@ class SMF2xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll.option')->import($row['id_poll'] . '-' . $row['id_choice'], [
+            $data = [
                 'pollID' => $row['id_poll'],
                 'optionValue' => $row['label'],
                 'showOrder' => $row['id_choice'],
                 'votes' => $row['votes'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.poll.option')
+                ->import(
+                    ($row['id_poll'] . '-' . $row['id_choice']),
+                    $data
+                );
         }
     }
 
@@ -1193,11 +1312,15 @@ class SMF2xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([0]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll.option.vote')->import(0, [
+            $data = [
                 'pollID' => $row['id_poll'],
                 'optionID' => $row['id_poll'] . '-' . $row['id_choice'],
                 'userID' => $row['id_member'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.poll.option.vote')
+                ->import(0, $data);
         }
     }
 
@@ -1234,9 +1357,13 @@ class SMF2xExporter extends AbstractExporter
             }
             $profileToBoard[$row['id_profile']][] = $row['id_board'];
 
-            $boardToGroup[$row['id_board']] = \array_unique(ArrayUtil::toIntegerArray(\explode(',', $row['member_groups'])));
+            $boardToGroup[$row['id_board']] = \array_unique(
+                ArrayUtil::toIntegerArray(\explode(',', $row['member_groups']))
+            );
             if ($row['moderators'] !== null) {
-                $boardToMod[$row['id_board']] = \array_unique(ArrayUtil::toIntegerArray(\explode(',', $row['moderators'])));
+                $boardToMod[$row['id_board']] = \array_unique(
+                    ArrayUtil::toIntegerArray(\explode(',', $row['moderators']))
+                );
             }
         }
 
@@ -1430,14 +1557,27 @@ class SMF2xExporter extends AbstractExporter
 
             $aliases = \explode("\n", $row['aliases']);
             $code = \array_shift($aliases);
-            $description = \mb_substr($row['description'], 0, \mb_strpos($row['description'], "\n") ?: \mb_strlen($row['description'])); // we had to GROUP_CONCAT it because of SQL strict mode
+            // we had to GROUP_CONCAT it because of SQL strict mode
+            $description = \mb_substr(
+                $row['description'],
+                0,
+                (\mb_strpos($row['description'], "\n") ?: \mb_strlen($row['description']))
+            );
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.smiley')->import($row['id_smiley'], [
+            $data = [
                 'smileyTitle' => $description,
                 'smileyCode' => $code,
                 'showOrder' => $row['smiley_order'],
                 'aliases' => \implode("\n", $aliases),
-            ], ['fileLocation' => $fileLocation]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.smiley')
+                ->import(
+                    $row['id_smiley'],
+                    $data,
+                    ['fileLocation' => $fileLocation]
+                );
         }
     }
 
