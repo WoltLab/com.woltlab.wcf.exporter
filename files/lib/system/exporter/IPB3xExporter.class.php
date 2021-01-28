@@ -253,11 +253,19 @@ class IPB3xExporter extends AbstractExporter
 
             // get birthday
             if ($row['bday_day'] && $row['bday_month'] && $row['bday_year']) {
-                $options['birthday'] = $row['bday_year'] . '-' . ($row['bday_month'] < 10 ? '0' : '') . $row['bday_month'] . '-' . ($row['bday_day'] < 10 ? '0' : '') . $row['bday_day'];
+                $options['birthday'] = \sprintf(
+                    '%04d-%02d-%02d',
+                    $row['bday_year'],
+                    $row['bday_month'],
+                    $row['bday_day']
+                );
             }
 
             // get gender
-            if (isset($knownProfileFields['gender']) && !empty($row['field_' . $knownProfileFields['gender']['pf_id']])) {
+            if (
+                isset($knownProfileFields['gender'])
+                && !empty($row['field_' . $knownProfileFields['gender']['pf_id']])
+            ) {
                 $gender = $row['field_' . $knownProfileFields['gender']['pf_id']];
                 if ($gender == 'm') {
                     $options['gender'] = UserProfile::GENDER_MALE;
