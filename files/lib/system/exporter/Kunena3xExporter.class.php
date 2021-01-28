@@ -119,8 +119,14 @@ class Kunena3xExporter extends AbstractExporter
      */
     public function validateFileAccess()
     {
-        if (\in_array('com.woltlab.wcf.user.avatar', $this->selectedData) || \in_array('com.woltlab.wbb.attachment', $this->selectedData)) {
-            if (empty($this->fileSystemPath) || !@\file_exists($this->fileSystemPath . 'libraries/kunena/model.php')) {
+        if (
+            \in_array('com.woltlab.wcf.user.avatar', $this->selectedData)
+            || \in_array('com.woltlab.wbb.attachment', $this->selectedData)
+        ) {
+            if (
+                empty($this->fileSystemPath)
+                || !@\file_exists($this->fileSystemPath . 'libraries/kunena/model.php')
+            ) {
                 return false;
             }
         }
@@ -166,10 +172,12 @@ class Kunena3xExporter extends AbstractExporter
                     break;
             }
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.group')->import($row['id'], [
+            $data = [
                 'groupName' => $row['title'],
                 'groupType' => $groupType,
-            ]);
+            ];
+
+            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.group')->import($row['id'], $data);
         }
     }
 
@@ -243,7 +251,13 @@ class Kunena3xExporter extends AbstractExporter
             ];
 
             // import user
-            $newUserID = ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user')->import($row['userid'], $data, $additionalData);
+            $newUserID = ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.user')
+                ->import(
+                    $row['userid'],
+                    $data,
+                    $additionalData
+                );
 
             // update password hash
             if ($newUserID) {
@@ -291,14 +305,18 @@ class Kunena3xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([0]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.rank')->import($row['rank_id'], [
+            $data = [
                 'groupID' => 2, // 2 = registered users
                 'requiredPoints' => $row['rank_min'] * 5,
                 'rankTitle' => $row['rank_title'],
                 'rankImage' => $row['rank_image'],
                 'repeatImage' => 0,
                 'requiredGender' => 0, // neutral
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.user.rank')
+                ->import($row['rank_id'], $data);
         }
     }
 
@@ -333,13 +351,23 @@ class Kunena3xExporter extends AbstractExporter
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $filepath = $this->fileSystemPath . 'media/kunena/avatars/' . $row['avatar'];
-            if (\file_exists($filepath)) {
-                ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.avatar')->import(0, [
-                    'avatarName' => \basename($filepath),
-                    'avatarExtension' => \pathinfo($filepath, \PATHINFO_EXTENSION),
-                    'userID' => $row['userid'],
-                ], ['fileLocation' => $filepath]);
+            if (!\file_exists($filepath)) {
+                continue;
             }
+
+            $data = [
+                'avatarName' => \basename($filepath),
+                'avatarExtension' => \pathinfo($filepath, \PATHINFO_EXTENSION),
+                'userID' => $row['userid'],
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.user.avatar')
+                ->import(
+                    0,
+                    $data,
+                    ['fileLocation' => $filepath]
+                );
         }
     }
 
@@ -389,14 +417,18 @@ class Kunena3xExporter extends AbstractExporter
         }
 
         foreach ($this->boardCache[$parentID] as $board) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import($board['id'], [
+            $data = [
                 'parentID' => $board['parent_id'] ?: null,
                 'position' => $board['ordering'],
                 'boardType' => $board['parent_id'] ? 0 : 1,
                 'title' => $board['name'],
                 'description' => $board['description'],
                 'isClosed' => $board['locked'] ? 1 : 0,
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.board')
+                ->import($board['id'], $data);
 
             $this->exportBoardsRecursively($board['id']);
         }
@@ -437,7 +469,9 @@ class Kunena3xExporter extends AbstractExporter
                 'movedThreadID' => $row['moved_id'] ? $row['moved_id'] : null,
             ];
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.thread')->import($row['id'], $data);
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.thread')
+                ->import($row['id'], $data);
         }
     }
 
@@ -466,7 +500,7 @@ class Kunena3xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.post')->import($row['id'], [
+            $data = [
                 'threadID' => $row['thread'],
                 'userID' => $row['userid'],
                 'username' => ($row['name'] ?: ''),
@@ -476,7 +510,11 @@ class Kunena3xExporter extends AbstractExporter
                 'ipAddress' => UserUtil::convertIPv4To6($row['ip']),
                 'isClosed' => $row['locked'] ? 1 : 0,
                 'editorID' => null,
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.post')
+                ->import($row['id'], $data);
         }
     }
 
@@ -505,11 +543,19 @@ class Kunena3xExporter extends AbstractExporter
         while ($row = $statement->fetchArray()) {
             $fileLocation = FileUtil::addTrailingSlash($this->fileSystemPath . $row['folder']) . $row['filename'];
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.attachment')->import($row['id'], [
+            $data = [
                 'objectID' => $row['mesid'],
                 'userID' => $row['userid'] ?: null,
                 'filename' => $row['filename'],
-            ], ['fileLocation' => $fileLocation]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.attachment')
+                ->import(
+                    $row['id'],
+                    $data,
+                    ['fileLocation' => $fileLocation]
+                );
         }
     }
 
@@ -556,32 +602,36 @@ class Kunena3xExporter extends AbstractExporter
         $message = \str_ireplace(\array_keys($replacements), \array_values($replacements), $message);
 
         // fix size bbcodes
-        $message = \preg_replace_callback('/\[size=\'?(\d+)\'?\]/i', static function ($matches) {
-            $size = 36;
+        $message = \preg_replace_callback(
+            '/\[size=\'?(\d+)\'?\]/i',
+            static function ($matches) {
+                $size = 36;
 
-            switch ($matches[1]) {
-                case 1:
-                    $size = 8;
-                    break;
-                case 2:
-                    $size = 10;
-                    break;
-                case 3:
-                    $size = 12;
-                    break;
-                case 4:
-                    $size = 14;
-                    break;
-                case 5:
-                    $size = 18;
-                    break;
-                case 6:
-                    $size = 24;
-                    break;
-            }
+                switch ($matches[1]) {
+                    case 1:
+                        $size = 8;
+                        break;
+                    case 2:
+                        $size = 10;
+                        break;
+                    case 3:
+                        $size = 12;
+                        break;
+                    case 4:
+                        $size = 14;
+                        break;
+                    case 5:
+                        $size = 18;
+                        break;
+                    case 6:
+                        $size = 24;
+                        break;
+                }
 
-            return '[size=' . $size . ']';
-        }, $message);
+                return '[size=' . $size . ']';
+            },
+            $message
+        );
 
         // video
         $message = \preg_replace('/\[video[^\]]*\]/i', '[media]', $message);

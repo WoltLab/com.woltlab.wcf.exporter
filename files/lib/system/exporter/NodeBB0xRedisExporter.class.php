@@ -221,7 +221,9 @@ class NodeBB0xRedisExporter extends AbstractExporter
                 'options' => $options,
             ];
 
-            $newUserID = ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user')->import($row['uid'], $data, $additionalData);
+            $newUserID = ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.user')
+                ->import($row['uid'], $data, $additionalData);
 
             // update password hash
             if ($newUserID) {
@@ -277,14 +279,18 @@ class NodeBB0xRedisExporter extends AbstractExporter
         }
 
         foreach ($this->boardCache[$parentID] as $board) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import($board['cid'], [
+            $data = [
                 'parentID' => $board['parentCid'] ?: null,
                 'position' => $board['order'] ?: 0,
                 'boardType' => $board['link'] ? Board::TYPE_LINK : Board::TYPE_BOARD,
                 'title' => $board['name'],
                 'description' => $board['description'],
                 'externalURL' => $board['link'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.board')
+                ->import($board['cid'], $data);
 
             $this->exportBoardsRecursively($board['cid']);
         }
@@ -336,7 +342,13 @@ class NodeBB0xRedisExporter extends AbstractExporter
                 'tags' => $this->database->smembers('topic:' . $threadID . ':tags') ?: [],
             ];
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.thread')->import($row['tid'], $data, $additionalData);
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.thread')
+                ->import(
+                    $row['tid'],
+                    $data,
+                    $additionalData
+                );
         }
     }
 
@@ -384,7 +396,9 @@ class NodeBB0xRedisExporter extends AbstractExporter
                 'editCount' => $row['edited'] ? 1 : 0,
             ];
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.post')->import($row['pid'], $data);
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.post')
+                ->import($row['pid'], $data);
         }
     }
 
@@ -415,13 +429,17 @@ class NodeBB0xRedisExporter extends AbstractExporter
 
             if ($likes) {
                 foreach ($likes as $postID) {
-                    ImportHandler::getInstance()->getImporter('com.woltlab.wbb.like')->import(0, [
+                    $data = [
                         'objectID' => $postID,
                         'objectUserID' => $this->database->hget('post:' . $postID, 'uid') ?: null,
                         'userID' => $userID,
                         'likeValue' => Like::LIKE,
                         'time' => \intval($this->database->zscore('uid:' . $userID . ':upvote', $postID) / 1000),
-                    ]);
+                    ];
+
+                    ImportHandler::getInstance()
+                        ->getImporter('com.woltlab.wbb.like')
+                        ->import(0, $data);
                 }
             }
 
@@ -429,13 +447,17 @@ class NodeBB0xRedisExporter extends AbstractExporter
 
             if ($dislikes) {
                 foreach ($dislikes as $postID) {
-                    ImportHandler::getInstance()->getImporter('com.woltlab.wbb.like')->import(0, [
+                    $data = [
                         'objectID' => $postID,
                         'objectUserID' => $this->database->hget('post:' . $postID, 'uid') ?: null,
                         'userID' => $userID,
                         'likeValue' => Like::DISLIKE,
                         'time' => \intval($this->database->zscore('uid:' . $userID . ':downvote', $postID) / 1000),
-                    ]);
+                    ];
+
+                    ImportHandler::getInstance()
+                        ->getImporter('com.woltlab.wbb.like')
+                        ->import(0, $data);
                 }
             }
         }
@@ -468,11 +490,15 @@ class NodeBB0xRedisExporter extends AbstractExporter
 
             if ($followed) {
                 foreach ($followed as $followUserID) {
-                    ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.follower')->import(0, [
+                    $data = [
                         'userID' => $userID,
                         'followUserID' => $followUserID,
                         'time' => \intval($this->database->zscore('following:' . $userID, $followUserID) / 1000),
-                    ]);
+                    ];
+
+                    ImportHandler::getInstance()
+                        ->getImporter('com.woltlab.wcf.user.follower')
+                        ->import(0, $data);
                 }
             }
         }
@@ -512,33 +538,49 @@ class NodeBB0xRedisExporter extends AbstractExporter
                     }
 
                     $firstMessage = $this->database->hgetall('message:' . $firstMessageID[0]);
-                    ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import($conversationID, [
-                        'subject' => $this->database->hget('user:' . $userID, 'username') . ' - ' . $this->database->hget('user:' . $chat, 'username'),
+                    $data = [
+                        'subject' => \sprintf(
+                            '%s - %s',
+                            $this->database->hget('user:' . $userID, 'username'),
+                            $this->database->hget('user:' . $chat, 'username')
+                        ),
                         'time' => \intval($firstMessage['timestamp'] / 1000),
                         'userID' => $userID,
                         'username' => $this->database->hget('user:' . $firstMessage['fromuid'], 'username'),
                         'isDraft' => 0,
-                    ]);
+                    ];
+
+                    ImportHandler::getInstance()
+                        ->getImporter('com.woltlab.wcf.conversation')
+                        ->import($conversationID, $data);
 
                     // participant a
-                    ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.user')->import(0, [
+                    $data = [
                         'conversationID' => $conversationID,
                         'participantID' => $userID,
                         'username' => $this->database->hget('user:' . $userID, 'username'),
                         'hideConversation' => 0,
                         'isInvisible' => 0,
                         'lastVisitTime' => 0,
-                    ]);
+                    ];
+
+                    ImportHandler::getInstance()
+                        ->getImporter('com.woltlab.wcf.conversation.user')
+                        ->import(0, $data);
 
                     // participant b
-                    ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.user')->import(0, [
+                    $data = [
                         'conversationID' => $conversationID,
                         'participantID' => $chat,
                         'username' => $this->database->hget('user:' . $chat, 'username'),
                         'hideConversation' => 0,
                         'isInvisible' => 0,
                         'lastVisitTime' => 0,
-                    ]);
+                    ];
+
+                    ImportHandler::getInstance()
+                        ->getImporter('com.woltlab.wcf.conversation.user')
+                        ->import(0, $data);
                 }
             }
         }
@@ -565,16 +607,24 @@ class NodeBB0xRedisExporter extends AbstractExporter
             if (!$message) {
                 continue;
             }
-            $conversationID = \min($message['fromuid'], $message['touid']) . ':to:' . \max($message['fromuid'], $message['touid']);
+            $conversationID = \sprintf(
+                '%s:to:%s',
+                \min($message['fromuid'], $message['touid']),
+                \max($message['fromuid'], $message['touid'])
+            );
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.message')->import($offset + $i, [
+            $data = [
                 'conversationID' => $conversationID,
                 'userID' => $message['fromuid'],
                 'username' => $this->database->hget('user:' . $message['fromuid'], 'username'),
                 'message' => self::convertMarkdown($message['content']),
                 'time' => \intval($message['timestamp'] / 1000),
                 'attachments' => 0,
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.conversation.message')
+                ->import($offset + $i, $data);
         }
     }
 

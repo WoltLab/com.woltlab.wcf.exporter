@@ -160,7 +160,9 @@ class XoborExporter extends AbstractExporter
             $additionalData = ['options' => $options];
 
             // import user
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user')->import($row['id'], $data, $additionalData);
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.user')
+                ->import($row['id'], $data, $additionalData);
         }
     }
 
@@ -350,13 +352,21 @@ class XoborExporter extends AbstractExporter
                 if ($convert) {
                     $filename = \mb_convert_encoding($filename, 'UTF-8', 'ISO-8859-1');
                 }
-                ImportHandler::getInstance()->getImporter('com.woltlab.wbb.attachment')->import($row['id'] . '-' . $file['filelink'], [
+
+                $data = [
                     'objectID' => $row['id'],
                     'userID' => $row['userid'] ?: null,
                     'filename' => $filename,
                     'downloads' => 0,
                     'uploadTime' => \strtotime($row['writetime']),
-                ], ['fileLocation' => $fileLocation]);
+                ];
+                ImportHandler::getInstance()
+                    ->getImporter('com.woltlab.wbb.attachment')
+                    ->import(
+                        $row['id'] . '-' . $file['filelink'],
+                        $data,
+                        ['fileLocation' => $fileLocation]
+                    );
             }
         }
     }
