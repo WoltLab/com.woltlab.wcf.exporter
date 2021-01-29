@@ -1000,7 +1000,7 @@ class IPB3xExporter extends AbstractExporter
             }
 
             // import poll
-            $data = [
+            $pollData = [
                 'objectID' => $row['topic_firstpost'],
                 'question' => self::fixSubject($data[1]['question']),
                 'time' => $row['start_date'],
@@ -1011,11 +1011,11 @@ class IPB3xExporter extends AbstractExporter
 
             ImportHandler::getInstance()
                 ->getImporter('com.woltlab.wbb.poll')
-                ->import($row['pid'], $data);
+                ->import($row['pid'], $pollData);
 
             // import poll options
             foreach ($data[1]['choice'] as $key => $choice) {
-                $data = [
+                $optionData = [
                     'pollID' => $row['pid'],
                     'optionValue' => $choice,
                     'showOrder' => $key,
@@ -1024,7 +1024,10 @@ class IPB3xExporter extends AbstractExporter
 
                 ImportHandler::getInstance()
                     ->getImporter('com.woltlab.wbb.poll.option')
-                    ->import($row['pid'] . '-' . $key, $data);
+                    ->import(
+                        ($row['pid'] . '-' . $key),
+                        $optionData
+                    );
             }
         }
     }
@@ -1063,7 +1066,7 @@ class IPB3xExporter extends AbstractExporter
             }
 
             foreach ($data[1] as $pollOptionKey) {
-                $data = [
+                $voteData = [
                     'pollID' => $row['pid'],
                     'optionID' => $row['pid'] . '-' . $pollOptionKey,
                     'userID' => $row['member_id'],
@@ -1071,7 +1074,7 @@ class IPB3xExporter extends AbstractExporter
 
                 ImportHandler::getInstance()
                     ->getImporter('com.woltlab.wbb.poll.option.vote')
-                    ->import(0, $data);
+                    ->import(0, $voteData);
             }
         }
     }
