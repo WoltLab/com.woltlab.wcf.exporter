@@ -174,7 +174,10 @@ class WordPress3xExporter extends AbstractExporter
 
             // update password hash
             if ($newUserID) {
-                $passwordUpdateStatement->execute(['phpass:' . $row['user_pass'] . ':', $newUserID]);
+                $passwordUpdateStatement->execute([
+                    'phpass:' . $row['user_pass'] . ':',
+                    $newUserID,
+                ]);
             }
         }
     }
@@ -419,7 +422,11 @@ class WordPress3xExporter extends AbstractExporter
 
                 ImportHandler::getInstance()
                     ->getImporter('com.woltlab.wcf.article.comment')
-                    ->import($row['comment_ID'], $data, ['articleID' => $row['comment_post_ID']]);
+                    ->import(
+                        $row['comment_ID'],
+                        $data,
+                        ['articleID' => $row['comment_post_ID']]
+                    );
             } else {
                 $parentID = $row['comment_parent'];
 

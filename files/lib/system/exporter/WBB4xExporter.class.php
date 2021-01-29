@@ -1117,7 +1117,13 @@ class WBB4xExporter extends AbstractExporter
 
             ImportHandler::getInstance()
                 ->getImporter('com.woltlab.wcf.conversation.user')
-                ->import(0, $data, ['labelIDs' => $labels[$row['conversationID']][$row['participantID']] ?? []]);
+                ->import(
+                    0,
+                    $data,
+                    [
+                        'labelIDs' => $labels[$row['conversationID']][$row['participantID']] ?? [],
+                    ]
+                );
         }
     }
 
@@ -1365,7 +1371,11 @@ class WBB4xExporter extends AbstractExporter
 
             ImportHandler::getInstance()
                 ->getImporter('com.woltlab.wbb.thread')
-                ->import($row['threadID'], $data, $additionalData);
+                ->import(
+                    $row['threadID'],
+                    $data,
+                    $additionalData
+                );
         }
     }
 
@@ -4010,7 +4020,11 @@ class WBB4xExporter extends AbstractExporter
 
             ImportHandler::getInstance()
                 ->getImporter($importer)
-                ->import($row['attachmentID'], $data, ['fileLocation' => $fileLocation]);
+                ->import(
+                    $row['attachmentID'],
+                    $data,
+                    ['fileLocation' => $fileLocation]
+                );
         }
     }
 

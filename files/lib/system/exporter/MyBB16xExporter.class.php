@@ -1031,7 +1031,11 @@ class MyBB16xExporter extends AbstractExporter
 
             ImportHandler::getInstance()
                 ->getImporter('com.woltlab.wbb.attachment')
-                ->import($row['aid'], $data, ['fileLocation' => $fileLocation]);
+                ->import(
+                    $row['aid'],
+                    $data,
+                    ['fileLocation' => $fileLocation]
+                );
         }
     }
 

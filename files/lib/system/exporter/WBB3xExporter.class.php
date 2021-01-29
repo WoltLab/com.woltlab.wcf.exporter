@@ -1862,7 +1862,7 @@ class WBB3xExporter extends AbstractExporter
 
             foreach ($prefixMap as $key => $data) {
                 // import label group
-                $data = [
+                $groupData = [
                     'groupName' => 'labelgroup' . $i,
                 ];
 
@@ -1876,21 +1876,24 @@ class WBB3xExporter extends AbstractExporter
                     ->getImporter('com.woltlab.wcf.label.group')
                     ->import(
                         $key,
-                        $data,
+                        $groupData,
                         $additionalData
                     );
 
                 // import labels
                 $labels = \explode("\n", $data['prefixes']);
                 foreach ($labels as $label) {
-                    $data = [
+                    $labelData = [
                         'groupID' => $key,
                         'label' => \mb_substr($label, 0, 80),
                     ];
 
                     ImportHandler::getInstance()
                         ->getImporter('com.woltlab.wcf.label')
-                        ->import($key . '-' . $label, $data);
+                        ->import(
+                            ($key . '-' . $label),
+                            $labelData
+                        );
                 }
 
                 $i++;

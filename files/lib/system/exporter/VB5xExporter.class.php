@@ -449,7 +449,11 @@ class VB5xExporter extends AbstractExporter
             // import user
             $newUserID = ImportHandler::getInstance()
                 ->getImporter('com.woltlab.wcf.user')
-                ->import($row['userid'], $data, $additionalData);
+                ->import(
+                    $row['userid'],
+                    $data,
+                    $additionalData
+                );
 
             // update password hash
             if ($newUserID) {
@@ -836,6 +840,7 @@ class VB5xExporter extends AbstractExporter
                 'isDeleted' => $row['deleteuserid'] !== null ? 1 : 0,
                 'deleteTime' => $row['deleteuserid'] !== null ? TIME_NOW : 0,
             ];
+
             $additionalData = [];
 
             ImportHandler::getInstance()

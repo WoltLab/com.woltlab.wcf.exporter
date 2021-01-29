@@ -348,6 +348,7 @@ class XF12xExporter extends AbstractExporter
                 'signature' => self::fixBBCodes($row['signature']),
                 'lastActivityTime' => $row['last_activity'],
             ];
+
             $options = [
                 'location' => $row['location'],
                 'occupation' => $row['occupation'],
@@ -387,7 +388,11 @@ class XF12xExporter extends AbstractExporter
             // import user
             $newUserID = ImportHandler::getInstance()
                 ->getImporter('com.woltlab.wcf.user')
-                ->import($row['user_id'], $data, $additionalData);
+                ->import(
+                    $row['user_id'],
+                    $data,
+                    $additionalData
+                );
 
             // update password hash
             if ($newUserID) {
@@ -916,7 +921,8 @@ class XF12xExporter extends AbstractExporter
                 ->import(
                     0,
                     $data,
-                    ['labelIDs' => $row['is_starred'] ? [$row['user_id']] : []]
+                    [
+                        'labelIDs' => $row['is_starred'] ? [$row['user_id']] : [], ]
                 );
         }
     }
@@ -1033,7 +1039,11 @@ class XF12xExporter extends AbstractExporter
 
             ImportHandler::getInstance()
                 ->getImporter('com.woltlab.wbb.thread')
-                ->import($row['thread_id'], $data, $additionalData);
+                ->import(
+                    $row['thread_id'],
+                    $data,
+                    $additionalData
+                );
         }
     }
 
@@ -1193,7 +1203,9 @@ class XF12xExporter extends AbstractExporter
                 'votes' => $row['voter_count'],
             ];
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll')->import($row['poll_id'], $data);
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.poll')
+                ->import($row['poll_id'], $data);
         }
     }
 
@@ -1326,7 +1338,11 @@ class XF12xExporter extends AbstractExporter
 
                 ImportHandler::getInstance()
                     ->getImporter('com.woltlab.wcf.label.group')
-                    ->import($row['node_id'], $data, $additionalData);
+                    ->import(
+                        $row['node_id'],
+                        $data,
+                        $additionalData
+                    );
             }
 
             if (!ImportHandler::getInstance()->getNewID('com.woltlab.wcf.label', $row['node_id'] . '-' . $row['prefix_id'])) {
@@ -1337,7 +1353,10 @@ class XF12xExporter extends AbstractExporter
 
                 ImportHandler::getInstance()
                     ->getImporter('com.woltlab.wcf.label')
-                    ->import($row['node_id'] . '-' . $row['prefix_id'], $data);
+                    ->import(
+                        ($row['node_id'] . '-' . $row['prefix_id']),
+                        $data
+                    );
             }
         }
     }
@@ -1632,7 +1651,9 @@ class XF12xExporter extends AbstractExporter
                 'time' => $row['like_date'],
             ];
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry.like')->import($row['like_id'], $data);
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.blog.entry.like')
+                ->import($row['like_id'], $data);
         }
     }
 

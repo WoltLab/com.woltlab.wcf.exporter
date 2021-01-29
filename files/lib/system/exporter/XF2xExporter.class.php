@@ -388,6 +388,7 @@ class XF2xExporter extends AbstractExporter
                 'signature' => self::fixBBCodes($row['signature']),
                 'lastActivityTime' => $row['last_activity'],
             ];
+
             $options = [
                 'location' => $row['location'],
                 'homepage' => $row['website'],
@@ -426,7 +427,11 @@ class XF2xExporter extends AbstractExporter
             // import user
             $newUserID = ImportHandler::getInstance()
                 ->getImporter('com.woltlab.wcf.user')
-                ->import($row['user_id'], $data, $additionalData);
+                ->import(
+                    $row['user_id'],
+                    $data,
+                    $additionalData
+                );
 
             // update password hash
             if ($newUserID) {
@@ -960,7 +965,8 @@ class XF2xExporter extends AbstractExporter
                 ->import(
                     0,
                     $data,
-                    ['labelIDs' => $row['is_starred'] ? [$row['user_id']] : []]
+                    [
+                        'labelIDs' => $row['is_starred'] ? [$row['user_id']] : [], ]
                 );
         }
     }
@@ -1100,7 +1106,11 @@ class XF2xExporter extends AbstractExporter
 
             ImportHandler::getInstance()
                 ->getImporter('com.woltlab.wbb.thread')
-                ->import($row['thread_id'], $data, $additionalData);
+                ->import(
+                    $row['thread_id'],
+                    $data,
+                    $additionalData
+                );
         }
     }
 
@@ -1339,6 +1349,7 @@ class XF2xExporter extends AbstractExporter
                 'optionID' => $row['poll_response_id'],
                 'userID' => $row['user_id'],
             ];
+
             ImportHandler::getInstance()
                 ->getImporter('com.woltlab.wbb.poll.option.vote')
                 ->import(0, $data);
@@ -1401,6 +1412,7 @@ class XF2xExporter extends AbstractExporter
                 $data = [
                     'groupName' => 'labelgroup' . $row['node_id'],
                 ];
+
                 $additionalData = [
                     'objects' => [
                         $objectType->objectTypeID => [
@@ -1426,7 +1438,10 @@ class XF2xExporter extends AbstractExporter
 
                 ImportHandler::getInstance()
                     ->getImporter('com.woltlab.wcf.label')
-                    ->import($row['node_id'] . '-' . $row['prefix_id'], $data);
+                    ->import(
+                        ($row['node_id'] . '-' . $row['prefix_id']),
+                        $data
+                    );
             }
         }
     }
@@ -1500,9 +1515,13 @@ class XF2xExporter extends AbstractExporter
             foreach ($mapping[$row['permission_id']] as $permission) {
                 ImportHandler::getInstance()
                     ->getImporter('com.woltlab.wbb.acl')
-                    ->import(0, $data, [
-                        'optionName' => $permission,
-                    ]);
+                    ->import(
+                        0,
+                        $data,
+                        [
+                            'optionName' => $permission,
+                        ]
+                    );
             }
         }
     }
@@ -1676,7 +1695,11 @@ class XF2xExporter extends AbstractExporter
 
             ImportHandler::getInstance()
                 ->getImporter('com.woltlab.gallery.image')
-                ->import($row['media_id'], $data, $additionalData);
+                ->import(
+                    $row['media_id'],
+                    $data,
+                    $additionalData
+                );
         }
     }
 
@@ -1886,7 +1909,11 @@ class XF2xExporter extends AbstractExporter
 
             ImportHandler::getInstance()
                 ->getImporter('com.woltlab.filebase.file')
-                ->import($row['resource_id'], $data, $additionalData);
+                ->import(
+                    $row['resource_id'],
+                    $data,
+                    $additionalData
+                );
         }
     }
 
@@ -1951,7 +1978,11 @@ class XF2xExporter extends AbstractExporter
 
             ImportHandler::getInstance()
                 ->getImporter('com.woltlab.filebase.file.version')
-                ->import($row['resource_version_id'], $data, $additionalData);
+                ->import(
+                    $row['resource_version_id'],
+                    $data,
+                    $additionalData
+                );
         }
     }
 

@@ -163,7 +163,11 @@ class XoborExporter extends AbstractExporter
             // import user
             ImportHandler::getInstance()
                 ->getImporter('com.woltlab.wcf.user')
-                ->import($row['id'], $data, $additionalData);
+                ->import(
+                    $row['id'],
+                    $data,
+                    $additionalData
+                );
         }
     }
 
@@ -215,13 +219,17 @@ class XoborExporter extends AbstractExporter
         }
 
         foreach ($this->boardCache[$parentID] as $board) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import($board['id'], [
+            $data = [
                 'parentID' => ($board['zuid'] ?: null),
                 'position' => $board['sort'],
                 'boardType' => ($board['iscat'] ? Board::TYPE_CATEGORY : Board::TYPE_BOARD),
                 'title' => StringUtil::decodeHTML($board['title']),
                 'description' => $board['text'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.board')
+                ->import($board['id'], $data);
 
             $this->exportBoardsRecursively($board['id']);
         }
@@ -262,7 +270,13 @@ class XoborExporter extends AbstractExporter
                 'isSticky' => $row['header'] ? 1 : 0,
             ];
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.thread')->import($row['id'], $data, []);
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.thread')
+                ->import(
+                    $row['id'],
+                    $data,
+                    []
+                );
         }
     }
 
@@ -361,6 +375,7 @@ class XoborExporter extends AbstractExporter
                     'downloads' => 0,
                     'uploadTime' => \strtotime($row['writetime']),
                 ];
+
                 ImportHandler::getInstance()
                     ->getImporter('com.woltlab.wbb.attachment')
                     ->import(

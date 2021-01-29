@@ -223,7 +223,11 @@ class NodeBB0xRedisExporter extends AbstractExporter
 
             $newUserID = ImportHandler::getInstance()
                 ->getImporter('com.woltlab.wcf.user')
-                ->import($row['uid'], $data, $additionalData);
+                ->import(
+                    $row['uid'],
+                    $data,
+                    $additionalData
+                );
 
             // update password hash
             if ($newUserID) {
