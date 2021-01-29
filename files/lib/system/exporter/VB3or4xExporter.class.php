@@ -252,12 +252,18 @@ class VB3or4xExporter extends AbstractExporter
     public function validateFileAccess()
     {
         if (\in_array('com.woltlab.wcf.smiley', $this->selectedData)) {
-            if (empty($this->fileSystemPath) || !@\file_exists($this->fileSystemPath . 'includes/version_vbulletin.php')) {
+            if (
+                empty($this->fileSystemPath)
+                || !@\file_exists($this->fileSystemPath . 'includes/version_vbulletin.php')
+            ) {
                 return false;
             }
         }
 
-        if (\in_array('com.woltlab.wbb.attachment', $this->selectedData) || \in_array('com.woltlab.blog.entry.attachment', $this->selectedData)) {
+        if (
+            \in_array('com.woltlab.wbb.attachment', $this->selectedData)
+            || \in_array('com.woltlab.blog.entry.attachment', $this->selectedData)
+        ) {
             if ($this->readOption('attachfile') != self::ATTACHFILE_DATABASE) {
                 $path = $this->readOption('attachpath');
                 if (!StringUtil::startsWith($path, '/')) {
@@ -447,12 +453,16 @@ class VB3or4xExporter extends AbstractExporter
                     break;
             }
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.group')->import($row['usergroupid'], [
+            $data = [
                 'groupName' => $row['title'],
                 'groupDescription' => $row['description'],
                 'groupType' => $groupType,
                 'userOnlineMarking' => $row['opentag'] . '%s' . $row['closetag'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.user.group')
+                ->import($row['usergroupid'], $data);
         }
     }
 
@@ -519,7 +529,8 @@ class VB3or4xExporter extends AbstractExporter
                 'banReason' => StringUtil::decodeHTML($row['banReason']),
                 'activationCode' => $row['activationType'] !== null && $row['activationType'] == 0 && $row['emailchange'] == 0 ? UserRegistrationUtil::getActivationCode() : 0, // vB's codes are strings
                 'oldUsername' => '',
-                'registrationIpAddress' => UserUtil::convertIPv4To6($row['ipaddress']), // TODO: check whether this is the registration IP
+                // TODO: check whether this is the registration IP
+                'registrationIpAddress' => UserUtil::convertIPv4To6($row['ipaddress']),
                 'signature' => self::fixBBCodes($row['signature']),
                 'userTitle' => ($row['customtitle'] != 0) ? StringUtil::decodeHTML($row['usertitle']) : '',
                 'lastActivityTime' => $row['lastactivity'],
@@ -540,7 +551,10 @@ class VB3or4xExporter extends AbstractExporter
                 $optionID = $userOption['profilefieldid'];
                 if (isset($row['field' . $optionID])) {
                     $userOptionValue = $row['field' . $optionID];
-                    if ($userOptionValue && ($userOption['type'] == 'select_multiple' || $userOption['type'] == 'checkbox')) {
+                    if (
+                        $userOptionValue
+                        && ($userOption['type'] == 'select_multiple' || $userOption['type'] == 'checkbox')
+                    ) {
                         if (\is_array($userOption['data'])) {
                             $newUserOptionValue = '';
                             foreach ($userOption['data'] as $key => $value) {
@@ -560,11 +574,20 @@ class VB3or4xExporter extends AbstractExporter
             }
 
             // import user
-            $newUserID = ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user')->import($row['userid'], $data, $additionalData);
+            $newUserID = ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.user')
+                ->import(
+                    $row['userid'],
+                    $data,
+                    $additionalData
+                );
 
             // update password hash
             if ($newUserID) {
-                $passwordUpdateStatement->execute(['vb3:' . $row['password'] . ':' . $row['salt'], $newUserID]);
+                $passwordUpdateStatement->execute([
+                    'vb3:' . $row['password'] . ':' . $row['salt'],
+                    $newUserID,
+                ]);
             }
         }
     }
@@ -614,11 +637,15 @@ class VB3or4xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([1, 2, '']);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.rank')->import($row['usertitleid'], [
+            $data = [
                 'groupID' => $row['groupID'],
                 'requiredPoints' => $row['minposts'] * 5,
                 'rankTitle' => StringUtil::decodeHTML($row['title']),
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.user.rank')
+                ->import($row['usertitleid'], $data);
         }
     }
 
@@ -654,10 +681,14 @@ class VB3or4xExporter extends AbstractExporter
         while ($row = $statement->fetchArray()) {
             $buddies = \array_unique(ArrayUtil::toIntegerArray(\explode(' ', $row['buddylist'])));
             foreach ($buddies as $buddy) {
-                ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.follower')->import(0, [
+                $data = [
                     'userID' => $row['userid'],
                     'followUserID' => $buddy,
-                ]);
+                ];
+
+                ImportHandler::getInstance()
+                    ->getImporter('com.woltlab.wcf.user.follower')
+                    ->import(0, $data);
             }
         }
     }
@@ -685,13 +716,17 @@ class VB3or4xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.comment')->import($row['vmid'], [
+            $data = [
                 'objectID' => $row['userid'],
                 'userID' => $row['postuserid'],
                 'username' => StringUtil::decodeHTML($row['postusername']),
                 'message' => StringUtil::decodeHTML($row['pagetext']),
                 'time' => $row['dateline'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.user.comment')
+                ->import($row['vmid'], $data);
         }
     }
 
@@ -740,13 +775,21 @@ class VB3or4xExporter extends AbstractExporter
                     \file_put_contents($file, $row['filedata']);
                 }
 
-                ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.avatar')->import($row['userid'], [
+                $data = [
                     'avatarName' => StringUtil::decodeHTML($row['filename']),
                     'avatarExtension' => \pathinfo($row['filename'], \PATHINFO_EXTENSION),
                     'width' => $row['width'],
                     'height' => $row['height'],
                     'userID' => $row['userid'],
-                ], ['fileLocation' => $file]);
+                ];
+
+                ImportHandler::getInstance()
+                    ->getImporter('com.woltlab.wcf.user.avatar')
+                    ->import(
+                        $row['userid'],
+                        $data,
+                        ['fileLocation' => $file]
+                    );
 
                 if (!$this->readOption('usefileavatar')) {
                     \unlink($file);
@@ -806,7 +849,12 @@ class VB3or4xExporter extends AbstractExporter
 
             // get select options
             $selectOptions = [];
-            if ($row['type'] == 'radio' || $row['type'] == 'select' || $row['type'] == 'select_multiple' || $row['type'] == 'checkbox') {
+            if (
+                $row['type'] == 'radio'
+                || $row['type'] == 'select'
+                || $row['type'] == 'select_multiple'
+                || $row['type'] == 'checkbox'
+            ) {
                 $selectOptions = @\unserialize($row['data']);
 
                 if (!\is_array($selectOptions)) {
@@ -880,7 +928,7 @@ class VB3or4xExporter extends AbstractExporter
                 $fieldName = $row2['text'];
             }
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.option')->import($row['profilefieldid'], [
+            $data = [
                 'categoryName' => 'profile.personal',
                 'optionType' => $optionType,
                 'defaultValue' => $defaultValue,
@@ -892,7 +940,15 @@ class VB3or4xExporter extends AbstractExporter
                 'editable' => $editable,
                 'visible' => $visible,
                 'showOrder' => $row['displayorder'],
-            ], ['name' => $fieldName]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.user.option')
+                ->import(
+                    $row['profilefieldid'],
+                    $data,
+                    ['name' => $fieldName]
+                );
         }
     }
 
@@ -949,10 +1005,17 @@ class VB3or4xExporter extends AbstractExporter
                     $val = \mb_convert_encoding($val, 'UTF-8', 'ISO-8859-1');
                 }
 
-                ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.label')->import($row['userid'] . '-' . $key, [
+                $data = [
                     'userID' => $row['userid'],
                     'label' => \mb_substr($val, 0, 80),
-                ]);
+                ];
+
+                ImportHandler::getInstance()
+                    ->getImporter('com.woltlab.wcf.conversation.label')
+                    ->import(
+                        ($row['userid'] . '-' . $key),
+                        $data
+                    );
             }
         }
     }
@@ -1015,13 +1078,17 @@ class VB3or4xExporter extends AbstractExporter
                 continue;
             }
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import($conversationID, [
+            $data = [
                 'subject' => StringUtil::decodeHTML($row['title']),
                 'time' => $row['dateline'],
                 'userID' => $row['fromuserid'],
                 'username' => StringUtil::decodeHTML($row['fromusername']),
                 'isDraft' => 0,
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.conversation')
+                ->import($conversationID, $data);
         }
     }
 
@@ -1064,13 +1131,17 @@ class VB3or4xExporter extends AbstractExporter
             $participants[] = $row['fromuserid'];
             $conversationID = $this->getConversationID($row['conversationID'], $participants);
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.message')->import($row['pmtextid'], [
+            $data = [
                 'conversationID' => $conversationID,
                 'userID' => $row['fromuserid'],
                 'username' => StringUtil::decodeHTML($row['fromusername']),
                 'message' => self::fixBBCodes($row['message']),
                 'time' => $row['dateline'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.conversation.message')
+                ->import($row['pmtextid'], $data);
         }
     }
 
@@ -1113,7 +1184,10 @@ class VB3or4xExporter extends AbstractExporter
         while ($row = $statement->fetchArray()) {
             $participants = \explode(',', $row['participants']);
             $participants[] = $row['fromuserid'];
-            $conversationID = $this->getConversationID($row['parentpmid'] ?: $row['pmid'], $participants);
+            $conversationID = $this->getConversationID(
+                $row['parentpmid'] ?: $row['pmid'],
+                $participants
+            );
 
             // vBulletin relies on undefined behaviour by default, we cannot know in which
             // encoding the data was saved
@@ -1123,14 +1197,24 @@ class VB3or4xExporter extends AbstractExporter
                 $recipients = [];
             }
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.user')->import(0, [
+            $data = [
                 'conversationID' => $conversationID,
                 'participantID' => $row['userid'],
                 'username' => StringUtil::decodeHTML($row['username'] ?: ''),
                 'hideConversation' => 0, // there is no trash
                 'isInvisible' => (isset($recipients['bcc']) && isset($recipients['bcc'][$row['userid']])) ? 1 : 0,
                 'lastVisitTime' => $row['messageread'] ? $row['dateline'] : 0,
-            ], ['labelIDs' => ($row['folderid'] > 0) ? [$row['userid'] . '-' . $row['folderid']] : []]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.conversation.user')
+                ->import(
+                    0,
+                    $data,
+                    [
+                        'labelIDs' => ($row['folderid'] > 0) ? [$row['userid'] . '-' . $row['folderid']] : [],
+                    ]
+                );
         }
     }
 
@@ -1178,6 +1262,7 @@ class VB3or4xExporter extends AbstractExporter
         if (!isset($this->boardCache[$parentID])) {
             return;
         }
+
         $getDaysPrune = static function ($value) {
             if ($value == -1) {
                 return 1000;
@@ -1193,11 +1278,20 @@ class VB3or4xExporter extends AbstractExporter
 
             return 1000;
         };
+
         foreach ($this->boardCache[$parentID] as $board) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import($board['forumid'], [
+            if ($board['link']) {
+                $boardType = Board::TYPE_LINK;
+            } elseif ($board['channelOptions'] & self::FORUMOPTIONS_CANCONTAINTHREADS) {
+                $boardType = Board::TYPE_BOARD;
+            } else {
+                $boardType = Board::TYPE_CATEGORY;
+            }
+
+            $data = [
                 'parentID' => $board['parentid'] != -1 ? $board['parentid'] : null,
                 'position' => $board['displayorder'],
-                'boardType' => $board['link'] ? Board::TYPE_LINK : ($board['options'] & self::FORUMOPTIONS_CANCONTAINTHREADS ? Board::TYPE_BOARD : Board::TYPE_CATEGORY),
+                'boardType' => $boardType,
                 'title' => StringUtil::decodeHTML($board['title_clean']),
                 'description' => StringUtil::decodeHTML($board['description_clean']),
                 'descriptionUseHtml' => 0,
@@ -1213,7 +1307,11 @@ class VB3or4xExporter extends AbstractExporter
                 'clicks' => 0,
                 'posts' => $board['replycount'],
                 'threads' => $board['threadcount'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.board')
+                ->import($board['forumid'], $data);
 
             $this->exportBoardsRecursively($board['forumid']);
         }
@@ -1260,7 +1358,8 @@ class VB3or4xExporter extends AbstractExporter
                 'isDisabled' => $row['visible'] == 1 ? 0 : 1, // visible = 2 is deleted
                 'isClosed' => $row['open'] == 1 ? 0 : 1, // open = 10 is redirect
                 'isDeleted' => $row['visible'] == 2 ? 1 : 0,
-                'movedThreadID' => ($row['open'] == 10 && $row['pollid']) ? $row['pollid'] : null, // target thread is saved in pollid...
+                // target thread is saved in pollid...
+                'movedThreadID' => ($row['open'] == 10 && $row['pollid']) ? $row['pollid'] : null,
                 'movedTime' => 0,
                 'isDone' => 0,
                 'deleteTime' => $row['deleteTime'] ?: 0,
@@ -1275,7 +1374,13 @@ class VB3or4xExporter extends AbstractExporter
                 $additionalData['tags'] = $tags;
             }
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.thread')->import($row['threadid'], $data, $additionalData);
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.thread')
+                ->import(
+                    $row['threadid'],
+                    $data,
+                    $additionalData
+                );
         }
     }
 
@@ -1321,7 +1426,7 @@ class VB3or4xExporter extends AbstractExporter
                 $row['pagetext'] = \str_replace("\n", '<br />', StringUtil::unifyNewlines($row['pagetext']));
             }
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.post')->import($row['postid'], [
+            $data = [
                 'threadID' => $row['threadid'],
                 'userID' => $row['userid'],
                 'username' => StringUtil::decodeHTML($row['username']),
@@ -1339,7 +1444,11 @@ class VB3or4xExporter extends AbstractExporter
                 'attachments' => $row['attach'],
                 'enableHtml' => isset($row['htmlState']) && $row['htmlState'] != 'off' ? 1 : 0,
                 'ipAddress' => UserUtil::convertIPv4To6($row['ipaddress']),
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.post')
+                ->import($row['postid'], $data);
         }
     }
 
@@ -1386,10 +1495,14 @@ class VB3or4xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.watchedThread')->import($row['subscribethreadid'], [
+            $data = [
                 'objectID' => $row['threadid'],
                 'userID' => $row['userid'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.watchedThread')
+                ->import($row['subscribethreadid'], $data);
         }
     }
 
@@ -1424,7 +1537,7 @@ class VB3or4xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([10]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll')->import($row['pollid'], [
+            $data = [
                 'objectID' => $row['firstpostid'],
                 'question' => StringUtil::encodeHTML($row['question']),
                 'time' => $row['dateline'],
@@ -1434,7 +1547,11 @@ class VB3or4xExporter extends AbstractExporter
                 'sortByVotes' => 0,
                 'maxVotes' => $row['multiple'] ? $row['numberoptions'] : 1,
                 'votes' => $row['voters'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.poll')
+                ->import($row['pollid'], $data);
         }
     }
 
@@ -1469,12 +1586,19 @@ class VB3or4xExporter extends AbstractExporter
 
             $i = 1;
             foreach ($options as $key => $option) {
-                ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll.option')->import($row['pollid'] . '-' . $i, [
+                $data = [
                     'pollID' => $row['pollid'],
                     'optionValue' => $option,
                     'showOrder' => $i,
                     'votes' => $votes[$key],
-                ]);
+                ];
+
+                ImportHandler::getInstance()
+                    ->getImporter('com.woltlab.wbb.poll.option')
+                    ->import(
+                        ($row['pollid'] . '-' . $i),
+                        $data
+                    );
 
                 $i++;
             }
@@ -1504,11 +1628,15 @@ class VB3or4xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll.option.vote')->import(0, [
+            $data = [
                 'pollID' => $row['pollid'],
                 'optionID' => $row['pollid'] . '-' . $row['voteoption'],
                 'userID' => $row['userid'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.poll.option.vote')
+                ->import(0, $data);
         }
     }
 
@@ -1535,13 +1663,17 @@ class VB3or4xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.like')->import(0, [
+            $data = [
                 'objectID' => $row['postid'],
                 'objectUserID' => $row['userid'] ?: null,
                 'userID' => $row['whoadded'],
                 'likeValue' => ($row['reputation'] > 0) ? Like::LIKE : Like::DISLIKE,
                 'time' => $row['dateline'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.like')
+                ->import(0, $data);
         }
     }
 
@@ -1570,7 +1702,8 @@ class VB3or4xExporter extends AbstractExporter
     {
         if (!$offset) {
             $boardIDs = \array_keys(BoardCache::getInstance()->getBoards());
-            $objectType = ObjectTypeCache::getInstance()->getObjectTypeByName('com.woltlab.wcf.label.objectType', 'com.woltlab.wbb.board');
+            $objectType = ObjectTypeCache::getInstance()
+                ->getObjectTypeByName('com.woltlab.wcf.label.objectType', 'com.woltlab.wbb.board');
 
             $sql = "SELECT      *
                     FROM        " . $this->databasePrefix . "prefixset
@@ -1579,9 +1712,19 @@ class VB3or4xExporter extends AbstractExporter
             $statement->execute();
 
             while ($row = $statement->fetchArray()) {
-                ImportHandler::getInstance()->getImporter('com.woltlab.wcf.label.group')->import($row['prefixsetid'], [
+                $data = [
                     'groupName' => $row['prefixsetid'],
-                ], ['objects' => [$objectType->objectTypeID => $boardIDs]]);
+                ];
+
+                ImportHandler::getInstance()
+                    ->getImporter('com.woltlab.wcf.label.group')
+                    ->import(
+                        $row['prefixsetid'],
+                        $data,
+                        [
+                            'objects' => [$objectType->objectTypeID => $boardIDs],
+                        ]
+                    );
             }
         }
 
@@ -1591,10 +1734,14 @@ class VB3or4xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.label')->import($row['prefixid'], [
+            $data = [
                 'groupID' => $row['prefixsetid'],
                 'label' => \mb_substr($row['prefixid'], 0, 80),
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.label')
+                ->import($row['prefixid'], $data);
         }
     }
 
@@ -1685,12 +1832,20 @@ class VB3or4xExporter extends AbstractExporter
         while ($row = $statement->fetchArray()) {
             $fileLocation = $this->fileSystemPath . $row['smiliepath'];
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.smiley')->import($row['smilieid'], [
+            $data = [
                 'smileyTitle' => StringUtil::decodeHTML($row['title']),
                 'smileyCode' => $row['smilietext'],
                 'showOrder' => $row['displayorder'],
                 'categoryID' => $row['imagecategoryid'],
-            ], ['fileLocation' => $fileLocation]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.smiley')
+                ->import(
+                    $row['smilieid'],
+                    $data,
+                    ['fileLocation' => $fileLocation]
+                );
         }
     }
 
@@ -1724,11 +1879,15 @@ class VB3or4xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([3]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.smiley.category')->import($row['imagecategoryid'], [
+            $data = [
                 'title' => StringUtil::decodeHTML($row['title']),
                 'parentCategoryID' => 0,
                 'showOrder' => $row['displayorder'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.smiley.category')
+                ->import($row['imagecategoryid'], $data);
         }
     }
 
@@ -1762,13 +1921,17 @@ class VB3or4xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.gallery.album')->import($row['albumid'], [
+            $data = [
                 'userID' => $row['userid'],
                 'username' => StringUtil::decodeHTML($row['username'] ?: ''),
                 'title' => StringUtil::decodeHTML($row['title']),
                 'description' => StringUtil::decodeHTML($row['description']),
                 'lastUpdateTime' => $row['lastpicturedate'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.gallery.album')
+                ->import($row['albumid'], $data);
         }
     }
 
@@ -1884,12 +2047,7 @@ class VB3or4xExporter extends AbstractExporter
                     }
                 }
 
-                /** @noinspection PhpUndefinedVariableInspection */
-                $additionalData = [
-                    'fileLocation' => $file,
-                ];
-
-                ImportHandler::getInstance()->getImporter('com.woltlab.gallery.image')->import(($row['pictureid'] ?? $row['filedataid']), [
+                $data = [
                     'userID' => $row['userid'] ?: null,
                     'username' => StringUtil::decodeHTML($row['username'] ?: ''),
                     'albumID' => $row['albumid'] ?: null,
@@ -1901,7 +2059,20 @@ class VB3or4xExporter extends AbstractExporter
                     'creationTime' => $row['dateline'],
                     'width' => $row['width'],
                     'height' => $row['height'],
-                ], $additionalData);
+                ];
+
+                /** @noinspection PhpUndefinedVariableInspection */
+                $additionalData = [
+                    'fileLocation' => $file,
+                ];
+
+                ImportHandler::getInstance()
+                    ->getImporter('com.woltlab.gallery.image')
+                    ->import(
+                        ($row['pictureid'] ?? $row['filedataid']),
+                        $data,
+                        $additionalData
+                    );
             } catch (\Exception $e) {
                 /** @noinspection PhpUndefinedVariableInspection */
                 if ($vB === 3 && $this->readOption('album_dataloc') == self::GALLERY_DATABASE && $file) {
@@ -1942,13 +2113,17 @@ class VB3or4xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.gallery.image.comment')->import($row['commentid'], [
+            $data = [
                 'objectID' => $row['pictureid'] ?? $row['filedataid'],
                 'userID' => $row['postuserid'] ?: null,
                 'username' => StringUtil::decodeHTML($row['username'] ?: ''),
                 'message' => $row['pagetext'],
                 'time' => $row['dateline'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.gallery.image.comment')
+                ->import($row['commentid'], $data);
         }
     }
 
@@ -1980,12 +2155,16 @@ class VB3or4xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.calendar.category')->import($row['calendarid'], [
+            $data = [
                 'title' => StringUtil::decodeHTML($row['title']),
                 'description' => StringUtil::decodeHTML($row['description']),
                 'parentCategoryID' => 0,
                 'showOrder' => $row['displayorder'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.calendar.category')
+                ->import($row['calendarid'], $data);
         }
     }
 
@@ -2026,7 +2205,8 @@ class VB3or4xExporter extends AbstractExporter
             /** @noinspection PhpIllegalArrayKeyTypeInspection */
             $eventDateData = [
                 'startTime' => $row['dateline_from'],
-                'endTime' => ($row['recurring'] != 0) ? $row['dateline_from'] + 1 : $row['dateline_to'], // vBulletin does not properly support endTime for recurring events
+                // vBulletin does not properly support endTime for recurring events
+                'endTime' => ($row['recurring'] != 0) ? $row['dateline_from'] + 1 : $row['dateline_to'],
                 'isFullDay' => $row['dateline_to'] ? 0 : 1,
                 'timezone' => $timezones[\round($row['utc'] * 10, 0)],
                 'repeatEndType' => 'date',
@@ -2111,10 +2291,16 @@ class VB3or4xExporter extends AbstractExporter
                 'eventDate' => \serialize($eventDateData),
             ];
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.calendar.event')->import($row['eventid'], $data, [
-                'categories' => [$row['calendarid']],
-                'createEventDates' => true,
-            ]);
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.calendar.event')
+                ->import(
+                    $row['eventid'],
+                    $data,
+                    [
+                        'categories' => [$row['calendarid']],
+                        'createEventDates' => true,
+                    ]
+                );
         }
     }
 
@@ -2153,7 +2339,9 @@ class VB3or4xExporter extends AbstractExporter
                 'views' => $row['views'],
             ];
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry')->import($row['blogid'], $data);
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.blog.entry')
+                ->import($row['blogid'], $data);
         }
     }
 
@@ -2184,13 +2372,17 @@ class VB3or4xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry.comment')->import($row['blogtextid'], [
+            $data = [
                 'objectID' => $row['blogid'],
                 'userID' => $row['userid'] ?: null,
                 'username' => StringUtil::decodeHTML($row['username'] ?: ''),
                 'message' => self::fixBBCodes($row['pagetext']),
                 'time' => $row['dateline'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.blog.entry.comment')
+                ->import($row['blogtextid'], $data);
         }
     }
 
@@ -2318,14 +2510,22 @@ class VB3or4xExporter extends AbstractExporter
                     continue;
                 }
 
-                ImportHandler::getInstance()->getImporter($importer)->import($row['attachmentid'], [
+                $data = [
                     'objectID' => $row['contentid'],
                     'userID' => $row['userid'] ?: null,
                     'filename' => $row['filename'],
                     'downloads' => $row['counter'],
                     'uploadTime' => $row['dateline'],
                     'showOrder' => $row['displayOrder'] ?? 0,
-                ], ['fileLocation' => $file]);
+                ];
+
+                ImportHandler::getInstance()
+                    ->getImporter($importer)
+                    ->import(
+                        $row['attachmentid'],
+                        $data,
+                        ['fileLocation' => $file]
+                    );
 
                 if ($this->readOption('attachfile') == self::ATTACHFILE_DATABASE) {
                     \unlink($file);
@@ -2412,37 +2612,45 @@ class VB3or4xExporter extends AbstractExporter
         $message = \str_ireplace(\array_keys($replacements), \array_values($replacements), $message);
 
         // remove double quotes
-        $message = \preg_replace_callback('/\[[^\]]+"[^\]]*\]/', static function ($matches) {
-            return \str_replace('"', '\'', $matches[0]);
-        }, $message);
+        $message = \preg_replace_callback(
+            '/\[[^\]]+"[^\]]*\]/',
+            static function ($matches) {
+                return \str_replace('"', '\'', $matches[0]);
+            },
+            $message
+        );
 
         // fix size bbcodes
-        $message = \preg_replace_callback('/\[size=\'?(\d+)\'?\]/i', static function ($matches) {
-            $size = 36;
+        $message = \preg_replace_callback(
+            '/\[size=\'?(\d+)\'?\]/i',
+            static function ($matches) {
+                $size = 36;
 
-            switch ($matches[1]) {
-                case 1:
-                    $size = 8;
-                    break;
-                case 2:
-                    $size = 10;
-                    break;
-                case 3:
-                    $size = 12;
-                    break;
-                case 4:
-                    $size = 14;
-                    break;
-                case 5:
-                    $size = 18;
-                    break;
-                case 6:
-                    $size = 24;
-                    break;
-            }
+                switch ($matches[1]) {
+                    case 1:
+                        $size = 8;
+                        break;
+                    case 2:
+                        $size = 10;
+                        break;
+                    case 3:
+                        $size = 12;
+                        break;
+                    case 4:
+                        $size = 14;
+                        break;
+                    case 5:
+                        $size = 18;
+                        break;
+                    case 6:
+                        $size = 24;
+                        break;
+                }
 
-            return '[size=' . $size . ']';
-        }, $message);
+                return '[size=' . $size . ']';
+            },
+            $message
+        );
 
         // quotes
         $message = $quoteRegex->replace($message, $quoteCallback);
