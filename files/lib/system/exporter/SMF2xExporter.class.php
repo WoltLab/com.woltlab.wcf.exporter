@@ -1528,9 +1528,11 @@ class SMF2xExporter extends AbstractExporter
                             ]);
                         }
                     } else {
+                        $groupID = $row['id_group'] == self::GROUP_USER ? self::GROUP_USER_FAKE : $row['id_group'];
+
                         ImportHandler::getInstance()->getImporter('com.woltlab.wbb.acl')->import(0, [
                             'objectID' => $boardID,
-                            'groupID' => $row['id_group'] == self::GROUP_USER ? self::GROUP_USER_FAKE : $row['id_group'],
+                            'groupID' => $groupID,
                             'optionValue' => $row['add_deny'],
                         ], [
                             'optionName' => $permission,

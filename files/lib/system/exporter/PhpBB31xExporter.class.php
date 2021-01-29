@@ -8,6 +8,8 @@ use wcf\data\user\group\UserGroup;
 use wcf\data\user\option\UserOption;
 use wcf\system\database\util\PreparedStatementConditionBuilder;
 use wcf\system\importer\ImportHandler;
+use wcf\system\option\user\SelectOptionsUserOptionOutput;
+use wcf\system\option\user\URLUserOptionOutput;
 use wcf\system\request\LinkHandler;
 use wcf\system\WCF;
 use wcf\util\FileUtil;
@@ -162,8 +164,15 @@ class PhpBB31xExporter extends AbstractExporter
      */
     public function validateFileAccess()
     {
-        if (\in_array('com.woltlab.wcf.user.avatar', $this->selectedData) || \in_array('com.woltlab.wbb.attachment', $this->selectedData) || \in_array('com.woltlab.wcf.smiley', $this->selectedData)) {
-            if (empty($this->fileSystemPath) || !@\file_exists($this->fileSystemPath . 'phpbb/error_collector.php')) {
+        if (
+            \in_array('com.woltlab.wcf.user.avatar', $this->selectedData)
+            || \in_array('com.woltlab.wbb.attachment', $this->selectedData)
+            || \in_array('com.woltlab.wcf.smiley', $this->selectedData)
+        ) {
+            if (
+                empty($this->fileSystemPath)
+                || !@\file_exists($this->fileSystemPath . 'phpbb/error_collector.php')
+            ) {
                 return false;
             }
         }
@@ -291,12 +300,21 @@ class PhpBB31xExporter extends AbstractExporter
                     break;
             }
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.group')->import($row['group_id'], [
+            $userOnlineMarking = '%s';
+            if ($row['group_color']) {
+                $userOnlineMarking = '<span style="color: #' . $row['group_colour'] . '">%s</span>';
+            }
+
+            $data = [
                 'groupName' => $row['group_name'],
                 'groupType' => $groupType,
-                'userOnlineMarking' => $row['group_colour'] ? '<span style="color: #' . $row['group_colour'] . '">%s</span>' : '%s',
+                'userOnlineMarking' => $userOnlineMarking,
                 'showOnTeamPage' => $row['group_legend'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.user.group')
+                ->import($row['group_id'], $data);
         }
     }
 
@@ -427,7 +445,13 @@ class PhpBB31xExporter extends AbstractExporter
             }
 
             // import user
-            $newUserID = ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user')->import($row['user_id'], $data, $additionalData);
+            $newUserID = ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.user')
+                ->import(
+                    $row['user_id'],
+                    $data,
+                    $additionalData
+                );
 
             // update password hash
             if ($newUserID) {
@@ -487,7 +511,10 @@ class PhpBB31xExporter extends AbstractExporter
                 " . $condition . "
                 ORDER BY    fields.field_id";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
-        $statement->execute(\array_merge(['profilefields.type.dropdown'], $condition->getParameters()));
+        $statement->execute(\array_merge(
+            ['profilefields.type.dropdown'],
+            $condition->getParameters()
+        ));
         while ($row = $statement->fetchArray()) {
             switch ($row['field_type']) {
                 case 'profilefields.type.int':
@@ -517,19 +544,19 @@ class PhpBB31xExporter extends AbstractExporter
             }
             switch ($row['field_type']) {
                 case 'profilefields.type.dropdown':
-                    $outputClass = 'wcf\system\option\user\SelectOptionsUserOptionOutput';
+                    $outputClass = SelectOptionsUserOptionOutput::class;
                     break;
                 case 'profilefields.type.googleplus':
                     $outputClass = 'wcf\system\option\user\GooglePlusUserOptionOutput';
                     break;
                 case 'profilefields.type.url':
-                    $outputClass = 'wcf\system\option\user\URLUserOptionOutput';
+                    $outputClass = URLUserOptionOutput::class;
                     break;
                 default:
                     $outputClass = '';
             }
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.option')->import($row['field_id'], [
+            $data = [
                 'categoryName' => 'profile.personal',
                 'optionType' => $type,
                 'editable' => $row['field_show_profile'] ? UserOption::EDITABILITY_ALL : UserOption::EDITABILITY_ADMINISTRATOR,
@@ -540,7 +567,15 @@ class PhpBB31xExporter extends AbstractExporter
                 'showOrder' => $row['field_order'],
                 'outputClass' => $outputClass,
                 'isDisabled' => $row['field_active'] ? 0 : 1,
-            ], ['name' => $row['field_name']]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.user.option')
+                ->import(
+                    $row['field_id'],
+                    $data,
+                    ['name' => $row['field_name']]
+                );
         }
     }
 
@@ -574,14 +609,18 @@ class PhpBB31xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([0]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.rank')->import($row['rank_id'], [
+            $data = [
                 'groupID' => 2, // 2 = registered users
                 'requiredPoints' => $row['rank_min'] * 5,
                 'rankTitle' => $row['rank_title'],
                 'rankImage' => $row['rank_image'],
                 'repeatImage' => 0,
                 'requiredGender' => 0, // neutral
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.user.rank')
+                ->import($row['rank_id'], $data);
         }
     }
 
@@ -617,10 +656,14 @@ class PhpBB31xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([1, 0]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.follower')->import(0, [
+            $data = [
                 'userID' => $row['user_id'],
                 'followUserID' => $row['zebra_id'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.user.follower')
+                ->import(0, $data);
         }
     }
 
@@ -633,7 +676,10 @@ class PhpBB31xExporter extends AbstractExporter
                 FROM    " . $this->databasePrefix . "users
                 WHERE   user_avatar_type IN (?, ?)";
         $statement = $this->database->prepareStatement($sql);
-        $statement->execute([self::AVATAR_TYPE_GALLERY, self::AVATAR_TYPE_UPLOADED]);
+        $statement->execute([
+            self::AVATAR_TYPE_GALLERY,
+            self::AVATAR_TYPE_UPLOADED,
+        ]);
         $row = $statement->fetchArray();
 
         return $row['count'];
@@ -678,12 +724,20 @@ class PhpBB31xExporter extends AbstractExporter
                     break;
             }
 
-            /** @noinspection PhpUndefinedVariableInspection */
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.avatar')->import(0, [
+            $data = [
                 'avatarName' => \basename($row['user_avatar']),
                 'avatarExtension' => $extension,
                 'userID' => $row['user_id'],
-            ], ['fileLocation' => $location]);
+            ];
+
+            /** @noinspection PhpUndefinedVariableInspection */
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.user.avatar')
+                ->import(
+                    0,
+                    $data,
+                    ['fileLocation' => $location]
+                );
         }
     }
 
@@ -715,10 +769,14 @@ class PhpBB31xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.label')->import($row['folder_id'], [
+            $data = [
                 'userID' => $row['user_id'],
                 'label' => \mb_substr($row['folder_name'], 0, 80),
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.conversation.label')
+                ->import($row['folder_id'], $data);
         }
     }
 
@@ -810,14 +868,21 @@ class PhpBB31xExporter extends AbstractExporter
                 }
             }
 
-            /** @noinspection PhpUndefinedVariableInspection */
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import(($row['isDraft'] ? 'draft-' . $row['msg_id'] : $conversationID), [
+            $data = [
                 'subject' => StringUtil::decodeHTML($row['message_subject']),
                 'time' => $row['message_time'],
                 'userID' => $row['author_id'],
                 'username' => StringUtil::decodeHTML($row['username']) ?: '',
                 'isDraft' => $row['isDraft'],
-            ]);
+            ];
+
+            /** @noinspection PhpUndefinedVariableInspection */
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.conversation')
+                ->import(
+                    ($row['isDraft'] ? 'draft-' . $row['msg_id'] : $conversationID),
+                    $data
+                );
         }
     }
 
@@ -896,14 +961,18 @@ class PhpBB31xExporter extends AbstractExporter
             $participants[] = $row['author_id'];
             $conversationID = $this->getConversationID($row['root_level'] ?: $row['msg_id'], $participants);
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.message')->import($row['msg_id'], [
+            $data = [
                 'conversationID' => $conversationID,
                 'userID' => $row['author_id'],
                 'username' => StringUtil::decodeHTML($row['username']) ?: '',
                 'message' => self::fixBBCodes($row['message_text'], $row['bbcode_uid']),
                 'time' => $row['message_time'],
                 'attachments' => $row['attachments'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.conversation.message')
+                ->import($row['msg_id'], $data);
         }
     }
 
@@ -951,14 +1020,24 @@ class PhpBB31xExporter extends AbstractExporter
             $conversationID = $this->getConversationID($row['root_level'] ?: $row['msg_id'], $participants);
 
             $bcc = \explode(':', $row['bcc_address']);
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.user')->import(0, [
+
+            $data = [
                 'conversationID' => $conversationID,
                 'participantID' => $row['user_id'],
                 'username' => StringUtil::decodeHTML($row['username']) ?: '',
                 'hideConversation' => $row['pm_deleted'],
                 'isInvisible' => \in_array('u_' . $row['user_id'], $bcc) ? 1 : 0,
                 'lastVisitTime' => $row['pm_new'] ? 0 : $row['message_time'],
-            ], ['labelIDs' => $row['folder_id'] > 0 ? [$row['folder_id']] : []]);
+            ];
+
+            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.user')
+                ->import(
+                    0,
+                    $data,
+                    [
+                        'labelIDs' => $row['folder_id'] > 0 ? [$row['folder_id']] : [],
+                    ]
+                );
         }
     }
 
@@ -1027,10 +1106,17 @@ class PhpBB31xExporter extends AbstractExporter
         }
 
         foreach ($this->boardCache[$parentID] as $board) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import($board['forum_id'], [
+            $boardType = Board::TYPE_BOARD;
+            if ($board['forum_type'] == self::BOARD_TYPE_LINK) {
+                $boardType = Board::TYPE_LINK;
+            } elseif ($board['forum_type'] == self::BOARD_TYPE_CATEGORY) {
+                $boardType = Board::TYPE_CATEGORY;
+            }
+
+            $data = [
                 'parentID' => $board['parent_id'] ?: null,
                 'position' => $board['left_id'],
-                'boardType' => $board['forum_type'] == self::BOARD_TYPE_LINK ? Board::TYPE_LINK : ($board['forum_type'] == self::BOARD_TYPE_CATEGORY ? Board::TYPE_CATEGORY : Board::TYPE_BOARD),
+                'boardType' => $boardType,
                 'title' => StringUtil::decodeHTML($board['forum_name']),
                 'description' => $board['forum_desc'],
                 'descriptionUseHtml' => 1, // cannot be disabled
@@ -1043,7 +1129,11 @@ class PhpBB31xExporter extends AbstractExporter
                 'clicks' => $board['forum_posts_approved'],
                 'posts' => $board['forum_posts_approved'],
                 'threads' => $board['forum_topics_approved'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.board')
+                ->import($board['forum_id'], $data);
 
             $this->exportBoardsRecursively($board['forum_id']);
         }
@@ -1090,6 +1180,7 @@ class PhpBB31xExporter extends AbstractExporter
                 'movedThreadID' => ($row['topic_status'] == self::TOPIC_STATUS_LINK && $row['topic_moved_id']) ? $row['topic_moved_id'] : null,
                 'movedTime' => 0,
             ];
+
             $additionalData = [];
             if ($row['topic_type'] == self::TOPIC_TYPE_GLOBAL) {
                 $additionalData['assignedBoards'] = $boardIDs;
@@ -1098,7 +1189,13 @@ class PhpBB31xExporter extends AbstractExporter
                 $additionalData['assignedBoards'] = [$row['forum_id']];
             }
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.thread')->import($row['topic_id'], $data, $additionalData);
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.thread')
+                ->import(
+                    $row['topic_id'],
+                    $data,
+                    $additionalData
+                );
         }
     }
 
@@ -1135,7 +1232,7 @@ class PhpBB31xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([0, $offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.post')->import($row['post_id'], [
+            $data = [
                 'threadID' => $row['topic_id'],
                 'userID' => $row['poster_id'],
                 'username' => $row['post_username'] ?: (StringUtil::decodeHTML($row['username']) ?: ''),
@@ -1154,7 +1251,11 @@ class PhpBB31xExporter extends AbstractExporter
                 'attachments' => $row['attachments'],
                 'enableHtml' => 0,
                 'ipAddress' => UserUtil::convertIPv4To6($row['poster_ip']),
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.post')
+                ->import($row['post_id'], $data);
         }
     }
 
@@ -1207,11 +1308,15 @@ class PhpBB31xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.watchedThread')->import(0, [
+            $data = [
                 'objectID' => $row['topic_id'],
                 'userID' => $row['user_id'],
                 'notification' => $row['notify_status'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.watchedThread')
+                ->import(0, $data);
         }
     }
 
@@ -1251,7 +1356,7 @@ class PhpBB31xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([0]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll')->import($row['topic_id'], [
+            $data = [
                 'objectID' => $row['topic_first_post_id'],
                 'question' => $row['poll_title'],
                 'time' => $row['poll_start'],
@@ -1260,7 +1365,11 @@ class PhpBB31xExporter extends AbstractExporter
                 'isPublic' => 0,
                 'maxVotes' => $row['poll_max_options'],
                 'votes' => $row['poll_votes'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.poll')
+                ->import($row['topic_id'], $data);
         }
     }
 
@@ -1292,12 +1401,19 @@ class PhpBB31xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll.option')->import($row['topic_id'] . '-' . $row['poll_option_id'], [
+            $data = [
                 'pollID' => $row['topic_id'],
                 'optionValue' => $row['poll_option_text'],
                 'showOrder' => $row['poll_option_id'],
                 'votes' => $row['poll_option_total'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.poll.option')
+                ->import(
+                    ($row['topic_id'] . '-' . $row['poll_option_id']),
+                    $data
+                );
         }
     }
 
@@ -1331,11 +1447,15 @@ class PhpBB31xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([0]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll.option.vote')->import(0, [
+            $data = [
                 'pollID' => $row['topic_id'],
                 'optionID' => $row['topic_id'] . '-' . $row['poll_option_id'],
                 'userID' => $row['vote_user_id'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.poll.option.vote')
+                ->import(0, $data);
         }
     }
 
@@ -1427,7 +1547,9 @@ class PhpBB31xExporter extends AbstractExporter
                     if (isset($groups[$row[$key . '_id']][$row['forum_id']][$optionID])) {
                         $current = $data[$row[$key . '_id']][$row['forum_id']][$optionID];
                     }
-                    $data[$row[$key . '_id']][$row['forum_id']][$optionID] = \min($current, $setting); // a setting of zero means never -> use minimum
+
+                    // a setting of zero means never -> use minimum
+                    $data[$row[$key . '_id']][$row['forum_id']][$optionID] = \min($current, $setting);
                 }
             } else {
                 if (!isset($options[$row['auth_option_id']])) {
@@ -1439,7 +1561,8 @@ class PhpBB31xExporter extends AbstractExporter
                     $current = $data[$row[$key . '_id']][$row['forum_id']][$row['auth_option_id']];
                 }
 
-                $data[$row[$key . '_id']][$row['forum_id']][$row['auth_option_id']] = \min($current, $row['auth_setting']); // a setting of zero means never -> use minimum
+                // a setting of zero means never -> use minimum
+                $data[$row[$key . '_id']][$row['forum_id']][$row['auth_option_id']] = \min($current, $row['auth_setting']);
             }
         }
 
@@ -1545,14 +1668,27 @@ class PhpBB31xExporter extends AbstractExporter
 
             $aliases = \explode("\n", $row['aliases']);
             $code = \array_shift($aliases);
-            $emotion = \mb_substr($row['emotion'], 0, \mb_strpos($row['emotion'], "\n") ?: \mb_strlen($row['emotion'])); // we had to GROUP_CONCAT it because of SQL strict mode
+            // we had to GROUP_CONCAT it because of SQL strict mode
+            $emotion = \mb_substr(
+                $row['emotion'],
+                0,
+                \mb_strpos($row['emotion'], "\n") ?: \mb_strlen($row['emotion'])
+            );
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.smiley')->import($row['smiley_id'], [
+            $data = [
                 'smileyTitle' => $emotion,
                 'smileyCode' => $code,
                 'showOrder' => $row['smiley_order'],
                 'aliases' => \implode("\n", $aliases),
-            ], ['fileLocation' => $fileLocation]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.smiley')
+                ->import(
+                    $row['smiley_id'],
+                    $data,
+                    ['fileLocation' => $fileLocation]
+                );
         }
     }
 
@@ -1606,13 +1742,22 @@ class PhpBB31xExporter extends AbstractExporter
         while ($row = $statement->fetchArray()) {
             $fileLocation = FileUtil::addTrailingSlash($this->fileSystemPath . $upload_path) . $row['physical_filename'];
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.' . ($conversation ? 'wcf.conversation' : 'wbb') . '.attachment')->import(0, [ // TODO: support inline attachments
+            // TODO: support inline attachments
+            $data = [
                 'objectID' => $row['post_msg_id'],
                 'userID' => $row['poster_id'] ?: null,
                 'filename' => $row['real_filename'],
                 'downloads' => $row['download_count'],
                 'uploadTime' => $row['filetime'],
-            ], ['fileLocation' => $fileLocation]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.' . ($conversation ? 'wcf.conversation' : 'wbb') . '.attachment')
+                ->import(
+                    0,
+                    $data,
+                    ['fileLocation' => $fileLocation]
+                );
         }
     }
 
@@ -1658,47 +1803,72 @@ class PhpBB31xExporter extends AbstractExporter
         }, $text);
 
         // see: https://github.com/phpbb/phpbb3/blob/179f41475b555d0a3314d779d0d7423f66f0fb95/phpBB/includes/functions.php#L3767
-        $text = \preg_replace('#<!\-\- s(.*?) \-\-><img src=".*? \/><!\-\- s\1 \-\->#', '\\1', $text);
-        $text = \preg_replace('#<!\-\- e \-\-><a href="mailto:(.*?)">.*?</a><!\-\- e \-\->#', '[email]\\1[/email]', $text);
-        $text = \preg_replace('#<!\-\- ([mw]) \-\-><a (?:class="[\w\-]+" )?href="(.*?)">.*?</a><!\-\- \1 \-\->#', '[url]\\2[/url]', $text);
-        $text = \preg_replace('#<!\-\- l \-\-><a (?:class="[\w\-]+" )?href="(.*?)(?:(&amp;|\?)sid=[0-9a-f]{32})?">.*?</a><!\-\- l \-\->#', '[url]\\1[/url]', $text);
+        $text = \preg_replace(
+            '#<!\-\- s(.*?) \-\-><img src=".*? \/><!\-\- s\1 \-\->#',
+            '\\1',
+            $text
+        );
+        $text = \preg_replace(
+            '#<!\-\- e \-\-><a href="mailto:(.*?)">.*?</a><!\-\- e \-\->#',
+            '[email]\\1[/email]',
+            $text
+        );
+        $text = \preg_replace(
+            '#<!\-\- ([mw]) \-\-><a (?:class="[\w\-]+" )?href="(.*?)">.*?</a><!\-\- \1 \-\->#',
+            '[url]\\2[/url]',
+            $text
+        );
+        $text = \preg_replace(
+            '#<!\-\- l \-\-><a (?:class="[\w\-]+" )?href="(.*?)(?:(&amp;|\?)sid=[0-9a-f]{32})?">.*?</a><!\-\- l \-\->#',
+            '[url]\\1[/url]',
+            $text
+        );
 
         // fix code php bbcode...
-        $text = \preg_replace_callback('#\[code(=php)?\](.*)\[/code\]#s', static function ($matches) {
-            $content = $matches[2];
-            $content = \str_replace([
-                '<br />',
-                '&nbsp;&nbsp;&nbsp;&nbsp;',
-            ], [
-                "\n",
-                "\t",
-            ], $content);
-            $content = \preg_replace('#(?:<span class="syntax[^"]*">|</span>)#', '', $content);
+        $text = \preg_replace_callback(
+            '#\[code(=php)?\](.*)\[/code\]#s',
+            static function ($matches) {
+                $content = $matches[2];
+                $content = \str_replace([
+                    '<br />',
+                    '&nbsp;&nbsp;&nbsp;&nbsp;',
+                ], [
+                    "\n",
+                    "\t",
+                ], $content);
+                $content = \preg_replace('#(?:<span class="syntax[^"]*">|</span>)#', '', $content);
 
-            return '[code' . $matches[1] . ']' . $content . '[/code]';
-        }, $text);
+                return '[code' . $matches[1] . ']' . $content . '[/code]';
+            },
+            $text
+        );
 
         // fix quotes
-        $text = \preg_replace_callback('~\[quote=("?)([^"]+?)\\1(?:\s+post_id=(\d+)[^\]]*)?\]~', static function ($matches) {
-            $username = \str_replace(["\\", "'"], ["\\\\", "\\'"], $matches[2]);
-            $postID = $matches[3] ?? null;
+        $text = \preg_replace_callback(
+            '~\[quote=("?)([^"]+?)\\1(?:\s+post_id=(\d+)[^\]]*)?\]~',
+            static function ($matches) {
+                $username = \str_replace(["\\", "'"], ["\\\\", "\\'"], $matches[2]);
+                $postID = $matches[3] ?? null;
 
-            if ($postID) {
-                $postLink = LinkHandler::getInstance()->getLink('Thread', [
-                    'application' => 'wbb',
-                    'postID' => $postID,
-                    'forceFrontend' => true,
-                ]) . '#post' . $postID;
-                $postLink = \str_replace(["\\", "'"], ["\\\\", "\\'"], $postLink);
+                if ($postID) {
+                    $postLink = LinkHandler::getInstance()->getLink('Thread', [
+                        'application' => 'wbb',
+                        'postID' => $postID,
+                        'forceFrontend' => true,
+                    ]) . '#post' . $postID;
+                    $postLink = \str_replace(["\\", "'"], ["\\\\", "\\'"], $postLink);
 
-                return "[quote='" . $username . "','" . $postLink . "']";
-            } else {
-                return "[quote='" . $username . "']";
-            }
-        }, $text);
+                    return "[quote='" . $username . "','" . $postLink . "']";
+                } else {
+                    return "[quote='" . $username . "']";
+                }
+            },
+            $text
+        );
 
         // convert attachments
-        $text = \preg_replace('~\[attachment=(\d+)\].*?\[/attachment\]~', '', $text); // TODO: not supported right now
+        // TODO: not supported right now
+        $text = \preg_replace('~\[attachment=(\d+)\].*?\[/attachment\]~', '', $text);
 
         // remove crap
         $text = MessageUtil::stripCrap($text);
