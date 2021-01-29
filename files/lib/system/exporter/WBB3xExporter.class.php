@@ -108,7 +108,15 @@ class WBB3xExporter extends AbstractExporter
      * valid thread sort fields
      * @var array<string>
      */
-    protected static $availableThreadSortFields = ['topic', 'username', 'time', 'views', 'replies', 'lastPostTime', 'cumulativeLikes'];
+    protected static $availableThreadSortFields = [
+        'topic',
+        'username',
+        'time',
+        'views',
+        'replies',
+        'lastPostTime',
+        'cumulativeLikes',
+    ];
 
     /**
      * @inheritDoc
@@ -124,7 +132,10 @@ class WBB3xExporter extends AbstractExporter
 
         // fix file system path
         if (!empty($this->fileSystemPath)) {
-            if (!@\file_exists($this->fileSystemPath . 'lib/core.functions.php') && @\file_exists($this->fileSystemPath . 'wcf/lib/core.functions.php')) {
+            if (
+                !@\file_exists($this->fileSystemPath . 'lib/core.functions.php')
+                && @\file_exists($this->fileSystemPath . 'wcf/lib/core.functions.php')
+            ) {
                 $this->fileSystemPath = $this->fileSystemPath . 'wcf/';
             }
         }
@@ -195,8 +206,22 @@ class WBB3xExporter extends AbstractExporter
      */
     public function validateFileAccess()
     {
-        if (\in_array('com.woltlab.wcf.user.avatar', $this->selectedData) || \in_array('com.woltlab.wbb.attachment', $this->selectedData) || \in_array('com.woltlab.wcf.conversation.attachment', $this->selectedData) || \in_array('com.woltlab.wcf.smiley', $this->selectedData) || \in_array('com.woltlab.blog.entry.attachment', $this->selectedData) || \in_array('com.woltlab.calendar.event.attachment', $this->selectedData) || \in_array('com.woltlab.gallery.image', $this->selectedData)) {
-            if (empty($this->fileSystemPath) || (!@\file_exists($this->fileSystemPath . 'lib/core.functions.php') && !@\file_exists($this->fileSystemPath . 'wcf/lib/core.functions.php'))) {
+        if (
+            \in_array('com.woltlab.wcf.user.avatar', $this->selectedData)
+            || \in_array('com.woltlab.wbb.attachment', $this->selectedData)
+            || \in_array('com.woltlab.wcf.conversation.attachment', $this->selectedData)
+            || \in_array('com.woltlab.wcf.smiley', $this->selectedData)
+            || \in_array('com.woltlab.blog.entry.attachment', $this->selectedData)
+            || \in_array('com.woltlab.calendar.event.attachment', $this->selectedData)
+            || \in_array('com.woltlab.gallery.image', $this->selectedData)
+        ) {
+            if (
+                empty($this->fileSystemPath)
+                || (
+                    !@\file_exists($this->fileSystemPath . 'lib/core.functions.php')
+                    && !@\file_exists($this->fileSystemPath . 'wcf/lib/core.functions.php')
+                )
+            ) {
                 return false;
             }
         }
@@ -380,12 +405,16 @@ class WBB3xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.group')->import($row['groupID'], [
+            $data = [
                 'groupName' => $row['groupName'],
                 'groupType' => $row['groupType'],
                 'userOnlineMarking' => !empty($row['userOnlineMarking']) ? $row['userOnlineMarking'] : '',
                 'showOnTeamPage' => !empty($row['showOnTeamPage']) ? $row['showOnTeamPage'] : 0,
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.user.group')
+                ->import($row['groupID'], $data);
         }
     }
 
@@ -449,8 +478,16 @@ class WBB3xExporter extends AbstractExporter
             $encryptionData[$row['optionName']] = $row['optionValue'];
         }
 
-        if (isset($encryptionData['encryption_method']) && \in_array($encryptionData['encryption_method'], ['crc32', 'md5', 'sha1'])) {
-            if ($encryptionData['encryption_enable_salting'] && $encryptionData['encryption_encrypt_before_salting'] && $encryptionData['encryption_method'] == 'sha1' && $encryptionData['encryption_salt_position'] == 'before') {
+        if (
+            isset($encryptionData['encryption_method'])
+            && \in_array($encryptionData['encryption_method'], ['crc32', 'md5', 'sha1'])
+        ) {
+            if (
+                $encryptionData['encryption_enable_salting']
+                && $encryptionData['encryption_encrypt_before_salting']
+                && $encryptionData['encryption_method'] == 'sha1'
+                && $encryptionData['encryption_salt_position'] == 'before'
+            ) {
                 $encryption = 'wcf1';
             } else {
                 $encryption = 'wcf1e' . \substr($encryptionData['encryption_method'], 0, 1);
@@ -521,11 +558,20 @@ class WBB3xExporter extends AbstractExporter
             }
 
             // import user
-            $newUserID = ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user')->import($row['userID'], $data, $additionalData);
+            $newUserID = ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.user')
+                ->import(
+                    $row['userID'],
+                    $data,
+                    $additionalData
+                );
 
             // update password hash
             if ($newUserID) {
-                $passwordUpdateStatement->execute([$encryption . ':' . $row['password'] . ':' . $row['salt'], $newUserID]);
+                $passwordUpdateStatement->execute([
+                    $encryption . ':' . $row['password'] . ':' . $row['salt'],
+                    $newUserID,
+                ]);
             }
         }
     }
@@ -553,14 +599,18 @@ class WBB3xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.rank')->import($row['rankID'], [
+            $data = [
                 'groupID' => $row['groupID'],
                 'requiredPoints' => $row['neededPoints'],
                 'rankTitle' => $row['rankTitle'],
                 'rankImage' => $row['rankImage'],
                 'repeatImage' => $row['repeatImage'],
                 'requiredGender' => $row['gender'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.user.rank')
+                ->import($row['rankID'], $data);
         }
     }
 
@@ -592,11 +642,15 @@ class WBB3xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.follower')->import(0, [
+            $data = [
                 'userID' => $row['userID'],
                 'followUserID' => $row['whiteUserID'],
                 'time' => !empty($row['time']) ? $row['time'] : 0,
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.user.follower')
+                ->import(0, $data);
         }
     }
 
@@ -623,13 +677,17 @@ class WBB3xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.comment')->import($row['entryID'], [
+            $data = [
                 'objectID' => $row['ownerID'],
                 'userID' => $row['userID'],
                 'username' => $row['username'],
                 'message' => $row['message'],
                 'time' => $row['time'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.user.comment')
+                ->import($row['entryID'], $data);
         }
     }
 
@@ -669,13 +727,17 @@ class WBB3xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([0, $offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.comment.response')->import($row['entryID'], [
+            $data = [
                 'commentID' => $row['entryID'],
                 'time' => $row['commentTime'],
                 'userID' => $row['ownerID'],
                 'username' => $row['ownerName'],
                 'message' => $row['comment'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.user.comment.response')
+                ->import($row['entryID'], $data);
         }
     }
 
@@ -713,13 +775,23 @@ class WBB3xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([0, $offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.avatar')->import($row['avatarID'], [
+            $fileLocation = $this->fileSystemPath . 'images/avatars/avatar-' . $row['avatarID'] . '.' . $row['avatarExtension'];
+
+            $data = [
                 'avatarName' => $row['avatarName'],
                 'avatarExtension' => $row['avatarExtension'],
                 'width' => $row['width'],
                 'height' => $row['height'],
                 'userID' => $row['userID'],
-            ], ['fileLocation' => $this->fileSystemPath . 'images/avatars/avatar-' . $row['avatarID'] . '.' . $row['avatarExtension']]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.user.avatar')
+                ->import(
+                    $row['avatarID'],
+                    $data,
+                    ['fileLocation' => $fileLocation]
+                );
         }
     }
 
@@ -843,7 +915,7 @@ class WBB3xExporter extends AbstractExporter
                     $row['optionType'] = 'textarea';
             }
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.user.option')->import($row['optionID'], [
+            $data = [
                 'categoryName' => $row['categoryName'],
                 'optionType' => $row['optionType'],
                 'defaultValue' => $row['defaultValue'],
@@ -856,7 +928,17 @@ class WBB3xExporter extends AbstractExporter
                 'editable' => $editable,
                 'visible' => $visible,
                 'showOrder' => $row['showOrder'],
-            ], ['name' => $row['name'] ?: $row['optionName']]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.user.option')
+                ->import(
+                    $row['optionID'],
+                    $data,
+                    [
+                        'name' => $row['name'] ?: $row['optionName'],
+                    ]
+                );
         }
     }
 
@@ -895,11 +977,15 @@ class WBB3xExporter extends AbstractExporter
                 }
             }
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.label')->import($row['folderID'], [
+            $data = [
                 'userID' => $row['userID'],
                 'label' => \mb_substr($row['folderName'], 0, 80),
                 'cssClassName' => $cssClassName,
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.conversation.label')
+                ->import($row['folderID'], $data);
         }
     }
 
@@ -959,13 +1045,17 @@ class WBB3xExporter extends AbstractExporter
                 continue;
             }
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation')->import($conversationID, [
+            $data = [
                 'subject' => $row['subject'],
                 'time' => $row['time'],
                 'userID' => $row['userID'],
                 'username' => $row['username'],
                 'isDraft' => $row['isDraft'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.conversation')
+                ->import($conversationID, $data);
         }
     }
 
@@ -1001,7 +1091,7 @@ class WBB3xExporter extends AbstractExporter
             $participants[] = $row['userID'];
             $conversationID = $this->getConversationID($row['parentPmID'] ?: $row['pmID'], $participants);
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.message')->import($row['pmID'], [
+            $data = [
                 'conversationID' => $conversationID,
                 'userID' => $row['userID'],
                 'username' => $row['username'],
@@ -1009,7 +1099,11 @@ class WBB3xExporter extends AbstractExporter
                 'time' => $row['time'],
                 'attachments' => $row['attachments'],
                 'enableHtml' => $row['enableHtml'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.conversation.message')
+                ->import($row['pmID'], $data);
         }
     }
 
@@ -1060,14 +1154,24 @@ class WBB3xExporter extends AbstractExporter
                 continue;
             }
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.conversation.user')->import(0, [
+            $data = [
                 'conversationID' => $conversationID,
                 'participantID' => $row['recipientID'],
                 'username' => $row['recipient'],
                 'hideConversation' => $row['isDeleted'],
                 'isInvisible' => $row['isBlindCopy'],
                 'lastVisitTime' => $row['isViewed'],
-            ], ['labelIDs' => $row['folderID'] ? [$row['folderID']] : []]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.conversation.user')
+                ->import(
+                    0,
+                    $data,
+                    [
+                        'labelIDs' => $row['folderID'] ? [$row['folderID']] : [],
+                    ]
+                );
         }
     }
 
@@ -1142,7 +1246,7 @@ class WBB3xExporter extends AbstractExporter
                 $board['sortField'] = 'lastPostTime';
             }
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.board')->import($board['boardID'], [
+            $data = [
                 'parentID' => $board['parentID'] ?: null,
                 'position' => $board['position'] ?: 0,
                 'boardType' => $board['boardType'],
@@ -1168,7 +1272,11 @@ class WBB3xExporter extends AbstractExporter
                 'clicks' => $board['clicks'],
                 'posts' => $board['posts'],
                 'threads' => $board['threads'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.board')
+                ->import($board['boardID'], $data);
 
             $this->exportBoardsRecursively($board['boardID']);
         }
@@ -1311,6 +1419,7 @@ class WBB3xExporter extends AbstractExporter
                 'deleteTime' => $row['deleteTime'],
                 'lastPostTime' => $row['lastPostTime'],
             ];
+
             $additionalData = [];
             if ($row['languageCode']) {
                 $additionalData['languageCode'] = $row['languageCode'];
@@ -1325,7 +1434,13 @@ class WBB3xExporter extends AbstractExporter
                 $additionalData['tags'] = $tags[$row['threadID']];
             }
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.thread')->import($row['threadID'], $data, $additionalData);
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.thread')
+                ->import(
+                    $row['threadID'],
+                    $data,
+                    $additionalData
+                );
         }
     }
 
@@ -1352,7 +1467,7 @@ class WBB3xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.post')->import($row['postID'], [
+            $data = [
                 'threadID' => $row['threadID'],
                 'userID' => $row['userID'],
                 'username' => $row['username'],
@@ -1371,7 +1486,11 @@ class WBB3xExporter extends AbstractExporter
                 'enableHtml' => $row['enableHtml'],
                 'ipAddress' => UserUtil::convertIPv4To6($row['ipAddress']),
                 'deleteTime' => $row['deleteTime'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.post')
+                ->import($row['postID'], $data);
         }
     }
 
@@ -1422,11 +1541,15 @@ class WBB3xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.watchedThread')->import(0, [
+            $data = [
                 'objectID' => $row['threadID'],
                 'userID' => $row['userID'],
                 'notification' => $row['enableNotification'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.watchedThread')
+                ->import(0, $data);
         }
     }
 
@@ -1464,7 +1587,7 @@ class WBB3xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute(['post', $offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll')->import($row['pollID'], [
+            $data = [
                 'objectID' => $row['messageID'],
                 'question' => $row['question'],
                 'time' => $row['time'],
@@ -1474,7 +1597,11 @@ class WBB3xExporter extends AbstractExporter
                 'sortByVotes' => $row['sortByResult'],
                 'maxVotes' => $row['choiceCount'],
                 'votes' => $row['votes'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.poll')
+                ->import($row['pollID'], $data);
         }
     }
 
@@ -1520,12 +1647,16 @@ class WBB3xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute(['post', $offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll.option')->import($row['pollOptionID'], [
+            $data = [
                 'pollID' => $row['pollID'],
                 'optionValue' => $row['pollOption'],
                 'showOrder' => $row['showOrder'],
                 'votes' => $row['votes'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.poll.option')
+                ->import($row['pollOptionID'], $data);
         }
     }
 
@@ -1569,11 +1700,15 @@ class WBB3xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute(['post', 0]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.poll.option.vote')->import(0, [
+            $data = [
                 'pollID' => $row['pollID'],
                 'optionID' => $row['pollOptionID'],
                 'userID' => $row['userID'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.poll.option.vote')
+                ->import(0, $data);
         }
     }
 
@@ -1612,13 +1747,17 @@ class WBB3xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([0, 0, 3]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.like')->import(0, [
+            $data = [
                 'objectID' => $row['firstPostID'],
                 'objectUserID' => $row['objectUserID'] ?: null,
                 'userID' => $row['userID'],
                 'likeValue' => ($row['rating'] > 3) ? Like::LIKE : Like::DISLIKE,
                 'time' => $row['time'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.like')
+                ->import(0, $data);
         }
     }
 
@@ -1718,21 +1857,40 @@ class WBB3xExporter extends AbstractExporter
         // save prefixes
         if (!empty($prefixMap)) {
             $i = 1;
-            $objectType = ObjectTypeCache::getInstance()->getObjectTypeByName('com.woltlab.wcf.label.objectType', 'com.woltlab.wbb.board');
+            $objectType = ObjectTypeCache::getInstance()
+                ->getObjectTypeByName('com.woltlab.wcf.label.objectType', 'com.woltlab.wbb.board');
 
             foreach ($prefixMap as $key => $data) {
                 // import label group
-                ImportHandler::getInstance()->getImporter('com.woltlab.wcf.label.group')->import($key, [
+                $data = [
                     'groupName' => 'labelgroup' . $i,
-                ], ['objects' => [$objectType->objectTypeID => $data['boardIDs']]]);
+                ];
+
+                $additionalData = [
+                    'objects' => [
+                        $objectType->objectTypeID => $data['boardIDs'],
+                    ],
+                ];
+
+                ImportHandler::getInstance()
+                    ->getImporter('com.woltlab.wcf.label.group')
+                    ->import(
+                        $key,
+                        $data,
+                        $additionalData
+                    );
 
                 // import labels
                 $labels = \explode("\n", $data['prefixes']);
                 foreach ($labels as $label) {
-                    ImportHandler::getInstance()->getImporter('com.woltlab.wcf.label')->import($key . '-' . $label, [
+                    $data = [
                         'groupID' => $key,
                         'label' => \mb_substr($label, 0, 80),
-                    ]);
+                    ];
+
+                    ImportHandler::getInstance()
+                        ->getImporter('com.woltlab.wcf.label')
+                        ->import($key . '-' . $label, $data);
                 }
 
                 $i++;
@@ -1799,7 +1957,10 @@ class WBB3xExporter extends AbstractExporter
         if (!empty($mod)) {
             $conditionBuilder = new PreparedStatementConditionBuilder(true, 'OR');
             foreach ($mod as $row) {
-                $conditionBuilder->add('(boardID = ? AND userID = ? AND groupID = ?)', [$row['boardID'], $row['userID'], $row['groupID']]);
+                $conditionBuilder->add(
+                    '(boardID = ? AND userID = ? AND groupID = ?)',
+                    [$row['boardID'], $row['userID'], $row['groupID']]
+                );
             }
 
             $sql = "SELECT  *
@@ -1824,7 +1985,16 @@ class WBB3xExporter extends AbstractExporter
                         continue;
                     }
 
-                    ImportHandler::getInstance()->getImporter('com.woltlab.wbb.acl')->import(0, \array_merge($data, ['optionValue' => $value]), ['optionName' => $permission]);
+                    ImportHandler::getInstance()
+                        ->getImporter('com.woltlab.wbb.acl')
+                        ->import(
+                            0,
+                            \array_merge(
+                                $data,
+                                ['optionValue' => $value]
+                            ),
+                            ['optionName' => $permission]
+                        );
                 }
             }
         }
@@ -1854,7 +2024,16 @@ class WBB3xExporter extends AbstractExporter
                         continue;
                     }
 
-                    ImportHandler::getInstance()->getImporter('com.woltlab.wbb.acl')->import(0, \array_merge($data, ['optionValue' => $value]), ['optionName' => $permission]);
+                    ImportHandler::getInstance()
+                        ->getImporter('com.woltlab.wbb.acl')
+                        ->import(
+                            0,
+                            \array_merge(
+                                $data,
+                                ['optionValue' => $value]
+                            ),
+                            ['optionName' => $permission]
+                        );
                 }
             }
         }
@@ -1884,7 +2063,16 @@ class WBB3xExporter extends AbstractExporter
                         continue;
                     }
 
-                    ImportHandler::getInstance()->getImporter('com.woltlab.wbb.acl')->import(0, \array_merge($data, ['optionValue' => $value]), ['optionName' => $permission]);
+                    ImportHandler::getInstance()
+                        ->getImporter('com.woltlab.wbb.acl')
+                        ->import(
+                            0,
+                            \array_merge(
+                                $data,
+                                ['optionValue' => $value]
+                            ),
+                            ['optionName' => $permission]
+                        );
                 }
             }
         }
@@ -1920,12 +2108,20 @@ class WBB3xExporter extends AbstractExporter
         while ($row = $statement->fetchArray()) {
             $fileLocation = $this->fileSystemPath . $row['smileyPath'];
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.smiley')->import($row['smileyID'], [
+            $data = [
                 'smileyTitle' => $row['smileyTitle'],
                 'smileyCode' => $row['smileyCode'],
                 'showOrder' => $row['showOrder'],
                 'categoryID' => !empty($row['smileyCategoryID']) ? $row['smileyCategoryID'] : null,
-            ], ['fileLocation' => $fileLocation]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.smiley')
+                ->import(
+                    $row['smileyID'],
+                    $data,
+                    ['fileLocation' => $fileLocation]
+                );
         }
     }
 
@@ -1957,11 +2153,15 @@ class WBB3xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wcf.smiley.category')->import($row['smileyCategoryID'], [
+            $data = [
                 'title' => $row['title'],
                 'parentCategoryID' => 0,
                 'showOrder' => $row['showOrder'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.smiley.category')
+                ->import($row['smileyCategoryID'], $data);
         }
     }
 
@@ -1995,11 +2195,15 @@ class WBB3xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([0]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.blog.category')->import($row['categoryID'], [
+            $data = [
                 'title' => $row['title'],
                 'parentCategoryID' => 0,
                 'showOrder' => 0,
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.blog.category')
+                ->import($row['categoryID'], $data);
         }
     }
 
@@ -2069,18 +2273,7 @@ class WBB3xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute($conditionBuilder->getParameters());
         while ($row = $statement->fetchArray()) {
-            $additionalData = [];
-            if ($row['languageCode']) {
-                $additionalData['languageCode'] = $row['languageCode'];
-            }
-            if (isset($tags[$row['entryID']])) {
-                $additionalData['tags'] = $tags[$row['entryID']];
-            }
-            if (isset($categories[$row['entryID']])) {
-                $additionalData['categories'] = $categories[$row['entryID']];
-            }
-
-            ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry')->import($row['entryID'], [
+            $data = [
                 'userID' => $row['userID'] ?: null,
                 'username' => $row['username'],
                 'subject' => $row['subject'],
@@ -2092,7 +2285,26 @@ class WBB3xExporter extends AbstractExporter
                 'views' => $row['views'],
                 'isPublished' => $row['isPublished'],
                 'publicationDate' => $row['publishingDate'],
-            ], $additionalData);
+            ];
+
+            $additionalData = [];
+            if ($row['languageCode']) {
+                $additionalData['languageCode'] = $row['languageCode'];
+            }
+            if (isset($tags[$row['entryID']])) {
+                $additionalData['tags'] = $tags[$row['entryID']];
+            }
+            if (isset($categories[$row['entryID']])) {
+                $additionalData['categories'] = $categories[$row['entryID']];
+            }
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.blog.entry')
+                ->import(
+                    $row['entryID'],
+                    $data,
+                    $additionalData
+                );
         }
     }
 
@@ -2138,13 +2350,17 @@ class WBB3xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry.comment')->import($row['commentID'], [
+            $data = [
                 'objectID' => $row['entryID'],
                 'userID' => $row['userID'],
                 'username' => $row['username'],
                 'message' => $row['comment'],
                 'time' => $row['time'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.blog.entry.comment')
+                ->import($row['commentID'], $data);
         }
     }
 
@@ -2182,14 +2398,23 @@ class WBB3xExporter extends AbstractExporter
                         AND rating.rating NOT IN (?, ?)
                 ORDER BY    rating.objectID, rating.userID";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
-        $statement->execute(['com.woltlab.wcf.user.blog.entry', 0, 0, 3]);
+        $statement->execute([
+            'com.woltlab.wcf.user.blog.entry',
+            0,
+            0,
+            3,
+        ]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.blog.entry.like')->import(0, [
+            $data = [
                 'objectID' => $row['objectID'],
                 'objectUserID' => $row['objectUserID'] ?: null,
                 'userID' => $row['userID'],
                 'likeValue' => ($row['rating'] > 3) ? Like::LIKE : Like::DISLIKE,
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.blog.entry.like')
+                ->import(0, $data);
         }
     }
 
@@ -2221,11 +2446,15 @@ class WBB3xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.gallery.category')->import($row['categoryID'], [
+            $data = [
                 'title' => $row['title'],
                 'parentCategoryID' => 0,
                 'showOrder' => 0,
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.gallery.category')
+                ->import($row['categoryID'], $data);
         }
     }
 
@@ -2245,7 +2474,11 @@ class WBB3xExporter extends AbstractExporter
      */
     public function exportGalleryAlbums($offset, $limit)
     {
-        $destVersion21 = \version_compare(GALLERYCore::getInstance()->getPackage()->packageVersion, '2.1.0 Alpha 1', '>=');
+        $destVersion21 = \version_compare(
+            GALLERYCore::getInstance()->getPackage()->packageVersion,
+            '2.1.0 Alpha 1',
+            '>='
+        );
 
         $sql = "SELECT      gallery_album.*, user_table.username
                 FROM        wcf" . $this->dbNo . "_user_gallery_album gallery_album
@@ -2267,7 +2500,9 @@ class WBB3xExporter extends AbstractExporter
                 $data['accessLevel'] = 2;
             }
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.gallery.album')->import($row['albumID'], $data);
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.gallery.album')
+                ->import($row['albumID'], $data);
         }
     }
 
@@ -2335,17 +2570,7 @@ class WBB3xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute($conditionBuilder->getParameters());
         while ($row = $statement->fetchArray()) {
-            $additionalData = [
-                'fileLocation' => $this->fileSystemPath . 'images/photos/photo-' . $row['photoID'] . ($row['photoHash'] ? ('-' . $row['photoHash']) : '') . '.' . $row['fileExtension'],
-            ];
-            if (isset($tags[$row['photoID']])) {
-                $additionalData['tags'] = $tags[$row['photoID']];
-            }
-            if (isset($categories[$row['photoID']])) {
-                $additionalData['categories'] = \array_unique($categories[$row['photoID']]);
-            }
-
-            ImportHandler::getInstance()->getImporter('com.woltlab.gallery.image')->import($row['photoID'], [
+            $data = [
                 'userID' => $row['ownerID'] ?: null,
                 'username' => $row['username'],
                 'albumID' => $row['albumID'] ?: null,
@@ -2363,7 +2588,25 @@ class WBB3xExporter extends AbstractExporter
                 'latitude' => $row['latitude'],
                 'longitude' => $row['longitude'],
                 'ipAddress' => UserUtil::convertIPv4To6($row['ipAddress']),
-            ], $additionalData);
+            ];
+
+            $additionalData = [
+                'fileLocation' => $this->fileSystemPath . 'images/photos/photo-' . $row['photoID'] . ($row['photoHash'] ? ('-' . $row['photoHash']) : '') . '.' . $row['fileExtension'],
+            ];
+            if (isset($tags[$row['photoID']])) {
+                $additionalData['tags'] = $tags[$row['photoID']];
+            }
+            if (isset($categories[$row['photoID']])) {
+                $additionalData['categories'] = \array_unique($categories[$row['photoID']]);
+            }
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.gallery.image')
+                ->import(
+                    $row['photoID'],
+                    $data,
+                    $additionalData
+                );
         }
     }
 
@@ -2390,13 +2633,17 @@ class WBB3xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.gallery.image.comment')->import($row['commentID'], [
+            $data = [
                 'objectID' => $row['photoID'],
                 'userID' => $row['userID'] ?: null,
                 'username' => $row['username'],
                 'message' => $row['comment'],
                 'time' => $row['time'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.gallery.image.comment')
+                ->import($row['commentID'], $data);
         }
     }
 
@@ -2434,14 +2681,23 @@ class WBB3xExporter extends AbstractExporter
                         AND rating.rating NOT IN (?, ?)
                 ORDER BY    rating.objectID, rating.userID";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
-        $statement->execute(['com.woltlab.wcf.user.gallery.photo', 0, 0, 3]);
+        $statement->execute([
+            'com.woltlab.wcf.user.gallery.photo',
+            0,
+            0,
+            3,
+        ]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.gallery.image.like')->import(0, [
+            $data = [
                 'objectID' => $row['objectID'],
                 'objectUserID' => $row['objectUserID'] ?: null,
                 'userID' => $row['userID'],
                 'likeValue' => ($row['rating'] > 3) ? Like::LIKE : Like::DISLIKE,
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.gallery.image.like')
+                ->import(0, $data);
         }
     }
 
@@ -2483,11 +2739,15 @@ class WBB3xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute(['BirthdayEvent']);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.calendar.category')->import($row['calendarID'], [
+            $data = [
                 'title' => $row['title'],
                 'parentCategoryID' => 0,
                 'showOrder' => 0,
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.calendar.category')
+                ->import($row['calendarID'], $data);
         }
     }
 
@@ -2632,7 +2892,13 @@ class WBB3xExporter extends AbstractExporter
                 $data['participationIsPublic'] = $row['isPublic'];
             }
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.calendar.event')->import($row['eventID'], $data, ['categories' => [$row['calendarID']]]);
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.calendar.event')
+                ->import(
+                    $row['eventID'],
+                    $data,
+                    ['categories' => [$row['calendarID']]]
+                );
         }
     }
 
@@ -2681,7 +2947,7 @@ class WBB3xExporter extends AbstractExporter
         while ($row = $statement->fetchArray()) {
             $fileLocation = $this->fileSystemPath . 'attachments/attachment-' . $row['attachmentID'];
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.calendar.event.attachment')->import($row['attachmentID'], [
+            $data = [
                 'objectID' => $row['eventID'],
                 'userID' => $row['userID'] ?: null,
                 'filename' => $row['attachmentName'],
@@ -2689,7 +2955,15 @@ class WBB3xExporter extends AbstractExporter
                 'lastDownloadTime' => $row['lastDownloadTime'],
                 'uploadTime' => $row['uploadTime'],
                 'showOrder' => !empty($row['showOrder']) ? $row['showOrder'] : 0,
-            ], ['fileLocation' => $fileLocation]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.calendar.event.attachment')
+                ->import(
+                    $row['attachmentID'],
+                    $data,
+                    ['fileLocation' => $fileLocation]
+                );
         }
     }
 
@@ -2721,12 +2995,19 @@ class WBB3xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.calendar.event.date')->import($row['eventID'] . '-' . $row['startTime'], [
+            $data = [
                 'eventID' => $row['eventID'],
                 'startTime' => $row['startTime'],
                 'endTime' => $row['endTime'],
                 'isFullDay' => $row['isFullDay'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.calendar.event.date')
+                ->import(
+                    ($row['eventID'] . '-' . $row['startTime']),
+                    $data
+                );
         }
     }
 
@@ -2776,13 +3057,17 @@ class WBB3xExporter extends AbstractExporter
             $firstEventDateStatement->execute([$row['eventID']]);
             $startTime = $firstEventDateStatement->fetchColumn();
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.calendar.event.date.comment')->import($row['messageID'], [
+            $data = [
                 'objectID' => $row['eventID'] . '-' . $startTime,
                 'userID' => $row['userID'],
                 'username' => $row['username'],
                 'message' => $row['message'],
                 'time' => $row['time'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.calendar.event.date.comment')
+                ->import($row['messageID'], $data);
         }
     }
 
@@ -2829,13 +3114,17 @@ class WBB3xExporter extends AbstractExporter
                 continue;
             }
 
-            ImportHandler::getInstance()->getImporter('com.woltlab.calendar.event.date.participation')->import(0, [
+            $data = [
                 'eventDateID' => $row['eventID'] . '-' . $startTime,
                 'userID' => $row['userID'],
                 'username' => $row['username'],
                 'decision' => $row['decision'],
                 'decisionTime' => $row['decisionTime'],
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.calendar.event.date.participation')
+                ->import(0, $data);
         }
     }
 
@@ -2894,7 +3183,7 @@ class WBB3xExporter extends AbstractExporter
         while ($row = $statement->fetchArray()) {
             $fileLocation = $this->fileSystemPath . 'attachments/attachment-' . $row['attachmentID'];
 
-            ImportHandler::getInstance()->getImporter($objectType)->import($row['attachmentID'], [
+            $data = [
                 'objectID' => !empty($row['containerID']) ? $row['containerID'] : $row['messageID'],
                 'userID' => $row['userID'] ?: null,
                 'filename' => $row['attachmentName'],
@@ -2902,7 +3191,15 @@ class WBB3xExporter extends AbstractExporter
                 'lastDownloadTime' => $row['lastDownloadTime'],
                 'uploadTime' => $row['uploadTime'],
                 'showOrder' => !empty($row['showOrder']) ? $row['showOrder'] : 0,
-            ], ['fileLocation' => $fileLocation]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter($objectType)
+                ->import(
+                    $row['attachmentID'],
+                    $data,
+                    ['fileLocation' => $fileLocation]
+                );
         }
     }
 
@@ -2958,7 +3255,10 @@ class WBB3xExporter extends AbstractExporter
     private function getTags($name, array $objectIDs)
     {
         $tags = [];
-        if (\substr($this->getPackageVersion('com.woltlab.wcf'), 0, 3) == '1.1' && $this->getPackageVersion('com.woltlab.wcf.tagging')) {
+        if (
+            \substr($this->getPackageVersion('com.woltlab.wcf'), 0, 3) == '1.1'
+            && $this->getPackageVersion('com.woltlab.wcf.tagging')
+        ) {
             // get taggable id
             $sql = "SELECT      taggableID
                     FROM        wcf" . $this->dbNo . "_tag_taggable
@@ -3007,9 +3307,21 @@ class WBB3xExporter extends AbstractExporter
         $message = \preg_replace('~\[/(?:php|java|css|html|xml|tpl|js|c|mysql)\]~', '[/code]', $message);
 
         // media bbcodes
-        $message = \preg_replace('~\[youtube\]([a-z0-9_-]+)\[/youtube\]~i', '[media]https://www.youtube.com/watch?v=\\1[/media]', $message);
-        $message = \preg_replace("~\\[(?:youtube|myvideo|myspace|googlevideo|clipfish|sevenload)(?:='?([^'\\],]+)'?)?(?:,[^\\]]+)?\\]~", '[media]\\1', $message);
-        $message = \preg_replace('~\[/(?:youtube|myvideo|myspace|googlevideo|clipfish|sevenload)\]~', '[/media]', $message);
+        $message = \preg_replace(
+            '~\[youtube\]([a-z0-9_-]+)\[/youtube\]~i',
+            '[media]https://www.youtube.com/watch?v=\\1[/media]',
+            $message
+        );
+        $message = \preg_replace(
+            "~\\[(?:youtube|myvideo|myspace|googlevideo|clipfish|sevenload)(?:='?([^'\\],]+)'?)?(?:,[^\\]]+)?\\]~",
+            '[media]\\1',
+            $message
+        );
+        $message = \preg_replace(
+            '~\[/(?:youtube|myvideo|myspace|googlevideo|clipfish|sevenload)\]~',
+            '[/media]',
+            $message
+        );
 
         // remove crap
         return MessageUtil::stripCrap($message);

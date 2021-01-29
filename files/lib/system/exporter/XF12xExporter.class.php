@@ -11,6 +11,7 @@ use wcf\data\user\option\UserOption;
 use wcf\system\database\util\PreparedStatementConditionBuilder;
 use wcf\system\exception\SystemException;
 use wcf\system\importer\ImportHandler;
+use wcf\system\option\user\SelectOptionsUserOptionOutput;
 use wcf\system\Regex;
 use wcf\system\request\LinkHandler;
 use wcf\system\WCF;
@@ -499,7 +500,7 @@ class XF12xExporter extends AbstractExporter
                 'askDuringRegistration' => $row['show_registration'] ? 1 : 0,
                 'selectOptions' => \implode("\n", $selectOptions),
                 'visible' => UserOption::VISIBILITY_ALL,
-                'outputClass' => $row['field_type'] == 'select' ? 'wcf\system\option\user\SelectOptionsUserOptionOutput' : '',
+                'outputClass' => $row['field_type'] == 'select' ? SelectOptionsUserOptionOutput::class : '',
             ];
 
             // the ID is transformed into an integer, because the importer cannot handle strings as IDs
