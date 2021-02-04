@@ -936,7 +936,7 @@ class PhpBB3xExporter extends AbstractExporter
                             ) AS participants
                 FROM        " . $this->databasePrefix . "privmsgs_to to_table
                 LEFT JOIN   " . $this->databasePrefix . "privmsgs msg_table
-                ON          (msg_table.msg_id = to_table.msg_id)
+                ON          msg_table.msg_id = to_table.msg_id
                 LEFT JOIN   " . $this->databasePrefix . "users user_table
                 ON          to_table.user_id = user_table.user_id
                 ORDER BY    to_table.msg_id, to_table.user_id";

@@ -223,7 +223,7 @@ class IPB4xExporter extends AbstractExporter
         $sql = "SELECT      pfields_content.*, members.*
                 FROM        " . $this->databasePrefix . "core_members members
                 LEFT JOIN   " . $this->databasePrefix . "core_pfields_content pfields_content
-                ON          (pfields_content.member_id = members.member_id)
+                ON          pfields_content.member_id = members.member_id
                 WHERE       members.member_id BETWEEN ? AND ?
                 ORDER BY    members.member_id";
         $statement = $this->database->prepareStatement($sql);
@@ -455,7 +455,7 @@ class IPB4xExporter extends AbstractExporter
         $sql = "SELECT      status_updates.*, members.name
                 FROM        " . $this->databasePrefix . "core_member_status_updates status_updates
                 LEFT JOIN   " . $this->databasePrefix . "core_members members
-                ON          (members.member_id = status_updates.status_author_id)
+                ON          members.member_id = status_updates.status_author_id
                 WHERE       status_updates.status_id BETWEEN ? AND ?
                 ORDER BY    status_updates.status_id";
         $statement = $this->database->prepareStatement($sql);
@@ -494,7 +494,7 @@ class IPB4xExporter extends AbstractExporter
         $sql = "SELECT      member_status_replies.*, members.name
                 FROM        " . $this->databasePrefix . "core_member_status_replies member_status_replies
                 LEFT JOIN   " . $this->databasePrefix . "core_members members
-                ON          (members.member_id = member_status_replies.reply_member_id)
+                ON          members.member_id = member_status_replies.reply_member_id
                 WHERE       member_status_replies.reply_id BETWEEN ? AND ?
                 ORDER BY    member_status_replies.reply_id";
         $statement = $this->database->prepareStatement($sql);
@@ -577,7 +577,7 @@ class IPB4xExporter extends AbstractExporter
         $sql = "SELECT      message_topics.*, members.name
                 FROM        " . $this->databasePrefix . "core_message_topics message_topics
                 LEFT JOIN   " . $this->databasePrefix . "core_members members
-                ON          (members.member_id = message_topics.mt_starter_id)
+                ON          members.member_id = message_topics.mt_starter_id
                 WHERE       message_topics.mt_id BETWEEN ? AND ?
                 ORDER BY    message_topics.mt_id";
         $statement = $this->database->prepareStatement($sql);
@@ -616,7 +616,7 @@ class IPB4xExporter extends AbstractExporter
         $sql = "SELECT      message_posts.*, members.name
                 FROM        " . $this->databasePrefix . "core_message_posts message_posts
                 LEFT JOIN   " . $this->databasePrefix . "core_members members
-                ON          (members.member_id = message_posts.msg_author_id)
+                ON          members.member_id = message_posts.msg_author_id
                 WHERE       message_posts.msg_id BETWEEN ? AND ?
                 ORDER BY    message_posts.msg_id";
         $statement = $this->database->prepareStatement($sql);
@@ -655,7 +655,7 @@ class IPB4xExporter extends AbstractExporter
         $sql = "SELECT      message_topic_user_map.*, members.name
                 FROM        " . $this->databasePrefix . "core_message_topic_user_map message_topic_user_map
                 LEFT JOIN   " . $this->databasePrefix . "core_members members
-                ON          (members.member_id = message_topic_user_map.map_user_id)
+                ON          members.member_id = message_topic_user_map.map_user_id
                 WHERE       message_topic_user_map.map_id BETWEEN ? AND ?
                 ORDER BY    message_topic_user_map.map_id";
         $statement = $this->database->prepareStatement($sql);
@@ -946,7 +946,7 @@ class IPB4xExporter extends AbstractExporter
         $sql = "SELECT      polls.*, topics.topic_firstpost
                 FROM        " . $this->databasePrefix . "core_polls polls
                 LEFT JOIN   " . $this->databasePrefix . "forums_topics topics
-                ON          (topics.poll_state = polls.pid)
+                ON          topics.poll_state = polls.pid
                 WHERE       pid BETWEEN ? AND ?
                 ORDER BY    pid";
         $statement = $this->database->prepareStatement($sql);
@@ -1018,7 +1018,7 @@ class IPB4xExporter extends AbstractExporter
         $sql = "SELECT      polls.*, voters.*
                 FROM        " . $this->databasePrefix . "core_voters voters
                 LEFT JOIN   " . $this->databasePrefix . "core_polls polls
-                ON          (polls.pid = voters.poll)
+                ON          polls.pid = voters.poll
                 WHERE       voters.vid BETWEEN ? AND ?
                 ORDER BY    voters.vid";
         $statement = $this->database->prepareStatement($sql);
@@ -1081,7 +1081,7 @@ class IPB4xExporter extends AbstractExporter
         $sql = "SELECT      core_reputation_index.*, forums_posts.author_id
                 FROM        " . $this->databasePrefix . "core_reputation_index core_reputation_index
                 LEFT JOIN   " . $this->databasePrefix . "forums_posts forums_posts
-                ON          (forums_posts.pid = core_reputation_index.type_id)
+                ON          forums_posts.pid = core_reputation_index.type_id
                 WHERE       core_reputation_index.app = ?
                         AND core_reputation_index.type = ?
                 ORDER BY    core_reputation_index.id";
@@ -1153,7 +1153,7 @@ class IPB4xExporter extends AbstractExporter
         $sql = "SELECT      core_attachments.*, core_attachments_map.id2
                 FROM        " . $this->databasePrefix . "core_attachments_map core_attachments_map
                 LEFT JOIN   " . $this->databasePrefix . "core_attachments core_attachments
-                ON          (core_attachments.attach_id = core_attachments_map.attachment_id)
+                ON          core_attachments.attach_id = core_attachments_map.attachment_id
                 WHERE       core_attachments_map.location_key = ?
                         AND core_attachments_map.id2 IS NOT NULL
                 ORDER BY    core_attachments_map.attachment_id";
