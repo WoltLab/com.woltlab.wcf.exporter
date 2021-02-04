@@ -508,12 +508,12 @@ class WBB3xExporter extends AbstractExporter
                                 SELECT      GROUP_CONCAT(language.languageCode)
                                 FROM        wcf" . $this->dbNo . "_user_to_languages user_to_languages
                                 LEFT JOIN   wcf" . $this->dbNo . "_language language
-                                ON          (language.languageID = user_to_languages.languageID)
+                                ON          language.languageID = user_to_languages.languageID
                                 WHERE       user_to_languages.userID = user_table.userID
                             ) AS languageCodes
                 FROM        wcf" . $this->dbNo . "_user user_table
                 LEFT JOIN   wcf" . $this->dbNo . "_user_option_value user_option_value
-                ON          (user_option_value.userID = user_table.userID)
+                ON          user_option_value.userID = user_table.userID
                 WHERE       user_table.userID BETWEEN ? AND ?
                 ORDER BY    user_table.userID";
         $statement = $this->database->prepareStatement($sql);
@@ -720,7 +720,7 @@ class WBB3xExporter extends AbstractExporter
         $sql = "SELECT      user_guestbook.*, user_table.username AS ownerName
                 FROM        wcf" . $this->dbNo . "_user_guestbook user_guestbook
                 LEFT JOIN   wcf" . $this->dbNo . "_user user_table
-                ON          (user_table.userID = user_guestbook.ownerID)
+                ON          user_table.userID = user_guestbook.ownerID
                 WHERE       user_guestbook.commentTime > ?
                         AND user_guestbook.entryID BETWEEN ? AND ?
                 ORDER BY    user_guestbook.entryID";
@@ -1141,7 +1141,7 @@ class WBB3xExporter extends AbstractExporter
                 FROM        wcf" . $this->dbNo . "_pm_to_user pm_to_user
                 FORCE INDEX(PRIMARY)
                 LEFT JOIN   wcf" . $this->dbNo . "_pm pm
-                ON          (pm.pmID = pm_to_user.pmID)
+                ON          pm.pmID = pm_to_user.pmID
                 ORDER BY    pm_to_user.pmID DESC, pm_to_user.recipientID DESC";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
@@ -1219,7 +1219,7 @@ class WBB3xExporter extends AbstractExporter
         $sql = "SELECT      board.*, structure.position
                 FROM        wbb" . $this->dbNo . "_" . $this->instanceNo . "_board board
                 LEFT JOIN   wbb" . $this->dbNo . "_" . $this->instanceNo . "_board_structure structure
-                ON          (structure.boardID = board.boardID)
+                ON          structure.boardID = board.boardID
                 ORDER BY    board.parentID, structure.position";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
@@ -1396,7 +1396,7 @@ class WBB3xExporter extends AbstractExporter
         $sql = "SELECT      thread.*, language.languageCode
                 FROM        wbb" . $this->dbNo . "_" . $this->instanceNo . "_thread thread
                 LEFT JOIN   wcf" . $this->dbNo . "_language language
-                ON          (language.languageID = thread.languageID)
+                ON          language.languageID = thread.languageID
                 " . $conditionBuilder;
         $statement = $this->database->prepareStatement($sql);
         $statement->execute($conditionBuilder->getParameters());
@@ -1740,7 +1740,7 @@ class WBB3xExporter extends AbstractExporter
                             thread.firstPostID, thread.userID AS objectUserID, thread.time
                 FROM        wbb" . $this->dbNo . "_" . $this->instanceNo . "_thread_rating thread_rating
                 LEFT JOIN   wbb" . $this->dbNo . "_" . $this->instanceNo . "_thread thread
-                ON          (thread.threadID = thread_rating.threadID)
+                ON          thread.threadID = thread_rating.threadID
                 WHERE       thread_rating.userID <> ?
                         AND thread_rating.rating NOT IN (?, ?)
                 ORDER BY    thread_rating.threadID, thread_rating.userID";
@@ -2253,7 +2253,7 @@ class WBB3xExporter extends AbstractExporter
         $sql = "SELECT      entry_to_category.* 
                 FROM        wcf" . $this->dbNo . "_user_blog_entry_to_category entry_to_category
                 LEFT JOIN   wcf" . $this->dbNo . "_user_blog_category category
-                ON          (category.categoryID = entry_to_category.categoryID)
+                ON          category.categoryID = entry_to_category.categoryID
                 " . $conditionBuilder;
         $statement = $this->database->prepareStatement($sql);
         $statement->execute($conditionBuilder->getParameters());
@@ -2271,7 +2271,7 @@ class WBB3xExporter extends AbstractExporter
         $sql = "SELECT      user_blog.*, language.languageCode
                 FROM        wcf" . $this->dbNo . "_user_blog user_blog
                 LEFT JOIN   wcf" . $this->dbNo . "_language language
-                ON          (language.languageID = user_blog.languageID)
+                ON          language.languageID = user_blog.languageID
                 " . $conditionBuilder;
         $statement = $this->database->prepareStatement($sql);
         $statement->execute($conditionBuilder->getParameters());
@@ -2395,7 +2395,7 @@ class WBB3xExporter extends AbstractExporter
         $sql = "SELECT      rating.*, blog.userID AS objectUserID
                 FROM        wcf" . $this->dbNo . "_rating rating
                 LEFT JOIN   wcf" . $this->dbNo . "_user_blog blog
-                ON          (blog.entryID = rating.objectID)
+                ON          blog.entryID = rating.objectID
                 WHERE       rating.objectName = ?
                         AND rating.userID <> ?
                         AND rating.rating NOT IN (?, ?)
@@ -2486,7 +2486,7 @@ class WBB3xExporter extends AbstractExporter
         $sql = "SELECT      gallery_album.*, user_table.username
                 FROM        wcf" . $this->dbNo . "_user_gallery_album gallery_album
                 LEFT JOIN   wcf" . $this->dbNo . "_user user_table
-                ON          (user_table.userID = gallery_album.ownerID)
+                ON          user_table.userID = gallery_album.ownerID
                 WHERE       gallery_album.albumID BETWEEN ? AND ?
                 ORDER BY    albumID";
         $statement = $this->database->prepareStatement($sql);
@@ -2552,7 +2552,7 @@ class WBB3xExporter extends AbstractExporter
         $sql = "SELECT      photo_to_category.*
                 FROM        wcf" . $this->dbNo . "_user_gallery_category_to_object photo_to_category
                 LEFT JOIN   wcf" . $this->dbNo . "_user_gallery_category category
-                ON          (category.categoryID = photo_to_category.categoryID)
+                ON          category.categoryID = photo_to_category.categoryID
                 " . $conditionBuilder;
         $statement = $this->database->prepareStatement($sql);
         $statement->execute($conditionBuilder->getParameters());
@@ -2678,7 +2678,7 @@ class WBB3xExporter extends AbstractExporter
         $sql = "SELECT      rating.*, photo.ownerID AS objectUserID
                 FROM        wcf" . $this->dbNo . "_rating rating
                 LEFT JOIN   wcf" . $this->dbNo . "_user_gallery photo
-                ON          (photo.photoID = rating.objectID)
+                ON          photo.photoID = rating.objectID
                 WHERE       rating.objectName = ?
                         AND rating.userID <> ?
                         AND rating.rating NOT IN (?, ?)
@@ -2773,9 +2773,9 @@ class WBB3xExporter extends AbstractExporter
         $sql = "SELECT      calendar_event_participation.*, calendar_event_message.*, calendar_event.*
                 FROM        wcf" . $this->dbNo . "_calendar_event calendar_event
                 LEFT JOIN   wcf" . $this->dbNo . "_calendar_event_message calendar_event_message
-                ON          (calendar_event_message.messageID = calendar_event.messageID)
+                ON          calendar_event_message.messageID = calendar_event.messageID
                 LEFT JOIN   wcf" . $this->dbNo . "_calendar_event_participation calendar_event_participation
-                ON          (calendar_event_participation.eventID = calendar_event.eventID)
+                ON          calendar_event_participation.eventID = calendar_event.eventID
                 WHERE       calendar_event.eventID BETWEEN ? AND ?
                 ORDER BY    calendar_event.eventID";
         $statement = $this->database->prepareStatement($sql);
@@ -3105,7 +3105,7 @@ class WBB3xExporter extends AbstractExporter
         $sql = "SELECT      participation_to_user.*, participation.eventID
                 FROM        wcf" . $this->dbNo . "_calendar_event_participation_to_user participation_to_user
                 LEFT JOIN   wcf" . $this->dbNo . "_calendar_event_participation participation
-                ON          (participation.participationID = participation_to_user.participationID)
+                ON          participation.participationID = participation_to_user.participationID
                 ORDER BY    participation_to_user.participationID, participation_to_user.userID";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
@@ -3278,7 +3278,7 @@ class WBB3xExporter extends AbstractExporter
                 $sql = "SELECT      tag.name, tag_to_object.objectID
                         FROM        wcf" . $this->dbNo . "_tag_to_object tag_to_object
                         LEFT JOIN   wcf" . $this->dbNo . "_tag tag
-                        ON          (tag.tagID = tag_to_object.tagID)
+                        ON          tag.tagID = tag_to_object.tagID
                         " . $conditionBuilder;
                 $statement = $this->database->prepareStatement($sql);
                 $statement->execute($conditionBuilder->getParameters());

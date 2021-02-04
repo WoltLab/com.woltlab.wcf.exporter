@@ -216,9 +216,9 @@ class IPB3xExporter extends AbstractExporter
         $sql = "SELECT      pfields_content.*, members.*, profile_portal.*
                 FROM        " . $this->databasePrefix . "members members
                 LEFT JOIN   " . $this->databasePrefix . "profile_portal profile_portal
-                ON          (profile_portal.pp_member_id = members.member_id)
+                ON          profile_portal.pp_member_id = members.member_id
                 LEFT JOIN   " . $this->databasePrefix . "pfields_content pfields_content
-                ON          (pfields_content.member_id = members.member_id)
+                ON          pfields_content.member_id = members.member_id
                 WHERE       members.member_id BETWEEN ? AND ?
                 ORDER BY    members.member_id";
         $statement = $this->database->prepareStatement($sql);
@@ -498,7 +498,7 @@ class IPB3xExporter extends AbstractExporter
         $sql = "SELECT      status_updates.*, members.name
                 FROM        " . $this->databasePrefix . "member_status_updates status_updates
                 LEFT JOIN   " . $this->databasePrefix . "members members
-                ON          (members.member_id = status_updates.status_author_id)
+                ON          members.member_id = status_updates.status_author_id
                 WHERE       status_updates.status_id BETWEEN ? AND ?
                 ORDER BY    status_updates.status_id";
         $statement = $this->database->prepareStatement($sql);
@@ -537,7 +537,7 @@ class IPB3xExporter extends AbstractExporter
         $sql = "SELECT      member_status_replies.*, members.name
                 FROM        " . $this->databasePrefix . "member_status_replies member_status_replies
                 LEFT JOIN   " . $this->databasePrefix . "members members
-                ON          (members.member_id = member_status_replies.reply_member_id)
+                ON          members.member_id = member_status_replies.reply_member_id
                 WHERE       member_status_replies.reply_id BETWEEN ? AND ?
                 ORDER BY    member_status_replies.reply_id";
         $statement = $this->database->prepareStatement($sql);
@@ -611,7 +611,7 @@ class IPB3xExporter extends AbstractExporter
         $sql = "SELECT      message_topics.*, members.name
                 FROM        " . $this->databasePrefix . "message_topics message_topics
                 LEFT JOIN   " . $this->databasePrefix . "members members
-                ON          (members.member_id = message_topics.mt_starter_id)
+                ON          members.member_id = message_topics.mt_starter_id
                 WHERE       message_topics.mt_id BETWEEN ? AND ?
                 ORDER BY    message_topics.mt_id";
         $statement = $this->database->prepareStatement($sql);
@@ -650,7 +650,7 @@ class IPB3xExporter extends AbstractExporter
         $sql = "SELECT      message_posts.*, members.name
                 FROM        " . $this->databasePrefix . "message_posts message_posts
                 LEFT JOIN   " . $this->databasePrefix . "members members
-                ON          (members.member_id = message_posts.msg_author_id)
+                ON          members.member_id = message_posts.msg_author_id
                 WHERE       message_posts.msg_id BETWEEN ? AND ?
                 ORDER BY    message_posts.msg_id";
         $statement = $this->database->prepareStatement($sql);
@@ -689,7 +689,7 @@ class IPB3xExporter extends AbstractExporter
         $sql = "SELECT      message_topic_user_map.*, members.name
                 FROM        " . $this->databasePrefix . "message_topic_user_map message_topic_user_map
                 LEFT JOIN   " . $this->databasePrefix . "members members
-                ON          (members.member_id = message_topic_user_map.map_user_id)
+                ON          members.member_id = message_topic_user_map.map_user_id
                 WHERE       message_topic_user_map.map_id BETWEEN ? AND ?
                 ORDER BY    message_topic_user_map.map_id";
         $statement = $this->database->prepareStatement($sql);
@@ -985,7 +985,7 @@ class IPB3xExporter extends AbstractExporter
         $sql = "SELECT      polls.*, topics.topic_firstpost
                 FROM        " . $this->databasePrefix . "polls polls
                 LEFT JOIN   " . $this->databasePrefix . "topics topics
-                ON          (topics.tid = polls.tid)
+                ON          topics.tid = polls.tid
                 WHERE       pid BETWEEN ? AND ?
                 ORDER BY    pid";
         $statement = $this->database->prepareStatement($sql);
@@ -1051,7 +1051,7 @@ class IPB3xExporter extends AbstractExporter
         $sql = "SELECT      polls.*, voters.*
                 FROM        " . $this->databasePrefix . "voters voters
                 LEFT JOIN   " . $this->databasePrefix . "polls polls
-                ON          (polls.tid = voters.tid)
+                ON          polls.tid = voters.tid
                 WHERE       voters.vid BETWEEN ? AND ?
                 ORDER BY    voters.vid";
         $statement = $this->database->prepareStatement($sql);
@@ -1107,7 +1107,7 @@ class IPB3xExporter extends AbstractExporter
         $sql = "SELECT      core_like.*, topics.topic_firstpost, topics.starter_id
                 FROM        " . $this->databasePrefix . "core_like core_like
                 LEFT JOIN   " . $this->databasePrefix . "topics topics
-                ON          (topics.tid = core_like.like_rel_id)
+                ON          topics.tid = core_like.like_rel_id
                 WHERE       core_like.like_app = ?
                         AND core_like.like_area = ?
                         AND core_like.like_visible = ?

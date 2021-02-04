@@ -609,12 +609,12 @@ class WBB4xExporter extends AbstractExporter
                                 SELECT      GROUP_CONCAT(language.languageCode)
                                 FROM        wcf" . $this->dbNo . "_user_to_language user_to_language
                                 LEFT JOIN   wcf" . $this->dbNo . "_language language
-                                ON          (language.languageID = user_to_language.languageID)
+                                ON          language.languageID = user_to_language.languageID
                                 WHERE   user_to_language.userID = user_table.userID
                             ) AS languageCodes
                 FROM        wcf" . $this->dbNo . "_user user_table
                 LEFT JOIN   wcf" . $this->dbNo . "_user_option_value user_option_value
-                ON          (user_option_value.userID = user_table.userID)
+                ON          user_option_value.userID = user_table.userID
                 WHERE       user_table.userID BETWEEN ? AND ?
                 ORDER BY    user_table.userID";
         $statement = $this->database->prepareStatement($sql);
@@ -1331,7 +1331,7 @@ class WBB4xExporter extends AbstractExporter
         $sql = "SELECT      thread.*, language.languageCode
                 FROM        wbb" . $this->dbNo . "_thread thread
                 LEFT JOIN   wcf" . $this->dbNo . "_language language
-                ON          (language.languageID = thread.languageID)
+                ON          language.languageID = thread.languageID
                 " . $conditionBuilder;
         $statement = $this->database->prepareStatement($sql);
         $statement->execute($conditionBuilder->getParameters());
@@ -1963,7 +1963,7 @@ class WBB4xExporter extends AbstractExporter
         $sql = "SELECT      blog.*, language.languageCode
                 FROM        blog" . $this->dbNo . "_blog blog
                 LEFT JOIN   wcf" . $this->dbNo . "_language language
-                ON          (language.languageID = blog.languageID)
+                ON          language.languageID = blog.languageID
                 WHERE       blogID BETWEEN ? AND ?
                 ORDER BY    blogID";
         $statement = $this->database->prepareStatement($sql);
@@ -2087,7 +2087,7 @@ class WBB4xExporter extends AbstractExporter
         $sql = "SELECT      entry.*, language.languageCode
                 FROM        blog" . $this->dbNo . "_entry entry
                 LEFT JOIN   wcf" . $this->dbNo . "_language language
-                ON          (language.languageID = entry.languageID)
+                ON          language.languageID = entry.languageID
                 " . $conditionBuilder;
         $statement = $this->database->prepareStatement($sql);
         $statement->execute($conditionBuilder->getParameters());
@@ -2623,7 +2623,7 @@ class WBB4xExporter extends AbstractExporter
         $sql = "SELECT      event.*, language.languageCode
                 FROM        calendar" . $this->dbNo . "_event event
                 LEFT JOIN   wcf" . $this->dbNo . "_language language
-                ON          (language.languageID = event.languageID)
+                ON          language.languageID = event.languageID
                 " . $conditionBuilder;
         $statement = $this->database->prepareStatement($sql);
         $statement->execute($conditionBuilder->getParameters());
@@ -2967,7 +2967,7 @@ class WBB4xExporter extends AbstractExporter
         $sql = "SELECT      file.*, language.languageCode
                 FROM        filebase" . $this->dbNo . "_file file
                 LEFT JOIN   wcf" . $this->dbNo . "_language language
-                ON          (language.languageID = file.languageID)
+                ON          language.languageID = file.languageID
                 " . $conditionBuilder;
         $statement = $this->database->prepareStatement($sql);
         $statement->execute($conditionBuilder->getParameters());
@@ -3019,7 +3019,7 @@ class WBB4xExporter extends AbstractExporter
         $sql = "SELECT      file_content.*, language.languageCode
                 FROM        filebase" . $this->dbNo . "_file_content file_content
                 LEFT JOIN   wcf" . $this->dbNo . "_language language
-                ON          (language.languageID = file_content.languageID)
+                ON          language.languageID = file_content.languageID
                 " . $conditionBuilder;
         $statement = $this->database->prepareStatement($sql);
         $statement->execute($conditionBuilder->getParameters());
@@ -3133,9 +3133,9 @@ class WBB4xExporter extends AbstractExporter
         $sql = "SELECT      file_version.*, language.languageCode
                 FROM        filebase" . $this->dbNo . "_file_version file_version
                 LEFT JOIN   filebase" . $this->dbNo . "_file file
-                ON          (file.fileID = file_version.fileID)
+                ON          file.fileID = file_version.fileID
                 LEFT JOIN   wcf" . $this->dbNo . "_language language
-                ON          (language.languageID = file.languageID)
+                ON          language.languageID = file.languageID
                 WHERE       file_version.versionID BETWEEN ? AND ?
                 ORDER BY    file_version.versionID";
         $statement = $this->database->prepareStatement($sql);
@@ -3179,7 +3179,7 @@ class WBB4xExporter extends AbstractExporter
         $sql = "SELECT      version_content.*, language.languageCode
                 FROM        filebase" . $this->dbNo . "_file_version_content version_content
                 LEFT JOIN   wcf" . $this->dbNo . "_language language
-                ON          (language.languageID = version_content.languageID)
+                ON          language.languageID = version_content.languageID
                 " . $conditionBuilder;
         $statement = $this->database->prepareStatement($sql);
         $statement->execute($conditionBuilder->getParameters());
@@ -4093,7 +4093,7 @@ class WBB4xExporter extends AbstractExporter
         $sql = "SELECT      tag.name, tag_to_object.objectID
                 FROM        wcf" . $this->dbNo . "_tag_to_object tag_to_object
                 LEFT JOIN   wcf" . $this->dbNo . "_tag tag
-                ON          (tag.tagID = tag_to_object.tagID)
+                ON          tag.tagID = tag_to_object.tagID
                 " . $conditionBuilder;
         $statement = $this->database->prepareStatement($sql);
         $statement->execute($conditionBuilder->getParameters());
@@ -4265,7 +4265,7 @@ class WBB4xExporter extends AbstractExporter
         $sql = "SELECT      language_item.languageItem, language_item.languageItemValue, language.languageCode
                 FROM        wcf" . $this->dbNo . "_language_item language_item
                 LEFT JOIN   wcf" . $this->dbNo . "_language language
-                ON          (language_item.languageID = language.languageID)
+                ON          language_item.languageID = language.languageID
                 " . $conditions;
         $statement = $this->database->prepareStatement($sql);
         $statement->execute($conditions->getParameters());

@@ -1253,7 +1253,7 @@ class XF2xExporter extends AbstractExporter
                             ) AS responses
                 FROM        xf_poll poll
                 INNER JOIN  xf_thread thread
-                ON          (poll.content_id = thread.thread_id)
+                ON          poll.content_id = thread.thread_id
                 WHERE       content_type = ?
                 ORDER BY    poll.poll_id";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);

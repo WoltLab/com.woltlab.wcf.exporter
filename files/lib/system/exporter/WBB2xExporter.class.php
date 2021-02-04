@@ -315,7 +315,7 @@ class WBB2xExporter extends AbstractExporter
                             ) AS groupIDs
                 FROM        " . $this->databasePrefix . "users user
                 LEFT JOIN   " . $this->databasePrefix . "userfields userfields
-                ON          (userfields.userid = user.userid)
+                ON          userfields.userid = user.userid
                 WHERE       user.userid BETWEEN ? AND ?
                 ORDER BY    user.userid";
         $statement = $this->database->prepareStatement($sql);
@@ -595,7 +595,7 @@ class WBB2xExporter extends AbstractExporter
         $sql = "SELECT      pm.*, user_table.username
                 FROM        " . $this->databasePrefix . "privatemessage pm
                 LEFT JOIN   " . $this->databasePrefix . "users user_table
-                ON          (user_table.userid = pm.senderid)
+                ON          user_table.userid = pm.senderid
                 WHERE       pm.privatemessageid BETWEEN ? AND ?
                 ORDER BY    pm.privatemessageid";
         $statement = $this->database->prepareStatement($sql);

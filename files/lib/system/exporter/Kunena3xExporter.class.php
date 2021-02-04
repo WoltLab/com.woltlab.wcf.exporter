@@ -495,7 +495,7 @@ class Kunena3xExporter extends AbstractExporter
         $sql = "SELECT      *
                 FROM        " . $this->databasePrefix . "kunena_messages kunena_messages
                 LEFT JOIN   " . $this->databasePrefix . "kunena_messages_text kunena_messages_text
-                ON          (kunena_messages_text.mesid = kunena_messages.id)
+                ON          kunena_messages_text.mesid = kunena_messages.id
                 WHERE       id BETWEEN ? AND ?
                 ORDER BY    id";
         $statement = $this->database->prepareStatement($sql);

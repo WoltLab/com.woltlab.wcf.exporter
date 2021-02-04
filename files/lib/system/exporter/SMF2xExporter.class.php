@@ -353,9 +353,9 @@ class SMF2xExporter extends AbstractExporter
                             ) AS isMod
                 FROM        " . $this->databasePrefix . "members member
                 LEFT JOIN   " . $this->databasePrefix . "ban_items ban_item
-                ON          (member.id_member = ban_item.id_member)
+                ON          member.id_member = ban_item.id_member
                 LEFT JOIN   " . $this->databasePrefix . "ban_groups ban_group
-                ON          (ban_item.id_ban_group = ban_group.id_ban_group)
+                ON          ban_item.id_ban_group = ban_group.id_ban_group
                 " . $condition;
         $statement = $this->database->prepareStatement($sql);
         $statement->execute($condition->getParameters());
@@ -891,9 +891,9 @@ class SMF2xExporter extends AbstractExporter
                             ) AS participants
                 FROM        " . $this->databasePrefix . "pm_recipients recipients
                 LEFT JOIN   " . $this->databasePrefix . "personal_messages pm
-                ON          (pm.id_pm = recipients.id_pm)
+                ON          pm.id_pm = recipients.id_pm
                 LEFT JOIN   " . $this->databasePrefix . "members members
-                ON          (recipients.id_member = members.id_member)
+                ON          recipients.id_member = members.id_member
                 ORDER BY    recipients.id_pm, recipients.id_member";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
@@ -1039,7 +1039,7 @@ class SMF2xExporter extends AbstractExporter
         $sql = "SELECT      topic.*, post.subject, post.poster_time AS time, post.poster_name AS username
                 FROM        " . $this->databasePrefix . "topics topic
                 LEFT JOIN   " . $this->databasePrefix . "messages post
-                ON          (post.id_msg = topic.id_first_msg)
+                ON          post.id_msg = topic.id_first_msg
                 WHERE       topic.id_topic BETWEEN ? AND ?
                 ORDER BY    topic.id_topic";
         $statement = $this->database->prepareStatement($sql);
@@ -1085,7 +1085,7 @@ class SMF2xExporter extends AbstractExporter
         $sql = "SELECT      message.*, member.id_member AS editorID
                 FROM        " . $this->databasePrefix . "messages message
                 LEFT JOIN   " . $this->databasePrefix . "members member
-                ON          (message.modified_name = member.real_name)
+                ON          message.modified_name = member.real_name
                 WHERE       message.id_msg BETWEEN ? AND ?
                 ORDER BY    message.id_msg";
         $statement = $this->database->prepareStatement($sql);
@@ -1141,7 +1141,7 @@ class SMF2xExporter extends AbstractExporter
         $sql = "SELECT      attachment.*, message.id_member, message.poster_time
                 FROM        " . $this->databasePrefix . "attachments attachment
                 INNER JOIN  " . $this->databasePrefix . "messages message
-                ON          (message.id_msg = attachment.id_msg)
+                ON          message.id_msg = attachment.id_msg
                 WHERE       attachment.id_member = ?
                         AND attachment.id_msg <> ?
                 ORDER BY    attachment.id_attach";
@@ -1250,7 +1250,7 @@ class SMF2xExporter extends AbstractExporter
                             ) AS votes
                 FROM        " . $this->databasePrefix . "polls poll
                 INNER JOIN  " . $this->databasePrefix . "topics topic
-                ON          (topic.id_poll = poll.id_poll)
+                ON          topic.id_poll = poll.id_poll
                 ORDER BY    id_poll";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();

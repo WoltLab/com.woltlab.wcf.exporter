@@ -208,7 +208,7 @@ class WordPress3xExporter extends AbstractExporter
         $sql = "SELECT      term_taxonomy.*, term.name
                 FROM        " . $this->databasePrefix . "term_taxonomy term_taxonomy
                 LEFT JOIN   " . $this->databasePrefix . "terms term
-                ON          (term.term_id = term_taxonomy.term_id)
+                ON          term.term_id = term_taxonomy.term_id
                 WHERE       term_taxonomy.taxonomy = ?
                 ORDER BY    term_taxonomy.parent, term_taxonomy.term_id";
         $statement = $this->database->prepareStatement($sql);
@@ -294,7 +294,7 @@ class WordPress3xExporter extends AbstractExporter
                 FROM        " . $this->databasePrefix . "term_relationships term_relationships,
                             " . $this->databasePrefix . "term_taxonomy term_taxonomy
                 LEFT JOIN   " . $this->databasePrefix . "terms term
-                ON          (term.term_id = term_taxonomy.term_id)
+                ON          term.term_id = term_taxonomy.term_id
                 " . $conditionBuilder;
         $statement = $this->database->prepareStatement($sql);
         $statement->execute($conditionBuilder->getParameters());
@@ -338,7 +338,7 @@ class WordPress3xExporter extends AbstractExporter
                             ) AS imageID
                 FROM        " . $this->databasePrefix . "posts post
                 LEFT JOIN   " . $this->databasePrefix . "users user
-                ON          (user.ID = post.post_author)
+                ON          user.ID = post.post_author
                 " . $conditionBuilder;
         $statement = $this->database->prepareStatement($sql);
         $statement->execute($conditionBuilder->getParameters());
@@ -498,7 +498,8 @@ class WordPress3xExporter extends AbstractExporter
         $sql = "SELECT      posts.*, postmeta.*
                 FROM        " . $this->databasePrefix . "posts posts
                 LEFT JOIN   " . $this->databasePrefix . "postmeta postmeta
-                ON          (postmeta.post_id = posts.ID AND postmeta.meta_key = ?)
+                ON          postmeta.post_id = posts.ID
+                        AND postmeta.meta_key = ?
                 WHERE       post_type = ?
                         AND post_parent IN (
                                 SELECT  ID
