@@ -3277,7 +3277,7 @@ class WBB3xExporter extends AbstractExporter
 
                 $sql = "SELECT      tag.name, tag_to_object.objectID
                         FROM        wcf" . $this->dbNo . "_tag_to_object tag_to_object
-                        LEFT JOIN   wcf" . $this->dbNo . "_tag tag
+                        INNER JOIN  wcf" . $this->dbNo . "_tag tag
                         ON          tag.tagID = tag_to_object.tagID
                         " . $conditionBuilder;
                 $statement = $this->database->prepareStatement($sql);
