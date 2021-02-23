@@ -30,13 +30,9 @@
 		<instruction type="objectType" />
 	</instructions>
 	
-	<instructions type="update" fromversion="5.2.*">
+	<instructions type="update" fromversion="5.3.*">
 		<instruction type="file" />
-	</instructions>
-
-	<instructions type="update" fromversion="5.3.0">
-		<instruction type="file">files_update.tar</instruction>
-
-		<instruction type="language" />
+		
+		<instruction type="objectType" />
 	</instructions>
 </package>
