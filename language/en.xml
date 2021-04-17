@@ -3,7 +3,7 @@
 	<category name="wcf.acp.dataImport">
 		<item name="wcf.acp.dataImport.exporter.com.woltlab.wcf.exporter.wbb2x"><![CDATA[Burning Board 2.3.x]]></item>
 		<item name="wcf.acp.dataImport.exporter.com.woltlab.wcf.exporter.wbb3x"><![CDATA[Burning Board 3.0.x, 3.1.x, Lite 2.1.x]]></item>
-		<item name="wcf.acp.dataImport.exporter.com.woltlab.wcf.exporter.wbb4x"><![CDATA[Burning Board 4.0.x, 4.1.x, WoltLab Suite Forum 5.0.x, WoltLab Suite Forum 5.1.x]]></item>
+		<item name="wcf.acp.dataImport.exporter.com.woltlab.wcf.exporter.wbb4x"><![CDATA[Burning Board 4.0.x, 4.1.x, WoltLab Suite Forum 5.0.x, 5.1.x, 5.2.x, 5.3.x]]></item>
 		<item name="wcf.acp.dataImport.exporter.com.woltlab.wcf.exporter.kunena3x"><![CDATA[Kunena 3.0.x]]></item>
 		<item name="wcf.acp.dataImport.exporter.com.woltlab.wcf.exporter.mybb16x"><![CDATA[MyBB 1.8.x]]></item>
 		<item name="wcf.acp.dataImport.exporter.com.woltlab.wcf.exporter.smf2x"><![CDATA[Simple Machines Forum 2.x]]></item>
