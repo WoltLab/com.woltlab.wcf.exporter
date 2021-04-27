@@ -4169,6 +4169,8 @@ class WBB4xExporter extends AbstractExporter
         if ($row !== false) {
             return $row['objectTypeID'];
         }
+
+        return null;
     }
 
     /**
