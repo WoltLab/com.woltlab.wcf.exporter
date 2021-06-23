@@ -2206,7 +2206,7 @@ class VB3or4xExporter extends AbstractExporter
             $eventDateData = [
                 'startTime' => $row['dateline_from'],
                 // vBulletin does not properly support endTime for recurring events
-                'endTime' => ($row['recurring'] != 0) ? $row['dateline_from'] + 1 : $row['dateline_to'],
+                'endTime' => ($row['recurring'] != 0) ? $row['dateline_from'] + 1 : ($row['dateline_to'] ?: $row['dateline_from']),
                 'isFullDay' => $row['dateline_to'] ? 0 : 1,
                 'timezone' => $timezones[\round($row['utc'] * 10, 0)],
                 'repeatEndType' => 'date',
