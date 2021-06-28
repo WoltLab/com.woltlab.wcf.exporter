@@ -37,6 +37,8 @@
 	<instructions type="update" fromversion="5.3.*">
 		<instruction type="file" />
 		
+		<instruction type="language" />
+		
 		<instruction type="objectType" />
 	</instructions>
 </package>
