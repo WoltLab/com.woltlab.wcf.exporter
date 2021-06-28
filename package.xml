@@ -33,4 +33,10 @@
 	<instructions type="update" fromversion="5.4.0 Beta 1">
 		<instruction type="file">files_update.tar</instruction>
 	</instructions>
+	
+	<instructions type="update" fromversion="5.3.*">
+		<instruction type="file" />
+		
+		<instruction type="objectType" />
+	</instructions>
 </package>
