@@ -1413,6 +1413,9 @@ class IPB4xExporter extends AbstractExporter
             $string
         );
 
+        // replace base_url placeholder in urls/images
+        $string = \str_ireplace('<___base_url___>/', WCF::getPath(), $string);
+
         // code
         for ($i = 0, $length = \count($codes); $i < $length; $i++) {
             $string = \str_replace('@@@WCF_CODE_BLOCK_' . $i . '@@@', '[code]' . $codes[$i] . '[/code]', $string);
