@@ -1532,11 +1532,17 @@ class IPB4xExporter extends AbstractExporter
                 'isFeatured' => $row['blog_pinned'],
             ];
 
+            $additionalData = [];
+            if (!empty($row['blog_cover_photo'])) {
+                $additionalData['coverPhoto'] = $this->fileSystemPath . 'uploads/' . $row['blog_cover_photo'];
+            }
+
             ImportHandler::getInstance()
                 ->getImporter('com.woltlab.blog.blog')
                 ->import(
                     $row['blog_id'],
-                    $data
+                    $data,
+                    $additionalData
                 );
         }
     }
