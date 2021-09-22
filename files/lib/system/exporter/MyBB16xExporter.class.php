@@ -1008,7 +1008,7 @@ class MyBB16xExporter extends AbstractExporter
             $statement->execute(['uploadspath']);
             $row = $statement->fetchArray();
             $uploadsPath = $row['value'];
-            if (!StringUtil::startsWith($uploadsPath, '/')) {
+            if (!\str_starts_with($uploadsPath, '/')) {
                 $uploadsPath = \realpath($this->fileSystemPath . $uploadsPath);
             }
         }

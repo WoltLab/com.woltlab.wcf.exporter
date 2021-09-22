@@ -266,7 +266,7 @@ class VB3or4xExporter extends AbstractExporter
         ) {
             if ($this->readOption('attachfile') != self::ATTACHFILE_DATABASE) {
                 $path = $this->readOption('attachpath');
-                if (!StringUtil::startsWith($path, '/')) {
+                if (!\str_starts_with($path, '/')) {
                     $path = \realpath($this->fileSystemPath . $path);
                 }
                 if (!\is_dir($path)) {
@@ -278,7 +278,7 @@ class VB3or4xExporter extends AbstractExporter
         if (\in_array('com.woltlab.wcf.user.avatar', $this->selectedData)) {
             if ($this->readOption('usefileavatar')) {
                 $path = $this->readOption('avatarpath');
-                if (!StringUtil::startsWith($path, '/')) {
+                if (!\str_starts_with($path, '/')) {
                     $path = \realpath($this->fileSystemPath . $path);
                 }
                 if (!\is_dir($path)) {
@@ -766,7 +766,7 @@ class VB3or4xExporter extends AbstractExporter
             try {
                 if ($this->readOption('usefileavatar')) {
                     $file = $this->readOption('avatarpath');
-                    if (!StringUtil::startsWith($file, '/')) {
+                    if (!\str_starts_with($file, '/')) {
                         $file = \realpath($this->fileSystemPath . $file);
                     }
                     $file = FileUtil::addTrailingSlash($file) . 'avatar' . $row['userid'] . '_' . $row['avatarrevision'] . '.gif';
@@ -2014,7 +2014,7 @@ class VB3or4xExporter extends AbstractExporter
                             break;
                         case self::ATTACHFILE_FILESYSTEM:
                             $file = $this->readOption('attachpath');
-                            if (!StringUtil::startsWith($file, '/')) {
+                            if (!\str_starts_with($file, '/')) {
                                 $file = \realpath($this->fileSystemPath . $file);
                             }
                             $file = FileUtil::addTrailingSlash($file);
@@ -2022,7 +2022,7 @@ class VB3or4xExporter extends AbstractExporter
                             break;
                         case self::ATTACHFILE_FILESYSTEM_SUBFOLDER:
                             $file = $this->readOption('attachpath');
-                            if (!StringUtil::startsWith($file, '/')) {
+                            if (!\str_starts_with($file, '/')) {
                                 $file = \realpath($this->fileSystemPath . $file);
                             }
                             $file = FileUtil::addTrailingSlash($file);
@@ -2038,7 +2038,7 @@ class VB3or4xExporter extends AbstractExporter
                         case self::GALLERY_FILESYSTEM:
                         case self::GALLERY_FILESYSTEM_DIRECT_THUMBS:
                             $file = $this->readOption('album_picpath');
-                            if (!StringUtil::startsWith($file, '/')) {
+                            if (!\str_starts_with($file, '/')) {
                                 $file = \realpath($this->fileSystemPath . $file);
                             }
                             $file = FileUtil::addTrailingSlash($file);
@@ -2489,7 +2489,7 @@ class VB3or4xExporter extends AbstractExporter
                         break;
                     case self::ATTACHFILE_FILESYSTEM:
                         $file = $this->readOption('attachpath');
-                        if (!StringUtil::startsWith($file, '/')) {
+                        if (!\str_starts_with($file, '/')) {
                             $file = \realpath($this->fileSystemPath . $file);
                         }
                         $file = FileUtil::addTrailingSlash($file);
@@ -2497,7 +2497,7 @@ class VB3or4xExporter extends AbstractExporter
                         break;
                     case self::ATTACHFILE_FILESYSTEM_SUBFOLDER:
                         $file = $this->readOption('attachpath');
-                        if (!StringUtil::startsWith($file, '/')) {
+                        if (!\str_starts_with($file, '/')) {
                             $file = \realpath($this->fileSystemPath . $file);
                         }
                         $file = FileUtil::addTrailingSlash($file);

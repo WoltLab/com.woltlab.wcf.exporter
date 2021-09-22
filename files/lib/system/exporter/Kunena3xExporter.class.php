@@ -263,11 +263,11 @@ class Kunena3xExporter extends AbstractExporter
             // update password hash
             if ($newUserID) {
                 $password = 'joomla3:' . $row['password'];
-                if (StringUtil::startsWith($row['password'], '$1')) {
+                if (\str_starts_with($row['password'], '$1')) {
                     $password = 'cryptMD5:' . $row['password'];
-                } elseif (StringUtil::startsWith($row['password'], '$2')) {
+                } elseif (\str_starts_with($row['password'], '$2')) {
                     $password = 'Bcrypt:' . $row['password'];
-                } elseif (StringUtil::startsWith($row['password'], '$P')) {
+                } elseif (\str_starts_with($row['password'], '$P')) {
                     $password = 'phpass:' . $row['password'];
                 }
 

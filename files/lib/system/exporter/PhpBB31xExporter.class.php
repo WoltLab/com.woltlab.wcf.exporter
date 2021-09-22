@@ -455,9 +455,9 @@ class PhpBB31xExporter extends AbstractExporter
 
             // update password hash
             if ($newUserID) {
-                if (StringUtil::startsWith($row['user_password'], '$2')) {
+                if (\str_starts_with($row['user_password'], '$2')) {
                     $password = 'Bcrypt:' . $row['user_password'];
-                } elseif (StringUtil::startsWith($row['user_password'], '$argon2')) {
+                } elseif (\str_starts_with($row['user_password'], '$argon2')) {
                     $password = 'argon2:' . $row['user_password'];
                 } else {
                     $password = 'phpbb3:' . $row['user_password'] . ':';

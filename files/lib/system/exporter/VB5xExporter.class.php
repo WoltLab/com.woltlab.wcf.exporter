@@ -457,9 +457,9 @@ class VB5xExporter extends AbstractExporter
 
             // update password hash
             if ($newUserID) {
-                if (StringUtil::startsWith($row['scheme'], 'blowfish')) {
+                if (\str_starts_with($row['scheme'], 'blowfish')) {
                     $password = 'Bcrypt:' . $row['token'];
-                } elseif (StringUtil::startsWith($row['scheme'], 'argon2')) {
+                } elseif (\str_starts_with($row['scheme'], 'argon2')) {
                     $password = 'argon2:' . $row['token'];
                 } elseif ($row['scheme'] == 'legacy') {
                     $password = 'vb5:' . \implode(':', \explode(' ', $row['token'], 2));
@@ -504,7 +504,7 @@ class VB5xExporter extends AbstractExporter
                 // TODO: not yet supported
                 if (false && $this->readOption('usefileavatar')) {
                     $file = $this->readOption('avatarpath');
-                    if (!StringUtil::startsWith($file, '/')) {
+                    if (!\str_starts_with($file, '/')) {
                         $file = \realpath($this->fileSystemPath . $file);
                     }
                     $file = FileUtil::addTrailingSlash($file) . 'avatar' . $row['userid'] . '_' . $row['avatarrevision'] . '.gif';
