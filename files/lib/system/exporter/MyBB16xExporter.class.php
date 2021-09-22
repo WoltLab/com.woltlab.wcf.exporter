@@ -18,7 +18,6 @@ use wcf\system\WCF;
 use wcf\util\ArrayUtil;
 use wcf\util\FileUtil;
 use wcf\util\MessageUtil;
-use wcf\util\StringUtil;
 use wcf\util\Url;
 use wcf\util\UserRegistrationUtil;
 use wcf\util\UserUtil;
