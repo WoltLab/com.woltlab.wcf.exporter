@@ -6,7 +6,6 @@ use gallery\data\album\Album;
 use wbb\data\board\Board;
 use wcf\data\user\group\UserGroup;
 use wcf\data\user\option\UserOption;
-use wcf\system\database\DatabaseException;
 use wcf\system\exception\SystemException;
 use wcf\system\importer\ImportHandler;
 use wcf\system\Regex;
@@ -161,7 +160,7 @@ class VB5xExporter extends AbstractExporter
         $templateversion = $this->readOption('templateversion');
 
         if (\version_compare($templateversion, '5.0.0', '<')) {
-            throw new DatabaseException('Cannot import less than vB 5.0.x', $this->database);
+            throw new \RuntimeException('Cannot import less than vBulletin 5.0.x.');
         }
     }
 

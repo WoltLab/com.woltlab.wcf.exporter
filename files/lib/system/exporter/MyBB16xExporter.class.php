@@ -9,7 +9,6 @@ use wcf\data\object\type\ObjectTypeCache;
 use wcf\data\user\group\UserGroup;
 use wcf\data\user\option\UserOption;
 use wcf\data\user\UserProfile;
-use wcf\system\database\DatabaseException;
 use wcf\system\database\util\PreparedStatementConditionBuilder;
 use wcf\system\importer\ImportHandler;
 use wcf\system\Regex;
@@ -123,7 +122,7 @@ class MyBB16xExporter extends AbstractExporter
         $data = \unserialize($row['cache']);
 
         if ($data['version_code'] < 1800) {
-            throw new DatabaseException('Cannot import MyBB 1.6.x or less', $this->database);
+            throw new \RuntimeException('Cannot import MyBB 1.6.x or less.');
         }
     }
 

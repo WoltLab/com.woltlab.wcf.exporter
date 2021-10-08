@@ -5,7 +5,6 @@ namespace wcf\system\exporter;
 use wbb\data\board\Board;
 use wcf\data\user\group\UserGroup;
 use wcf\data\user\option\UserOption;
-use wcf\system\database\DatabaseException;
 use wcf\system\database\util\PreparedStatementConditionBuilder;
 use wcf\system\importer\ImportHandler;
 use wcf\system\option\user\SelectOptionsUserOptionOutput;
@@ -119,7 +118,7 @@ class SMF2xExporter extends AbstractExporter
         parent::validateDatabaseAccess();
 
         if (\version_compare($this->readOption('smfVersion'), '2.0.0', '<')) {
-            throw new DatabaseException('Cannot import less than SMF 2.x', $this->database);
+            throw new \RuntimeException('Cannot import less than SMF 2.x.');
         }
     }
 

@@ -239,10 +239,10 @@ class VB3or4xExporter extends AbstractExporter
         $templateversion = $this->readOption('templateversion');
 
         if (\version_compare($templateversion, '3.8.0', '<')) {
-            throw new DatabaseException('Cannot import less than vB 3.8.x', $this->database);
+            throw new \RuntimeException('Cannot import less than vBulletin 3.8.x.');
         }
         if (\version_compare($templateversion, '4.3.0 alpha 1', '>=')) {
-            throw new DatabaseException('Cannot import greater than vB 4.2.x', $this->database);
+            throw new \RuntimeException('Cannot import greater than vBulletin 4.2.x.');
         }
     }
 
