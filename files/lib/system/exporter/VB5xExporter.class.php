@@ -159,8 +159,13 @@ class VB5xExporter extends AbstractExporter
 
         if (\in_array('com.woltlab.wbb.attachment', $this->selectedData)) {
             if ($this->readOption('attachfile') != self::ATTACHFILE_DATABASE) {
-                // TODO: Not yet supported
-                return false;
+                $path = $this->readOption('attachpath');
+                if (!\str_starts_with($path, '/')) {
+                    $path = \realpath($this->fileSystemPath . $path);
+                }
+                if (!\is_dir($path)) {
+                    return false;
+                }
             }
         }
 
@@ -981,6 +986,22 @@ class VB5xExporter extends AbstractExporter
                     case self::ATTACHFILE_DATABASE:
                         $file = FileUtil::getTemporaryFilename('attachment_');
                         \file_put_contents($file, $row['filedata']);
+                        break;
+                    case self::ATTACHFILE_FILESYSTEM:
+                        $file = $this->readOption('attachpath');
+                        if (!StringUtil::startsWith($file, '/')) {
+                            $file = \realpath($this->fileSystemPath . $file);
+                        }
+                        $file = FileUtil::addTrailingSlash($file);
+                        $file .= $row['userid'] . '/' . $row['filedataid'] . '.attach';
+                        break;
+                    case self::ATTACHFILE_FILESYSTEM_SUBFOLDER:
+                        $file = $this->readOption('attachpath');
+                        if (!StringUtil::startsWith($file, '/')) {
+                            $file = \realpath($this->fileSystemPath . $file);
+                        }
+                        $file = FileUtil::addTrailingSlash($file);
+                        $file .= \implode('/', \str_split($row['userid'])) . '/' . $row['filedataid'] . '.attach';
                         break;
                 }
 
