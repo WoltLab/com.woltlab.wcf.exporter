@@ -868,6 +868,10 @@ class IPB4xExporter extends AbstractExporter
             $threadIDs[] = $row['tid'];
         }
 
+        if (empty($threadIDs)) {
+            return;
+        }
+
         // get tags
         $tags = $this->getTags('forums', 'forums', $threadIDs);
 
