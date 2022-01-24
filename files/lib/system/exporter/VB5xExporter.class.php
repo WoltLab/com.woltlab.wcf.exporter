@@ -457,7 +457,7 @@ class VB5xExporter extends AbstractExporter
             // update password hash
             if ($newUserID) {
                 if (\str_starts_with($row['scheme'], 'blowfish')) {
-                    $password = 'Bcrypt:' . $row['token'];
+                    $password = 'vb5Bcrypt:' . $row['token'];
                 } elseif (\str_starts_with($row['scheme'], 'argon2')) {
                     $password = 'argon2:' . $row['token'];
                 } elseif ($row['scheme'] == 'legacy') {
