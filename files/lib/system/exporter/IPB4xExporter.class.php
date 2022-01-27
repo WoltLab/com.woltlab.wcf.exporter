@@ -353,8 +353,14 @@ class IPB4xExporter extends AbstractExporter
 
             // update password hash
             if ($newUserID) {
+                if (StringUtil::startsWith($row['members_pass_hash'], '$2')) {
+                    $password = 'Bcrypt:' . $row['members_pass_hash'];
+                } else {
+                    $password = 'cryptMD5:' . $row['members_pass_hash'] . ':' . ($row['members_pass_salt'] ?: '');
+                }
+
                 $passwordUpdateStatement->execute([
-                    'cryptMD5:' . $row['members_pass_hash'] . ':' . $row['members_pass_salt'],
+                    $password,
                     $newUserID,
                 ]);
             }
