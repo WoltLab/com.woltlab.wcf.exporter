@@ -1656,7 +1656,7 @@ class XF2xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute(\array_merge(['xfmg_media'], $conditionBuilder->getParameters()));
         while ($row = $statement->fetchArray()) {
-            $config = self::getConfig();
+            $config = $this->getConfig();
             $fileLocation = $this->fileSystemPath . $config['internalDataPath'] . '/attachments/' . \floor($row['data_id'] / 1000) . '/' . $row['data_id'] . '-' . $row['file_hash'] . '.data';
 
             if (!\file_exists($fileLocation)) {
@@ -1868,7 +1868,7 @@ class XF2xExporter extends AbstractExporter
 
             // file icon
             if (!empty($row['icon_date'])) {
-                $config = self::getConfig();
+                $config = $this->getConfig();
                 $iconLocation = $this->fileSystemPath . $config['externalDataPath'] . '/resource_icons/' . \floor($row['resource_id'] / 1000) . '/' . $row['resource_id'] . '.jpg';
 
                 $imageData = @\getimagesize($iconLocation);
@@ -1960,7 +1960,7 @@ class XF2xExporter extends AbstractExporter
                 'enableHtml' => 0,
             ];
             if (empty($row['download_url'])) {
-                $config = self::getConfig();
+                $config = $this->getConfig();
                 $fileLocation = $this->fileSystemPath . $config['internalDataPath'] . '/attachments/' . \floor($row['data_id'] / 1000) . '/' . $row['data_id'] . '-' . $row['file_hash'] . '.data';
 
                 $data['filesize'] = \filesize($fileLocation);
@@ -2012,7 +2012,7 @@ class XF2xExporter extends AbstractExporter
                 continue;
             }
 
-            $config = self::getConfig();
+            $config = $this->getConfig();
             $fileLocation = $this->fileSystemPath . $config['internalDataPath'] . '/attachments/' . \floor($row['data_id'] / 1000) . '/' . $row['data_id'] . '-' . $row['file_hash'] . '.data';
 
             $data = [
@@ -2114,7 +2114,7 @@ class XF2xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([$type]);
         while ($row = $statement->fetchArray()) {
-            $config = self::getConfig();
+            $config = $this->getConfig();
             $fileLocation = $this->fileSystemPath . $config['internalDataPath'] . '/attachments/' . \floor($row['data_id'] / 1000) . '/' . $row['data_id'] . '-' . $row['file_hash'] . '.data';
 
             $data = [
