@@ -56,7 +56,6 @@ class XF2xExporter extends AbstractExporter
         'com.woltlab.wcf.conversation' => 'Conversations',
         'com.woltlab.wcf.conversation.message' => 'ConversationMessages',
         'com.woltlab.wcf.conversation.user' => 'ConversationUsers',
-        'com.woltlab.wcf.conversation.attachment' => 'ConversationAttachments',
         'com.woltlab.wbb.board' => 'Boards',
         'com.woltlab.wbb.thread' => 'Threads',
         'com.woltlab.wbb.post' => 'Posts',
@@ -68,7 +67,6 @@ class XF2xExporter extends AbstractExporter
         'com.woltlab.wbb.like' => 'PostLikes',
         'com.woltlab.wcf.label' => 'Labels',
         'com.woltlab.wbb.acl' => 'ACLs',
-        'com.woltlab.wcf.smiley' => 'Smilies',
 
         'com.woltlab.gallery.category' => 'GalleryCategories',
         'com.woltlab.gallery.album' => 'GalleryAlbums',
@@ -79,12 +77,7 @@ class XF2xExporter extends AbstractExporter
         'com.woltlab.filebase.category' => 'FilebaseCategories',
         'com.woltlab.filebase.file' => 'FilebaseFiles',
         'com.woltlab.filebase.file.version' => 'FilebaseFileVersions',
-        'com.woltlab.filebase.file.comment' => 'FilebaseFileComments',
-        'com.woltlab.filebase.file.comment.response' => 'FilebaseFileCommentResponses',
-        'com.woltlab.filebase.file.like' => 'FilebaseFileLikes',
-        'com.woltlab.filebase.file.version.like' => 'FilebaseFileVersionLikes',
         'com.woltlab.filebase.file.attachment' => 'FilebaseFileAttachments',
-        'com.woltlab.filebase.file.version.attachment' => 'FilebaseFileVersionAttachments',
         'com.woltlab.filebase.file.version.review' => 'FilebaseFileVersionReviews',
     ];
 

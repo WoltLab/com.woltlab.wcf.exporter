@@ -69,8 +69,6 @@ class SMF2xExporter extends AbstractExporter
         'com.woltlab.wbb.poll' => 'Polls',
         'com.woltlab.wbb.poll.option' => 'PollOptions',
         'com.woltlab.wbb.poll.option.vote' => 'PollOptionVotes',
-        'com.woltlab.wbb.like' => 'Likes',
-        'com.woltlab.wcf.label' => 'Labels',
         'com.woltlab.wbb.acl' => 'ACLs',
         'com.woltlab.wcf.smiley' => 'Smilies',
     ];

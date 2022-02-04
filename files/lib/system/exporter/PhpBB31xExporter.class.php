@@ -84,8 +84,6 @@ class PhpBB31xExporter extends AbstractExporter
         'com.woltlab.wcf.user.group' => 'UserGroups',
         'com.woltlab.wcf.user.rank' => 'UserRanks',
         'com.woltlab.wcf.user.follower' => 'Followers',
-        'com.woltlab.wcf.user.comment' => 'GuestbookEntries',
-        'com.woltlab.wcf.user.comment.response' => 'GuestbookResponses',
         'com.woltlab.wcf.user.avatar' => 'UserAvatars',
         'com.woltlab.wcf.user.option' => 'UserOptions',
         'com.woltlab.wcf.conversation.label' => 'ConversationFolders',
@@ -101,8 +99,6 @@ class PhpBB31xExporter extends AbstractExporter
         'com.woltlab.wbb.poll' => 'Polls',
         'com.woltlab.wbb.poll.option' => 'PollOptions',
         'com.woltlab.wbb.poll.option.vote' => 'PollOptionVotes',
-        'com.woltlab.wbb.like' => 'Likes',
-        'com.woltlab.wcf.label' => 'Labels',
         'com.woltlab.wbb.acl' => 'ACLs',
         'com.woltlab.wcf.smiley' => 'Smilies',
     ];

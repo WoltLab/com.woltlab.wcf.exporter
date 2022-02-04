@@ -142,14 +142,12 @@ class VB3or4xExporter extends AbstractExporter
         'com.woltlab.wcf.user.rank' => 'UserRanks',
         'com.woltlab.wcf.user.follower' => 'Followers',
         'com.woltlab.wcf.user.comment' => 'GuestbookEntries',
-        'com.woltlab.wcf.user.comment.response' => 'GuestbookResponses',
         'com.woltlab.wcf.user.avatar' => 'UserAvatars',
         'com.woltlab.wcf.user.option' => 'UserOptions',
         'com.woltlab.wcf.conversation.label' => 'ConversationFolders',
         'com.woltlab.wcf.conversation' => 'Conversations',
         'com.woltlab.wcf.conversation.message' => 'ConversationMessages',
         'com.woltlab.wcf.conversation.user' => 'ConversationUsers',
-        'com.woltlab.wcf.conversation.attachment' => 'ConversationAttachments',
         'com.woltlab.wbb.board' => 'Boards',
         'com.woltlab.wbb.thread' => 'Threads',
         'com.woltlab.wbb.post' => 'Posts',
@@ -170,7 +168,6 @@ class VB3or4xExporter extends AbstractExporter
 
         'com.woltlab.calendar.category' => 'CalendarCategories',
         'com.woltlab.calendar.event' => 'CalendarEvents',
-        'com.woltlab.calendar.event.date' => 'CalendarEventDates',
 
         'com.woltlab.blog.entry' => 'BlogEntries',
         'com.woltlab.blog.entry.comment' => 'BlogComments',

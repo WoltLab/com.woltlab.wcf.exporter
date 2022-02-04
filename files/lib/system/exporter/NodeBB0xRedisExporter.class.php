@@ -34,7 +34,6 @@ class NodeBB0xRedisExporter extends AbstractExporter
         'com.woltlab.wcf.user.follower' => 'Followers',
         'com.woltlab.wcf.conversation' => 'Conversations',
         'com.woltlab.wcf.conversation.message' => 'ConversationMessages',
-        'com.woltlab.wcf.conversation.user' => 'ConversationUsers',
         'com.woltlab.wbb.board' => 'Boards',
         'com.woltlab.wbb.thread' => 'Threads',
         'com.woltlab.wbb.post' => 'Posts',

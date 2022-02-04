@@ -52,7 +52,6 @@ class XF12xExporter extends AbstractExporter
         'com.woltlab.wcf.conversation' => 'Conversations',
         'com.woltlab.wcf.conversation.message' => 'ConversationMessages',
         'com.woltlab.wcf.conversation.user' => 'ConversationUsers',
-        'com.woltlab.wcf.conversation.attachment' => 'ConversationAttachments',
         'com.woltlab.wbb.board' => 'Boards',
         'com.woltlab.wbb.thread' => 'Threads',
         'com.woltlab.wbb.post' => 'Posts',
@@ -61,10 +60,8 @@ class XF12xExporter extends AbstractExporter
         'com.woltlab.wbb.poll' => 'Polls',
         'com.woltlab.wbb.poll.option' => 'PollOptions',
         'com.woltlab.wbb.poll.option.vote' => 'PollOptionVotes',
-        'com.woltlab.wbb.like' => 'Likes',
         'com.woltlab.wcf.label' => 'Labels',
         'com.woltlab.wbb.acl' => 'ACLs',
-        'com.woltlab.wcf.smiley' => 'Smilies',
 
         'com.woltlab.blog.category' => 'BlogCategories',
         'com.woltlab.blog.entry' => 'BlogEntries',
