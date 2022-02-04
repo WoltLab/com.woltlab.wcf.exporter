@@ -1713,7 +1713,7 @@ class XF12xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([$type]);
         while ($row = $statement->fetchArray()) {
-            $config = self::getConfig();
+            $config = $this->getConfig();
             $fileLocation = $this->fileSystemPath . $config['internalDataPath'] . '/attachments/' . \floor($row['data_id'] / 1000) . '/' . $row['data_id'] . '-' . $row['file_hash'] . '.data';
 
             $data = [
