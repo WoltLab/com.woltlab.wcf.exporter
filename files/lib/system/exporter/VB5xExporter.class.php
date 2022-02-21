@@ -460,7 +460,7 @@ class VB5xExporter extends AbstractExporter
                 if (StringUtil::startsWith($row['scheme'], 'blowfish')) {
                     $password = 'vb5Bcrypt:' . $row['token'];
                 } elseif (StringUtil::startsWith($row['scheme'], 'argon2')) {
-                    $password = 'argon2:' . $row['token'];
+                    $password = 'vb5Argon2:' . $row['token'];
                 } elseif ($row['scheme'] == 'legacy') {
                     $password = 'vb5:' . \implode(':', \explode(' ', $row['token'], 2));
                 } else {
