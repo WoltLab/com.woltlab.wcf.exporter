@@ -526,10 +526,10 @@ class WBB4xExporter extends AbstractExporter
                 'showOnTeamPage' => !empty($row['showOnTeamPage']) ? $row['showOnTeamPage'] : 0,
             ];
 
-            if (\strpos($row['groupName'], 'wcf.acp.group.group') === 0) {
+            if (\str_starts_with($row['groupName'], 'wcf.acp.group.group')) {
                 $i18nValues[] = $row['groupName'];
             }
-            if (\strpos($row['groupDescription'], 'wcf.acp.group.groupDescription') === 0) {
+            if (\str_starts_with($row['groupDescription'], 'wcf.acp.group.groupDescription')) {
                 $i18nValues[] = $row['groupDescription'];
             }
         }
@@ -1185,10 +1185,10 @@ class WBB4xExporter extends AbstractExporter
 
             $this->boardCache[$row['parentID']][] = $row;
 
-            if (\strpos($row['title'], 'wbb.board.board') === 0) {
+            if (\str_starts_with($row['title'], 'wbb.board.board')) {
                 $i18nValues[] = $row['title'];
             }
-            if (\strpos($row['description'], 'wbb.board.board') === 0) {
+            if (\str_starts_with($row['description'], 'wbb.board.board')) {
                 $i18nValues[] = $row['description'];
             }
         }
@@ -4223,10 +4223,10 @@ class WBB4xExporter extends AbstractExporter
                 'isDisabled' => $row['isDisabled'],
             ];
 
-            if (\strpos($row['title'], 'wcf.category') === 0) {
+            if (\str_starts_with($row['title'], 'wcf.category')) {
                 $i18nValues[] = $row['title'];
             }
-            if (\strpos($row['description'], 'wcf.category') === 0) {
+            if (\str_starts_with($row['description'], 'wcf.category')) {
                 $i18nValues[] = $row['description'];
             }
         }
