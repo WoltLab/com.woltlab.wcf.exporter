@@ -1180,6 +1180,9 @@ class WBB4xExporter extends AbstractExporter
         $statement->execute();
         $i18nValues = [];
         while ($row = $statement->fetchArray()) {
+            $row['title'] = $row['title'] ?? '';
+            $row['description'] = $row['description'] ?? '';
+
             $this->boardCache[$row['parentID']][] = $row;
 
             if (\strpos($row['title'], 'wbb.board.board') === 0) {
