@@ -305,7 +305,7 @@ class XoborExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            ImportHandler::getInstance()->getImporter('com.woltlab.wbb.post')->import($row['id'], [
+            $data = [
                 'threadID' => $row['thread'],
                 'userID' => $row['userid'],
                 'username' => StringUtil::decodeHTML($row['username']),
@@ -316,7 +316,11 @@ class XoborExporter extends AbstractExporter
                 'enableHtml' => 1,
                 'isClosed' => 1,
                 'ipAddress' => UserUtil::convertIPv4To6($row['useraddr']),
-            ]);
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.post')
+                ->import($row['id'], $data);
         }
     }
 
