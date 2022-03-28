@@ -383,7 +383,7 @@ class IPB3xExporter extends AbstractExporter
      */
     public function countUserGroups()
     {
-        return $this->__getMaxID($this->databasePrefix . "groups", 'g_id');
+        return $this->__getMaxID("`" . $this->databasePrefix . "groups`", 'g_id');
     }
 
     /**
@@ -395,7 +395,7 @@ class IPB3xExporter extends AbstractExporter
     public function exportUserGroups($offset, $limit)
     {
         $sql = "SELECT      *
-                FROM        " . $this->databasePrefix . "groups
+                FROM        `" . $this->databasePrefix . "groups`
                 WHERE       g_id BETWEEN ? AND ?
                 ORDER BY    g_id";
         $statement = $this->database->prepareStatement($sql);
