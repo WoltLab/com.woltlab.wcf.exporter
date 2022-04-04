@@ -1282,7 +1282,7 @@ class VB3or4xExporter extends AbstractExporter
         foreach ($this->boardCache[$parentID] as $board) {
             if ($board['link']) {
                 $boardType = Board::TYPE_LINK;
-            } elseif ($board['channelOptions'] & self::FORUMOPTIONS_CANCONTAINTHREADS) {
+            } elseif ($board['options'] & self::FORUMOPTIONS_CANCONTAINTHREADS) {
                 $boardType = Board::TYPE_BOARD;
             } else {
                 $boardType = Board::TYPE_CATEGORY;
