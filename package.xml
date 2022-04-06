@@ -33,7 +33,6 @@
 	<instructions type="update" fromversion="5.4.*">
 		<instruction type="file" />
 
-		<!-- Just the new <import> tag. -->
 		<instruction type="language" />
 	</instructions>
 </package>
