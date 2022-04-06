@@ -217,7 +217,8 @@ class WBB3xExporter extends AbstractExporter
         ) {
             if (
                 empty($this->fileSystemPath)
-                || (!@\file_exists($this->fileSystemPath . 'lib/core.functions.php')
+                || (
+                    !@\file_exists($this->fileSystemPath . 'lib/core.functions.php')
                     && !@\file_exists($this->fileSystemPath . 'wcf/lib/core.functions.php')
                 )
             ) {
@@ -3237,6 +3238,7 @@ class WBB3xExporter extends AbstractExporter
         }
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$type]);
+        
         return $statement->fetchSingleColumn() ?: 0;
     }
 
