@@ -217,8 +217,7 @@ class WBB3xExporter extends AbstractExporter
         ) {
             if (
                 empty($this->fileSystemPath)
-                || (
-                    !@\file_exists($this->fileSystemPath . 'lib/core.functions.php')
+                || (!@\file_exists($this->fileSystemPath . 'lib/core.functions.php')
                     && !@\file_exists($this->fileSystemPath . 'wcf/lib/core.functions.php')
                 )
             ) {
@@ -3139,22 +3138,28 @@ class WBB3xExporter extends AbstractExporter
      */
     private function countAttachments($type)
     {
+        $packageID = $this->getPackageIdByAttachmentType($type);
+        if (!$packageID) {
+            return 0;
+        }
+
         if (\substr($this->getPackageVersion('com.woltlab.wcf'), 0, 3) == '1.1') {
-            $sql = "SELECT  COUNT(*) AS count
+            $sql = "SELECT  MAX(attachmentID)
                     FROM    wcf" . $this->dbNo . "_attachment
-                    WHERE   containerType = ?
-                        AND containerID > ?";
+                    WHERE   packageID = ?
+                        AND containerID > ?
+                        AND containerType = ?";
         } else {
-            $sql = "SELECT  COUNT(*) AS count
+            $sql = "SELECT  MAX(attachmentID)
                     FROM    wcf" . $this->dbNo . "_attachment
-                    WHERE   messageType = ?
-                        AND messageID > ?";
+                    WHERE   packageID = ?
+                        AND messageID > ?
+                        AND messageType = ?";
         }
         $statement = $this->database->prepareStatement($sql);
-        $statement->execute([$type, 0]);
-        $row = $statement->fetchArray();
+        $statement->execute([$packageID, 0, $type]);
 
-        return $row['count'];
+        return $statement->fetchSingleColumn() ?: 0;
     }
 
     /**
@@ -3167,22 +3172,31 @@ class WBB3xExporter extends AbstractExporter
      */
     private function exportAttachments($type, $objectType, $offset, $limit)
     {
+        $packageID = $this->getPackageIdByAttachmentType($type);
+        if (!$packageID) {
+            return;
+        }
+
         if (\substr($this->getPackageVersion('com.woltlab.wcf'), 0, 3) == '1.1') {
             $sql = "SELECT      *
                     FROM        wcf" . $this->dbNo . "_attachment
-                    WHERE       containerType = ?
+                    WHERE       packageID = ?
                             AND containerID > ?
-                    ORDER BY    attachmentID DESC";
+                            AND containerType = ?
+                            AND attachmentID BETWEEN ? AND ?
+                    ORDER BY    attachmentID";
         } else {
             $sql = "SELECT      *
                     FROM        wcf" . $this->dbNo . "_attachment
-                    WHERE       messageType = ?
+                    WHERE       packageID = ?
                             AND messageID > ?
-                    ORDER BY    attachmentID DESC";
+                            AND messageType = ?
+                            AND attachmentID BETWEEN ? AND ?
+                    ORDER BY    attachmentID";
         }
 
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
-        $statement->execute([$type, 0]);
+        $statement = $this->database->prepareStatement($sql, $limit);
+        $statement->execute([$packageID, 0, $type, $offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $fileLocation = $this->fileSystemPath . 'attachments/attachment-' . $row['attachmentID'];
 
@@ -3204,6 +3218,26 @@ class WBB3xExporter extends AbstractExporter
                     ['fileLocation' => $fileLocation]
                 );
         }
+    }
+
+    /**
+     * @since 5.5
+     */
+    private function getPackageIdByAttachmentType(string $type): int
+    {
+        if (\substr($this->getPackageVersion('com.woltlab.wcf'), 0, 3) == '1.1') {
+            $sql = "SELECT  packageID
+                    FROM    wcf" . $this->dbNo . "_attachment_container_type
+                    WHERE   containerType = ?";
+        } else {
+            $sql = "SELECT  DISTINCT packageID
+                    FROM    wcf" . $this->dbNo . "_attachment
+                    WHERE   messageType = ?
+                    LIMIT   1";
+        }
+        $statement = $this->database->prepareStatement($sql);
+        $statement->execute([$type]);
+        return $statement->fetchSingleColumn() ?: 0;
     }
 
     /**
