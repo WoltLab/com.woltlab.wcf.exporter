@@ -3238,7 +3238,7 @@ class WBB3xExporter extends AbstractExporter
         }
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$type]);
-        
+
         return $statement->fetchSingleColumn() ?: 0;
     }
 
