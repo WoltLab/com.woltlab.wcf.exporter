@@ -3145,13 +3145,13 @@ class WBB3xExporter extends AbstractExporter
         }
 
         if (\substr($this->getPackageVersion('com.woltlab.wcf'), 0, 3) == '1.1') {
-            $sql = "SELECT  MAX(attachmentID)
+            $sql = "SELECT  COUNT(*)
                     FROM    wcf" . $this->dbNo . "_attachment
                     WHERE   packageID = ?
                         AND containerID > ?
                         AND containerType = ?";
         } else {
-            $sql = "SELECT  MAX(attachmentID)
+            $sql = "SELECT  COUNT(*)
                     FROM    wcf" . $this->dbNo . "_attachment
                     WHERE   packageID = ?
                         AND messageID > ?
@@ -3160,7 +3160,7 @@ class WBB3xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$packageID, 0, $type]);
 
-        return $statement->fetchSingleColumn() ?: 0;
+        return $statement->fetchSingleColumn();
     }
 
     /**
@@ -3184,7 +3184,6 @@ class WBB3xExporter extends AbstractExporter
                     WHERE       packageID = ?
                             AND containerID > ?
                             AND containerType = ?
-                            AND attachmentID BETWEEN ? AND ?
                     ORDER BY    attachmentID";
         } else {
             $sql = "SELECT      *
@@ -3192,12 +3191,11 @@ class WBB3xExporter extends AbstractExporter
                     WHERE       packageID = ?
                             AND messageID > ?
                             AND messageType = ?
-                            AND attachmentID BETWEEN ? AND ?
                     ORDER BY    attachmentID";
         }
 
-        $statement = $this->database->prepareStatement($sql, $limit);
-        $statement->execute([$packageID, 0, $type, $offset + 1, $offset + $limit]);
+        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement->execute([$packageID, 0, $type]);
         while ($row = $statement->fetchArray()) {
             $fileLocation = $this->fileSystemPath . 'attachments/attachment-' . $row['attachmentID'];
 
