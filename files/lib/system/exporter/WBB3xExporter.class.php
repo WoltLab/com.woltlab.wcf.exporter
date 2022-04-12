@@ -3158,7 +3158,7 @@ class WBB3xExporter extends AbstractExporter
                         AND messageID > ?";
         }
         $statement = $this->database->prepareStatement($sql);
-        $statement->execute([$packageID, 0, $type]);
+        $statement->execute([$packageID, $type, 0]);
 
         return $statement->fetchSingleColumn();
     }
@@ -3195,7 +3195,7 @@ class WBB3xExporter extends AbstractExporter
         }
 
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
-        $statement->execute([$packageID, 0, $type]);
+        $statement->execute([$packageID, $type, 0]);
         while ($row = $statement->fetchArray()) {
             $fileLocation = $this->fileSystemPath . 'attachments/attachment-' . $row['attachmentID'];
 
