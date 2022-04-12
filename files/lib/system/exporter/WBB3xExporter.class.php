@@ -3148,14 +3148,14 @@ class WBB3xExporter extends AbstractExporter
             $sql = "SELECT  COUNT(*)
                     FROM    wcf" . $this->dbNo . "_attachment
                     WHERE   packageID = ?
-                        AND containerID > ?
-                        AND containerType = ?";
+                        AND containerType = ?
+                        AND containerID > ?";
         } else {
             $sql = "SELECT  COUNT(*)
                     FROM    wcf" . $this->dbNo . "_attachment
                     WHERE   packageID = ?
-                        AND messageID > ?
-                        AND messageType = ?";
+                        AND messageType = ?
+                        AND messageID > ?";
         }
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$packageID, 0, $type]);
@@ -3182,15 +3182,15 @@ class WBB3xExporter extends AbstractExporter
             $sql = "SELECT      *
                     FROM        wcf" . $this->dbNo . "_attachment
                     WHERE       packageID = ?
-                            AND containerID > ?
                             AND containerType = ?
+                            AND containerID > ?
                     ORDER BY    attachmentID";
         } else {
             $sql = "SELECT      *
                     FROM        wcf" . $this->dbNo . "_attachment
                     WHERE       packageID = ?
-                            AND messageID > ?
                             AND messageType = ?
+                            AND messageID > ?
                     ORDER BY    attachmentID";
         }
 
