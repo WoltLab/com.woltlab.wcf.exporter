@@ -3139,22 +3139,28 @@ class WBB3xExporter extends AbstractExporter
      */
     private function countAttachments($type)
     {
+        $packageID = $this->getPackageIdByAttachmentType($type);
+        if (!$packageID) {
+            return 0;
+        }
+
         if (\substr($this->getPackageVersion('com.woltlab.wcf'), 0, 3) == '1.1') {
-            $sql = "SELECT  COUNT(*) AS count
+            $sql = "SELECT  COUNT(*)
                     FROM    wcf" . $this->dbNo . "_attachment
-                    WHERE   containerType = ?
+                    WHERE   packageID = ?
+                        AND containerType = ?
                         AND containerID > ?";
         } else {
-            $sql = "SELECT  COUNT(*) AS count
+            $sql = "SELECT  COUNT(*)
                     FROM    wcf" . $this->dbNo . "_attachment
-                    WHERE   messageType = ?
+                    WHERE   packageID = ?
+                        AND messageType = ?
                         AND messageID > ?";
         }
         $statement = $this->database->prepareStatement($sql);
-        $statement->execute([$type, 0]);
-        $row = $statement->fetchArray();
+        $statement->execute([$packageID, $type, 0]);
 
-        return $row['count'];
+        return $statement->fetchSingleColumn();
     }
 
     /**
@@ -3167,22 +3173,29 @@ class WBB3xExporter extends AbstractExporter
      */
     private function exportAttachments($type, $objectType, $offset, $limit)
     {
+        $packageID = $this->getPackageIdByAttachmentType($type);
+        if (!$packageID) {
+            return;
+        }
+
         if (\substr($this->getPackageVersion('com.woltlab.wcf'), 0, 3) == '1.1') {
             $sql = "SELECT      *
                     FROM        wcf" . $this->dbNo . "_attachment
-                    WHERE       containerType = ?
+                    WHERE       packageID = ?
+                            AND containerType = ?
                             AND containerID > ?
-                    ORDER BY    attachmentID DESC";
+                    ORDER BY    attachmentID";
         } else {
             $sql = "SELECT      *
                     FROM        wcf" . $this->dbNo . "_attachment
-                    WHERE       messageType = ?
+                    WHERE       packageID = ?
+                            AND messageType = ?
                             AND messageID > ?
-                    ORDER BY    attachmentID DESC";
+                    ORDER BY    attachmentID";
         }
 
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
-        $statement->execute([$type, 0]);
+        $statement->execute([$packageID, $type, 0]);
         while ($row = $statement->fetchArray()) {
             $fileLocation = $this->fileSystemPath . 'attachments/attachment-' . $row['attachmentID'];
 
@@ -3204,6 +3217,27 @@ class WBB3xExporter extends AbstractExporter
                     ['fileLocation' => $fileLocation]
                 );
         }
+    }
+
+    /**
+     * @since 5.5
+     */
+    private function getPackageIdByAttachmentType(string $type): int
+    {
+        if (\substr($this->getPackageVersion('com.woltlab.wcf'), 0, 3) == '1.1') {
+            $sql = "SELECT  packageID
+                    FROM    wcf" . $this->dbNo . "_attachment_container_type
+                    WHERE   containerType = ?";
+        } else {
+            $sql = "SELECT  DISTINCT packageID
+                    FROM    wcf" . $this->dbNo . "_attachment
+                    WHERE   messageType = ?
+                    LIMIT   1";
+        }
+        $statement = $this->database->prepareStatement($sql);
+        $statement->execute([$type]);
+
+        return $statement->fetchSingleColumn() ?: 0;
     }
 
     /**
