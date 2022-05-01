@@ -781,10 +781,14 @@ class VB5xExporter extends AbstractExporter
      */
     public function exportThreads($offset, $limit)
     {
-        $sql = "SELECT      child.*, view.count AS views
+        $sql = "SELECT      child.*,
+                            text.*,
+                            view.count AS views
                 FROM        " . $this->databasePrefix . "node child
                 INNER JOIN  " . $this->databasePrefix . "node parent
                 ON          child.parentid = parent.nodeid
+                INNER JOIN  " . $this->databasePrefix . "text text
+                ON          child.nodeid = text.nodeid
                 LEFT JOIN   " . $this->databasePrefix . "nodeview view
                 ON          child.nodeid = view.nodeid
                 INNER JOIN  (
@@ -828,6 +832,30 @@ class VB5xExporter extends AbstractExporter
                     $data,
                     $additionalData
                 );
+
+            $data = [
+                'threadID' => $row['nodeid'],
+                'userID' => $row['userid'],
+                'username' => $row['authorname'] ?: '',
+                'subject' => StringUtil::decodeHTML($row['title']),
+                'message' => self::fixBBCodes($row['rawtext']),
+                'time' => $row['created'],
+                'isDeleted' => $row['deleteuserid'] !== null ? 1 : 0,
+                'deleteTime' => $row['deleteuserid'] !== null ? TIME_NOW : 0,
+                'isDisabled' => $row['approved'] ? 0 : 1,
+                'isClosed' => 0,
+                'editorID' => null, // TODO
+                'editor' => '',
+                'lastEditTime' => 0,
+                'editCount' => 0,
+                'editReason' => '',
+                'enableHtml' => (isset($row['htmlState']) && $row['htmlState'] != 'off') ? 1 : 0,
+                'ipAddress' => UserUtil::convertIPv4To6($row['ipaddress']),
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.post')
+                ->import($row['nodeid'], $data);
         }
     }
 
@@ -847,12 +875,11 @@ class VB5xExporter extends AbstractExporter
      */
     public function exportPosts($offset, $limit)
     {
-        $sql = "SELECT      child.*, IF(parent.contenttypeid = child.contenttypeid, 0, 1) AS isFirstPost, text.*
+        $sql = "SELECT      child.*,
+                            text.*
                 FROM        " . $this->databasePrefix . "node child
                 INNER JOIN  " . $this->databasePrefix . "text text
                 ON          child.nodeid = text.nodeid
-                INNER JOIN  " . $this->databasePrefix . "node parent
-                ON          child.parentid = parent.nodeid
                 INNER JOIN  (
                                 SELECT  contenttypeid
                                 FROM    " . $this->databasePrefix . "contenttype
@@ -865,7 +892,11 @@ class VB5xExporter extends AbstractExporter
         $statement->execute(['Text', 'Poll', $offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
-                'threadID' => $row['isFirstPost'] ? $row['nodeid'] : $row['parentid'],
+                // The first post of a thread was already imported in exportThreads, but the above
+                // SQL query will not filter it out: However as both boards (Channels) and threads
+                // share the ID space in the 'node' table, parentid will simply refer to a non-existent
+                // thread for first posts, thus ignoring this (duplicate) post.
+                'threadID' => $row['parentid'],
                 'userID' => $row['userid'],
                 'username' => $row['authorname'] ?: '',
                 'subject' => StringUtil::decodeHTML($row['title']),
