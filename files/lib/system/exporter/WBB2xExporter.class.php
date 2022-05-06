@@ -816,7 +816,7 @@ class WBB2xExporter extends AbstractExporter
 
             $prefixes = StringUtil::trim(StringUtil::unifyNewlines($prefixes));
             if ($prefixes) {
-                $key = StringUtil::getHash($prefixes);
+                $key = \sha1($prefixes);
                 $boardPrefixes[$row['boardid']] = $key;
             }
         }
@@ -1179,7 +1179,7 @@ class WBB2xExporter extends AbstractExporter
 
             $prefixes = StringUtil::trim(StringUtil::unifyNewlines($prefixes));
             if ($prefixes) {
-                $key = StringUtil::getHash($prefixes);
+                $key = \sha1($prefixes);
                 if (!isset($prefixMap[$key])) {
                     $prefixMap[$key] = [
                         'prefixes' => $prefixes,

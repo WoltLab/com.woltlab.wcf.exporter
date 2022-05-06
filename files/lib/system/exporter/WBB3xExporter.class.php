@@ -1006,7 +1006,7 @@ class WBB3xExporter extends AbstractExporter
         \sort($participants);
         $conversationID .= '-' . \implode(',', $participants);
 
-        return StringUtil::getHash($conversationID);
+        return \sha1($conversationID);
     }
 
     /**
@@ -1344,7 +1344,7 @@ class WBB3xExporter extends AbstractExporter
 
             $prefixes = StringUtil::trim(StringUtil::unifyNewlines($prefixes));
             if ($prefixes) {
-                $key = StringUtil::getHash($prefixes);
+                $key = \sha1($prefixes);
                 $boardPrefixes[$row['boardID']] = $key;
             }
         }
@@ -1839,7 +1839,7 @@ class WBB3xExporter extends AbstractExporter
 
             $prefixes = StringUtil::trim(StringUtil::unifyNewlines($prefixes));
             if ($prefixes) {
-                $key = StringUtil::getHash($prefixes);
+                $key = \sha1($prefixes);
                 if (!isset($prefixMap[$key])) {
                     $prefixMap[$key] = [
                         'prefixes' => $prefixes,

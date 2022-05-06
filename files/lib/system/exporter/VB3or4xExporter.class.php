@@ -1034,7 +1034,7 @@ class VB3or4xExporter extends AbstractExporter
         \sort($participants);
         $conversationID .= '-' . \implode(',', $participants);
 
-        return StringUtil::getHash($conversationID);
+        return \sha1($conversationID);
     }
 
     /**
