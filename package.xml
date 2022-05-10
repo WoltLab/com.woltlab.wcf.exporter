@@ -29,10 +29,4 @@
 		
 		<instruction type="objectType" />
 	</instructions>
-
-	<instructions type="update" fromversion="5.4.*">
-		<instruction type="file" />
-
-		<instruction type="language" />
-	</instructions>
 </package>
