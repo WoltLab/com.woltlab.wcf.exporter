@@ -3713,6 +3713,8 @@ class WBB4xExporter extends AbstractExporter
                 'imageID' => $row['imageID'],
                 'teaserImageID' => ($row['teaserImageID'] ?? null),
                 'hasEmbeddedObjects' => $row['hasEmbeddedObjects'],
+                'metaTitle' => $row['metaTitle'] ?? '',
+                'metaDescription' => $row['metaDescription'] ?? '',
             ];
         }
 
