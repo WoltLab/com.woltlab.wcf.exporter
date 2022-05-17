@@ -86,5 +86,10 @@
 			<definitionname>com.woltlab.wcf.exporter</definitionname>
 			<classname>wcf\system\exporter\XoborExporter</classname>
 		</type>
+		<type>
+			<name>com.woltlab.wcf.exporter.flarum1x</name>
+			<definitionname>com.woltlab.wcf.exporter</definitionname>
+			<classname>wcf\system\exporter\Flarum1xExporter</classname>
+		</type>
 	</import>
 </data>
