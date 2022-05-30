@@ -710,6 +710,8 @@ final class Flarum1xExporter extends AbstractExporter
         // Unparser::unparse()
         $message = \html_entity_decode(\strip_tags($message), ENT_QUOTES, 'UTF-8');
 
+        $message = \preg_replace('/(^|\n)> (```)/', '\\1\\2', $message);
+
         $out = $parsedown->text($message);
 
         $out = \preg_replace(
