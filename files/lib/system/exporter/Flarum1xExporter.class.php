@@ -33,6 +33,9 @@ final class Flarum1xExporter extends AbstractExporter
         'com.woltlab.wbb.board' => 'Boards',
         'com.woltlab.wbb.thread' => 'Threads',
         'com.woltlab.wbb.post' => 'Posts',
+        'com.woltlab.wbb.poll' => 'Polls',
+        'com.woltlab.wbb.poll.option' => 'PollOptions',
+        'com.woltlab.wbb.poll.option.vote' => 'PollOptionVotes',
         'com.woltlab.wbb.like' => 'Likes',
         'com.woltlab.wcf.label' => 'Labels',
     ];
@@ -55,6 +58,7 @@ final class Flarum1xExporter extends AbstractExporter
             ],
             'com.woltlab.wbb.board' => [
                 'com.woltlab.wbb.like',
+                'com.woltlab.wbb.poll',
                 'com.woltlab.wcf.label',
             ],
         ];
@@ -108,6 +112,11 @@ final class Flarum1xExporter extends AbstractExporter
 
             if (\in_array('com.woltlab.wbb.like', $this->selectedData)) {
                 $queue[] = 'com.woltlab.wbb.like';
+            }
+            if (\in_array('com.woltlab.wbb.poll', $this->selectedData)) {
+                $queue[] = 'com.woltlab.wbb.poll';
+                $queue[] = 'com.woltlab.wbb.poll.option';
+                $queue[] = 'com.woltlab.wbb.poll.option.vote';
             }
         }
 
@@ -543,6 +552,144 @@ final class Flarum1xExporter extends AbstractExporter
             ImportHandler::getInstance()
                 ->getImporter('com.woltlab.wbb.like')
                 ->import($row['post_id'] . '-' . $row['user_id'], $data);
+        }
+    }
+
+    /**
+     * Counts polls.
+     */
+    public function countPolls()
+    {
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    polls";
+        $statement = $this->database->prepareStatement($sql);
+        $statement->execute();
+        $row = $statement->fetchArray();
+
+        return $row['count'];
+    }
+
+    /**
+     * Exports polls.
+     *
+     * @param   integer     $offset
+     * @param   integer     $limit
+     */
+    public function exportPolls($offset, $limit)
+    {
+        $sql = "SELECT      posts.id AS objectID,
+                            polls.*
+                FROM        polls
+                INNER JOIN  posts
+                ON          polls.discussion_id = posts.discussion_id
+                WHERE       (posts.discussion_id, posts.number) IN (
+                                SELECT      discussion_id,
+                                            MIN(number)
+                                FROM        posts
+                                WHERE       type = 'comment'
+                                GROUP BY    discussion_id
+                            )
+                ORDER BY    polls.id";
+        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement->execute();
+        while ($row = $statement->fetchArray()) {
+            $data = [
+                'objectID' => $row['objectID'],
+                'question' => $row['question'],
+                'endTime' => $row['end_date'] !== null ? \strtotime($row['end_date'] . ' UTC') : 0,
+                'isChangeable' => 0,
+                'isPublic' => $row['public_poll'] ? 1 : 0,
+                'maxVotes' => 1,
+                'votes' => $row['vote_count'],
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.poll')
+                ->import($row['id'], $data);
+        }
+    }
+
+    /**
+     * Counts poll options.
+     */
+    public function countPollOptions()
+    {
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    poll_options";
+        $statement = $this->database->prepareStatement($sql);
+        $statement->execute();
+        $row = $statement->fetchArray();
+
+        return $row['count'];
+    }
+
+    /**
+     * Exports poll options.
+     *
+     * @param   integer     $offset
+     * @param   integer     $limit
+     */
+    public function exportPollOptions($offset, $limit)
+    {
+        $sql = "SELECT      *
+                FROM        poll_options
+                ORDER BY    id";
+        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement->execute();
+        while ($row = $statement->fetchArray()) {
+            $data = [
+                'pollID' => $row['poll_id'],
+                'optionValue' => $row['answer'],
+                'showOrder' => $row['id'],
+                'votes' => $row['vote_count'],
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.poll.option')
+                ->import(
+                    $row['id'],
+                    $data
+                );
+        }
+    }
+
+    /**
+     * Counts poll option votes.
+     */
+    public function countPollOptionVotes()
+    {
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    poll_votes";
+        $statement = $this->database->prepareStatement($sql);
+        $statement->execute();
+        $row = $statement->fetchArray();
+
+        return $row['count'];
+    }
+
+    /**
+     * Exports poll option votes.
+     *
+     * @param   integer     $offset
+     * @param   integer     $limit
+     */
+    public function exportPollOptionVotes($offset, $limit)
+    {
+        $sql = "SELECT      *
+                FROM        poll_votes
+                ORDER BY    id";
+        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement->execute();
+        while ($row = $statement->fetchArray()) {
+            $data = [
+                'pollID' => $row['poll_id'],
+                'optionID' => $row['option_id'],
+                'userID' => $row['user_id'],
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wbb.poll.option.vote')
+                ->import($row['id'], $data);
         }
     }
 
