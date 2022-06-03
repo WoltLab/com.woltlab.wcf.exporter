@@ -10,7 +10,6 @@ use wcf\system\database\util\PreparedStatementConditionBuilder;
 use wcf\system\importer\ImportHandler;
 use wcf\system\WCF;
 use wcf\util\ArrayUtil;
-use wcf\util\JSON;
 use wcf\util\UserRegistrationUtil;
 use wcf\util\UserUtil;
 
@@ -708,7 +707,7 @@ final class Flarum1xExporter extends AbstractExporter
         }
 
         // Unparser::unparse()
-        $message = \html_entity_decode(\strip_tags($message), ENT_QUOTES, 'UTF-8');
+        $message = \html_entity_decode(\strip_tags($message), \ENT_QUOTES, 'UTF-8');
 
         $message = \preg_replace('/(^|\n)> (```)/', '\\1\\2', $message);
 
