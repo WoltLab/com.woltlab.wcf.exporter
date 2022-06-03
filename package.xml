@@ -38,5 +38,7 @@
 		<instruction type="file" />
 
 		<instruction type="language" />
+
+		<instruction type="objectType" />
 	</instructions>
 </package>
