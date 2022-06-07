@@ -711,6 +711,22 @@ final class Flarum1xExporter extends AbstractExporter
 
         $message = \preg_replace('/(^|\n)> (```)/', '\\1\\2', $message);
 
+        // fix size bbcode
+        $message = \preg_replace_callback('~(?<=\[size=)\d+(?=\])~', static function ($matches) {
+            foreach ([8, 10, 12, 14, 18, 24, 36] as $acceptableSize) {
+                if ($acceptableSize >= $matches[0]) {
+                    return $acceptableSize;
+                }
+            }
+
+            return 36;
+        }, $message);
+
+        $message = \strtr($message, [
+            '[center]' => '[align=center]',
+            '[/center]' => '[/align]',
+        ]);
+
         $out = $parsedown->text($message);
 
         $out = \preg_replace(
