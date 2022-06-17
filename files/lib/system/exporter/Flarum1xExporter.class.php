@@ -727,6 +727,9 @@ final class Flarum1xExporter extends AbstractExporter
             '[/center]' => '[/align]',
         ]);
 
+
+        $message = \preg_replace("/\r?\n/", '  \\0', $message);
+
         $out = $parsedown->text($message);
 
         $out = \preg_replace(
