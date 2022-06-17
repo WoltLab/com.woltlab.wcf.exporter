@@ -744,6 +744,8 @@ final class Flarum1xExporter extends AbstractExporter
             '</code>' => '</kbd>',
         ]);
 
+        $out = \preg_replace('/<\\/p>\\s*<p>/', '</p><p><br></p><p>', $out);
+
         return $out;
     }
 }
