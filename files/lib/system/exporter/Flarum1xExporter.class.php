@@ -8,6 +8,7 @@ use wcf\data\object\type\ObjectTypeCache;
 use wcf\data\user\group\UserGroup;
 use wcf\system\database\util\PreparedStatementConditionBuilder;
 use wcf\system\importer\ImportHandler;
+use wcf\system\request\LinkHandler;
 use wcf\system\WCF;
 use wcf\util\ArrayUtil;
 use wcf\util\UserRegistrationUtil;
@@ -727,6 +728,26 @@ final class Flarum1xExporter extends AbstractExporter
             '[/center]' => '[/align]',
         ]);
 
+        $message = \preg_replace("/\r?\n/", '  \\0', $message);
+
+        $message = \preg_replace_callback('/@"([^"]+)"#p([0-9]+)/', static function (array $matches): string {
+            $username = $matches[1];
+            $postID = $matches[2];
+
+            $postLink = LinkHandler::getInstance()->getLink('Thread', [
+                'application' => 'wbb',
+                'postID' => $postID,
+                'forceFrontend' => true,
+            ]) . '#post' . $postID;
+
+            return \sprintf(
+                "[%s](%s) @'%s'",
+                "\u{21A9}",
+                $postLink,
+                \str_replace("'", "''", $username)
+            );
+        }, $message);
+
         $out = $parsedown->text($message);
 
         $out = \preg_replace(
@@ -743,6 +764,8 @@ final class Flarum1xExporter extends AbstractExporter
             '<code>' => '<kbd>',
             '</code>' => '</kbd>',
         ]);
+
+        $out = \preg_replace('/<\\/p>\\s*<p>/', '</p><p><br></p><p>', $out);
 
         return $out;
     }
