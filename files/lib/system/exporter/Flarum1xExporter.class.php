@@ -728,7 +728,6 @@ final class Flarum1xExporter extends AbstractExporter
             '[/center]' => '[/align]',
         ]);
 
-
         $message = \preg_replace("/\r?\n/", '  \\0', $message);
 
         $message = \preg_replace_callback('/@"([^"]+)"#p([0-9]+)/', static function (array $matches): string {
