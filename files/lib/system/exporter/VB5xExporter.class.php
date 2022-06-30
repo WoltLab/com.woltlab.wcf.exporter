@@ -701,7 +701,10 @@ class VB5xExporter extends AbstractExporter
      */
     public function exportBoards($offset, $limit)
     {
-        $sql = "SELECT      node.*, channel.guid, channel.options AS channelOptions
+        $sql = "SELECT      node.*,
+                            channel.guid,
+                            channel.options AS channelOptions,
+                            channel.category AS isCategory
                 FROM        " . $this->databasePrefix . "node node
                 INNER JOIN  (
                                 SELECT  contenttypeid
@@ -745,7 +748,7 @@ class VB5xExporter extends AbstractExporter
         }
 
         foreach ($this->boardCache[$parentID] as $board) {
-            if ($board['channelOptions'] & self::CHANNELOPTIONS_CANCONTAINTHREADS) {
+            if (!$board['isCategory'] || ($board['channelOptions'] & self::CHANNELOPTIONS_CANCONTAINTHREADS)) {
                 $boardType = Board::TYPE_BOARD;
             } else {
                 $boardType = Board::TYPE_CATEGORY;
