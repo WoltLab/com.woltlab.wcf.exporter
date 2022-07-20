@@ -275,7 +275,6 @@ class PhpBB3xExporter extends AbstractExporter
                 case 6:
                     // BOTS
                     continue 2;
-                break;
                 default:
                     $groupType = UserGroup::OTHER;
                     break;
