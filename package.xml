@@ -43,6 +43,6 @@
 	</instructions>
 	
 	<instructions type="update" fromversion="5.5.3 dev 1">
-		<void>
+		<void/>
 	</instructions>
 </package>
