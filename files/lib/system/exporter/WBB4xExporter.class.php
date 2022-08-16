@@ -632,7 +632,6 @@ class WBB4xExporter extends AbstractExporter
                 'registrationIpAddress' => $row['registrationIpAddress'],
                 'disableAvatar' => $row['disableAvatar'],
                 'disableAvatarReason' => $row['disableAvatarReason'],
-                'enableGravatar' => $row['enableGravatar'],
                 'signature' => $row['signature'],
                 'signatureEnableHtml' => $row['signatureEnableHtml'],
                 'disableSignature' => $row['disableSignature'],

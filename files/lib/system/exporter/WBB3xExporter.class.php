@@ -531,7 +531,6 @@ class WBB3xExporter extends AbstractExporter
                 'registrationIpAddress' => UserUtil::convertIPv4To6($row['registrationIpAddress']),
                 'disableAvatar' => $row['disableAvatar'],
                 'disableAvatarReason' => !empty($row['disableAvatarReason']) ? $row['disableAvatarReason'] : '',
-                'enableGravatar' => (!empty($row['gravatar']) && $row['gravatar'] == $row['email']) ? 1 : 0,
                 'signature' => $row['signature'],
                 'signatureEnableHtml' => $row['enableSignatureHtml'],
                 'disableSignature' => $row['disableSignature'],

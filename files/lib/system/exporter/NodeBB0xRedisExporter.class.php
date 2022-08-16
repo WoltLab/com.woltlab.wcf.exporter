@@ -195,19 +195,6 @@ class NodeBB0xRedisExporter extends AbstractExporter
                 'signature' => self::convertMarkdown($row['signature']),
             ];
 
-            static $gravatarRegex = null;
-            if ($gravatarRegex === null) {
-                $gravatarRegex = new Regex('https://(?:secure\.)?gravatar\.com/avatar/([a-f0-9]{32})');
-            }
-
-            if ($gravatarRegex->match($row['picture'])) {
-                $matches = $gravatarRegex->getMatches();
-
-                if ($matches[1] === \md5($row['email'])) {
-                    $data['enableGravatar'] = 1;
-                }
-            }
-
             $birthday = \DateTime::createFromFormat('m/d/Y', StringUtil::decodeHTML($row['birthday']));
             // get user options
             $options = [

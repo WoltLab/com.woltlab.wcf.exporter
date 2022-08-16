@@ -306,7 +306,6 @@ class IPB4xExporter extends AbstractExporter
                 'registrationDate' => $row['joined'],
                 'banned' => $row['temp_ban'] == -1 ? 1 : 0,
                 'registrationIpAddress' => UserUtil::convertIPv4To6($row['ip_address']),
-                'enableGravatar' => (!empty($row['pp_gravatar']) && $row['pp_gravatar'] == $row['email']) ? 1 : 0,
                 'signature' => self::fixMessage($row['signature']),
                 'profileHits' => $row['members_profile_views'],
                 'userTitle' => $row['member_title'] ?: '',
