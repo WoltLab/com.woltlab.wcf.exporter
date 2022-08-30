@@ -97,7 +97,6 @@ return (new PhpCsFixer\Config())
         'unary_operator_spaces' => true,
 
         'no_useless_return' => true,
-        'return_assignment' => true,
 
         'multiline_whitespace_before_semicolons' => true,
         'no_empty_statement' => true,

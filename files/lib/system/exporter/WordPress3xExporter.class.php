@@ -4,6 +4,7 @@ namespace wcf\system\exporter;
 
 use wcf\data\article\Article;
 use wcf\system\database\util\PreparedStatementConditionBuilder;
+use wcf\system\html\input\HtmlInputProcessor;
 use wcf\system\importer\ImportHandler;
 use wcf\system\WCF;
 use wcf\util\StringUtil;
@@ -665,8 +666,6 @@ class WordPress3xExporter extends AbstractExporter
      */
     private static function fixMessage($string)
     {
-        $string = \str_replace("\n", "<br />\n", StringUtil::unifyNewlines($string));
-
         // replace media
         $string = \preg_replace_callback(
             '~<img class="([^"]*wp-image-(\d+)[^"]*)".*?>~is',
@@ -701,6 +700,17 @@ class WordPress3xExporter extends AbstractExporter
             },
             $string
         );
+
+        $processor = new HtmlInputProcessor();
+        $processor->process($string, 'com.woltlab.wcf.article.content');
+        $string = $processor->getHtml();
+
+        $string = \str_replace("</p>", "</p><p><br></p>", $string);
+        /* Remove trailing linebreak in quotes */
+        $string = \preg_replace("~<p><br></p>(?=\\s*</blockquote>)~", '', $string);
+
+        $string = \str_replace("<blockquote>", "<woltlab-quote>", $string);
+        $string = \str_replace("</blockquote>", "</woltlab-quote>", $string);
 
         return $string;
     }
