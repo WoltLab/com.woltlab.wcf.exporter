@@ -707,7 +707,7 @@ class WordPress3xExporter extends AbstractExporter
 
         $string = \str_replace("</p>", "</p><p><br></p>", $string);
         /* Remove trailing linebreak in quotes */
-        $string = \preg_replace("~<p><br></p>(?=\s*</blockquote>)~", '', $string);
+        $string = \preg_replace("~<p><br></p>(?=\\s*</blockquote>)~", '', $string);
 
         $string = \str_replace("<blockquote>", "<woltlab-quote>", $string);
         $string = \str_replace("</blockquote>", "</woltlab-quote>", $string);
