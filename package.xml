@@ -29,20 +29,4 @@
 		
 		<instruction type="objectType" />
 	</instructions>
-
-	<instructions type="update" fromversion="5.4.*">
-		<instruction type="file" />
-
-		<instruction type="language" />
-
-		<instruction type="objectType" />
-	</instructions>
-
-	<instructions type="update" fromversion="5.5.0">
-		<instruction type="file">files_update.tar</instruction>
-	</instructions>
-	
-	<instructions type="update" fromversion="5.5.3 dev 1">
-		<void/>
-	</instructions>
 </package>
