@@ -29,7 +29,7 @@ use wcf\util\UserUtil;
  * @license GNU Lesser General Public License <http://opensource.org/licenses/lgpl-license.php>
  * @package WoltLabSuite\Core\System\Exporter
  */
-class VB3or4xExporter extends AbstractExporter
+final class VB3or4xExporter extends AbstractExporter
 {
     const FORUMOPTIONS_ACTIVE = 1;
 

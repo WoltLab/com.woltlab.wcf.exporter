@@ -21,7 +21,7 @@ use wcf\util\UserUtil;
  * @license GNU Lesser General Public License <http://opensource.org/licenses/lgpl-license.php>
  * @package WoltLabSuite\Core\System\Exporter
  */
-class IPB4xExporter extends AbstractExporter
+final class IPB4xExporter extends AbstractExporter
 {
     /**
      * language statement

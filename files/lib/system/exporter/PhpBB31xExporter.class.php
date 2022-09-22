@@ -25,7 +25,7 @@ use wcf\util\UserUtil;
  * @license GNU Lesser General Public License <http://opensource.org/licenses/lgpl-license.php>
  * @package WoltLabSuite\Core\System\Exporter
  */
-class PhpBB31xExporter extends AbstractExporter
+final class PhpBB31xExporter extends AbstractExporter
 {
     protected static $knownProfileFields = [
         'phpbb_location', 'phpbb_website', 'phpbb_interests', 'phpbb_occupation',

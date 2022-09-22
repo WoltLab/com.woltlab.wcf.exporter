@@ -20,7 +20,7 @@ use wcf\util\UserUtil;
  * @license GNU Lesser General Public License <http://opensource.org/licenses/lgpl-license.php>
  * @package WoltLabSuite\Core\System\Exporter
  */
-class IPB3xExporter extends AbstractExporter
+final class IPB3xExporter extends AbstractExporter
 {
     protected static $knownProfileFields = ['website', 'icq', 'gender', 'location', 'interests', 'skype'];
 

@@ -23,7 +23,7 @@ use wcf\util\UserUtil;
  * @license GNU Lesser General Public License <http://opensource.org/licenses/lgpl-license.php>
  * @package WoltLabSuite\Core\System\Exporter
  */
-class PhpBB3xExporter extends AbstractExporter
+final class PhpBB3xExporter extends AbstractExporter
 {
     const TOPIC_TYPE_GLOBAL = 3;
 

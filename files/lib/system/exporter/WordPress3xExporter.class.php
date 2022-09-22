@@ -17,7 +17,7 @@ use wcf\util\StringUtil;
  * @license GNU Lesser General Public License <http://opensource.org/licenses/lgpl-license.php>
  * @package WoltLabSuite\Core\System\Exporter
  */
-class WordPress3xExporter extends AbstractExporter
+final class WordPress3xExporter extends AbstractExporter
 {
     /**
      * category cache

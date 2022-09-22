@@ -18,7 +18,7 @@ use wcf\util\StringUtil;
  * @license GNU Lesser General Public License <http://opensource.org/licenses/lgpl-license.php>
  * @package WoltLabSuite\Core\System\Exporter
  */
-class NodeBB0xRedisExporter extends AbstractExporter
+final class NodeBB0xRedisExporter extends AbstractExporter
 {
     /**
      * board cache

@@ -26,7 +26,7 @@ use wcf\util\UserUtil;
  * @license GNU Lesser General Public License <http://opensource.org/licenses/lgpl-license.php>
  * @package WoltLabSuite\Core\System\Exporter
  */
-class VB5xExporter extends AbstractExporter
+final class VB5xExporter extends AbstractExporter
 {
     const CHANNELOPTIONS_CANCONTAINTHREADS = 4;
 

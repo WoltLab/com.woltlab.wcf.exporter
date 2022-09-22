@@ -19,7 +19,7 @@ use wcf\util\UserUtil;
  * @license GNU Lesser General Public License <http://opensource.org/licenses/lgpl-license.php>
  * @package WoltLabSuite\Core\System\Exporter
  */
-class Kunena3xExporter extends AbstractExporter
+final class Kunena3xExporter extends AbstractExporter
 {
     /**
      * board cache
