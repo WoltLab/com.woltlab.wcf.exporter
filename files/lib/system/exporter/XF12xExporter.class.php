@@ -373,7 +373,7 @@ class XF12xExporter extends AbstractExporter
 
             $languageCode = '';
             if ($row['language_code']) {
-                [$languageCode, ] = \explode('-', $row['language_code'], 2);
+                [$languageCode] = \explode('-', $row['language_code'], 2);
             }
 
             $additionalData = [
