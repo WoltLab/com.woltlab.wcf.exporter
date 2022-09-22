@@ -28,18 +28,18 @@ use wcf\util\UserUtil;
  */
 final class SMF2xExporter extends AbstractExporter
 {
-    const GROUP_EVERYONE = -2;
+    private const GROUP_EVERYONE = -2;
 
-    const GROUP_GUEST = -1;
+    private const GROUP_GUEST = -1;
 
     // GROUP_USER needs a fake group id, due to 0 being falsy
-    const GROUP_USER = 0;
+    private const GROUP_USER = 0;
 
-    const GROUP_USER_FAKE = -3;
+    private const GROUP_USER_FAKE = -3;
 
-    const GROUP_ADMIN = 1;
+    private const GROUP_ADMIN = 1;
 
-    const GROUP_MODERATORS = 3;
+    private const GROUP_MODERATORS = 3;
 
     /**
      * board cache

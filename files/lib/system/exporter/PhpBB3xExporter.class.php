@@ -25,35 +25,35 @@ use wcf\util\UserUtil;
  */
 final class PhpBB3xExporter extends AbstractExporter
 {
-    const TOPIC_TYPE_GLOBAL = 3;
+    private const TOPIC_TYPE_GLOBAL = 3;
 
-    const TOPIC_TYPE_ANNOUCEMENT = 2;
+    private const TOPIC_TYPE_ANNOUCEMENT = 2;
 
-    const TOPIC_TYPE_STICKY = 1;
+    private const TOPIC_TYPE_STICKY = 1;
 
-    const TOPIC_TYPE_DEFAULT = 0;
+    private const TOPIC_TYPE_DEFAULT = 0;
 
-    const TOPIC_STATUS_LINK = 2;
+    private const TOPIC_STATUS_LINK = 2;
 
-    const TOPIC_STATUS_CLOSED = 1;
+    private const TOPIC_STATUS_CLOSED = 1;
 
-    const TOPIC_STATUS_DEFAULT = 0;
+    private const TOPIC_STATUS_DEFAULT = 0;
 
-    const USER_TYPE_USER_IGNORE = 2;
+    private const USER_TYPE_USER_IGNORE = 2;
 
-    const AVATAR_TYPE_GALLERY = 3;
+    private const AVATAR_TYPE_GALLERY = 3;
 
-    const AVATAR_TYPE_REMOTE = 2;
+    private const AVATAR_TYPE_REMOTE = 2;
 
-    const AVATAR_TYPE_UPLOADED = 1;
+    private const AVATAR_TYPE_UPLOADED = 1;
 
-    const AVATAR_TYPE_NO_AVATAR = 0;
+    private const AVATAR_TYPE_NO_AVATAR = 0;
 
-    const BOARD_TYPE_LINK = 2;
+    private const BOARD_TYPE_LINK = 2;
 
-    const BOARD_TYPE_BOARD = 1;
+    private const BOARD_TYPE_BOARD = 1;
 
-    const BOARD_TYPE_CATEGORY = 0;
+    private const BOARD_TYPE_CATEGORY = 0;
 
     /**
      * board cache
