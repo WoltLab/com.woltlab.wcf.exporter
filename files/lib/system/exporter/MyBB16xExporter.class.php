@@ -29,7 +29,7 @@ use wcf\util\UserUtil;
  * @license GNU Lesser General Public License <http://opensource.org/licenses/lgpl-license.php>
  * @package WoltLabSuite\Core\System\Exporter
  */
-class MyBB16xExporter extends AbstractExporter
+final class MyBB16xExporter extends AbstractExporter
 {
     protected static $knownProfileFields = ['Bio', 'Sex', 'Location'];
 

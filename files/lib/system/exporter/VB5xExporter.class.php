@@ -26,15 +26,15 @@ use wcf\util\UserUtil;
  * @license GNU Lesser General Public License <http://opensource.org/licenses/lgpl-license.php>
  * @package WoltLabSuite\Core\System\Exporter
  */
-class VB5xExporter extends AbstractExporter
+final class VB5xExporter extends AbstractExporter
 {
-    const CHANNELOPTIONS_CANCONTAINTHREADS = 4;
+    private const CHANNELOPTIONS_CANCONTAINTHREADS = 4;
 
-    const ATTACHFILE_DATABASE = 0;
+    private const ATTACHFILE_DATABASE = 0;
 
-    const ATTACHFILE_FILESYSTEM = 1;
+    private const ATTACHFILE_FILESYSTEM = 1;
 
-    const ATTACHFILE_FILESYSTEM_SUBFOLDER = 2;
+    private const ATTACHFILE_FILESYSTEM_SUBFOLDER = 2;
 
     /**
      * board cache
