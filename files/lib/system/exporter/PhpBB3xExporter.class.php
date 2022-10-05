@@ -281,7 +281,7 @@ class PhpBB3xExporter extends AbstractExporter
             }
 
             $userOnlineMarking = '%s';
-            if ($row['group_color']) {
+            if ($row['group_colour']) {
                 $userOnlineMarking = '<span style="color: #' . $row['group_colour'] . '">%s</span>';
             }
 
