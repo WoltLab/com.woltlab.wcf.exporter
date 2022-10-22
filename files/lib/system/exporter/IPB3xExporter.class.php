@@ -1014,7 +1014,7 @@ class IPB3xExporter extends AbstractExporter
             if (!$data) {
                 $data = @\unserialize(\str_replace('\"', '"', $row['choices'])); // pre ipb3.4 fallback
             }
-            if (!$data || !isset($data[1])) {
+            if (!$data || !isset($data[1]) || !isset($data[1]['choice'])) {
                 continue;
             }
 
