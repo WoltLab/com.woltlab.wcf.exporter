@@ -1013,7 +1013,7 @@ final class IPB3xExporter extends AbstractExporter
             if (!$data) {
                 $data = @\unserialize(\str_replace('\"', '"', $row['choices'])); // pre ipb3.4 fallback
             }
-            if (!$data || !isset($data[1])) {
+            if (!$data || !isset($data[1]) || !isset($data[1]['choice'])) {
                 continue;
             }
 
@@ -1174,15 +1174,7 @@ final class IPB3xExporter extends AbstractExporter
      */
     private function countAttachments($type)
     {
-        $sql = "SELECT  COUNT(*) AS count
-                FROM    " . $this->databasePrefix . "attachments
-                WHERE   attach_rel_module = ?
-                    AND attach_rel_id > ?";
-        $statement = $this->database->prepareStatement($sql);
-        $statement->execute([$type, 0]);
-        $row = $statement->fetchArray();
-
-        return $row['count'];
+        return $this->__getMaxID($this->databasePrefix . "attachments", 'attach_id');
     }
 
     /**
@@ -1199,9 +1191,15 @@ final class IPB3xExporter extends AbstractExporter
                 FROM        " . $this->databasePrefix . "attachments
                 WHERE       attach_rel_module = ?
                         AND attach_rel_id > ?
+                        AND attach_id BETWEEN ? AND ?
                 ORDER BY    attach_id DESC";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
-        $statement->execute([$type, 0]);
+        $statement->execute([
+            $type,
+            0,
+            $offset + 1,
+            $offset + $limit,
+        ]);
         while ($row = $statement->fetchArray()) {
             $fileLocation = $this->fileSystemPath . 'uploads/' . $row['attach_location'];
 
