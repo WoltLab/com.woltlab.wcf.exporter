@@ -1193,7 +1193,7 @@ class IPB3xExporter extends AbstractExporter
                 WHERE       attach_rel_module = ?
                         AND attach_rel_id > ?
                         AND attach_id BETWEEN ? AND ?";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareStatement($sql);
         $statement->execute([
             $type,
             0,
