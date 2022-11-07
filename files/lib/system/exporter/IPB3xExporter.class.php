@@ -1191,9 +1191,8 @@ final class IPB3xExporter extends AbstractExporter
                 FROM        " . $this->databasePrefix . "attachments
                 WHERE       attach_rel_module = ?
                         AND attach_rel_id > ?
-                        AND attach_id BETWEEN ? AND ?
-                ORDER BY    attach_id DESC";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+                        AND attach_id BETWEEN ? AND ?";
+        $statement = $this->database->prepareStatement($sql);
         $statement->execute([
             $type,
             0,
