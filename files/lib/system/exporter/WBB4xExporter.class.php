@@ -1461,14 +1461,22 @@ class WBB4xExporter extends AbstractExporter
      */
     public function countWatchedThreads()
     {
-        $sql = "SELECT  COUNT(*) AS count
+        if (\version_compare($this->getPackageVersion('com.woltlab.wbb'), '5.5.0 Alpha 1', '>=')) {
+            $sql = "SELECT  COUNT(*) AS count
+                    FROM    wbb" . $this->dbNo . "_thread_user_status";
+            $statement = $this->database->prepareStatement($sql);
+            $statement->execute();
+
+            return $statement->fetchSingleColumn();
+        } else {
+            $sql = "SELECT  COUNT(*) AS count
                 FROM    wcf" . $this->dbNo . "_user_object_watch
                 WHERE   objectTypeID = ?";
-        $statement = $this->database->prepareStatement($sql);
-        $statement->execute([$this->getObjectTypeID('com.woltlab.wcf.user.objectWatch', 'com.woltlab.wbb.thread')]);
-        $row = $statement->fetchArray();
+            $statement = $this->database->prepareStatement($sql);
+            $statement->execute([$this->getObjectTypeID('com.woltlab.wcf.user.objectWatch', 'com.woltlab.wbb.thread')]);
 
-        return $row['count'];
+            return $statement->fetchSingleColumn();
+        }
     }
 
     /**
@@ -1479,24 +1487,42 @@ class WBB4xExporter extends AbstractExporter
      */
     public function exportWatchedThreads($offset, $limit)
     {
-        $sql = "SELECT      *
-                FROM        wcf" . $this->dbNo . "_user_object_watch
-                WHERE       objectTypeID = ?
-                ORDER BY    watchID";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
-        $statement->execute([
-            $this->getObjectTypeID('com.woltlab.wcf.user.objectWatch', 'com.woltlab.wbb.thread'),
-        ]);
-        while ($row = $statement->fetchArray()) {
-            $data = [
-                'objectID' => $row['objectID'],
-                'userID' => $row['userID'],
-                'notification' => $row['notification'],
-            ];
+        if (\version_compare($this->getPackageVersion('com.woltlab.wbb'), '5.5.0 Alpha 1', '>=')) {
+            $sql = "SELECT      *
+                    FROM        wbb" . $this->dbNo . "_thread_user_status
+                    ORDER BY    userID, threadID";
+            $statement = $this->database->prepareStatement($sql, $limit, $offset);
+            $statement->execute();
+            while ($row = $statement->fetchArray()) {
+                $data = [
+                    'objectID' => $row['threadID'],
+                    'userID' => $row['userID'],
+                    'status' => $row['status'],
+                ];
 
-            ImportHandler::getInstance()
-                ->getImporter('com.woltlab.wbb.watchedThread')
-                ->import(0, $data);
+                ImportHandler::getInstance()
+                    ->getImporter('com.woltlab.wbb.watchedThread')
+                    ->import(0, $data);
+            }
+        } else {
+            $sql = "SELECT      *
+                    FROM        wcf" . $this->dbNo . "_user_object_watch
+                    WHERE       objectTypeID = ?
+                    ORDER BY    watchID";
+            $statement = $this->database->prepareStatement($sql, $limit, $offset);
+            $statement->execute([
+                $this->getObjectTypeID('com.woltlab.wcf.user.objectWatch', 'com.woltlab.wbb.thread'),
+            ]);
+            while ($row = $statement->fetchArray()) {
+                $data = [
+                    'objectID' => $row['objectID'],
+                    'userID' => $row['userID'],
+                ];
+
+                ImportHandler::getInstance()
+                    ->getImporter('com.woltlab.wbb.watchedThread')
+                    ->import(0, $data);
+            }
         }
     }
 
