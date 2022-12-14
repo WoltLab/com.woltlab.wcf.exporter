@@ -3815,7 +3815,8 @@ final class WBB4xExporter extends AbstractExporter
                 WHERE   objectTypeID = ?";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([
-            $this->getObjectTypeID('com.woltlab.wcf.comment.commentableContent', $objectType), ]);
+            $this->getObjectTypeID('com.woltlab.wcf.comment.commentableContent', $objectType),
+        ]);
         $row = $statement->fetchArray();
 
         return $row['count'];
@@ -3837,7 +3838,8 @@ final class WBB4xExporter extends AbstractExporter
                 ORDER BY    commentID";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([
-            $this->getObjectTypeID('com.woltlab.wcf.comment.commentableContent', $objectType), ]);
+            $this->getObjectTypeID('com.woltlab.wcf.comment.commentableContent', $objectType),
+        ]);
         while ($row = $statement->fetchArray()) {
             $data = [
                 'objectID' => $row['objectID'],
@@ -3872,7 +3874,8 @@ final class WBB4xExporter extends AbstractExporter
                         )";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([
-            $this->getObjectTypeID('com.woltlab.wcf.comment.commentableContent', $objectType), ]);
+            $this->getObjectTypeID('com.woltlab.wcf.comment.commentableContent', $objectType),
+        ]);
         $row = $statement->fetchArray();
 
         return $row['count'];
@@ -3898,7 +3901,8 @@ final class WBB4xExporter extends AbstractExporter
                 ORDER BY    responseID";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([
-            $this->getObjectTypeID('com.woltlab.wcf.comment.commentableContent', $objectType), ]);
+            $this->getObjectTypeID('com.woltlab.wcf.comment.commentableContent', $objectType),
+        ]);
         while ($row = $statement->fetchArray()) {
             $data = [
                 'commentID' => $row['commentID'],
@@ -3929,7 +3933,8 @@ final class WBB4xExporter extends AbstractExporter
                 WHERE   objectTypeID = ?";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([
-            $this->getObjectTypeID('com.woltlab.wcf.like.likeableObject', $objectType), ]);
+            $this->getObjectTypeID('com.woltlab.wcf.like.likeableObject', $objectType),
+        ]);
         $row = $statement->fetchArray();
 
         return $row['count'];
@@ -3951,7 +3956,8 @@ final class WBB4xExporter extends AbstractExporter
                 ORDER BY    likeID";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([
-            $this->getObjectTypeID('com.woltlab.wcf.like.likeableObject', $objectType), ]);
+            $this->getObjectTypeID('com.woltlab.wcf.like.likeableObject', $objectType),
+        ]);
         while ($row = $statement->fetchArray()) {
             $data = [
                 'objectID' => $row['objectID'],
@@ -3981,7 +3987,8 @@ final class WBB4xExporter extends AbstractExporter
                     AND objectID IS NOT NULL";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([
-            $this->getObjectTypeID('com.woltlab.wcf.attachment.objectType', $objectType), ]);
+            $this->getObjectTypeID('com.woltlab.wcf.attachment.objectType', $objectType),
+        ]);
         $row = $statement->fetchArray();
 
         return $row['count'];
@@ -4212,7 +4219,8 @@ final class WBB4xExporter extends AbstractExporter
                 ORDER BY    parentCategoryID, categoryID";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([
-            $this->getObjectTypeID('com.woltlab.wcf.category', $objectType), ]);
+            $this->getObjectTypeID('com.woltlab.wcf.category', $objectType),
+        ]);
         $categories = $i18nValues = [];
         while ($row = $statement->fetchArray()) {
             $categories[$row['categoryID']] = [
