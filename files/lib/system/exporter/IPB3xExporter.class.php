@@ -253,7 +253,7 @@ class IPB3xExporter extends AbstractExporter
                 'enableGravatar' => (!empty($row['pp_gravatar']) && $row['pp_gravatar'] == $row['email']) ? 1 : 0,
                 'signature' => self::fixMessage($row['signature']),
                 'profileHits' => $row['members_profile_views'],
-                'userTitle' => $row['title'] ?: '',
+                'userTitle' => $row['title'] ? self::fixSubject($row['title']) : '',
                 'lastActivityTime' => $row['last_activity'],
             ];
 
