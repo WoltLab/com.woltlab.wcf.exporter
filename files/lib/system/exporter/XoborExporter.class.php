@@ -15,7 +15,6 @@ use wcf\util\UserUtil;
  * @author  Tim Duesterhus
  * @copyright   2001-2019 WoltLab GmbH
  * @license GNU Lesser General Public License <http://opensource.org/licenses/lgpl-license.php>
- * @package WoltLabSuite\Core\System\Exporter
  */
 final class XoborExporter extends AbstractExporter
 {
