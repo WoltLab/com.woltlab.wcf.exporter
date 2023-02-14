@@ -357,7 +357,6 @@ class WordPress3xExporter extends AbstractExporter
                 'username' => $row['user_login'] ?: '',
                 'time' => $time,
                 'categoryID' => (isset($categories[$row['ID']]) ? \reset($categories[$row['ID']]) : null),
-                'comments' => $row['comment_count'],
                 'publicationStatus' => $row['post_status'] == 'publish' ? Article::PUBLISHED : Article::UNPUBLISHED,
             ];
 
