@@ -434,6 +434,11 @@ class WordPress3xExporter extends AbstractExporter
                     $parentCommentStatement->execute([$parentID]);
                     $row2 = $parentCommentStatement->fetchArray();
 
+                    if ($row2 === false) {
+                        // Skip because parent comment is missing.
+                        break;
+                    }
+
                     if (!$row2['comment_parent']) {
                         $data = [
                             'commentID' => $row2['comment_ID'],
