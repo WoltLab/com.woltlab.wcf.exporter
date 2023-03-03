@@ -216,8 +216,7 @@ final class WBB3xExporter extends AbstractExporter
         ) {
             if (
                 empty($this->fileSystemPath)
-                || (
-                    !@\file_exists($this->fileSystemPath . 'lib/core.functions.php')
+                || (!@\file_exists($this->fileSystemPath . 'lib/core.functions.php')
                     && !@\file_exists($this->fileSystemPath . 'wcf/lib/core.functions.php')
                 )
             ) {
@@ -539,8 +538,8 @@ final class WBB3xExporter extends AbstractExporter
                 'lastActivityTime' => $row['lastActivityTime'],
             ];
             $additionalData = [
-                'groupIDs' => \explode(',', $row['groupIDs']),
-                'languages' => \explode(',', $row['languageCodes']),
+                'groupIDs' => \explode(',', $row['groupIDs'] ?: ''),
+                'languages' => \explode(',', $row['languageCodes'] ?: ''),
                 'options' => [],
             ];
 
@@ -1035,7 +1034,7 @@ final class WBB3xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            $participants = \explode(',', $row['participants']);
+            $participants = \explode(',', $row['participants'] ?: '');
             $participants[] = $row['userID'];
             $conversationID = $this->getConversationID($row['parentPmID'] ?: $row['pmID'], $participants);
 
@@ -1085,7 +1084,7 @@ final class WBB3xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            $participants = \explode(',', $row['participants']);
+            $participants = \explode(',', $row['participants'] ?: '');
             $participants[] = $row['userID'];
             $conversationID = $this->getConversationID($row['parentPmID'] ?: $row['pmID'], $participants);
 
@@ -1144,7 +1143,7 @@ final class WBB3xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
-            $participants = \explode(',', $row['participants']);
+            $participants = \explode(',', $row['participants'] ?: '');
             $participants[] = $row['sender'];
             $conversationID = $this->getConversationID($row['parentPmID'] ?: $row['pmID'], $participants);
 
@@ -2248,7 +2247,7 @@ final class WBB3xExporter extends AbstractExporter
         $conditionBuilder->add('entry_to_category.entryID IN (?)', [$entryIDs]);
         $conditionBuilder->add('category.userID = ?', [0]);
 
-        $sql = "SELECT      entry_to_category.* 
+        $sql = "SELECT      entry_to_category.*
                 FROM        wcf" . $this->dbNo . "_user_blog_entry_to_category entry_to_category
                 LEFT JOIN   wcf" . $this->dbNo . "_user_blog_category category
                 ON          category.categoryID = entry_to_category.categoryID
