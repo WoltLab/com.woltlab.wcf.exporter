@@ -216,7 +216,8 @@ final class WBB3xExporter extends AbstractExporter
         ) {
             if (
                 empty($this->fileSystemPath)
-                || (!@\file_exists($this->fileSystemPath . 'lib/core.functions.php')
+                || (
+                    !@\file_exists($this->fileSystemPath . 'lib/core.functions.php')
                     && !@\file_exists($this->fileSystemPath . 'wcf/lib/core.functions.php')
                 )
             ) {
