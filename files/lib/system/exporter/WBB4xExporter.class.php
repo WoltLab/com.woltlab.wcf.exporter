@@ -4248,6 +4248,8 @@ final class WBB4xExporter extends AbstractExporter
         ]);
         $categories = $i18nValues = [];
         while ($row = $statement->fetchArray()) {
+            $row['description'] = $row['description'] ?? '';
+
             $categories[$row['categoryID']] = [
                 'title' => $row['title'],
                 'description' => $row['description'],
