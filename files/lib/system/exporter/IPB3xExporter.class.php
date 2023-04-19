@@ -1287,7 +1287,7 @@ final class IPB3xExporter extends AbstractExporter
             $data = [
                 'userID' => $row['album_owner_id'],
                 'username' => $row['username'] ?: '',
-                'title' => $row['album_name'],
+                'title' => self::fixSubject($row['album_name']),
                 'description' => StringUtil::stripHTML($row['album_description']),
                 'lastUpdateTime' => $row['album_last_img_date'],
             ];
