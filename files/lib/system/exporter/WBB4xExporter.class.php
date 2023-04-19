@@ -257,8 +257,7 @@ final class WBB4xExporter extends AbstractExporter
             if (\in_array($item, $this->selectedData)) {
                 if (
                     empty($this->fileSystemPath)
-                    || (
-                        !@\file_exists($this->fileSystemPath . 'lib/core.functions.php')
+                    || (!@\file_exists($this->fileSystemPath . 'lib/core.functions.php')
                         && !@\file_exists($this->fileSystemPath . 'wcf/lib/core.functions.php')
                     )
                 ) {
@@ -1232,12 +1231,14 @@ final class WBB4xExporter extends AbstractExporter
                 'descriptionUseHtml' => $board['descriptionUseHtml'],
                 'externalURL' => $board['externalURL'],
                 'time' => $board['time'],
+                'metaDescription' => $board['metaDescription'] ?? '',
                 'countUserPosts' => $board['countUserPosts'],
                 'daysPrune' => $board['daysPrune'],
                 'enableMarkingAsDone' => $board['enableMarkingAsDone'],
                 'ignorable' => $board['ignorable'],
                 'isClosed' => $board['isClosed'],
                 'isInvisible' => $board['isInvisible'],
+                'isPrivate' => $board['isPrivate'] ?? 0,
                 'postSortOrder' => $board['postSortOrder'],
                 'postsPerPage' => $board['postsPerPage'],
                 'searchable' => $board['searchable'],
@@ -1246,6 +1247,7 @@ final class WBB4xExporter extends AbstractExporter
                 'sortField' => $board['sortField'],
                 'sortOrder' => $board['sortOrder'],
                 'threadsPerPage' => $board['threadsPerPage'],
+                'enableBestAnswer' => $board['enableBestAnswer'] ?? 0,
                 'clicks' => $board['clicks'],
                 'posts' => $board['posts'],
                 'threads' => $board['threads'],
@@ -2095,7 +2097,7 @@ final class WBB4xExporter extends AbstractExporter
         $conditionBuilder = new PreparedStatementConditionBuilder();
         $conditionBuilder->add('entryID IN (?)', [$entryIDs]);
 
-        $sql = "SELECT  * 
+        $sql = "SELECT  *
                 FROM    blog" . $this->dbNo . "_entry_to_category
                 " . $conditionBuilder;
         $statement = $this->database->prepareStatement($sql);
