@@ -910,6 +910,11 @@ final class WBB4xExporter extends AbstractExporter
             if (!\class_exists($className)) {
                 $row['optionType'] = 'textarea';
             }
+            $outputClass = '';
+            // Try to preserve known values for the output class.
+            if ($row['outputClass'] && \class_exists($row['outputClass'])) {
+                $outputClass = $row['outputClass'];
+            }
 
             $data = [
                 'categoryName' => $row['categoryName'],
@@ -924,6 +929,7 @@ final class WBB4xExporter extends AbstractExporter
                 'editable' => $row['editable'],
                 'visible' => $row['visible'],
                 'showOrder' => $row['showOrder'],
+                'outputClass' => $outputClass,
             ];
 
             ImportHandler::getInstance()
