@@ -512,10 +512,15 @@ class SMF2xExporter extends AbstractExporter
      */
     public function countUserRanks()
     {
+        $fieldName = 'stars';
+        if (\version_compare($this->readOption('smfVersion'), '2.1.0', '>')) {
+            $fieldName = 'icons';
+        }
+
         $sql = "SELECT  COUNT(*) AS count
                 FROM    " . $this->databasePrefix . "membergroups
                 WHERE   min_posts <> ?
-                    AND stars <> ?";
+                    AND {$fieldName} <> ?";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([-1, '']);
         $row = $statement->fetchArray();
@@ -531,15 +536,20 @@ class SMF2xExporter extends AbstractExporter
      */
     public function exportUserRanks($offset, $limit)
     {
+        $fieldName = 'stars';
+        if (\version_compare($this->readOption('smfVersion'), '2.1.0', '>')) {
+            $fieldName = 'icons';
+        }
+
         $sql = "SELECT      *
                 FROM        " . $this->databasePrefix . "membergroups
                 WHERE       min_posts <> ?
-                        AND stars <> ?
+                        AND {$fieldName} <> ?
                 ORDER BY    id_group";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([-1, '']);
         while ($row = $statement->fetchArray()) {
-            [$repeatImage, $rankImage] = \explode('#', $row['stars'], 2);
+            [$repeatImage, $rankImage] = \explode('#', $row[$fieldName], 2);
 
             $groupID = $row['id_group'] == self::GROUP_USER ? self::GROUP_USER_FAKE : $row['id_group'];
 
