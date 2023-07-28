@@ -5,6 +5,7 @@ namespace wcf\system\exporter;
 use wbb\data\board\Board;
 use wcf\data\user\group\UserGroup;
 use wcf\data\user\option\UserOption;
+use wcf\system\database\exception\DatabaseException;
 use wcf\system\database\util\PreparedStatementConditionBuilder;
 use wcf\system\importer\ImportHandler;
 use wcf\system\option\user\SelectOptionsUserOptionOutput;
@@ -708,6 +709,20 @@ class SMF2xExporter extends AbstractExporter
      */
     public function countConversationFolders()
     {
+        try {
+            // SMF 2.1
+            $sql = "SELECT  COUNT(*) AS count
+                    FROM    " . $this->databasePrefix . "pm_labels";
+            $statement = $this->database->prepareStatement($sql);
+            $statement->execute();
+            $row = $statement->fetchArray();
+
+            return $row['count'];
+        }
+        catch (DatabaseException) {
+        }
+
+        // SMF 2.0
         $sql = "SELECT  COUNT(*) AS count
                 FROM    " . $this->databasePrefix . "members
                 WHERE   message_labels <> ?";
@@ -726,6 +741,33 @@ class SMF2xExporter extends AbstractExporter
      */
     public function exportConversationFolders($offset, $limit)
     {
+        try {
+            // SMF 2.1
+            $sql = "SELECT      *
+                    FROM        " . $this->databasePrefix . "pm_labels
+                    ORDER BY    id_label";
+            $statement = $this->database->prepareStatement($sql, $limit, $offset);
+            $statement->execute();
+            while ($row = $statement->fetchArray()) {
+                $data = [
+                    'userID' => $row['id_member'],
+                    'label' => \mb_substr($row['name'], 0, 80),
+                ];
+
+                ImportHandler::getInstance()
+                    ->getImporter('com.woltlab.wcf.conversation.label')
+                    ->import(
+                        ($row['id_member'] . '-' . $row['id_label']),
+                        $data
+                    );
+            }
+
+            return;
+        }
+        catch (DatabaseException) {
+        }
+
+        // SMF 2.0
         $sql = "SELECT      id_member, message_labels
                 FROM        " . $this->databasePrefix . "members
                 WHERE       message_labels <> ?
@@ -891,20 +933,45 @@ class SMF2xExporter extends AbstractExporter
      */
     public function exportConversationUsers($offset, $limit)
     {
-        $sql = "SELECT      recipients.*, pm.id_pm_head, members.member_name, pm.msgtime, pm.id_member_from,
-                            (
-                                SELECT  GROUP_CONCAT(recipients2.id_member)
-                                FROM    " . $this->databasePrefix . "pm_recipients recipients2
-                                WHERE   recipients.id_pm = recipients2.id_pm
-                            ) AS participants
-                FROM        " . $this->databasePrefix . "pm_recipients recipients
-                LEFT JOIN   " . $this->databasePrefix . "personal_messages pm
-                ON          pm.id_pm = recipients.id_pm
-                LEFT JOIN   " . $this->databasePrefix . "members members
-                ON          recipients.id_member = members.id_member
-                ORDER BY    recipients.id_pm, recipients.id_member";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
-        $statement->execute();
+        try {
+            // SMF 2.1
+            $sql = "SELECT      recipients.*, pm.id_pm_head, members.member_name, pm.msgtime, pm.id_member_from,
+                                (
+                                    SELECT  GROUP_CONCAT(recipients2.id_member)
+                                    FROM    " . $this->databasePrefix . "pm_recipients recipients2
+                                    WHERE   recipients.id_pm = recipients2.id_pm
+                                ) AS participants,
+                                (
+                                    SELECT  COALESCE(GROUP_CONCAT(labeled_message.id_label), '-1')
+                                    FROM    " . $this->databasePrefix . "pm_labeled_messages labeled_message
+                                    WHERE   recipients.id_pm = labeled_message.id_pm
+                                ) AS labels
+                    FROM        " . $this->databasePrefix . "pm_recipients recipients
+                    LEFT JOIN   " . $this->databasePrefix . "personal_messages pm
+                    ON          pm.id_pm = recipients.id_pm
+                    LEFT JOIN   " . $this->databasePrefix . "members members
+                    ON          recipients.id_member = members.id_member
+                    ORDER BY    recipients.id_pm, recipients.id_member";
+            $statement = $this->database->prepareStatement($sql, $limit, $offset);
+            $statement->execute();
+        } catch (DatabaseException) {
+            // SMF 2.0
+            $sql = "SELECT      recipients.*, pm.id_pm_head, members.member_name, pm.msgtime, pm.id_member_from,
+                                (
+                                    SELECT  GROUP_CONCAT(recipients2.id_member)
+                                    FROM    " . $this->databasePrefix . "pm_recipients recipients2
+                                    WHERE   recipients.id_pm = recipients2.id_pm
+                                ) AS participants
+                    FROM        " . $this->databasePrefix . "pm_recipients recipients
+                    LEFT JOIN   " . $this->databasePrefix . "personal_messages pm
+                    ON          pm.id_pm = recipients.id_pm
+                    LEFT JOIN   " . $this->databasePrefix . "members members
+                    ON          recipients.id_member = members.id_member
+                    ORDER BY    recipients.id_pm, recipients.id_member";
+            $statement = $this->database->prepareStatement($sql, $limit, $offset);
+            $statement->execute();
+        }
+
         while ($row = $statement->fetchArray()) {
             $participants = \explode(',', $row['participants']);
             $participants[] = $row['id_member_from'];
