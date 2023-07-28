@@ -375,11 +375,13 @@ class SMF2xExporter extends AbstractExporter
 
             // get user options
             $options = [
-                'location' => $row['location'],
                 'birthday' => $row['birthdate'],
                 'homepage' => $row['website_url'],
                 'aboutMe' => $row['personal_text'],
             ];
+            if (isset($row['location'])) {
+                $options['location'] = $row['location'];
+            }
 
             $additionalData = [
                 'groupIDs' => \explode(',', $row['additional_groups'] . ',' . $row['id_group']),
