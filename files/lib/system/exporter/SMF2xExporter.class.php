@@ -14,6 +14,7 @@ use wcf\system\request\LinkHandler;
 use wcf\system\WCF;
 use wcf\util\ArrayUtil;
 use wcf\util\FileUtil;
+use wcf\util\JSON;
 use wcf\util\MessageUtil;
 use wcf\util\StringUtil;
 use wcf\util\UserRegistrationUtil;
@@ -1798,7 +1799,13 @@ class SMF2xExporter extends AbstractExporter
             // multiple attachments dir
             static $dirs;
             if ($dirs === null) {
-                $dirs = \unserialize($this->readOption('attachmentUploadDir'));
+                try {
+                    // SMF 2.1
+                    $dirs = JSON::decode($this->readOption('attachmentUploadDir'));
+                } catch (\Exception $e) {
+                    // SMF 2.0
+                    $dirs = \unserialize($this->readOption('attachmentUploadDir'));
+                }
             }
 
             if (isset($dirs[$dir])) {
