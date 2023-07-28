@@ -1758,9 +1758,11 @@ class SMF2xExporter extends AbstractExporter
         $message = \preg_replace('~(\[img[^]]*)\s+width=\d+([^]]*\])~i', '\\1\\2', $message);
         $message = \preg_replace('~(\[img[^]]*)\s+height=\d+([^]]*\])~i', '\\1\\2', $message);
 
+        // Fix newlines
+        $message = \preg_replace('/<br\s*\/?>/', "\n", $message);
+
         // use proper WCF 2 bbcode
         $message = \strtr($message, [
-            '<br />' => "\n",
             '[iurl]' => '[url]',
             '[/iurl]' => '[/url]',
             '[left]' => '[align=left]',
