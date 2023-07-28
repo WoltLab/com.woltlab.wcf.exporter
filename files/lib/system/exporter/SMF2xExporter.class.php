@@ -377,7 +377,6 @@ class SMF2xExporter extends AbstractExporter
             $options = [
                 'location' => $row['location'],
                 'birthday' => $row['birthdate'],
-                'icq' => $row['icq'],
                 'homepage' => $row['website_url'],
                 'aboutMe' => $row['personal_text'],
             ];
