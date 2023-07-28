@@ -719,7 +719,7 @@ class SMF2xExporter extends AbstractExporter
 
             return $row['count'];
         }
-        catch (DatabaseException) {
+        catch (DatabaseException $e) {
         }
 
         // SMF 2.0
@@ -764,7 +764,7 @@ class SMF2xExporter extends AbstractExporter
 
             return;
         }
-        catch (DatabaseException) {
+        catch (DatabaseException $e) {
         }
 
         // SMF 2.0
@@ -954,7 +954,7 @@ class SMF2xExporter extends AbstractExporter
                     ORDER BY    recipients.id_pm, recipients.id_member";
             $statement = $this->database->prepareStatement($sql, $limit, $offset);
             $statement->execute();
-        } catch (DatabaseException) {
+        } catch (DatabaseException $e) {
             // SMF 2.0
             $sql = "SELECT      recipients.*, pm.id_pm_head, members.member_name, pm.msgtime, pm.id_member_from,
                                 (
