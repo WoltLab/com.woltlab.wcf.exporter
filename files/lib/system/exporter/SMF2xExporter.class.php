@@ -5,6 +5,7 @@ namespace wcf\system\exporter;
 use wbb\data\board\Board;
 use wcf\data\user\group\UserGroup;
 use wcf\data\user\option\UserOption;
+use wcf\system\database\exception\DatabaseException;
 use wcf\system\database\util\PreparedStatementConditionBuilder;
 use wcf\system\importer\ImportHandler;
 use wcf\system\option\user\SelectOptionsUserOptionOutput;
@@ -13,6 +14,7 @@ use wcf\system\request\LinkHandler;
 use wcf\system\WCF;
 use wcf\util\ArrayUtil;
 use wcf\util\FileUtil;
+use wcf\util\JSON;
 use wcf\util\MessageUtil;
 use wcf\util\StringUtil;
 use wcf\util\UserRegistrationUtil;
@@ -374,12 +376,13 @@ final class SMF2xExporter extends AbstractExporter
 
             // get user options
             $options = [
-                'location' => $row['location'],
                 'birthday' => $row['birthdate'],
-                'icq' => $row['icq'],
                 'homepage' => $row['website_url'],
                 'aboutMe' => $row['personal_text'],
             ];
+            if (isset($row['location'])) {
+                $options['location'] = $row['location'];
+            }
 
             $additionalData = [
                 'groupIDs' => \explode(',', $row['additional_groups'] . ',' . $row['id_group']),
@@ -511,10 +514,15 @@ final class SMF2xExporter extends AbstractExporter
      */
     public function countUserRanks()
     {
+        $fieldName = 'stars';
+        if (\version_compare($this->readOption('smfVersion'), '2.1.0', '>')) {
+            $fieldName = 'icons';
+        }
+
         $sql = "SELECT  COUNT(*) AS count
                 FROM    " . $this->databasePrefix . "membergroups
                 WHERE   min_posts <> ?
-                    AND stars <> ?";
+                    AND {$fieldName} <> ?";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([-1, '']);
         $row = $statement->fetchArray();
@@ -530,15 +538,20 @@ final class SMF2xExporter extends AbstractExporter
      */
     public function exportUserRanks($offset, $limit)
     {
+        $fieldName = 'stars';
+        if (\version_compare($this->readOption('smfVersion'), '2.1.0', '>')) {
+            $fieldName = 'icons';
+        }
+
         $sql = "SELECT      *
                 FROM        " . $this->databasePrefix . "membergroups
                 WHERE       min_posts <> ?
-                        AND stars <> ?
+                        AND {$fieldName} <> ?
                 ORDER BY    id_group";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([-1, '']);
         while ($row = $statement->fetchArray()) {
-            [$repeatImage, $rankImage] = \explode('#', $row['stars'], 2);
+            [$repeatImage, $rankImage] = \explode('#', $row[$fieldName], 2);
 
             $groupID = $row['id_group'] == self::GROUP_USER ? self::GROUP_USER_FAKE : $row['id_group'];
 
@@ -696,6 +709,20 @@ final class SMF2xExporter extends AbstractExporter
      */
     public function countConversationFolders()
     {
+        try {
+            // SMF 2.1
+            $sql = "SELECT  COUNT(*) AS count
+                    FROM    " . $this->databasePrefix . "pm_labels";
+            $statement = $this->database->prepareStatement($sql);
+            $statement->execute();
+            $row = $statement->fetchArray();
+
+            return $row['count'];
+        }
+        catch (DatabaseException $e) {
+        }
+
+        // SMF 2.0
         $sql = "SELECT  COUNT(*) AS count
                 FROM    " . $this->databasePrefix . "members
                 WHERE   message_labels <> ?";
@@ -714,6 +741,33 @@ final class SMF2xExporter extends AbstractExporter
      */
     public function exportConversationFolders($offset, $limit)
     {
+        try {
+            // SMF 2.1
+            $sql = "SELECT      *
+                    FROM        " . $this->databasePrefix . "pm_labels
+                    ORDER BY    id_label";
+            $statement = $this->database->prepareStatement($sql, $limit, $offset);
+            $statement->execute();
+            while ($row = $statement->fetchArray()) {
+                $data = [
+                    'userID' => $row['id_member'],
+                    'label' => \mb_substr($row['name'], 0, 80),
+                ];
+
+                ImportHandler::getInstance()
+                    ->getImporter('com.woltlab.wcf.conversation.label')
+                    ->import(
+                        ($row['id_member'] . '-' . $row['id_label']),
+                        $data
+                    );
+            }
+
+            return;
+        }
+        catch (DatabaseException $e) {
+        }
+
+        // SMF 2.0
         $sql = "SELECT      id_member, message_labels
                 FROM        " . $this->databasePrefix . "members
                 WHERE       message_labels <> ?
@@ -879,20 +933,45 @@ final class SMF2xExporter extends AbstractExporter
      */
     public function exportConversationUsers($offset, $limit)
     {
-        $sql = "SELECT      recipients.*, pm.id_pm_head, members.member_name, pm.msgtime, pm.id_member_from,
-                            (
-                                SELECT  GROUP_CONCAT(recipients2.id_member)
-                                FROM    " . $this->databasePrefix . "pm_recipients recipients2
-                                WHERE   recipients.id_pm = recipients2.id_pm
-                            ) AS participants
-                FROM        " . $this->databasePrefix . "pm_recipients recipients
-                LEFT JOIN   " . $this->databasePrefix . "personal_messages pm
-                ON          pm.id_pm = recipients.id_pm
-                LEFT JOIN   " . $this->databasePrefix . "members members
-                ON          recipients.id_member = members.id_member
-                ORDER BY    recipients.id_pm, recipients.id_member";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
-        $statement->execute();
+        try {
+            // SMF 2.1
+            $sql = "SELECT      recipients.*, pm.id_pm_head, members.member_name, pm.msgtime, pm.id_member_from,
+                                (
+                                    SELECT  GROUP_CONCAT(recipients2.id_member)
+                                    FROM    " . $this->databasePrefix . "pm_recipients recipients2
+                                    WHERE   recipients.id_pm = recipients2.id_pm
+                                ) AS participants,
+                                (
+                                    SELECT  COALESCE(GROUP_CONCAT(labeled_message.id_label), '-1')
+                                    FROM    " . $this->databasePrefix . "pm_labeled_messages labeled_message
+                                    WHERE   recipients.id_pm = labeled_message.id_pm
+                                ) AS labels
+                    FROM        " . $this->databasePrefix . "pm_recipients recipients
+                    LEFT JOIN   " . $this->databasePrefix . "personal_messages pm
+                    ON          pm.id_pm = recipients.id_pm
+                    LEFT JOIN   " . $this->databasePrefix . "members members
+                    ON          recipients.id_member = members.id_member
+                    ORDER BY    recipients.id_pm, recipients.id_member";
+            $statement = $this->database->prepareStatement($sql, $limit, $offset);
+            $statement->execute();
+        } catch (DatabaseException $e) {
+            // SMF 2.0
+            $sql = "SELECT      recipients.*, pm.id_pm_head, members.member_name, pm.msgtime, pm.id_member_from,
+                                (
+                                    SELECT  GROUP_CONCAT(recipients2.id_member)
+                                    FROM    " . $this->databasePrefix . "pm_recipients recipients2
+                                    WHERE   recipients.id_pm = recipients2.id_pm
+                                ) AS participants
+                    FROM        " . $this->databasePrefix . "pm_recipients recipients
+                    LEFT JOIN   " . $this->databasePrefix . "personal_messages pm
+                    ON          pm.id_pm = recipients.id_pm
+                    LEFT JOIN   " . $this->databasePrefix . "members members
+                    ON          recipients.id_member = members.id_member
+                    ORDER BY    recipients.id_pm, recipients.id_member";
+            $statement = $this->database->prepareStatement($sql, $limit, $offset);
+            $statement->execute();
+        }
+
         while ($row = $statement->fetchArray()) {
             $participants = \explode(',', $row['participants']);
             $participants[] = $row['id_member_from'];
@@ -1679,9 +1758,11 @@ final class SMF2xExporter extends AbstractExporter
         $message = \preg_replace('~(\[img[^]]*)\s+width=\d+([^]]*\])~i', '\\1\\2', $message);
         $message = \preg_replace('~(\[img[^]]*)\s+height=\d+([^]]*\])~i', '\\1\\2', $message);
 
+        // Fix newlines
+        $message = \preg_replace('/<br\s*\/?>/', "\n", $message);
+
         // use proper WCF 2 bbcode
         $message = \strtr($message, [
-            '<br />' => "\n",
             '[iurl]' => '[url]',
             '[/iurl]' => '[/url]',
             '[left]' => '[align=left]',
@@ -1717,7 +1798,13 @@ final class SMF2xExporter extends AbstractExporter
             // multiple attachments dir
             static $dirs;
             if ($dirs === null) {
-                $dirs = \unserialize($this->readOption('attachmentUploadDir'));
+                try {
+                    // SMF 2.1
+                    $dirs = JSON::decode($this->readOption('attachmentUploadDir'));
+                } catch (\Exception $e) {
+                    // SMF 2.0
+                    $dirs = \unserialize($this->readOption('attachmentUploadDir'));
+                }
             }
 
             if (isset($dirs[$dir])) {
