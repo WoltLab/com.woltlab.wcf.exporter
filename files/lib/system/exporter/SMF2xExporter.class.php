@@ -718,8 +718,7 @@ final class SMF2xExporter extends AbstractExporter
             $row = $statement->fetchArray();
 
             return $row['count'];
-        }
-        catch (DatabaseException $e) {
+        } catch (DatabaseException $e) {
         }
 
         // SMF 2.0
@@ -763,8 +762,7 @@ final class SMF2xExporter extends AbstractExporter
             }
 
             return;
-        }
-        catch (DatabaseException $e) {
+        } catch (DatabaseException $e) {
         }
 
         // SMF 2.0
