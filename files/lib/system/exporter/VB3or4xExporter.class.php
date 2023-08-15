@@ -523,12 +523,12 @@ class VB3or4xExporter extends AbstractExporter
                 'email' => StringUtil::decodeHTML($row['email']),
                 'registrationDate' => $row['joindate'],
                 'banned' => $row['liftdate'] !== null && $row['liftdate'] == 0 ? 1 : 0,
-                'banReason' => StringUtil::decodeHTML($row['banReason']),
+                'banReason' => StringUtil::decodeHTML($row['banReason'] ?? ''),
                 'activationCode' => $row['activationType'] !== null && $row['activationType'] == 0 && $row['emailchange'] == 0 ? UserRegistrationUtil::getActivationCode() : 0, // vB's codes are strings
                 'oldUsername' => '',
                 // TODO: check whether this is the registration IP
                 'registrationIpAddress' => UserUtil::convertIPv4To6($row['ipaddress']),
-                'signature' => self::fixBBCodes($row['signature']),
+                'signature' => self::fixBBCodes($row['signature'] ?? ''),
                 'userTitle' => ($row['customtitle'] != 0) ? StringUtil::decodeHTML($row['usertitle']) : '',
                 'lastActivityTime' => $row['lastactivity'],
             ];
