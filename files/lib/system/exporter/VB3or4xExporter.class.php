@@ -1175,9 +1175,10 @@ class VB3or4xExporter extends AbstractExporter
                 ON          pm.userid = user.userid
                 INNER JOIN  " . $this->databasePrefix . "pmtext pmtext
                 ON          pmtext.pmtextid = pm.pmtextid
+                WHERE       pm.pmid BETWEEN ? AND ?
                 ORDER BY    pm.pmid";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
-        $statement->execute();
+        $statement = $this->database->prepareStatement($sql);
+        $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $participants = \explode(',', $row['participants']);
             $participants[] = $row['fromuserid'];
