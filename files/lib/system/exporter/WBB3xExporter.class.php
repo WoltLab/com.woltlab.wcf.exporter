@@ -216,8 +216,7 @@ final class WBB3xExporter extends AbstractExporter
         ) {
             if (
                 empty($this->fileSystemPath)
-                || (
-                    !@\file_exists($this->fileSystemPath . 'lib/core.functions.php')
+                || (!@\file_exists($this->fileSystemPath . 'lib/core.functions.php')
                     && !@\file_exists($this->fileSystemPath . 'wcf/lib/core.functions.php')
                 )
             ) {
@@ -1259,7 +1258,6 @@ final class WBB3xExporter extends AbstractExporter
                 'ignorable' => !empty($board['ignorable']) ? $board['ignorable'] : 0,
                 'isClosed' => $board['isClosed'],
                 'isInvisible' => $board['isInvisible'],
-                'postSortOrder' => !empty($board['postSortOrder']) ? $board['postSortOrder'] : '',
                 'postsPerPage' => !empty($board['postsPerPage']) ? $board['postsPerPage'] : 0,
                 'searchable' => isset($board['searchable']) ? \intval($board['searchable']) : 1, // wbb3.1
                 'searchableForSimilarThreads' => isset($board['searchableForSimilarThreads']) ? \intval($board['searchableForSimilarThreads']) : 1, // wbb3.1

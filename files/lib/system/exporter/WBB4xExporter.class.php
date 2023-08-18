@@ -1245,7 +1245,6 @@ final class WBB4xExporter extends AbstractExporter
                 'isClosed' => $board['isClosed'],
                 'isInvisible' => $board['isInvisible'],
                 'isPrivate' => $board['isPrivate'] ?? 0,
-                'postSortOrder' => $board['postSortOrder'],
                 'postsPerPage' => $board['postsPerPage'],
                 'searchable' => $board['searchable'],
                 'searchableForSimilarThreads' => $board['searchableForSimilarThreads'],
