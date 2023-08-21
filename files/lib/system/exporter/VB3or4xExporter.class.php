@@ -1147,7 +1147,7 @@ class VB3or4xExporter extends AbstractExporter
      */
     public function countConversationUsers()
     {
-        $sql = "SELECT  COUNT(*) AS count
+        $sql = "SELECT  MAX(pmid) AS count
                 FROM    " . $this->databasePrefix . "pm";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
