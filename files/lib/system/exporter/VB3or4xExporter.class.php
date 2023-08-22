@@ -522,12 +522,12 @@ final class VB3or4xExporter extends AbstractExporter
                 'email' => StringUtil::decodeHTML($row['email']),
                 'registrationDate' => $row['joindate'],
                 'banned' => $row['liftdate'] !== null && $row['liftdate'] == 0 ? 1 : 0,
-                'banReason' => StringUtil::decodeHTML($row['banReason']),
+                'banReason' => StringUtil::decodeHTML($row['banReason'] ?? ''),
                 'activationCode' => $row['activationType'] !== null && $row['activationType'] == 0 && $row['emailchange'] == 0 ? UserRegistrationUtil::getActivationCode() : 0, // vB's codes are strings
                 'oldUsername' => '',
                 // TODO: check whether this is the registration IP
                 'registrationIpAddress' => UserUtil::convertIPv4To6($row['ipaddress']),
-                'signature' => self::fixBBCodes($row['signature']),
+                'signature' => self::fixBBCodes($row['signature'] ?? ''),
                 'userTitle' => ($row['customtitle'] != 0) ? StringUtil::decodeHTML($row['usertitle']) : '',
                 'lastActivityTime' => $row['lastactivity'],
             ];
@@ -1146,7 +1146,7 @@ final class VB3or4xExporter extends AbstractExporter
      */
     public function countConversationUsers()
     {
-        $sql = "SELECT  COUNT(*) AS count
+        $sql = "SELECT  MAX(pmid) AS count
                 FROM    " . $this->databasePrefix . "pm";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute();
@@ -1174,9 +1174,10 @@ final class VB3or4xExporter extends AbstractExporter
                 ON          pm.userid = user.userid
                 INNER JOIN  " . $this->databasePrefix . "pmtext pmtext
                 ON          pmtext.pmtextid = pm.pmtextid
+                WHERE       pm.pmid BETWEEN ? AND ?
                 ORDER BY    pm.pmid";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
-        $statement->execute();
+        $statement = $this->database->prepareStatement($sql);
+        $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $participants = \explode(',', $row['participants']);
             $participants[] = $row['fromuserid'];
