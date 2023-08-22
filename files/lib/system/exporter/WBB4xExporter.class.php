@@ -1248,7 +1248,6 @@ final class WBB4xExporter extends AbstractExporter
                 'postsPerPage' => $board['postsPerPage'],
                 'searchable' => $board['searchable'],
                 'searchableForSimilarThreads' => $board['searchableForSimilarThreads'],
-                'showSubBoards' => $board['showSubBoards'],
                 'sortField' => $board['sortField'],
                 'sortOrder' => $board['sortOrder'],
                 'threadsPerPage' => $board['threadsPerPage'],
