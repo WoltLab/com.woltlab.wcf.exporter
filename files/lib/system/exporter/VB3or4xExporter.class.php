@@ -1291,7 +1291,7 @@ class VB3or4xExporter extends AbstractExporter
                 'position' => $board['displayorder'],
                 'boardType' => $boardType,
                 'title' => StringUtil::decodeHTML($board['title_clean']),
-                'description' => StringUtil::decodeHTML($board['description_clean']),
+                'description' => StringUtil::decodeHTML($board['description_clean'] ?? ''),
                 'descriptionUseHtml' => 0,
                 'externalURL' => $board['link'],
                 'countUserPosts' => $board['options'] & self::FORUMOPTIONS_COUNTPOSTS ? 1 : 0,
