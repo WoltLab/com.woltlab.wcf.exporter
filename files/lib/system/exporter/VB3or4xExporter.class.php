@@ -1352,9 +1352,9 @@ final class VB3or4xExporter extends AbstractExporter
                 'views' => $row['views'],
                 'isAnnouncement' => 0,
                 'isSticky' => $row['sticky'],
-                'isDisabled' => $row['visible'] == 1 ? 0 : 1, // visible = 2 is deleted
-                'isClosed' => $row['open'] == 1 ? 0 : 1, // open = 10 is redirect
+                'isDisabled' => \in_array($row['visible'], [1, 2]) ? 0 : 1,
                 'isDeleted' => $row['visible'] == 2 ? 1 : 0,
+                'isClosed' => $row['open'] == 1 ? 0 : 1, // open = 10 is redirect
                 // target thread is saved in pollid...
                 'movedThreadID' => ($row['open'] == 10 && $row['pollid']) ? $row['pollid'] : null,
                 'movedTime' => 0,
@@ -1431,7 +1431,7 @@ final class VB3or4xExporter extends AbstractExporter
                 'message' => self::fixBBCodes($row['pagetext']),
                 'time' => $row['dateline'],
                 'isDeleted' => $row['visible'] == 2 ? 1 : 0,
-                'isDisabled' => $row['visible'] == 0 ? 1 : 0,
+                'isDisabled' => \in_array($row['visible'], [1, 2]) ? 0 : 1,
                 'isClosed' => 0,
                 'editorID' => $row['editorID'] ?: null,
                 'editor' => $row['editor'] ?: '',
