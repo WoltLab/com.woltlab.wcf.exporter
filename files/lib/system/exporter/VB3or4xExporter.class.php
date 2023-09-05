@@ -1432,7 +1432,7 @@ class VB3or4xExporter extends AbstractExporter
                 'message' => self::fixBBCodes($row['pagetext']),
                 'time' => $row['dateline'],
                 'isDeleted' => $row['visible'] == 2 ? 1 : 0,
-                'isDisabled' => $row['visible'] == 0 ? 1 : 0,
+                'isDisabled' => \in_array($row['visible'], [1, 2]) ? 0 : 1,
                 'isClosed' => 0,
                 'editorID' => $row['editorID'] ?: null,
                 'editor' => $row['editor'] ?: '',
