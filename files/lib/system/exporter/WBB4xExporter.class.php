@@ -257,8 +257,7 @@ final class WBB4xExporter extends AbstractExporter
             if (\in_array($item, $this->selectedData)) {
                 if (
                     empty($this->fileSystemPath)
-                    || (
-                        !@\file_exists($this->fileSystemPath . 'lib/core.functions.php')
+                    || (!@\file_exists($this->fileSystemPath . 'lib/core.functions.php')
                         && !@\file_exists($this->fileSystemPath . 'wcf/lib/core.functions.php')
                     )
                 ) {
@@ -3106,12 +3105,6 @@ final class WBB4xExporter extends AbstractExporter
             'isDeleted' => $row['isDeleted'],
             'ipAddress' => $row['ipAddress'],
             'deleteTime' => $row['deleteTime'],
-            'isCommercial' => $row['isCommercial'],
-            'isPurchasable' => $row['isPurchasable'],
-            'price' => $row['price'],
-            'currency' => $row['currency'],
-            'totalRevenue' => ($row['totalRevenue'] ?? 0),
-            'purchases' => $row['purchases'],
             'licenseName' => ($row['licenseName'] ?? ''),
             'licenseURL' => ($row['licenseURL'] ?? ''),
             'downloads' => $row['downloads'],
