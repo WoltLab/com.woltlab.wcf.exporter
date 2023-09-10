@@ -254,16 +254,19 @@ final class WBB4xExporter extends AbstractExporter
     public function validateFileAccess()
     {
         foreach ($this->requiresFileAccess as $item) {
-            if (\in_array($item, $this->selectedData)) {
-                if (
-                    empty($this->fileSystemPath)
-                    || (!@\file_exists($this->fileSystemPath . 'lib/core.functions.php')
-                        && !@\file_exists($this->fileSystemPath . 'wcf/lib/core.functions.php')
-                    )
-                ) {
-                    return false;
-                }
-                break;
+            if (!\in_array($item, $this->selectedData)) {
+                continue;
+            }
+
+            if (empty($this->fileSystemPath)) {
+                return false;
+            }
+
+            if (
+                !@\file_exists($this->fileSystemPath . 'lib/core.functions.php')
+                && !@\file_exists($this->fileSystemPath . 'wcf/lib/core.functions.php')
+            ) {
+                return false;
             }
         }
 
