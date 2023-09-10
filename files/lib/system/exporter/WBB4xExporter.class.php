@@ -916,6 +916,11 @@ final class WBB4xExporter extends AbstractExporter
                 $outputClass = $row['outputClass'];
             }
 
+            $labeledUrl = null;
+            if ($row['optionType'] === 'labeledUrl') {
+                $labeledUrl = $row['labeledUrl'];
+            }
+
             $data = [
                 'categoryName' => $row['categoryName'],
                 'optionType' => $row['optionType'],
@@ -930,6 +935,7 @@ final class WBB4xExporter extends AbstractExporter
                 'visible' => $row['visible'],
                 'showOrder' => $row['showOrder'],
                 'outputClass' => $outputClass,
+                'labeledUrl' => $labeledUrl,
             ];
 
             ImportHandler::getInstance()
