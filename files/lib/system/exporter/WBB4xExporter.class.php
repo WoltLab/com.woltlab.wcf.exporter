@@ -518,9 +518,11 @@ final class WBB4xExporter extends AbstractExporter
         $groups = [];
         $i18nValues = [];
         while ($row = $statement->fetchArray()) {
+            $groupDescription = $row['groupDescription'] ?? '';
+
             $groups[$row['groupID']] = [
                 'groupName' => $row['groupName'],
-                'groupDescription' => $row['groupDescription'],
+                'groupDescription' => $groupDescription,
                 'groupType' => $row['groupType'],
                 'priority' => $row['priority'],
                 'userOnlineMarking' => !empty($row['userOnlineMarking']) ? $row['userOnlineMarking'] : '',
@@ -530,8 +532,8 @@ final class WBB4xExporter extends AbstractExporter
             if (\str_starts_with($row['groupName'], 'wcf.acp.group.group')) {
                 $i18nValues[] = $row['groupName'];
             }
-            if (\str_starts_with($row['groupDescription'], 'wcf.acp.group.groupDescription')) {
-                $i18nValues[] = $row['groupDescription'];
+            if (\str_starts_with($groupDescription, 'wcf.acp.group.groupDescription')) {
+                $i18nValues[] = $groupDescription;
             }
         }
 
