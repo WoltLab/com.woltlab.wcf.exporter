@@ -20,6 +20,7 @@
 		<item name="wcf.acp.dataImport.exporter.com.woltlab.wcf.exporter.nodeBB0xRedis"><![CDATA[NodeBB 0.6+ (Redis, experimental)]]></item>
 		<item name="wcf.acp.dataImport.exporter.com.woltlab.wcf.exporter.xobor"><![CDATA[Xobor]]></item>
 		<item name="wcf.acp.dataImport.exporter.com.woltlab.wcf.exporter.flarum1x"><![CDATA[Flarum 1.x (experimental)]]></item>
+		<item name="wcf.acp.dataImport.exporter.com.woltlab.wcf.exporter.discourse"><![CDATA[Discourse (experimental)]]></item>
 	</category>
 </import>
 </language>

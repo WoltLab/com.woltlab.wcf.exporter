@@ -91,5 +91,10 @@
 			<definitionname>com.woltlab.wcf.exporter</definitionname>
 			<classname>wcf\system\exporter\Flarum1xExporter</classname>
 		</type>
+		<type>
+			<name>com.woltlab.wcf.exporter.discourse</name>
+			<definitionname>com.woltlab.wcf.exporter</definitionname>
+			<classname>wcf\system\exporter\DiscourseExporter</classname>
+		</type>
 	</import>
 </data>
