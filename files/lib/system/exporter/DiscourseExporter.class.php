@@ -270,7 +270,13 @@ final class DiscourseExporter extends AbstractExporter
 
     public function countThreads(): int
     {
-        return $this->countRows('topics');
+        $sql = "SELECT  COUNT(*)
+                FROM    topics
+                WHERE   archetype = ?";
+        $statement = $this->database->prepareStatement($sql);
+        $statement->execute(['regular']);
+
+        return $statement->fetchSingleColumn();
     }
 
     public function exportThreads(int $offset, int $limit): void
@@ -278,9 +284,10 @@ final class DiscourseExporter extends AbstractExporter
         $sql = "SELECT      topics.*, users.username
                 FROM        topics
                 LEFT JOIN   users ON (users.id = topics.user_id)
+                WHERE       topics.archetype = ?
                 ORDER BY    id";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
-        $statement->execute();
+        $statement->execute(['regular']);
         while ($row = $statement->fetchArray()) {
             $data = [
                 'boardID' => $row['category_id'] ?: 1,
@@ -305,7 +312,13 @@ final class DiscourseExporter extends AbstractExporter
 
     public function countPosts(): int
     {
-        return $this->countRows('posts');
+        $sql = "SELECT  COUNT(*)
+                FROM    posts
+                WHERE   topic_id IN (SELECT id FROM topics WHERE archetype = ?)";
+        $statement = $this->database->prepareStatement($sql);
+        $statement->execute(['regular']);
+
+        return $statement->fetchSingleColumn();
     }
 
     public function exportPosts(int $offset, int $limit): void
@@ -315,9 +328,10 @@ final class DiscourseExporter extends AbstractExporter
                 FROM        posts
                 LEFT JOIN   users
                 ON          users.id = posts.user_id
+                WHERE       posts.topic_id IN (SELECT id FROM topics WHERE archetype = ?)
                 ORDER BY    posts.id";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
-        $statement->execute();
+        $statement->execute(['regular']);
         while ($row = $statement->fetchArray()) {
             $data = [
                 'threadID' => $row['topic_id'],
