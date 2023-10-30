@@ -28,7 +28,11 @@ final class DiscourseExporter extends AbstractExporter
         'com.woltlab.wbb.thread' => 'Threads',
         'com.woltlab.wbb.post' => 'Posts',
         'com.woltlab.wbb.like' => 'Likes',
-        'com.woltlab.wbb.attachment' => 'Attachments',
+        'com.woltlab.wbb.attachment' => 'PostAttachments',
+        'com.woltlab.wcf.conversation' => 'Conversations',
+        'com.woltlab.wcf.conversation.message' => 'ConversationMessages',
+        'com.woltlab.wcf.conversation.user' => 'ConversationUsers',
+        'com.woltlab.wcf.conversation.attachment' => 'ConversationAttachments',
     ];
 
     /**
@@ -40,6 +44,9 @@ final class DiscourseExporter extends AbstractExporter
             'com.woltlab.wcf.user' => [
                 'com.woltlab.wcf.user.group',
                 'com.woltlab.wcf.user.avatar',
+            ],
+            'com.woltlab.wcf.conversation' => [
+                'com.woltlab.wcf.conversation.attachment',
             ],
             'com.woltlab.wbb.board' => [
                 'com.woltlab.wbb.like',
@@ -108,6 +115,17 @@ final class DiscourseExporter extends AbstractExporter
 
             if (\in_array('com.woltlab.wcf.user.avatar', $this->selectedData)) {
                 $queue[] = 'com.woltlab.wcf.user.avatar';
+            }
+        }
+
+        // conversation
+        if (\in_array('com.woltlab.wcf.conversation', $this->selectedData)) {
+            $queue[] = 'com.woltlab.wcf.conversation';
+            $queue[] = 'com.woltlab.wcf.conversation.message';
+            $queue[] = 'com.woltlab.wcf.conversation.user';
+
+            if (\in_array('com.woltlab.wcf.conversation.attachment', $this->selectedData)) {
+                $queue[] = 'com.woltlab.wcf.conversation.attachment';
             }
         }
 
@@ -478,18 +496,39 @@ final class DiscourseExporter extends AbstractExporter
         }
     }
 
-    public function countAttachments(): int
+    public function countPostAttachments(): int
+    {
+        return $this->countAttachments('regular');
+    }
+
+    public function countConversationAttachments(): int
+    {
+        return $this->countAttachments('private_message');
+    }
+
+    private function countAttachments(string $archetype): int
     {
         $sql = "SELECT  COUNT(*)
                 FROM    upload_references
-                WHERE   target_type = ?";
+                WHERE   target_type = ?
+                        AND target_id IN (SELECT id FROM posts WHERE topic_id IN (SELECT id FROM topics WHERE archetype = ?))";
         $statement = $this->database->prepareStatement($sql);
-        $statement->execute(['Post']);
+        $statement->execute(['Post', $archetype]);
 
         return $statement->fetchSingleColumn();
     }
 
-    public function exportAttachments(int $offset, int $limit): void
+    public function exportPostAttachments(int $offset, int $limit): void
+    {
+        $this->exportAttachments('regular', $offset, $limit);
+    }
+
+    public function exportConversationAttachments(int $offset, int $limit): void
+    {
+        $this->exportAttachments('private_message', $offset, $limit);
+    }
+
+    private function exportAttachments(string $archetype, int $offset, int $limit): void
     {
         $sql = "SELECT      upload_references.*,
                             uploads.url, uploads.original_filename, uploads.extension,
@@ -498,9 +537,10 @@ final class DiscourseExporter extends AbstractExporter
                 LEFT JOIN   uploads
                 ON          (uploads.id = upload_references.upload_id)
                 WHERE       upload_references.target_type = ?
+                            AND upload_references.target_id IN (SELECT id FROM posts WHERE topic_id IN (SELECT id FROM topics WHERE archetype = ?))
                 ORDER BY    upload_references.id";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
-        $statement->execute(['Post']);
+        $statement->execute(['Post', $archetype]);
         while ($row = $statement->fetchArray()) {
             $fileLocation = $this->fileSystemPath . $row['url'];
 
@@ -515,12 +555,123 @@ final class DiscourseExporter extends AbstractExporter
             ];
 
             ImportHandler::getInstance()
-                ->getImporter('com.woltlab.wbb.attachment')
+                ->getImporter($archetype == 'regular' ? 'com.woltlab.wbb.attachment' : 'com.woltlab.wcf.conversation.attachment')
                 ->import(
                     $row['upload_id'],
                     $data,
                     ['fileLocation' => $fileLocation]
                 );
+        }
+    }
+
+    public function countConversations(): int
+    {
+        $sql = "SELECT  COUNT(*)
+                FROM    topics
+                WHERE   archetype = ?";
+        $statement = $this->database->prepareStatement($sql);
+        $statement->execute(['private_message']);
+
+        return $statement->fetchSingleColumn();
+    }
+
+    public function exportConversations(int $offset, int $limit): void
+    {
+        $sql = "SELECT      topics.*, users.username
+                FROM        topics
+                LEFT JOIN   users ON (users.id = topics.user_id)
+                WHERE       topics.archetype = ?
+                ORDER BY    id";
+        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement->execute(['private_message']);
+        while ($row = $statement->fetchArray()) {
+            $data = [
+                'subject' => $row['title'],
+                'time' => \strtotime($row['created_at'] . ' UTC'),
+                'userID' => $row['user_id'] > 0 ? $row['user_id'] : null,
+                'username' => $row['username'] ?: '',
+                'isClosed' => $row['closed'] ? 1 : 0,
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.conversation')
+                ->import($row['id'], $data);
+        }
+    }
+
+    public function countConversationMessages(): int
+    {
+        $sql = "SELECT  COUNT(*)
+                FROM    posts
+                WHERE   topic_id IN (SELECT id FROM topics WHERE archetype = ?)";
+        $statement = $this->database->prepareStatement($sql);
+        $statement->execute(['private_message']);
+
+        return $statement->fetchSingleColumn();
+    }
+
+    public function exportConversationMessages(int $offset, int $limit): void
+    {
+        $sql = "SELECT      posts.*,
+                            users.username
+                FROM        posts
+                LEFT JOIN   users
+                ON          users.id = posts.user_id
+                WHERE       posts.topic_id IN (SELECT id FROM topics WHERE archetype = ?)
+                ORDER BY    posts.id";
+        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement->execute(['private_message']);
+        while ($row = $statement->fetchArray()) {
+            $data = [
+                'conversationID' => $row['topic_id'],
+                'userID' => $row['user_id'] > 0 ? $row['user_id'] : null,
+                'username' => $row['username'] ?: '',
+                'message' => self::fixBBCodes($row['raw']),
+                'time' => \strtotime($row['created_at'] . ' UTC'),
+                'enableHtml' => 1,
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.conversation.message')
+                ->import($row['id'], $data);
+        }
+    }
+
+    public function countConversationUsers(): int
+    {
+        $sql = "SELECT  COUNT(*)
+                FROM    topic_users
+                WHERE   topic_id IN (SELECT id FROM topics WHERE archetype = ?)
+                        AND user_id > ?";
+        $statement = $this->database->prepareStatement($sql);
+        $statement->execute(['private_message', 0]);
+
+        return $statement->fetchSingleColumn();
+    }
+
+    public function exportConversationUsers(int $offset, int $limit): void
+    {
+        $sql = "SELECT      topic_users.*, users.username
+                FROM        topic_users
+                LEFT JOIN   users
+                ON          (users.id = topic_users.user_id)
+                WHERE       topic_users.topic_id IN (SELECT id FROM topics WHERE archetype = ?)
+                            AND topic_users.user_id > ?";
+        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement->execute(['private_message', 0]);
+        while ($row = $statement->fetchArray()) {
+            $data = [
+                'conversationID' => $row['topic_id'],
+                'participantID' => $row['user_id'],
+                'username' => $row['username'],
+                'hideConversation' => 0,
+                'isInvisible' => 0,
+                'lastVisitTime' => $row['last_visited_at'] ? \strtotime($row['last_visited_at'] . ' UTC') : 0,
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.conversation.user')
+                ->import(0, $data);
         }
     }
 }
