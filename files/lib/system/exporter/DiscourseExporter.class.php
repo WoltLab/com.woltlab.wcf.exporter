@@ -7,6 +7,7 @@ use wcf\data\user\group\UserGroup;
 use wcf\system\database\PostgreSQLDatabase;
 use wcf\system\importer\ImportHandler;
 use wcf\system\WCF;
+use wcf\util\StringUtil;
 
 /**
  * Exporter for Discourse.
@@ -330,13 +331,13 @@ final class DiscourseExporter extends AbstractExporter
 
     public function countPosts(): int
     {
-        $sql = "SELECT  COUNT(*)
+        $sql = "SELECT  MAX(id)
                 FROM    posts
                 WHERE   topic_id IN (SELECT id FROM topics WHERE archetype = ?)";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute(['regular']);
 
-        return $statement->fetchSingleColumn();
+        return $statement->fetchSingleColumn() ?: 0;
     }
 
     public function exportPosts(int $offset, int $limit): void
@@ -346,17 +347,18 @@ final class DiscourseExporter extends AbstractExporter
                 FROM        posts
                 LEFT JOIN   users
                 ON          users.id = posts.user_id
-                WHERE       posts.topic_id IN (SELECT id FROM topics WHERE archetype = ?)
+                WHERE       posts.id BETWEEN ? AND ?
+                            AND posts.topic_id IN (SELECT id FROM topics WHERE archetype = ?)
                 ORDER BY    posts.id";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
-        $statement->execute(['regular']);
+        $statement = $this->database->prepareStatement($sql);
+        $statement->execute([$offset + 1, $offset + $limit, 'regular']);
         while ($row = $statement->fetchArray()) {
             $data = [
                 'threadID' => $row['topic_id'],
                 'userID' => $row['user_id'] > 0 ? $row['user_id'] : null,
                 'username' => $row['username'] ?: '',
                 'subject' => '',
-                'message' => self::fixBBCodes($row['raw']),
+                'message' => $this->fixBBCodes($row['raw']),
                 'enableHtml' => 1,
                 'time' => \strtotime($row['created_at'] . ' UTC'),
                 'isDeleted' => $row['deleted_at'] ? 1 : 0,
@@ -373,13 +375,13 @@ final class DiscourseExporter extends AbstractExporter
 
     public function countLikes(): int
     {
-        $sql = "SELECT  COUNT(*)
+        $sql = "SELECT  MAX(id)
                 FROM    post_actions
                 WHERE   post_action_type_id IN (SELECT id FROM post_action_types WHERE name_key = ?)";
         $statement = $this->database->prepareStatement($sql);
         $statement->execute(['like']);
 
-        return $statement->fetchSingleColumn();
+        return $statement->fetchSingleColumn() ?: 0;
     }
 
     public function exportLikes(int $offset, int $limit): void
@@ -389,10 +391,11 @@ final class DiscourseExporter extends AbstractExporter
                 FROM        post_actions
                 LEFT JOIN   posts
                 ON          (posts.id = post_actions.post_id)
-                WHERE       post_actions.post_action_type_id IN (SELECT id FROM post_action_types WHERE name_key = ?)
+                WHERE       post_actions.id BETWEEN ? AND ?
+                            AND post_actions.post_action_type_id IN (SELECT id FROM post_action_types WHERE name_key = ?)
                 ORDER BY    post_actions.id";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
-        $statement->execute(['like']);
+        $statement = $this->database->prepareStatement($sql);
+        $statement->execute([$offset + 1, $offset + $limit, 'like']);
         while ($row = $statement->fetchArray()) {
             $data = [
                 'objectID' => $row['post_id'],
@@ -408,7 +411,7 @@ final class DiscourseExporter extends AbstractExporter
         }
     }
 
-    private static function fixBBCodes(string $message): string
+    private function fixBBCodes(string $message): string
     {
         static $parsedown = null;
 
@@ -429,9 +432,20 @@ final class DiscourseExporter extends AbstractExporter
         );
 
         // remove embedded uploads
-        $out = \preg_replace(
-            '/<img src="upload:\/\/[^"]*"[^>]*>/',
-            '',
+        $out = \preg_replace_callback(
+            '/<img src="upload:\/\/([^"]*)"[^>]*>/',
+            function ($matches) {
+                if (\preg_match('~^(?<hash>[a-zA-Z0-9]+)~', $matches[1], $innerMatches)) {
+                    $uploadID = $this->getUploadID($innerMatches['hash']);
+                    if (!$uploadID) {
+                        return '';
+                    }
+
+                    return "[attach]{$uploadID}[/attach]";
+                }
+
+                return '';
+            },
             $out
         );
 
@@ -626,7 +640,7 @@ final class DiscourseExporter extends AbstractExporter
                 'conversationID' => $row['topic_id'],
                 'userID' => $row['user_id'] > 0 ? $row['user_id'] : null,
                 'username' => $row['username'] ?: '',
-                'message' => self::fixBBCodes($row['raw']),
+                'message' => $this->fixBBCodes($row['raw']),
                 'time' => \strtotime($row['created_at'] . ' UTC'),
                 'enableHtml' => 1,
             ];
@@ -673,5 +687,57 @@ final class DiscourseExporter extends AbstractExporter
                 ->getImporter('com.woltlab.wcf.conversation.user')
                 ->import(0, $data);
         }
+    }
+
+    /**
+     * The code below is necessary for the conversion of embedded attachments (uploads).
+     * Discourse uses a Base62 encoded version of the Sha1 hash to embed uploads into posts.
+     */
+    private function getUploadID(string $hash): ?int
+    {
+        $sql = "SELECT id FROM uploads WHERE sha1 = ?";
+        $statement = $this->database->prepareStatement($sql);
+        $statement->execute([self::convertBase62ToSha1($hash)]);
+
+        return $statement->fetchSingleColumn();
+    }
+
+    private static function convertBase62ToSha1(string $base62): string
+    {
+        $decoded = self::decodeBase62($base62);
+        return self::bcdechex($decoded);
+    }
+
+    private static function decodeBase62(string $base62): string
+    {
+        static $keys = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        static $keysHash = '';
+        if (!$keysHash) {
+            $keysHash = \array_flip(\str_split($keys));
+        }
+        static $base = 62;
+
+        $num = '0';
+        $len = \strlen($base62) - 1;
+        $i = 0;
+
+        while ($i < \strlen($base62)) {
+            $pow = bcpow($base, $len - $i);
+            $num = bcadd($num, bcmul($keysHash[$base62[$i]], $pow));
+            $i++;
+        }
+
+        return $num;
+    }
+
+    private static function bcdechex(string $dec): string
+    {
+        $hex = '';
+        do {
+            $last = bcmod($dec, 16);
+            $hex = dechex($last) . $hex;
+            $dec = bcdiv(bcsub($dec, $last), 16);
+        } while ($dec > 0);
+        return $hex;
     }
 }
