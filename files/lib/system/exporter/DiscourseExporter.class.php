@@ -7,7 +7,6 @@ use wcf\data\user\group\UserGroup;
 use wcf\system\database\PostgreSQLDatabase;
 use wcf\system\importer\ImportHandler;
 use wcf\system\WCF;
-use wcf\util\StringUtil;
 
 /**
  * Exporter for Discourse.
@@ -216,7 +215,8 @@ final class DiscourseExporter extends AbstractExporter
                 FROM        users
                 LEFT JOIN   user_emails
                             ON (user_emails.user_id = users.id)
-                WHERE       users.id > ?";
+                WHERE       users.id > ?
+                ORDER BY    users.id";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([0]);
         while ($row = $statement->fetchArray()) {
@@ -670,7 +670,8 @@ final class DiscourseExporter extends AbstractExporter
                 LEFT JOIN   users
                 ON          (users.id = topic_users.user_id)
                 WHERE       topic_users.topic_id IN (SELECT id FROM topics WHERE archetype = ?)
-                            AND topic_users.user_id > ?";
+                            AND topic_users.user_id > ?
+                ORDER BY    topic_users.id";
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute(['private_message', 0]);
         while ($row = $statement->fetchArray()) {
