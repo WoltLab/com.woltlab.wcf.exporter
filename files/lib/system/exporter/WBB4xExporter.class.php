@@ -645,8 +645,8 @@ final class WBB4xExporter extends AbstractExporter
                 'authData' => $row['authData'],
             ];
             $additionalData = [
-                'groupIDs' => \explode(',', $row['groupIDs']),
-                'languages' => \explode(',', $row['languageCodes']),
+                'groupIDs' => $row['groupIDs'] ? \explode(',', $row['groupIDs']) : [],
+                'languages' => $row['languageCodes'] ? \explode(',', $row['languageCodes']) : [],
                 'options' => [],
             ];
 
