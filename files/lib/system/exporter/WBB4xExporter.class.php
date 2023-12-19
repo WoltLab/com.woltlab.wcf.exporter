@@ -2005,12 +2005,37 @@ final class WBB4xExporter extends AbstractExporter
      */
     public function exportBlogs($offset, $limit)
     {
-        $sql = "SELECT      blog.*, language.languageCode
+        $sourceVersion52 = \version_compare(
+            $this->getPackageVersion('com.woltlab.blog'),
+            '5.2.0 Alpha 1',
+            '>='
+        );
+
+        $sql = "SELECT  packageDir
+                FROM    wcf" . $this->dbNo . "_package
+                WHERE   package = ?";
+        $statement = $this->database->prepareStatement($sql, 1);
+        $statement->execute(['com.woltlab.blog']);
+        $packageDir = $statement->fetchColumn();
+        $blogFilePath = FileUtil::getRealPath($this->fileSystemPath . '/' . $packageDir);
+
+        if ($sourceVersion52) {
+            $sql = "SELECT      blog.*, language.languageCode, coverPhoto.fileExtension, coverPhoto.fileHash
                 FROM        blog" . $this->dbNo . "_blog blog
                 LEFT JOIN   wcf" . $this->dbNo . "_language language
                 ON          language.languageID = blog.languageID
-                WHERE       blogID BETWEEN ? AND ?
-                ORDER BY    blogID";
+                LEFT JOIN   blog" . $this->dbNo . "_cover_photo coverPhoto
+                ON          coverPhoto.coverPhotoID = blog.coverPhotoID
+                WHERE       blog.blogID BETWEEN ? AND ?
+                ORDER BY    blog.blogID";
+        } else {
+            $sql = "SELECT      blog.*, language.languageCode
+                FROM        blog" . $this->dbNo . "_blog blog
+                LEFT JOIN   wcf" . $this->dbNo . "_language language
+                ON          language.languageID = blog.languageID
+                WHERE       blog.blogID BETWEEN ? AND ?
+                ORDER BY    blog.blogID";
+        }
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -2026,6 +2051,9 @@ final class WBB4xExporter extends AbstractExporter
             $additionalData = [];
             if ($row['languageCode']) {
                 $additionalData['languageCode'] = $row['languageCode'];
+            }
+            if ($sourceVersion52 && $row['coverPhotoID']) {
+                $additionalData['coverPhoto'] = $this->getCoverPhotoPath($blogFilePath, $row);
             }
 
             ImportHandler::getInstance()
@@ -2088,6 +2116,19 @@ final class WBB4xExporter extends AbstractExporter
             '2.1.0 Alpha 1',
             '>='
         );
+        $sourceVersion52 = \version_compare(
+            $this->getPackageVersion('com.woltlab.blog'),
+            '5.2.0 Alpha 1',
+            '>='
+        );
+
+        $sql = "SELECT  packageDir
+                FROM    wcf" . $this->dbNo . "_package
+                WHERE   package = ?";
+        $statement = $this->database->prepareStatement($sql, 1);
+        $statement->execute(['com.woltlab.blog']);
+        $packageDir = $statement->fetchColumn();
+        $blogFilePath = FileUtil::getRealPath($this->fileSystemPath . '/' . $packageDir);
 
         // get entry ids
         $entryIDs = [];
@@ -2129,11 +2170,21 @@ final class WBB4xExporter extends AbstractExporter
         $conditionBuilder = new PreparedStatementConditionBuilder();
         $conditionBuilder->add('entry.entryID IN (?)', [$entryIDs]);
 
-        $sql = "SELECT      entry.*, language.languageCode
+        if ($sourceVersion52 && $destVersion52) {
+            $sql = "SELECT      entry.*, language.languageCode, coverPhoto.fileExtension, coverPhoto.fileHash
+                FROM        blog" . $this->dbNo . "_entry entry
+                LEFT JOIN   wcf" . $this->dbNo . "_language language
+                ON          language.languageID = entry.languageID
+                LEFT JOIN   blog" . $this->dbNo . "_cover_photo coverPhoto
+                ON          entry.coverPhotoID = entry.coverPhotoID
+                " . $conditionBuilder;
+        } else {
+            $sql = "SELECT      entry.*, language.languageCode
                 FROM        blog" . $this->dbNo . "_entry entry
                 LEFT JOIN   wcf" . $this->dbNo . "_language language
                 ON          language.languageID = entry.languageID
                 " . $conditionBuilder;
+        }
         $statement = $this->database->prepareStatement($sql);
         $statement->execute($conditionBuilder->getParameters());
         while ($row = $statement->fetchArray()) {
@@ -2146,6 +2197,9 @@ final class WBB4xExporter extends AbstractExporter
             }
             if (isset($categories[$row['entryID']])) {
                 $additionalData['categories'] = $categories[$row['entryID']];
+            }
+            if ($sourceVersion52 && $row['coverPhotoID']) {
+                $additionalData['coverPhoto'] = $this->getCoverPhotoPath($blogFilePath, $row);
             }
 
             $data = [
@@ -2179,6 +2233,16 @@ final class WBB4xExporter extends AbstractExporter
                     $additionalData
                 );
         }
+    }
+
+    private function getCoverPhotoPath(string $filePath, array $row): string
+    {
+        $coverPhotoID = $row['coverPhotoID'];
+        $fileHash = $row["fileHash"];
+        $fileExtension = $row["fileExtension"];
+        $directory = \substr($fileHash, 0, 2);
+
+        return "{$filePath}images/coverPhotos/{$directory}/{$coverPhotoID}-{$fileHash}.{$fileExtension}";
     }
 
     /**
@@ -2639,6 +2703,20 @@ final class WBB4xExporter extends AbstractExporter
             return;
         }
 
+        $sourceVersion52 = \version_compare(
+            $this->getPackageVersion('com.woltlab.calendar'),
+            '5.2.0 Alpha 1',
+            '>='
+        );
+
+        $sql = "SELECT  packageDir
+                FROM    wcf" . $this->dbNo . "_package
+                WHERE   package = ?";
+        $statement = $this->database->prepareStatement($sql, 1);
+        $statement->execute(['com.woltlab.calendar']);
+        $packageDir = $statement->fetchColumn();
+        $calendarFilePath = FileUtil::getRealPath($this->fileSystemPath . '/' . $packageDir);
+
         // get tags
         $tags = $this->getTags('com.woltlab.calendar.event', $eventIDs);
 
@@ -2665,11 +2743,21 @@ final class WBB4xExporter extends AbstractExporter
         // get event
         $conditionBuilder = new PreparedStatementConditionBuilder();
         $conditionBuilder->add('event.eventID IN (?)', [$eventIDs]);
-        $sql = "SELECT      event.*, language.languageCode
+        if ($sourceVersion52 && $destVersion52) {
+            $sql = "SELECT      event.*, language.languageCode, coverPhoto.fileExtension, coverPhoto.fileHash
+                FROM        calendar" . $this->dbNo . "_event event
+                LEFT JOIN   wcf" . $this->dbNo . "_language language
+                ON          language.languageID = event.languageID
+                LEFT JOIN   calendar" . $this->dbNo . "_cover_photo coverPhoto
+                ON          coverPhoto.coverPhotoID = event.coverPhotoID
+                " . $conditionBuilder;
+        } else {
+            $sql = "SELECT      event.*, language.languageCode
                 FROM        calendar" . $this->dbNo . "_event event
                 LEFT JOIN   wcf" . $this->dbNo . "_language language
                 ON          language.languageID = event.languageID
                 " . $conditionBuilder;
+        }
         $statement = $this->database->prepareStatement($sql);
         $statement->execute($conditionBuilder->getParameters());
         while ($row = $statement->fetchArray()) {
@@ -2714,6 +2802,9 @@ final class WBB4xExporter extends AbstractExporter
             } else {
                 // 3.0+
                 $data['categoryID'] = $row['categoryID'];
+            }
+            if ($sourceVersion52 && $row['coverPhotoID']) {
+                $additionalData['coverPhoto'] = $this->getCoverPhotoPath($calendarFilePath, $row);
             }
 
             ImportHandler::getInstance()
