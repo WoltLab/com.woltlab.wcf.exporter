@@ -2246,7 +2246,7 @@ final class WBB4xExporter extends AbstractExporter
         }
     }
 
-    private function getCoverPhotoPath(string $blogFilePath, array $row): string
+    private function getCoverPhotoPath(string $filePath, array $row): string
     {
         $coverPhotoID = $row['coverPhotoID'];
         $fileHash = $row["fileHash"];
