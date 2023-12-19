@@ -2760,7 +2760,7 @@ final class WBB4xExporter extends AbstractExporter
         $conditionBuilder = new PreparedStatementConditionBuilder();
         $conditionBuilder->add('event.eventID IN (?)', [$eventIDs]);
         if ($sourceVersion52 && $destVersion52) {
-            $sql = "SELECT      event.*, language.languageCode
+            $sql = "SELECT      event.*, language.languageCode, coverPhoto.fileExtension, coverPhoto.fileHash
                 FROM        calendar" . $this->dbNo . "_event event
                 LEFT JOIN   wcf" . $this->dbNo . "_language language
                 ON          language.languageID = event.languageID
@@ -2820,7 +2820,7 @@ final class WBB4xExporter extends AbstractExporter
                 $data['categoryID'] = $row['categoryID'];
             }
             if ($sourceVersion52 && $destVersion52 && $row['coverPhotoID']) {
-                $additionalData['coverPhoto'] = $this->getCoverPhotoPath($calendarFilePath, $row);
+                $additionalData['coverPhotoFile'] = $this->getCoverPhotoPath($calendarFilePath, $row);
             }
 
             ImportHandler::getInstance()
