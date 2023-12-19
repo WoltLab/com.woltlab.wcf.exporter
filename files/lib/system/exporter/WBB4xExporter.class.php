@@ -2005,12 +2005,42 @@ final class WBB4xExporter extends AbstractExporter
      */
     public function exportBlogs($offset, $limit)
     {
-        $sql = "SELECT      blog.*, language.languageCode
+        $sourceVersion52 = \version_compare(
+            $this->getPackageVersion('com.woltlab.blog'),
+            '5.2.0 Alpha 1',
+            '>='
+        );
+        $destVersion52 = \version_compare(
+            BLOGCore::getInstance()->getPackage()->packageVersion,
+            '5.2.0 Alpha 1',
+            '>='
+        );
+
+        $sql = "SELECT  packageDir
+                FROM    wcf" . $this->dbNo . "_package
+                WHERE   package = ?";
+        $statement = $this->database->prepareStatement($sql, 1);
+        $statement->execute(['com.woltlab.blog']);
+        $packageDir = $statement->fetchColumn();
+        $blogFilePath = FileUtil::getRealPath($this->fileSystemPath . '/' . $packageDir);
+
+        if ($sourceVersion52 && $destVersion52) {
+            $sql = "SELECT      blog.*, language.languageCode, coverPhoto.fileExtension, coverPhoto.fileHash
                 FROM        blog" . $this->dbNo . "_blog blog
                 LEFT JOIN   wcf" . $this->dbNo . "_language language
                 ON          language.languageID = blog.languageID
-                WHERE       blogID BETWEEN ? AND ?
-                ORDER BY    blogID";
+                LEFT JOIN   blog" . $this->dbNo . "_cover_photo coverPhoto
+                ON          coverPhoto.coverPhotoID = blog.coverPhotoID
+                WHERE       blog.blogID BETWEEN ? AND ?
+                ORDER BY    blog.blogID";
+        } else {
+            $sql = "SELECT      blog.*, language.languageCode
+                FROM        blog" . $this->dbNo . "_blog blog
+                LEFT JOIN   wcf" . $this->dbNo . "_language language
+                ON          language.languageID = blog.languageID
+                WHERE       blog.blogID BETWEEN ? AND ?
+                ORDER BY    blog.blogID";
+        }
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -2026,6 +2056,10 @@ final class WBB4xExporter extends AbstractExporter
             $additionalData = [];
             if ($row['languageCode']) {
                 $additionalData['languageCode'] = $row['languageCode'];
+            }
+            if ($sourceVersion52 && $destVersion52 && $row['coverPhotoID']) {
+                $directory = \substr($row["fileHash"], 0, 2);
+                $additionalData['coverPhoto'] = "{$blogFilePath}images/coverPhotos/{$directory}/{$row["coverPhotoID"]}-{$row["fileHash"]}.{$row["fileExtension"]}";
             }
 
             ImportHandler::getInstance()
