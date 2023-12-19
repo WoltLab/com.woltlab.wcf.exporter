@@ -2253,7 +2253,7 @@ final class WBB4xExporter extends AbstractExporter
         $fileExtension = $row["fileExtension"];
         $directory = \substr($fileHash, 0, 2);
 
-        return "{$blogFilePath}images/coverPhotos/$directory/$coverPhotoID-$fileHash.$fileExtension";
+        return "{$blogFilePath}images/coverPhotos/{$directory}/{$coverPhotoID}-{$fileHash}.{$fileExtension}";
     }
 
     /**
