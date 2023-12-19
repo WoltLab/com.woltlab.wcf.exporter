@@ -3,7 +3,6 @@
 namespace wcf\system\exporter;
 
 use blog\system\BLOGCore;
-use calendar\system\CALENDARCore;
 use gallery\system\GALLERYCore;
 use wcf\data\object\type\ObjectTypeCache;
 use wcf\data\package\Package;
@@ -2011,11 +2010,6 @@ final class WBB4xExporter extends AbstractExporter
             '5.2.0 Alpha 1',
             '>='
         );
-        $destVersion52 = \version_compare(
-            BLOGCore::getInstance()->getPackage()->packageVersion,
-            '5.2.0 Alpha 1',
-            '>='
-        );
 
         $sql = "SELECT  packageDir
                 FROM    wcf" . $this->dbNo . "_package
@@ -2025,7 +2019,7 @@ final class WBB4xExporter extends AbstractExporter
         $packageDir = $statement->fetchColumn();
         $blogFilePath = FileUtil::getRealPath($this->fileSystemPath . '/' . $packageDir);
 
-        if ($sourceVersion52 && $destVersion52) {
+        if ($sourceVersion52) {
             $sql = "SELECT      blog.*, language.languageCode, coverPhoto.fileExtension, coverPhoto.fileHash
                 FROM        blog" . $this->dbNo . "_blog blog
                 LEFT JOIN   wcf" . $this->dbNo . "_language language
@@ -2058,7 +2052,7 @@ final class WBB4xExporter extends AbstractExporter
             if ($row['languageCode']) {
                 $additionalData['languageCode'] = $row['languageCode'];
             }
-            if ($sourceVersion52 && $destVersion52 && $row['coverPhotoID']) {
+            if ($sourceVersion52 && $row['coverPhotoID']) {
                 $additionalData['coverPhoto'] = $this->getCoverPhotoPath($blogFilePath, $row);
             }
 
@@ -2124,11 +2118,6 @@ final class WBB4xExporter extends AbstractExporter
         );
         $sourceVersion52 = \version_compare(
             $this->getPackageVersion('com.woltlab.blog'),
-            '5.2.0 Alpha 1',
-            '>='
-        );
-        $destVersion52 = \version_compare(
-            BLOGCore::getInstance()->getPackage()->packageVersion,
             '5.2.0 Alpha 1',
             '>='
         );
@@ -2209,7 +2198,7 @@ final class WBB4xExporter extends AbstractExporter
             if (isset($categories[$row['entryID']])) {
                 $additionalData['categories'] = $categories[$row['entryID']];
             }
-            if ($sourceVersion52 && $destVersion52 && $row['coverPhotoID']) {
+            if ($sourceVersion52 && $row['coverPhotoID']) {
                 $additionalData['coverPhoto'] = $this->getCoverPhotoPath($blogFilePath, $row);
             }
 
@@ -2719,11 +2708,6 @@ final class WBB4xExporter extends AbstractExporter
             '5.2.0 Alpha 1',
             '>='
         );
-        $destVersion52 = \version_compare(
-            CALENDARCore::getInstance()->getPackage()->packageVersion,
-            '5.2.0 Alpha 1',
-            '>='
-        );
 
         $sql = "SELECT  packageDir
                 FROM    wcf" . $this->dbNo . "_package
@@ -2819,7 +2803,7 @@ final class WBB4xExporter extends AbstractExporter
                 // 3.0+
                 $data['categoryID'] = $row['categoryID'];
             }
-            if ($sourceVersion52 && $destVersion52 && $row['coverPhotoID']) {
+            if ($sourceVersion52 && $row['coverPhotoID']) {
                 $additionalData['coverPhoto'] = $this->getCoverPhotoPath($calendarFilePath, $row);
             }
 
