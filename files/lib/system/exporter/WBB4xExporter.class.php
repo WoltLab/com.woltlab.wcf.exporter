@@ -2820,7 +2820,7 @@ final class WBB4xExporter extends AbstractExporter
                 $data['categoryID'] = $row['categoryID'];
             }
             if ($sourceVersion52 && $destVersion52 && $row['coverPhotoID']) {
-                $additionalData['coverPhotoFile'] = $this->getCoverPhotoPath($calendarFilePath, $row);
+                $additionalData['coverPhoto'] = $this->getCoverPhotoPath($calendarFilePath, $row);
             }
 
             ImportHandler::getInstance()
