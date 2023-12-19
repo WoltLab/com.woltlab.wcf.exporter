@@ -2248,7 +2248,7 @@ final class WBB4xExporter extends AbstractExporter
 
     private function getCoverPhotoPath(string $blogFilePath, array $row): string
     {
-        $coverPhotoID = $row["coverPhotoID"];
+        $coverPhotoID = $row['coverPhotoID'];
         $fileHash = $row["fileHash"];
         $fileExtension = $row["fileExtension"];
         $directory = \substr($fileHash, 0, 2);
