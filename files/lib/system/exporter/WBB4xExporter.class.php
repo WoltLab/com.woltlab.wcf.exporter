@@ -3,6 +3,7 @@
 namespace wcf\system\exporter;
 
 use blog\system\BLOGCore;
+use calendar\system\CALENDARCore;
 use gallery\system\GALLERYCore;
 use wcf\data\object\type\ObjectTypeCache;
 use wcf\data\package\Package;
@@ -2713,6 +2714,25 @@ final class WBB4xExporter extends AbstractExporter
             return;
         }
 
+        $sourceVersion52 = \version_compare(
+            $this->getPackageVersion('com.woltlab.calendar'),
+            '5.2.0 Alpha 1',
+            '>='
+        );
+        $destVersion52 = \version_compare(
+            CALENDARCore::getInstance()->getPackage()->packageVersion,
+            '5.2.0 Alpha 1',
+            '>='
+        );
+
+        $sql = "SELECT  packageDir
+                FROM    wcf" . $this->dbNo . "_package
+                WHERE   package = ?";
+        $statement = $this->database->prepareStatement($sql, 1);
+        $statement->execute(['com.woltlab.calendar']);
+        $packageDir = $statement->fetchColumn();
+        $calendarFilePath = FileUtil::getRealPath($this->fileSystemPath . '/' . $packageDir);
+
         // get tags
         $tags = $this->getTags('com.woltlab.calendar.event', $eventIDs);
 
@@ -2739,11 +2759,21 @@ final class WBB4xExporter extends AbstractExporter
         // get event
         $conditionBuilder = new PreparedStatementConditionBuilder();
         $conditionBuilder->add('event.eventID IN (?)', [$eventIDs]);
-        $sql = "SELECT      event.*, language.languageCode
+        if ($sourceVersion52 && $destVersion52) {
+            $sql = "SELECT      event.*, language.languageCode
+                FROM        calendar" . $this->dbNo . "_event event
+                LEFT JOIN   wcf" . $this->dbNo . "_language language
+                ON          language.languageID = event.languageID
+                LEFT JOIN   calendar" . $this->dbNo . "_cover_photo coverPhoto
+                ON          coverPhoto.coverPhotoID = event.coverPhotoID
+                " . $conditionBuilder;
+        } else {
+            $sql = "SELECT      event.*, language.languageCode
                 FROM        calendar" . $this->dbNo . "_event event
                 LEFT JOIN   wcf" . $this->dbNo . "_language language
                 ON          language.languageID = event.languageID
                 " . $conditionBuilder;
+        }
         $statement = $this->database->prepareStatement($sql);
         $statement->execute($conditionBuilder->getParameters());
         while ($row = $statement->fetchArray()) {
@@ -2788,6 +2818,9 @@ final class WBB4xExporter extends AbstractExporter
             } else {
                 // 3.0+
                 $data['categoryID'] = $row['categoryID'];
+            }
+            if ($sourceVersion52 && $destVersion52 && $row['coverPhotoID']) {
+                $additionalData['coverPhoto'] = $this->getCoverPhotoPath($calendarFilePath, $row);
             }
 
             ImportHandler::getInstance()
