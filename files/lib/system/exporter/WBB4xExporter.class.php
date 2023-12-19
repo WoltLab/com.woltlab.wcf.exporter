@@ -4277,6 +4277,9 @@ final class WBB4xExporter extends AbstractExporter
             if (\str_starts_with($row['description'], 'wcf.category')) {
                 $i18nValues[] = $row['description'];
             }
+            if (\unserialize($row['additionalData']) !== false) {
+                $categories[$row['categoryID']]['additionalData'] = $row['additionalData'];
+            }
         }
 
         $i18nValues = $this->getI18nValues($i18nValues);
