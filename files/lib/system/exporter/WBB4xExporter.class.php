@@ -4278,7 +4278,7 @@ final class WBB4xExporter extends AbstractExporter
                 $i18nValues[] = $row['description'];
             }
             if (\unserialize($row['additionalData']) !== false) {
-                $i18nValues[] = $row['additionalData'];
+                $categories[$row['categoryID']]['additionalData'] = $row['additionalData'];
             }
         }
 
