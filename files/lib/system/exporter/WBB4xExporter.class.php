@@ -3220,6 +3220,9 @@ final class WBB4xExporter extends AbstractExporter
             $data['iconExtension'] = $row['iconExtension'];
             $additionalData['iconLocation'] = $this->getFilebaseDir() . 'images/file/' . \substr($row['iconHash'], 0, 2) . '/' . $row['fileID'] . '.' . $row['iconExtension'];
         }
+        if (!empty($row['fontAwesomeIcon'])) {
+            $data['fontAwesomeIcon'] = $row['fontAwesomeIcon'];
+        }
 
         if (!empty($categories)) {
             if (\count($categories) == 1) {
