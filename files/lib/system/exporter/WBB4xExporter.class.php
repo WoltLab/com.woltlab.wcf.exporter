@@ -2170,7 +2170,7 @@ final class WBB4xExporter extends AbstractExporter
         $conditionBuilder = new PreparedStatementConditionBuilder();
         $conditionBuilder->add('entry.entryID IN (?)', [$entryIDs]);
 
-        if ($sourceVersion52 && $destVersion52) {
+        if ($sourceVersion52) {
             $sql = "SELECT      entry.*, language.languageCode, coverPhoto.fileExtension, coverPhoto.fileHash
                 FROM        blog" . $this->dbNo . "_entry entry
                 LEFT JOIN   wcf" . $this->dbNo . "_language language
@@ -2743,7 +2743,7 @@ final class WBB4xExporter extends AbstractExporter
         // get event
         $conditionBuilder = new PreparedStatementConditionBuilder();
         $conditionBuilder->add('event.eventID IN (?)', [$eventIDs]);
-        if ($sourceVersion52 && $destVersion52) {
+        if ($sourceVersion52) {
             $sql = "SELECT      event.*, language.languageCode, coverPhoto.fileExtension, coverPhoto.fileHash
                 FROM        calendar" . $this->dbNo . "_event event
                 LEFT JOIN   wcf" . $this->dbNo . "_language language
@@ -4371,7 +4371,7 @@ final class WBB4xExporter extends AbstractExporter
             if (\str_starts_with($row['description'], 'wcf.category')) {
                 $i18nValues[] = $row['description'];
             }
-            if (\unserialize($row['additionalData']) !== false) {
+            if ($row['additionalData'] !== null && @\unserialize($row['additionalData']) !== false) {
                 $categories[$row['categoryID']]['additionalData'] = $row['additionalData'];
             }
         }
