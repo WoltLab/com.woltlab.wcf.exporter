@@ -3047,7 +3047,10 @@ final class WBB4xExporter extends AbstractExporter
      */
     public function countFilebaseLicenses()
     {
-        return $this->__getMaxID("filebase" . $this->dbNo . "_license", 'licenseID');
+        if (\version_compare($this->getPackageVersion('com.woltlab.filebase'), '2.1.0 Alpha 1', '>=')) {
+            return $this->__getMaxID("filebase" . $this->dbNo . "_license", 'licenseID');
+        }
+        return 0;
     }
 
     /**
@@ -3058,6 +3061,11 @@ final class WBB4xExporter extends AbstractExporter
      */
     public function exportFilebaseLicenses($offset, $limit)
     {
+        // license support was added in 2.1.x
+        if (\version_compare($this->getPackageVersion('com.woltlab.filebase'), '2.1.0 Alpha 1', '<')) {
+            return;
+        }
+
         $sql = "SELECT      *
                 FROM        filebase" . $this->dbNo . "_license
                 WHERE       licenseID BETWEEN ? AND ?
