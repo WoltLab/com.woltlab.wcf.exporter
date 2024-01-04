@@ -3,6 +3,7 @@
 namespace wcf\system\exporter;
 
 use blog\system\BLOGCore;
+use filebase\data\license\License;
 use gallery\system\GALLERYCore;
 use wcf\data\object\type\ObjectTypeCache;
 use wcf\data\package\Package;
@@ -100,6 +101,7 @@ final class WBB4xExporter extends AbstractExporter
         'com.woltlab.calendar.event.like' => 'CalendarEventLikes',
 
         'com.woltlab.filebase.category' => 'FilebaseCategories',
+        'com.woltlab.filebase.license' => 'FilebaseLicenses',
         'com.woltlab.filebase.file' => 'FilebaseFiles',
         'com.woltlab.filebase.file.version' => 'FilebaseFileVersions',
         'com.woltlab.filebase.file.comment' => 'FilebaseFileComments',
@@ -206,6 +208,7 @@ final class WBB4xExporter extends AbstractExporter
             ],
             'com.woltlab.filebase.file' => [
                 'com.woltlab.filebase.category',
+                'com.woltlab.filebase.license',
                 'com.woltlab.filebase.file.attachment',
                 'com.woltlab.filebase.file.comment',
                 'com.woltlab.filebase.file.like',
@@ -432,6 +435,9 @@ final class WBB4xExporter extends AbstractExporter
             if (\in_array('com.woltlab.filebase.file', $this->selectedData)) {
                 if (\in_array('com.woltlab.filebase.category', $this->selectedData)) {
                     $queue[] = 'com.woltlab.filebase.category';
+                }
+                if (\in_array('com.woltlab.filebase.license', $this->selectedData)) {
+                    $queue[] = 'com.woltlab.filebase.license';
                 }
                 $queue[] = 'com.woltlab.filebase.file';
                 $queue[] = 'com.woltlab.filebase.file.version';
@@ -3038,6 +3044,77 @@ final class WBB4xExporter extends AbstractExporter
     }
 
     /**
+     * Counts filebase licenses.
+     */
+    public function countFilebaseLicenses()
+    {
+        if (\version_compare($this->getPackageVersion('com.woltlab.filebase'), '2.1.0 Alpha 1', '>=')) {
+            return $this->__getMaxID("filebase" . $this->dbNo . "_license", 'licenseID');
+        }
+
+        return 0;
+    }
+
+    /**
+     * Exports filebase licenses.
+     *
+     * @param int $offset
+     * @param int $limit
+     */
+    public function exportFilebaseLicenses($offset, $limit)
+    {
+        // license support was added in 2.1.x
+        if (\version_compare($this->getPackageVersion('com.woltlab.filebase'), '2.1.0 Alpha 1', '<')) {
+            return;
+        }
+
+        $sql = "SELECT      *
+                FROM        filebase" . $this->dbNo . "_license
+                WHERE       licenseID BETWEEN ? AND ?
+                ORDER BY    licenseID";
+        $statement = $this->database->prepareStatement($sql);
+        $statement->execute([$offset + 1, $offset + $limit]);
+
+        $sql = "SELECT      language_item.languageItemValue, language.languageCode
+                FROM        wcf1_language_item language_item
+                LEFT JOIN   wcf1_language language ON (language.languageID = language_item.languageID)
+                WHERE       language_item.languageItem = ?";
+        $languageStatement = $this->database->prepareStatement($sql);
+
+        while ($row = $statement->fetchArray()) {
+            $additionalData = [];
+            $data = [
+                'licenseName' => $row['licenseName'],
+                'licenseURL' => $row['licenseURL'],
+                'licenseType' => License::LICENSE_TYPE_URL,
+            ];
+            if (\version_compare($this->getPackageVersion('com.woltlab.filebase'), '5.2.0 Alpha 1', '>=')) {
+                // support licenseType `text`
+                if ($row['licenseType'] === License::LICENSE_TYPE_TEXT) {
+                    $data['licenseType'] = License::LICENSE_TYPE_TEXT;
+                    $data['licenseText'] = $row['licenseText'];
+
+                    // load multi-language license text
+                    if (\preg_match('~^filebase\.file\.license\d+\.licenseText$~', $data['licenseText'])) {
+                        $languageStatement->execute([$data['licenseText']]);
+                        while ($languageRow = $languageStatement->fetchArray()) {
+                            $additionalData['licenseText'][$languageRow['languageCode']] = $languageRow['languageItemValue'];
+                        }
+                    }
+                }
+            }
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.filebase.license')
+                ->import(
+                    $row['licenseID'],
+                    $data,
+                    $additionalData
+                );
+        }
+    }
+
+    /**
      * Counts filebase files.
      */
     public function countFilebaseFiles()
@@ -3207,8 +3284,11 @@ final class WBB4xExporter extends AbstractExporter
             'isDeleted' => $row['isDeleted'],
             'ipAddress' => $row['ipAddress'],
             'deleteTime' => $row['deleteTime'],
+            'licenseID' => $row['licenseID'] ?? null,
             'licenseName' => ($row['licenseName'] ?? ''),
+            'licenseType' => ($row['licenseType'] ?? 'predefined'),
             'licenseURL' => ($row['licenseURL'] ?? ''),
+            'licenseText' => ($row['licenseText'] ?? ''),
             'downloads' => $row['downloads'],
             'isFeatured' => $row['isFeatured'],
             'lastChangeTime' => $row['lastChangeTime'],
