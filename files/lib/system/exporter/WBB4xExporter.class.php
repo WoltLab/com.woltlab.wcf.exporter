@@ -3051,6 +3051,7 @@ final class WBB4xExporter extends AbstractExporter
         if (\version_compare($this->getPackageVersion('com.woltlab.filebase'), '2.1.0 Alpha 1', '>=')) {
             return $this->__getMaxID("filebase" . $this->dbNo . "_license", 'licenseID');
         }
+
         return 0;
     }
 
