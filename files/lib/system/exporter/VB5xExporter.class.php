@@ -906,7 +906,7 @@ final class VB5xExporter extends AbstractExporter
                 'threadID' => $row['parentid'],
                 'userID' => $row['userid'],
                 'username' => $row['authorname'] ?: '',
-                'subject' => StringUtil::decodeHTML($row['title']),
+                'subject' => StringUtil::decodeHTML($row['title'] ?: ''),
                 'message' => self::fixBBCodes($row['rawtext']),
                 'time' => $row['created'],
                 'isDeleted' => $row['deleteuserid'] !== null ? 1 : 0,
