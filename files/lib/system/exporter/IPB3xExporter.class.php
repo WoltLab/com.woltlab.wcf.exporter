@@ -478,11 +478,8 @@ final class IPB3xExporter extends AbstractExporter
                 $source .= $row['avatar_location'];
             }
 
-            $avatarExtension = \pathinfo($avatarName, \PATHINFO_EXTENSION);
-
             $data = [
                 'avatarName' => $avatarName,
-                'avatarExtension' => $avatarExtension,
                 'userID' => $row['pp_member_id'],
             ];
 

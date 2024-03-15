@@ -497,9 +497,6 @@ final class VB5xExporter extends AbstractExporter
 
                 $data = [
                     'avatarName' => $row['filename'],
-                    'avatarExtension' => \pathinfo($row['filename'], \PATHINFO_EXTENSION),
-                    'width' => $row['width'],
-                    'height' => $row['height'],
                     'userID' => $row['userid'],
                 ];
 

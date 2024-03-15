@@ -357,7 +357,6 @@ final class Kunena3xExporter extends AbstractExporter
 
             $data = [
                 'avatarName' => \basename($filepath),
-                'avatarExtension' => \pathinfo($filepath, \PATHINFO_EXTENSION),
                 'userID' => $row['userid'],
             ];
 

@@ -773,9 +773,6 @@ final class VB3or4xExporter extends AbstractExporter
 
                 $data = [
                     'avatarName' => StringUtil::decodeHTML($row['filename']),
-                    'avatarExtension' => \pathinfo($row['filename'], \PATHINFO_EXTENSION),
-                    'width' => $row['width'],
-                    'height' => $row['height'],
                     'userID' => $row['userid'],
                 ];
 

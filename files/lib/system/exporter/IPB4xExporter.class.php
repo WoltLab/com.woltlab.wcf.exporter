@@ -492,11 +492,9 @@ final class IPB4xExporter extends AbstractExporter
         while ($row = $statement->fetchArray()) {
             $avatarName = \basename($row['pp_main_photo']);
             $source = $this->fileSystemPath . 'uploads/' . $row['pp_main_photo'];
-            $avatarExtension = \pathinfo($avatarName, \PATHINFO_EXTENSION);
 
             $data = [
                 'avatarName' => $avatarName,
-                'avatarExtension' => $avatarExtension,
                 'userID' => $row['member_id'],
             ];
 

@@ -650,7 +650,6 @@ final class PhpBB3xExporter extends AbstractExporter
 
             $data = [
                 'avatarName' => \basename($row['user_avatar']),
-                'avatarExtension' => $extension,
                 'userID' => $row['user_id'],
             ];
 

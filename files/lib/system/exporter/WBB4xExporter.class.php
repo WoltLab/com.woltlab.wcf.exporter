@@ -827,11 +827,7 @@ final class WBB4xExporter extends AbstractExporter
 
             $data = [
                 'avatarName' => $row['avatarName'],
-                'avatarExtension' => $row['avatarExtension'],
-                'width' => $row['width'],
-                'height' => $row['height'],
                 'userID' => $row['userID'],
-                'fileHash' => $row['fileHash'],
             ];
 
             ImportHandler::getInstance()

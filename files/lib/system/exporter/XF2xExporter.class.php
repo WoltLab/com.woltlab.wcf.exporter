@@ -759,25 +759,8 @@ final class XF2xExporter extends AbstractExporter
             $config = $this->getConfig();
             $location = $this->fileSystemPath . $config['externalDataPath'] . '/avatars/l/' . \floor($row['user_id'] / 1000) . '/' . $row['user_id'] . '.jpg';
 
-            if (!$imageSize = @\getimagesize($location)) {
-                continue;
-            }
-
-            switch ($imageSize[2]) {
-                case \IMAGETYPE_JPEG:
-                    $extension = 'jpg';
-                    break;
-                case \IMAGETYPE_PNG:
-                    $extension = 'png';
-                    break;
-                case \IMAGETYPE_GIF:
-                    $extension = 'gif';
-            }
-
-            /** @noinspection PhpUndefinedVariableInspection */
             $data = [
                 'avatarName' => '',
-                'avatarExtension' => $extension,
                 'userID' => $row['user_id'],
             ];
 
@@ -958,7 +941,8 @@ final class XF2xExporter extends AbstractExporter
                     0,
                     $data,
                     [
-                        'labelIDs' => $row['is_starred'] ? [$row['user_id']] : [], ]
+                        'labelIDs' => $row['is_starred'] ? [$row['user_id']] : [],
+                    ]
                 );
         }
     }

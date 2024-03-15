@@ -620,13 +620,9 @@ final class MyBB16xExporter extends AbstractExporter
 
         while ($row = $statement->fetchArray()) {
             $path = Url::parse($row['avatar']);
-            [$width, $height] = \explode('|', $row['avatardimensions']);
 
             $data = [
                 'avatarName' => \basename($path['path']),
-                'avatarExtension' => \pathinfo($path['path'], \PATHINFO_EXTENSION),
-                'width' => $width,
-                'height' => $height,
                 'userID' => $row['uid'],
             ];
 

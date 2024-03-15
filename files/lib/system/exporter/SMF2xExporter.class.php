@@ -689,7 +689,6 @@ final class SMF2xExporter extends AbstractExporter
 
             $data = [
                 'avatarName' => \basename($row['avatarName']),
-                'avatarExtension' => \pathinfo($row['avatarName'], \PATHINFO_EXTENSION),
                 'userID' => $row['id_member'],
             ];
 

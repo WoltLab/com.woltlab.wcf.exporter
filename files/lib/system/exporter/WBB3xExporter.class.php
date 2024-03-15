@@ -777,9 +777,6 @@ final class WBB3xExporter extends AbstractExporter
 
             $data = [
                 'avatarName' => $row['avatarName'],
-                'avatarExtension' => $row['avatarExtension'],
-                'width' => $row['width'],
-                'height' => $row['height'],
                 'userID' => $row['userID'],
             ];
 
