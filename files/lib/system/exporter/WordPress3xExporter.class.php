@@ -534,23 +534,6 @@ final class WordPress3xExporter extends AbstractExporter
                 continue;
             }
 
-            $isImage = $width = $height = 0;
-            if (
-                $row['post_mime_type'] == 'image/jpeg'
-                || $row['post_mime_type'] == 'image/png'
-                || $row['post_mime_type'] == 'image/gif'
-            ) {
-                $isImage = 1;
-            }
-            if ($isImage) {
-                $imageData = @\getimagesize($fileLocation);
-                if ($imageData === false) {
-                    continue;
-                }
-                $width = $imageData[0];
-                $height = $imageData[1];
-            }
-
             $time = @\strtotime($row['post_date_gmt']);
             if (!$time) {
                 $time = @\strtotime($row['post_date']);
@@ -558,14 +541,8 @@ final class WordPress3xExporter extends AbstractExporter
 
             $data = [
                 'filename' => \basename($fileLocation),
-                'filesize' => \filesize($fileLocation),
-                'fileType' => $row['post_mime_type'],
-                'fileHash' => \md5_file($fileLocation),
                 'uploadTime' => $time,
                 'userID' => $row['post_author'] ?: null,
-                'isImage' => $isImage,
-                'width' => $width,
-                'height' => $height,
             ];
 
             ImportHandler::getInstance()

@@ -3631,15 +3631,9 @@ final class WBB4xExporter extends AbstractExporter
             $data = [
                 'categoryID' => (!empty($row['categoryID']) ? $row['categoryID'] : null),
                 'filename' => $row['filename'],
-                'filesize' => $row['filesize'],
-                'fileType' => $row['fileType'],
-                'fileHash' => $row['fileHash'],
                 'uploadTime' => $row['uploadTime'],
                 'userID' => $row['userID'],
                 'username' => $row['username'],
-                'isImage' => $row['isImage'],
-                'width' => $row['width'],
-                'height' => $row['height'],
             ];
 
             $additionalData = [
