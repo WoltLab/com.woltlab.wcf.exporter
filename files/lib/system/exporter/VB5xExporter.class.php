@@ -386,7 +386,7 @@ final class VB5xExporter extends AbstractExporter
                 'activationCode' => $row['activationType'] !== null && $row['activationType'] == 0 && $row['emailchange'] == 0 ? UserRegistrationUtil::getActivationCode() : 0, // vB's codes are strings
                 'oldUsername' => '',
                 'registrationIpAddress' => UserUtil::convertIPv4To6($row['ipaddress']), // TODO: check whether this is the registration IP
-                'signature' => self::fixBBCodes($row['signature']),
+                'signature' => self::fixBBCodes($row['signature'] ?: ''),
                 'userTitle' => ($row['customtitle'] != 0) ? $row['usertitle'] : '',
                 'lastActivityTime' => $row['lastactivity'],
             ];
@@ -903,7 +903,7 @@ final class VB5xExporter extends AbstractExporter
                 'threadID' => $row['parentid'],
                 'userID' => $row['userid'],
                 'username' => $row['authorname'] ?: '',
-                'subject' => StringUtil::decodeHTML($row['title']),
+                'subject' => StringUtil::decodeHTML($row['title'] ?: ''),
                 'message' => self::fixBBCodes($row['rawtext']),
                 'time' => $row['created'],
                 'isDeleted' => $row['deleteuserid'] !== null ? 1 : 0,
