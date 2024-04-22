@@ -31,9 +31,9 @@
 	</instructions>
 
 	<instructions type="update" fromversion="6.0.11">
-		<instruction type="file">files_update.tar</instruction>
+		<instruction type="file" />
 	</instructions>
 	<instructions type="update" fromversion="6.0.12">
-		<instruction type="file">files_update.tar</instruction>
+		<instruction type="file" />
 	</instructions>
 </package>
