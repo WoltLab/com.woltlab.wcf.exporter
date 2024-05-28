@@ -1162,7 +1162,7 @@ final class PhpBB31xExporter extends AbstractExporter
                 'topic' => StringUtil::decodeHTML($row['topic_title']),
                 'time' => $row['topic_time'],
                 'userID' => $row['topic_poster'],
-                'username' => $row['topic_first_poster_name'],
+                'username' => $row['topic_first_poster_name'] ?: '',
                 'views' => $row['topic_views'],
                 'isAnnouncement' => ($row['topic_type'] == self::TOPIC_TYPE_ANNOUCEMENT || $row['topic_type'] == self::TOPIC_TYPE_GLOBAL) ? 1 : 0,
                 'isSticky' => $row['topic_type'] == self::TOPIC_TYPE_STICKY ? 1 : 0,
