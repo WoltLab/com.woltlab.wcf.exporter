@@ -840,7 +840,12 @@ final class SMF2xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            $participants = \explode(',', $row['participants']);
+            if ($row['participants'] === null) {
+                $participants = [];
+            } else {
+                $participants = \explode(',', $row['participants']);
+            }
+
             $participants[] = $row['id_member_from'];
             $conversationID = $this->getConversationID($row['id_pm_head'], $participants);
 
@@ -890,7 +895,12 @@ final class SMF2xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            $participants = \explode(',', $row['participants']);
+            if ($row['participants'] === null) {
+                $participants = [];
+            } else {
+                $participants = \explode(',', $row['participants']);
+            }
+
             $participants[] = $row['id_member_from'];
             $conversationID = $this->getConversationID($row['id_pm_head'], $participants);
 
