@@ -647,14 +647,25 @@ final class WordPress3xExporter extends AbstractExporter
     private static function fixMessage($string)
     {
         // replace media
+        $string = \preg_replace_callback('~<!-- wp:image (?<json>.+?) -->.+?<!-- /wp:image -->~is', static function ($matches) {
+            try {
+                $json = \json_decode($matches['json'], true, flags: \JSON_THROW_ON_ERROR);
+
+                return self::replaceEmbeddedMedia(
+                    $matches[0],
+                    $json['id'] ?? 0,
+                    $json['align'] ?? '',
+                    $json['sizeSlug'] ?? '',
+                    $json['width'] ?? 'auto',
+                );
+            } catch (\JsonException) {
+                return $matches[0];
+            }
+        }, $string);
+
         $string = \preg_replace_callback(
             '~<img class="([^"]*wp-image-(\d+)[^"]*)".*?>~is',
             static function ($matches) {
-                $mediaID = ImportHandler::getInstance()->getNewID('com.woltlab.wcf.media', $matches[2]);
-                if (!$mediaID) {
-                    return $matches[0];
-                }
-
                 $alignment = 'none';
                 if (\strpos($matches[1], 'alignleft') !== false) {
                     $alignment = 'left';
@@ -671,11 +682,12 @@ final class WordPress3xExporter extends AbstractExporter
                     $size = 'large';
                 }
 
-                $data = [$mediaID, $size, $alignment];
-
-                return \sprintf(
-                    '<woltlab-metacode data-name="wsm" data-attributes="%s"></woltlab-metacode>',
-                    \base64_encode(\json_encode($data))
+                return self::replaceEmbeddedMedia(
+                    $matches[0],
+                    $matches[2],
+                    $alignment,
+                    $size,
+                    'auto',
                 );
             },
             $string
@@ -693,5 +705,48 @@ final class WordPress3xExporter extends AbstractExporter
         $string = \str_replace("</blockquote>", "</woltlab-quote>", $string);
 
         return $string;
+    }
+
+    private static function replaceEmbeddedMedia(
+        string $html,
+        int $mediaID,
+        string $alignment,
+        string $size,
+        int|string $width,
+    ): ?string {
+        $mediaID = ImportHandler::getInstance()->getNewID('com.woltlab.wcf.media', $mediaID);
+        if (!$mediaID) {
+            return $html;
+        }
+
+        $alignment = match ($alignment) {
+            'alignleft', 'left' => 'left',
+            'alignright', 'right' => 'right',
+            'aligncenter', 'center' => 'center',
+            default => 'none',
+        };
+
+        $size = match ($size) {
+            'thumbnail' => 'small',
+            'medium' => 'medium',
+            'large' => 'large',
+            default => 'original',
+        };
+
+        if (\is_numeric($width)) {
+            $width = (int)$width;
+            if ($width <= 0) {
+                $width = 'auto';
+            }
+        } else {
+            $width = 'auto';
+        }
+
+        $data = [$mediaID, $size, $alignment, $width];
+
+        return \sprintf(
+            '<woltlab-metacode data-name="wsm" data-attributes="%s"></woltlab-metacode>',
+            \base64_encode(\json_encode($data))
+        );
     }
 }

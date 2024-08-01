@@ -232,17 +232,17 @@ final class Kunena3xExporter extends AbstractExporter
                 'banned' => $row['banned'] ? 1 : 0,
                 'registrationDate' => @\strtotime($row['registerDate']),
                 'lastActivityTime' => @\strtotime($row['lastvisitDate']),
-                'signature' => self::fixBBCodes($row['signature']),
+                'signature' => self::fixBBCodes($row['signature'] ?: ''),
             ];
 
             // get user options
             $options = [
-                'location' => $row['location'],
-                'birthday' => $row['birthdate'],
-                'icq' => $row['icq'],
-                'skype' => $row['skype'],
-                'homepage' => $row['websiteurl'],
-                'gender' => $row['gender'],
+                'location' => $row['location'] ?: '',
+                'birthday' => $row['birthdate'] ?: '',
+                'icq' => $row['icq'] ?: '',
+                'skype' => $row['skype'] ?: '',
+                'homepage' => $row['websiteurl'] ?: '',
+                'gender' => $row['gender'] ?: '',
             ];
 
             $additionalData = [

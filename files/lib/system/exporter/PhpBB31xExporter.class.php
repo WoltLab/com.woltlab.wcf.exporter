@@ -393,7 +393,7 @@ final class PhpBB31xExporter extends AbstractExporter
             ];
 
             $additionalData = [
-                'groupIDs' => \explode(',', $row['groupIDs']),
+                'groupIDs' => \explode(',', $row['groupIDs'] ?: ''),
                 'languages' => [$row['user_lang']],
                 'options' => $options,
             ];
@@ -852,7 +852,7 @@ final class PhpBB31xExporter extends AbstractExporter
         $statement->execute([0]);
         while ($row = $statement->fetchArray()) {
             if (!$row['isDraft']) {
-                $participants = \explode(',', $row['participants']);
+                $participants = \explode(',', $row['participants'] ?: '');
                 $participants[] = $row['author_id'];
                 $conversationID = $this->getConversationID($row['root_level'] ?: $row['msg_id'], $participants);
 
@@ -865,7 +865,7 @@ final class PhpBB31xExporter extends AbstractExporter
                 'subject' => StringUtil::decodeHTML($row['message_subject']),
                 'time' => $row['message_time'],
                 'userID' => $row['author_id'],
-                'username' => StringUtil::decodeHTML($row['username']) ?: '',
+                'username' => StringUtil::decodeHTML($row['username'] ?: ''),
                 'isDraft' => $row['isDraft'],
             ];
 
@@ -950,14 +950,14 @@ final class PhpBB31xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([1, 0]);
         while ($row = $statement->fetchArray()) {
-            $participants = \explode(',', $row['participants']);
+            $participants = \explode(',', $row['participants'] ?: '');
             $participants[] = $row['author_id'];
             $conversationID = $this->getConversationID($row['root_level'] ?: $row['msg_id'], $participants);
 
             $data = [
                 'conversationID' => $conversationID,
                 'userID' => $row['author_id'],
-                'username' => StringUtil::decodeHTML($row['username']) ?: '',
+                'username' => StringUtil::decodeHTML($row['username'] ?: ''),
                 'message' => self::fixBBCodes($row['message_text'], $row['bbcode_uid']),
                 'time' => $row['message_time'],
                 'attachments' => $row['attachments'],
@@ -1008,16 +1008,16 @@ final class PhpBB31xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
-            $participants = \explode(',', $row['participants']);
+            $participants = \explode(',', $row['participants'] ?: '');
             $participants[] = $row['author_id'];
             $conversationID = $this->getConversationID($row['root_level'] ?: $row['msg_id'], $participants);
 
-            $bcc = \explode(':', $row['bcc_address']);
+            $bcc = \explode(':', $row['bcc_address'] ?: '');
 
             $data = [
                 'conversationID' => $conversationID,
                 'participantID' => $row['user_id'],
-                'username' => StringUtil::decodeHTML($row['username']) ?: '',
+                'username' => StringUtil::decodeHTML($row['username'] ?: ''),
                 'hideConversation' => $row['pm_deleted'],
                 'isInvisible' => \in_array('u_' . $row['user_id'], $bcc) ? 1 : 0,
                 'lastVisitTime' => $row['pm_new'] ? 0 : $row['message_time'],
@@ -1161,7 +1161,7 @@ final class PhpBB31xExporter extends AbstractExporter
                 'topic' => StringUtil::decodeHTML($row['topic_title']),
                 'time' => $row['topic_time'],
                 'userID' => $row['topic_poster'],
-                'username' => $row['topic_first_poster_name'],
+                'username' => $row['topic_first_poster_name'] ?: '',
                 'views' => $row['topic_views'],
                 'isAnnouncement' => ($row['topic_type'] == self::TOPIC_TYPE_ANNOUCEMENT || $row['topic_type'] == self::TOPIC_TYPE_GLOBAL) ? 1 : 0,
                 'isSticky' => $row['topic_type'] == self::TOPIC_TYPE_STICKY ? 1 : 0,
@@ -1227,8 +1227,8 @@ final class PhpBB31xExporter extends AbstractExporter
             $data = [
                 'threadID' => $row['topic_id'],
                 'userID' => $row['poster_id'],
-                'username' => $row['post_username'] ?: (StringUtil::decodeHTML($row['username']) ?: ''),
-                'subject' => StringUtil::decodeHTML($row['post_subject']),
+                'username' => $row['post_username'] ?: StringUtil::decodeHTML($row['username'] ?: ''),
+                'subject' => StringUtil::decodeHTML($row['post_subject'] ?: ''),
                 'message' => self::fixBBCodes($row['post_text'], $row['bbcode_uid']),
                 'time' => $row['post_time'],
                 'isDisabled' => $row['post_visibility'] == self::ITEM_UNAPPROVED ? 1 : 0,
