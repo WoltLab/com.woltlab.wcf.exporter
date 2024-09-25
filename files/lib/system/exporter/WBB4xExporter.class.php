@@ -3076,8 +3076,8 @@ final class WBB4xExporter extends AbstractExporter
         $statement->execute([$offset + 1, $offset + $limit]);
 
         $sql = "SELECT      language_item.languageItemValue, language.languageCode
-                FROM        wcf1_language_item language_item
-                LEFT JOIN   wcf1_language language ON (language.languageID = language_item.languageID)
+                FROM        wcf" . $this->dbNo . "_language_item language_item
+                LEFT JOIN   wcf" . $this->dbNo . "_language language ON (language.languageID = language_item.languageID)
                 WHERE       language_item.languageItem = ?";
         $languageStatement = $this->database->prepareStatement($sql);
 
