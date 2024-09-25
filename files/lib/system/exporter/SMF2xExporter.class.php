@@ -1674,7 +1674,7 @@ final class SMF2xExporter extends AbstractExporter
         $statement = $this->database->prepareStatement($sql, $limit, $offset);
         $statement->execute([]);
         while ($row = $statement->fetchArray()) {
-            $fileLocation = $this->readOption('smiley_dir') . '/' . $this->readOption('smiley_sets_default') . '/' . $row['filename'];
+            $fileLocation = $this->readOption('smileys_dir') . '/' . $this->readOption('smiley_sets_default') . '/' . $row['filename'];
 
             $aliases = \explode("\n", $row['aliases']);
             $code = \array_shift($aliases);
