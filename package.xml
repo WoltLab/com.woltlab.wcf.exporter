@@ -5,8 +5,8 @@
 		<packagename language="de">WoltLab Suite Core: Importer</packagename>
 		<packagedescription>Import data from other discussion board systems.</packagedescription>
 		<packagedescription language="de">Ermöglicht den Datenimport aus anderen Forensystemen.</packagedescription>
-		<version>6.1.0 Beta 2</version>
-		<date>2024-09-27</date>
+		<version>6.1.0 RC 1</version>
+		<date>2024-10-10</date>
 	</packageinformation>
 	
 	<authorinformation>
@@ -30,7 +30,11 @@
 		<instruction type="objectType" />
 	</instructions>
 
-	<instructions type="update" fromversion="6.1.0 Beta 1">
-		<instruction type="file">files_update.tar</instruction>
+	<instructions type="update" fromversion="6.0.*">
+		<instruction type="file"/>
+	</instructions>
+
+	<instructions type="update" fromversion="6.1.0 Beta 2">
+		<void/>
 	</instructions>
 </package>
