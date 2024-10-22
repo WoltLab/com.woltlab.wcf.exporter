@@ -5,6 +5,7 @@ namespace wcf\system\exporter;
 use blog\system\BLOGCore;
 use filebase\data\license\License;
 use gallery\system\GALLERYCore;
+use wcf\data\file\File;
 use wcf\data\object\type\ObjectTypeCache;
 use wcf\data\package\Package;
 use wcf\data\package\PackageCache;
@@ -4523,5 +4524,53 @@ final class WBB4xExporter extends AbstractExporter
         }
 
         return '';
+    }
+
+    /**
+     * Returns a map that maps the id to the location of the file.
+     *
+     * @param int[] $fileIDs
+     *
+     * @return array{int, string}[]
+     */
+    private function getFileLocations(array $fileIDs): array
+    {
+        if ($fileIDs === []) {
+            return [];
+        }
+
+        $conditionBuilder = new PreparedStatementConditionBuilder();
+        $conditionBuilder->add('fileID IN (?)', [$fileIDs]);
+
+        $sql = "SELECT  fileID, fileHash, filename, fileExtension, mimeType
+                FROM    wcf1_file
+                " . $conditionBuilder;
+
+        $statement = $this->database->prepareStatement($sql);
+        $statement->execute($conditionBuilder->getParameters());
+
+        $files = [];
+        while ($row = $statement->fetchArray()) {
+            $fileExtension = File::getSafeFileExtension($row['mimeType'], $row['filename']);
+            /** @see File::isStaticFile() */
+            $isStaticFile = $fileExtension !== 'bin';
+
+            /** @see File::getPathname() */
+            $folderA = \substr($row['fileHash'], 0, 2);
+            $folderB = \substr($row['fileHash'], 2, 2);
+
+            $files[$row['fileID']] = \sprintf(
+                '%s_data/%s/files/%s/%s/%d-%s.%s',
+                $this->fileSystemPath,
+                $isStaticFile ? 'public' : 'private',
+                $folderA,
+                $folderB,
+                $row["fileID"],
+                $row["fileHash"],
+                $row["fileExtension"],
+            );
+        }
+
+        return $files;
     }
 }
