@@ -5,6 +5,7 @@ namespace wcf\system\exporter;
 use blog\system\BLOGCore;
 use filebase\data\license\License;
 use gallery\system\GALLERYCore;
+use wcf\data\file\File;
 use wcf\data\object\type\ObjectTypeCache;
 use wcf\data\package\Package;
 use wcf\data\package\PackageCache;
@@ -3219,10 +3220,21 @@ final class WBB4xExporter extends AbstractExporter
             return;
         }
 
-        // get file contents
-        $fileContents = $fileContentIDs = [];
         $conditionBuilder = new PreparedStatementConditionBuilder();
         $conditionBuilder->add('fileID IN (?)', [$fileIDs]);
+
+        $coreFiles = [];
+        if (\version_compare($this->getPackageVersion('com.woltlab.filebase'), '6.1.0 Alpha 1', '>=')) {
+            $sql = "SELECT fileIconID
+                    FROM   filebase" . $this->dbNo . "_file
+                    " . $conditionBuilder;
+            $statement = $this->database->prepareStatement($sql);
+            $statement->execute($conditionBuilder->getParameters());
+            $coreFiles = $this->getFileLocations($statement->fetchAll(\PDO::FETCH_COLUMN));
+        }
+
+        // get file contents
+        $fileContents = $fileContentIDs = [];
         $sql = "SELECT      file_content.*, language.languageCode
                 FROM        filebase" . $this->dbNo . "_file_content file_content
                 LEFT JOIN   wcf" . $this->dbNo . "_language language
@@ -3257,12 +3269,16 @@ final class WBB4xExporter extends AbstractExporter
                 }
             }
 
-            $this->exportFilebaseFilesHelper($row, $contents, [$row['categoryID']]);
+            $this->exportFilebaseFilesHelper($row, $contents, [$row['categoryID']], $coreFiles);
         }
     }
 
-    protected function exportFilebaseFilesHelper(array $row, array $contents = [], array $categories = [])
-    {
+    protected function exportFilebaseFilesHelper(
+        array $row,
+        array $contents = [],
+        array $categories = [],
+        array $coreFiles = []
+    ) {
         $additionalData = [
             'contents' => $contents,
         ];
@@ -3289,7 +3305,13 @@ final class WBB4xExporter extends AbstractExporter
         ];
 
         // file icon
-        if (!empty($row['iconHash'])) {
+        if (!empty($row['fileIconID']) && isset($coreFiles[$row['fileIconID']])) {
+            // since 6.1.0
+            ['location' => $location, 'filename' => $filename] = $coreFiles[$row['fileIconID']];
+            $additionalData['iconLocation'] = $location;
+            $additionalData['iconFilename'] = $filename;
+        } elseif (!empty($row['iconHash'])) {
+            // before 6.1.0
             $data['iconHash'] = $row['iconHash'];
             $data['iconExtension'] = $row['iconExtension'];
             $additionalData['iconLocation'] = $this->getFilebaseDir() . 'images/file/' . \substr($row['iconHash'], 0, 2) . '/' . $row['fileID'] . '.' . $row['iconExtension'];
@@ -3379,6 +3401,19 @@ final class WBB4xExporter extends AbstractExporter
             return;
         }
 
+        $conditionBuilder = new PreparedStatementConditionBuilder();
+        $conditionBuilder->add('versionID IN (?)', [$versionIDs]);
+
+        $coreFiles = [];
+        if (\version_compare($this->getPackageVersion('com.woltlab.filebase'), '6.1.0 Alpha 1', '>=')) {
+            $sql = "SELECT coreFileID
+                    FROM   filebase" . $this->dbNo . "_file_version
+                    " . $conditionBuilder;
+            $statement = $this->database->prepareStatement($sql);
+            $statement->execute($conditionBuilder->getParameters());
+            $coreFiles = $this->getFileLocations($statement->fetchAll(\PDO::FETCH_COLUMN));
+        }
+
         // get version contents
         $versionContents = [];
         $conditionBuilder = new PreparedStatementConditionBuilder();
@@ -3410,11 +3445,11 @@ final class WBB4xExporter extends AbstractExporter
                 }
             }
 
-            $this->exportFilebaseFileVersionsHelper($row, $contents);
+            $this->exportFilebaseFileVersionsHelper($row, $contents, $coreFiles);
         }
     }
 
-    protected function exportFilebaseFileVersionsHelper(array $row, array $contents = [])
+    protected function exportFilebaseFileVersionsHelper(array $row, array $contents = [], array $coreFiles = [])
     {
         $data = [
             'fileID' => $row['fileID'],
@@ -3437,7 +3472,13 @@ final class WBB4xExporter extends AbstractExporter
             'contents' => $contents,
             'fileLocation' => '',
         ];
-        if (empty($row['downloadURL'])) {
+        if (!empty($row['coreFileID']) && isset($coreFiles[$row['coreFileID']])) {
+            // since 6.1.0
+            ['location' => $location, 'filename' => $filename] = $coreFiles[$row['coreFileID']];
+            $additionalData['fileLocation'] = $location;
+            $data['filename'] = $filename;
+        } elseif (empty($row['downloadURL'])) {
+            // before 6.1.0
             $additionalData['fileLocation'] = $this->getFilebaseDir() . 'files/' . \substr($row['fileHash'], 0, 2) . '/' . $row['versionID'] . '-' . $row['fileHash'];
         }
 
@@ -4523,5 +4564,56 @@ final class WBB4xExporter extends AbstractExporter
         }
 
         return '';
+    }
+
+    /**
+     * Returns a map that maps the id to the location of the file.
+     *
+     * @param int[] $fileIDs
+     *
+     * @return array{int, array{location: string, filename: string}}[]
+     */
+    private function getFileLocations(array $fileIDs): array
+    {
+        if ($fileIDs === []) {
+            return [];
+        }
+
+        $conditionBuilder = new PreparedStatementConditionBuilder();
+        $conditionBuilder->add('fileID IN (?)', [$fileIDs]);
+
+        $sql = "SELECT  fileID, fileHash, filename, fileExtension, mimeType
+                FROM    wcf" . $this->dbNo . "_file
+                " . $conditionBuilder;
+
+        $statement = $this->database->prepareStatement($sql);
+        $statement->execute($conditionBuilder->getParameters());
+
+        $files = [];
+        while ($row = $statement->fetchArray()) {
+            $fileExtension = File::getSafeFileExtension($row['mimeType'], $row['filename']);
+            /** @see File::isStaticFile() */
+            $isStaticFile = $fileExtension !== 'bin';
+
+            /** @see File::getPathname() */
+            $folderA = \substr($row['fileHash'], 0, 2);
+            $folderB = \substr($row['fileHash'], 2, 2);
+
+            $files[$row['fileID']] = [
+                'location' => \sprintf(
+                    '%s_data/%s/files/%s/%s/%d-%s.%s',
+                    $this->fileSystemPath,
+                    $isStaticFile ? 'public' : 'private',
+                    $folderA,
+                    $folderB,
+                    $row["fileID"],
+                    $row["fileHash"],
+                    $row["fileExtension"],
+                ),
+                'filename' => $row['filename'],
+            ];
+        }
+
+        return $files;
     }
 }
