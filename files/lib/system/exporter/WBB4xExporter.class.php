@@ -3125,11 +3125,7 @@ final class WBB4xExporter extends AbstractExporter
      */
     public function exportFilebaseFiles($offset, $limit)
     {
-        if (\version_compare($this->getPackageVersion('com.woltlab.filebase'), '6.1.0 Alpha 1', '>=')) {
-            $this->exportFilebaseFiles61($offset, $limit);
-
-            return;
-        } elseif (\version_compare($this->getPackageVersion('com.woltlab.filebase'), '5.3.0 Alpha 1', '>=')) {
+        if (\version_compare($this->getPackageVersion('com.woltlab.filebase'), '5.3.0 Alpha 1', '>=')) {
             $this->exportFilebaseFiles53($offset, $limit);
 
             return;
@@ -3202,7 +3198,7 @@ final class WBB4xExporter extends AbstractExporter
     }
 
     /**
-     * Exports filebase files from 5.3 to 6.0.
+     * Exports filebase files from 5.3+.
      *
      * @param   integer     $offset
      * @param   integer     $limit
@@ -3224,76 +3220,18 @@ final class WBB4xExporter extends AbstractExporter
             return;
         }
 
-        // get file contents
-        $fileContents = $fileContentIDs = [];
-        $conditionBuilder = new PreparedStatementConditionBuilder();
-        $conditionBuilder->add('fileID IN (?)', [$fileIDs]);
-        $sql = "SELECT      file_content.*, language.languageCode
-                FROM        filebase" . $this->dbNo . "_file_content file_content
-                LEFT JOIN   wcf" . $this->dbNo . "_language language
-                ON          language.languageID = file_content.languageID
-                " . $conditionBuilder;
-        $statement = $this->database->prepareStatement($sql);
-        $statement->execute($conditionBuilder->getParameters());
-        while ($row = $statement->fetchArray()) {
-            $fileContents[$row['fileID']][$row['languageCode'] ?: ''] = $row;
-            $fileContentIDs[] = $row['fileContentID'];
-        }
-
-        // get tags
-        $tags = $this->getTags('com.woltlab.filebase.file', $fileContentIDs);
-
-        // get files
-        $sql = "SELECT  *
-                FROM    filebase" . $this->dbNo . "_file
-                " . $conditionBuilder;
-        $statement = $this->database->prepareStatement($sql);
-        $statement->execute($conditionBuilder->getParameters());
-        while ($row = $statement->fetchArray()) {
-            $contents = [];
-            if (isset($fileContents[$row['fileID']])) {
-                foreach ($fileContents[$row['fileID']] as $languageCode => $fileContent) {
-                    $contents[$languageCode ?: ''] = [
-                        'subject' => $fileContent['subject'],
-                        'teaser' => $fileContent['teaser'],
-                        'message' => $fileContent['message'],
-                        'tags' => $tags[$fileContent['fileContentID']] ?? [],
-                    ];
-                }
-            }
-
-            $this->exportFilebaseFilesHelper($row, $contents, [$row['categoryID']]);
-        }
-    }
-
-    /**
-     * Exports filebase files from 6.1+.
-     */
-    public function exportFilebaseFiles61(int $offset, int $limit): void
-    {
-        // get file ids
-        $fileIDs = [];
-        $sql = "SELECT      fileID
-                FROM        filebase" . $this->dbNo . "_file
-                WHERE       fileID BETWEEN ? AND ?
-                ORDER BY    fileID";
-        $statement = $this->database->prepareStatement($sql);
-        $statement->execute([$offset + 1, $offset + $limit]);
-        while ($row = $statement->fetchArray()) {
-            $fileIDs[] = $row['fileID'];
-        }
-        if (empty($fileIDs)) {
-            return;
-        }
         $conditionBuilder = new PreparedStatementConditionBuilder();
         $conditionBuilder->add('fileID IN (?)', [$fileIDs]);
 
-        $sql = "SELECT fileIconID
-                FROM   filebase" . $this->dbNo . "_file
-                " . $conditionBuilder;
-        $statement = $this->database->prepareStatement($sql);
-        $statement->execute($conditionBuilder->getParameters());
-        $coreFiles = $this->getFileLocations($statement->fetchAll(\PDO::FETCH_COLUMN));
+        $coreFiles = [];
+        if (\version_compare($this->getPackageVersion('com.woltlab.filebase'), '6.1.0 Alpha 1', '>=')) {
+            $sql = "SELECT fileIconID
+                    FROM   filebase" . $this->dbNo . "_file
+                    " . $conditionBuilder;
+            $statement = $this->database->prepareStatement($sql);
+            $statement->execute($conditionBuilder->getParameters());
+            $coreFiles = $this->getFileLocations($statement->fetchAll(\PDO::FETCH_COLUMN));
+        }
 
         // get file contents
         $fileContents = $fileContentIDs = [];
@@ -3415,11 +3353,7 @@ final class WBB4xExporter extends AbstractExporter
      */
     public function exportFilebaseFileVersions($offset, $limit)
     {
-        if (\version_compare($this->getPackageVersion('com.woltlab.filebase'), '6.1.0 Alpha 1', '>=')) {
-            $this->exportFilebaseFileVersions61($offset, $limit);
-
-            return;
-        } elseif (\version_compare($this->getPackageVersion('com.woltlab.filebase'), '5.3.0 Alpha 1', '>=')) {
+        if (\version_compare($this->getPackageVersion('com.woltlab.filebase'), '5.3.0 Alpha 1', '>=')) {
             $this->exportFilebaseFileVersions53($offset, $limit);
 
             return;
@@ -3445,7 +3379,7 @@ final class WBB4xExporter extends AbstractExporter
     }
 
     /**
-     * Exports filebase file versions from 5.3 up to 6.0.
+     * Exports filebase file versions from 5.3+.
      *
      * @param   integer     $offset
      * @param   integer     $limit
@@ -3467,75 +3401,23 @@ final class WBB4xExporter extends AbstractExporter
             return;
         }
 
+        $conditionBuilder = new PreparedStatementConditionBuilder();
+        $conditionBuilder->add('versionID IN (?)', [$versionIDs]);
+
+        $coreFiles = [];
+        if (\version_compare($this->getPackageVersion('com.woltlab.filebase'), '6.1.0 Alpha 1', '>=')) {
+            $sql = "SELECT coreFileID
+                    FROM   filebase" . $this->dbNo . "_file_version
+                    " . $conditionBuilder;
+            $statement = $this->database->prepareStatement($sql);
+            $statement->execute($conditionBuilder->getParameters());
+            $coreFiles = $this->getFileLocations($statement->fetchAll(\PDO::FETCH_COLUMN));
+        }
+
         // get version contents
         $versionContents = [];
         $conditionBuilder = new PreparedStatementConditionBuilder();
         $conditionBuilder->add('versionID IN (?)', [$versionIDs]);
-        $sql = "SELECT      version_content.*, language.languageCode
-                FROM        filebase" . $this->dbNo . "_file_version_content version_content
-                LEFT JOIN   wcf" . $this->dbNo . "_language language
-                ON          language.languageID = version_content.languageID
-                " . $conditionBuilder;
-        $statement = $this->database->prepareStatement($sql);
-        $statement->execute($conditionBuilder->getParameters());
-        while ($row = $statement->fetchArray()) {
-            $versionContents[$row['versionID']][$row['languageCode'] ?: ''] = $row;
-        }
-
-        // get versions
-        $sql = "SELECT  *
-                FROM    filebase" . $this->dbNo . "_file_version
-                " . $conditionBuilder;
-        $statement = $this->database->prepareStatement($sql);
-        $statement->execute($conditionBuilder->getParameters());
-        while ($row = $statement->fetchArray()) {
-            $contents = [];
-            if (isset($versionContents[$row['versionID']])) {
-                foreach ($versionContents[$row['versionID']] as $languageCode => $versionContent) {
-                    $contents[$languageCode ?: ''] = [
-                        'description' => $versionContent['description'],
-                    ];
-                }
-            }
-
-            $this->exportFilebaseFileVersionsHelper($row, $contents);
-        }
-    }
-
-    /**
-     * Exports filebase file versions from 6.1+.
-     *
-     * @param int $offset
-     * @param int $limit
-     */
-    public function exportFilebaseFileVersions61($offset, $limit)
-    {
-        // get version ids
-        $versionIDs = [];
-        $sql = "SELECT      versionID
-                FROM        filebase" . $this->dbNo . "_file_version
-                WHERE       versionID BETWEEN ? AND ?
-                ORDER BY    versionID";
-        $statement = $this->database->prepareStatement($sql);
-        $statement->execute([$offset + 1, $offset + $limit]);
-        while ($row = $statement->fetchArray()) {
-            $versionIDs[] = $row['versionID'];
-        }
-        if (empty($versionIDs)) {
-            return;
-        }
-        $conditionBuilder = new PreparedStatementConditionBuilder();
-        $conditionBuilder->add('versionID IN (?)', [$versionIDs]);
-
-        $sql = "SELECT coreFileID
-                FROM   filebase" . $this->dbNo . "_file_version
-                " . $conditionBuilder;
-        $statement = $this->database->prepareStatement($sql);
-        $statement->execute($conditionBuilder->getParameters());
-        $coreFiles = $this->getFileLocations($statement->fetchAll(\PDO::FETCH_COLUMN));
-
-        // get version contents
-        $versionContents = [];
         $sql = "SELECT      version_content.*, language.languageCode
                 FROM        filebase" . $this->dbNo . "_file_version_content version_content
                 LEFT JOIN   wcf" . $this->dbNo . "_language language
