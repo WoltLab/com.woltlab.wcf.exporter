@@ -298,10 +298,10 @@ final class SMF2xExporter extends AbstractExporter
         }
 
         // prepare password update
-        $sql = "UPDATE  wcf" . WCF_N . "_user
+        $sql = "UPDATE  wcf1_user
                 SET     password = ?
                 WHERE   userID = ?";
-        $passwordUpdateStatement = WCF::getDB()->prepareStatement($sql);
+        $passwordUpdateStatement = WCF::getDB()->prepare($sql);
 
         // get userIDs
         $userIDs = [];

@@ -225,10 +225,10 @@ final class IPB3xExporter extends AbstractExporter
         }
 
         // prepare password update
-        $sql = "UPDATE  wcf" . WCF_N . "_user
+        $sql = "UPDATE  wcf1_user
                 SET     password = ?
                 WHERE   userID = ?";
-        $passwordUpdateStatement = WCF::getDB()->prepareStatement($sql);
+        $passwordUpdateStatement = WCF::getDB()->prepare($sql);
 
         // get users
         $sql = "SELECT      pfields_content.*, members.*, profile_portal.*

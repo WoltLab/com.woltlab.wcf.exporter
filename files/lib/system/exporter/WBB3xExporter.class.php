@@ -436,9 +436,9 @@ final class WBB3xExporter extends AbstractExporter
         // cache existing user options
         $existingUserOptions = [];
         $sql = "SELECT  optionName, optionID
-                FROM    wcf" . WCF_N . "_user_option
+                FROM    wcf1_user_option
                 WHERE   optionName NOT LIKE 'option%'";
-        $statement = WCF::getDB()->prepareStatement($sql);
+        $statement = WCF::getDB()->prepare($sql);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $existingUserOptions[$row['optionName']] = true;
@@ -455,10 +455,10 @@ final class WBB3xExporter extends AbstractExporter
         }
 
         // prepare password update
-        $sql = "UPDATE  wcf" . WCF_N . "_user
+        $sql = "UPDATE  wcf1_user
                 SET     password = ?
                 WHERE   userID = ?";
-        $passwordUpdateStatement = WCF::getDB()->prepareStatement($sql);
+        $passwordUpdateStatement = WCF::getDB()->prepare($sql);
 
         // get password encryption
         $encryption = 'wcf1';
@@ -3242,9 +3242,9 @@ final class WBB3xExporter extends AbstractExporter
     {
         $optionsNames = [];
         $sql = "SELECT  optionName
-                FROM    wcf" . WCF_N . "_user_option
+                FROM    wcf1_user_option
                 WHERE   optionName NOT LIKE ?";
-        $statement = WCF::getDB()->prepareStatement($sql);
+        $statement = WCF::getDB()->prepare($sql);
         $statement->execute(['option%']);
         while ($row = $statement->fetchArray()) {
             $optionsNames[] = $row['optionName'];

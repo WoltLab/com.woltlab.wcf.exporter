@@ -344,10 +344,10 @@ final class XF2xExporter extends AbstractExporter
     public function exportUsers($offset, $limit)
     {
         // prepare password update
-        $sql = "UPDATE  wcf" . WCF_N . "_user
+        $sql = "UPDATE  wcf1_user
                 SET     password = ?
                 WHERE   userID = ?";
-        $passwordUpdateStatement = WCF::getDB()->prepareStatement($sql);
+        $passwordUpdateStatement = WCF::getDB()->prepare($sql);
 
         // get users
         $sql = "SELECT      user_table.*, user_profile_table.*, INET_NTOA(ip_table.ip) AS ip,
