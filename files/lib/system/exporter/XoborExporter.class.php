@@ -66,7 +66,7 @@ final class XoborExporter extends AbstractExporter
 
         $sql = "SELECT  COUNT(*)
                 FROM    forum_user";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
     }
 
@@ -126,7 +126,7 @@ final class XoborExporter extends AbstractExporter
                 FROM        forum_user
                 WHERE       id BETWEEN ? AND ?
                 ORDER BY    id";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -179,7 +179,7 @@ final class XoborExporter extends AbstractExporter
     {
         $sql = "SELECT  COUNT(*) AS count
                 FROM    forum_foren";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -197,7 +197,7 @@ final class XoborExporter extends AbstractExporter
         $sql = "SELECT      *
                 FROM        forum_foren
                 ORDER BY    zuid, sort, id";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $this->boardCache[$row['zuid']][] = $row;
@@ -256,7 +256,7 @@ final class XoborExporter extends AbstractExporter
                 FROM        forum_threads
                 WHERE       id BETWEEN ? AND ?
                 ORDER BY    id";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -301,7 +301,7 @@ final class XoborExporter extends AbstractExporter
                 FROM        forum_posts
                 WHERE       id BETWEEN ? AND ?
                 ORDER BY    id";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -345,7 +345,7 @@ final class XoborExporter extends AbstractExporter
                         AND files <> ?
                         AND files <> ?
                 ORDER BY    id";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit, '', \serialize([])]);
 
         while ($row = $statement->fetchArray()) {

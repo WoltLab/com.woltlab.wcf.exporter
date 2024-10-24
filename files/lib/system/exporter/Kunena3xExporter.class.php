@@ -110,7 +110,7 @@ final class Kunena3xExporter extends AbstractExporter
 
         $sql = "SELECT  COUNT(*)
                 FROM    " . $this->databasePrefix . "kunena_users";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
     }
 
@@ -154,7 +154,7 @@ final class Kunena3xExporter extends AbstractExporter
                 FROM        " . $this->databasePrefix . "usergroups
                 WHERE       id BETWEEN ? AND ?
                 ORDER BY    id";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             switch ($row['id']) {
@@ -190,7 +190,7 @@ final class Kunena3xExporter extends AbstractExporter
                 FROM    " . $this->databasePrefix . "kunena_users kunena_users,
                     " . $this->databasePrefix . "users users
                 WHERE   users.id = kunena_users.userid";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -222,7 +222,7 @@ final class Kunena3xExporter extends AbstractExporter
                             " . $this->databasePrefix . "users users
                 WHERE       users.id = kunena_users.userid
                 ORDER BY    kunena_users.userid";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -283,7 +283,7 @@ final class Kunena3xExporter extends AbstractExporter
         $sql = "SELECT  COUNT(*) AS count
                 FROM    " . $this->databasePrefix . "kunena_ranks
                 WHERE   rank_special = ?";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([0]);
         $row = $statement->fetchArray();
 
@@ -302,7 +302,7 @@ final class Kunena3xExporter extends AbstractExporter
                 FROM        " . $this->databasePrefix . "kunena_ranks
                 WHERE       rank_special = ?
                 ORDER BY    rank_id";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute([0]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -328,7 +328,7 @@ final class Kunena3xExporter extends AbstractExporter
         $sql = "SELECT  COUNT(*) AS count
                 FROM    " . $this->databasePrefix . "kunena_users
                 WHERE   avatar <> ''";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -347,7 +347,7 @@ final class Kunena3xExporter extends AbstractExporter
                 FROM        " . $this->databasePrefix . "kunena_users
                 WHERE       avatar <> ''
                 ORDER BY    userid";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $filepath = $this->fileSystemPath . 'media/kunena/avatars/' . $row['avatar'];
@@ -377,7 +377,7 @@ final class Kunena3xExporter extends AbstractExporter
     {
         $sql = "SELECT  COUNT(*) AS count
                 FROM    " . $this->databasePrefix . "kunena_categories";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -395,7 +395,7 @@ final class Kunena3xExporter extends AbstractExporter
         $sql = "SELECT      *
                 FROM        " . $this->databasePrefix . "kunena_categories
                 ORDER BY    parent_id, ordering, id";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $this->boardCache[$row['parent_id']][] = $row;
@@ -453,7 +453,7 @@ final class Kunena3xExporter extends AbstractExporter
                 FROM        " . $this->databasePrefix . "kunena_topics kunena_topics
                 WHERE       id BETWEEN ? AND ?
                 ORDER BY    id";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -496,7 +496,7 @@ final class Kunena3xExporter extends AbstractExporter
                 ON          kunena_messages_text.mesid = kunena_messages.id
                 WHERE       id BETWEEN ? AND ?
                 ORDER BY    id";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -537,7 +537,7 @@ final class Kunena3xExporter extends AbstractExporter
                 FROM        " . $this->databasePrefix . "kunena_attachments
                 WHERE       id BETWEEN ? AND ?
                 ORDER BY    id";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $fileLocation = FileUtil::addTrailingSlash($this->fileSystemPath . $row['folder']) . $row['filename'];

@@ -120,7 +120,7 @@ final class XF12xExporter extends AbstractExporter
 
         $sql = "SELECT  COUNT(*)
                 FROM    xf_template_compiled";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
     }
 
@@ -251,7 +251,7 @@ final class XF12xExporter extends AbstractExporter
     {
         $sql = "SELECT  COUNT(*) AS count
                 FROM    xf_user_group";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -269,7 +269,7 @@ final class XF12xExporter extends AbstractExporter
         $sql = "SELECT      *
                 FROM        xf_user_group
                 ORDER BY    user_group_id";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $userOnlineMarking = '%s';
@@ -330,7 +330,7 @@ final class XF12xExporter extends AbstractExporter
                         AND action = ?
                 WHERE       user_table.user_id BETWEEN ? AND ?
                 ORDER BY    user_table.user_id";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute(['user', 'register', $offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -439,7 +439,7 @@ final class XF12xExporter extends AbstractExporter
         $sql = "SELECT  COUNT(*) AS count
                 FROM    xf_user_field
                 " . $condition;
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute($condition->getParameters());
         $row = $statement->fetchArray();
 
@@ -461,7 +461,7 @@ final class XF12xExporter extends AbstractExporter
                 FROM        xf_user_field
                 " . $condition . "
                 ORDER BY    field_id";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute($condition->getParameters());
         while ($row = $statement->fetchArray()) {
             switch ($row['field_type']) {
@@ -523,11 +523,11 @@ final class XF12xExporter extends AbstractExporter
         try {
             $sql = "SELECT  COUNT(*) AS count
                     FROM    xf_user_title_ladder";
-            $statement = $this->database->prepareStatement($sql);
+            $statement = $this->database->prepareUnmanaged($sql);
         } catch (SystemException $e) {
             $sql = "SELECT  COUNT(*) AS count
                     FROM    xf_trophy_user_title";
-            $statement = $this->database->prepareStatement($sql);
+            $statement = $this->database->prepareUnmanaged($sql);
         }
         $statement->execute();
         $row = $statement->fetchArray();
@@ -547,12 +547,12 @@ final class XF12xExporter extends AbstractExporter
             $sql = "SELECT      *
                     FROM        xf_user_title_ladder
                     ORDER BY    minimum_level";
-            $statement = $this->database->prepareStatement($sql, $limit, $offset);
+            $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         } catch (SystemException $e) {
             $sql = "SELECT      minimum_points AS minimum_level, title
                     FROM        xf_trophy_user_title
                     ORDER BY    minimum_points";
-            $statement = $this->database->prepareStatement($sql, $limit, $offset);
+            $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         }
 
         $statement->execute();
@@ -579,7 +579,7 @@ final class XF12xExporter extends AbstractExporter
     {
         $sql = "SELECT  COUNT(*) AS count
                 FROM    xf_user_follow";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -597,7 +597,7 @@ final class XF12xExporter extends AbstractExporter
         $sql = "SELECT      *
                 FROM        xf_user_follow
                 ORDER BY    user_id, follow_user_id";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -632,7 +632,7 @@ final class XF12xExporter extends AbstractExporter
                 FROM        xf_profile_post
                 WHERE       profile_post_id BETWEEN ? AND ?
                 ORDER BY    profile_post_id";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -669,7 +669,7 @@ final class XF12xExporter extends AbstractExporter
                 FROM        xf_profile_post_comment
                 WHERE       profile_post_comment_id BETWEEN ? AND ?
                 ORDER BY    profile_post_comment_id";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -694,7 +694,7 @@ final class XF12xExporter extends AbstractExporter
         $sql = "SELECT  COUNT(*) AS count
                 FROM    xf_user
                 WHERE   avatar_date <> ?";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([0]);
         $row = $statement->fetchArray();
 
@@ -713,7 +713,7 @@ final class XF12xExporter extends AbstractExporter
                 FROM        xf_user
                 WHERE       avatar_date <> ?
                 ORDER BY    user_id";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute([0]);
         while ($row = $statement->fetchArray()) {
             $config = $this->getConfig();
@@ -753,7 +753,7 @@ final class XF12xExporter extends AbstractExporter
         $sql = "SELECT      user_id
                 FROM        xf_user
                 ORDER BY    user_id";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -787,7 +787,7 @@ final class XF12xExporter extends AbstractExporter
                 FROM        xf_conversation_master
                 WHERE       conversation_id BETWEEN ? AND ?
                 ORDER BY    conversation_id";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -828,7 +828,7 @@ final class XF12xExporter extends AbstractExporter
                 ON          message_table.ip_id = ip_table.ip_id
                 WHERE       message_table.message_id BETWEEN ? AND ?
                 ORDER BY    message_table.message_id";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -853,7 +853,7 @@ final class XF12xExporter extends AbstractExporter
     {
         $sql = "SELECT  COUNT(*) AS count
                 FROM    xf_conversation_recipient";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -876,7 +876,7 @@ final class XF12xExporter extends AbstractExporter
                 ON          cuser_table.owner_user_id = recipient_table.user_id
                         AND cuser_table.conversation_id = recipient_table.conversation_id
                 ORDER BY    recipient_table.conversation_id, recipient_table.user_id";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $hideConversation = Conversation::STATE_DEFAULT;
@@ -915,7 +915,7 @@ final class XF12xExporter extends AbstractExporter
         $sql = "SELECT  COUNT(*) AS count
                 FROM    xf_node
                 WHERE   node_type_id IN (?, ?, ?)";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute(['Forum', 'Category', 'LinkForum']);
         $row = $statement->fetchArray();
 
@@ -938,7 +938,7 @@ final class XF12xExporter extends AbstractExporter
                 ON          node.node_id = link_forum.node_id
                 WHERE       node_type_id IN (?, ?, ?)
                 ORDER BY    node.lft";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute(['Forum', 'Category', 'LinkForum']);
 
         while ($row = $statement->fetchArray()) {
@@ -995,7 +995,7 @@ final class XF12xExporter extends AbstractExporter
                 FROM        xf_thread
                 WHERE       thread_id BETWEEN ? AND ?
                 ORDER BY    thread_id";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1054,7 +1054,7 @@ final class XF12xExporter extends AbstractExporter
                         AND thread.first_post_id = post.post_id
                 WHERE       post_id BETWEEN ? AND ?
                 ORDER BY    post_id";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1105,7 +1105,7 @@ final class XF12xExporter extends AbstractExporter
     {
         $sql = "SELECT  COUNT(*) AS count
                 FROM    xf_thread_watch";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -1123,7 +1123,7 @@ final class XF12xExporter extends AbstractExporter
         $sql = "SELECT      *
                 FROM        xf_thread_watch
                 ORDER BY    user_id, thread_id";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1145,7 +1145,7 @@ final class XF12xExporter extends AbstractExporter
         $sql = "SELECT  COUNT(*) AS count
                 FROM    xf_poll
                 WHERE   content_type = ?";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute(['thread']);
         $row = $statement->fetchArray();
 
@@ -1171,7 +1171,7 @@ final class XF12xExporter extends AbstractExporter
                 ON          poll.content_id = thread.thread_id
                 WHERE       content_type = ?
                 ORDER BY    poll.poll_id";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute(['thread']);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1197,7 +1197,7 @@ final class XF12xExporter extends AbstractExporter
     {
         $sql = "SELECT  COUNT(*) AS count
                 FROM    xf_poll_response";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -1215,7 +1215,7 @@ final class XF12xExporter extends AbstractExporter
         $sql = "SELECT      *
                 FROM        xf_poll_response
                 ORDER BY    poll_response_id";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1238,7 +1238,7 @@ final class XF12xExporter extends AbstractExporter
     {
         $sql = "SELECT  COUNT(*) AS count
                 FROM    xf_poll_vote";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -1256,7 +1256,7 @@ final class XF12xExporter extends AbstractExporter
         $sql = "SELECT      *
                 FROM        xf_poll_vote
                 ORDER BY    poll_response_id, user_id";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1278,7 +1278,7 @@ final class XF12xExporter extends AbstractExporter
     {
         $sql = "SELECT  COUNT(*) AS count
                 FROM    xf_forum_prefix";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -1300,7 +1300,7 @@ final class XF12xExporter extends AbstractExporter
                 FROM        xf_forum_prefix forum
                 LEFT JOIN   xf_phrase phrase
                 ON          phrase.title = ('thread_prefix_' || forum.prefix_id)";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             // import label group
@@ -1352,7 +1352,7 @@ final class XF12xExporter extends AbstractExporter
                 WHERE   permission_group_id = ?
                     AND permission_value <> ?
                     AND content_type = ?";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute(['forum', 'use_int', 'node']);
         $row = $statement->fetchArray();
 
@@ -1395,7 +1395,7 @@ final class XF12xExporter extends AbstractExporter
                         AND permission_value <> ?
                         AND content_type = ?
                 ORDER BY    permission_entry_id";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute(['forum', 'use_int', 'node']);
         while ($row = $statement->fetchArray()) {
             if (!isset($mapping[$row['permission_id']])) {
@@ -1430,7 +1430,7 @@ final class XF12xExporter extends AbstractExporter
         $sql = "SELECT  COUNT(*) AS count
                 FROM    xfa_blog_category
                 WHERE   user_id = ?";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([0]);
         $row = $statement->fetchArray();
 
@@ -1449,7 +1449,7 @@ final class XF12xExporter extends AbstractExporter
                 FROM        xfa_blog_category
                 WHERE       user_id = ?
                 ORDER BY    category_id ASC";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute([0]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1476,7 +1476,7 @@ final class XF12xExporter extends AbstractExporter
                     SELECT  COUNT(*)
                     FROM    xfa_blog_entry_scheduled
                 ) AS count";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -1515,7 +1515,7 @@ final class XF12xExporter extends AbstractExporter
                     ON          entry.user_id = user.user_id
                 )
                 ORDER BY    isPublished DESC, entry_id ASC";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1557,7 +1557,7 @@ final class XF12xExporter extends AbstractExporter
     {
         $sql = "SELECT  COUNT(*) AS count
                 FROM    xfa_blog_comment";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -1577,7 +1577,7 @@ final class XF12xExporter extends AbstractExporter
                 LEFT JOIN   xf_user user
                 ON          comment.user_id = user.user_id
                 ORDER BY    comment.comment_id";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1602,7 +1602,7 @@ final class XF12xExporter extends AbstractExporter
         $sql = "SELECT  COUNT(*) AS count
                 FROM    xf_liked_content
                 WHERE   content_type = ?";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute(['xfa_blog_entry']);
         $row = $statement->fetchArray();
 
@@ -1621,7 +1621,7 @@ final class XF12xExporter extends AbstractExporter
                 FROM        xf_liked_content
                 WHERE       content_type = ?
                 ORDER BY    like_id ASC";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute(['xfa_blog_entry']);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1670,7 +1670,7 @@ final class XF12xExporter extends AbstractExporter
         $sql = "SELECT  COUNT(*) AS count
                 FROM    xf_attachment
                 WHERE   content_type = ?";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$type]);
         $row = $statement->fetchArray();
 
@@ -1693,7 +1693,7 @@ final class XF12xExporter extends AbstractExporter
                 ON          attachment.data_id = data.data_id
                 WHERE       attachment.content_type = ?
                 ORDER BY    attachment.attachment_id";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute([$type]);
         while ($row = $statement->fetchArray()) {
             $config = $this->getConfig();

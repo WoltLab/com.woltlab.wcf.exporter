@@ -134,7 +134,7 @@ final class IPB4xExporter extends AbstractExporter
 
         $sql = "SELECT  COUNT(*)
                 FROM    " . $this->databasePrefix . "core_admin_permission_rows";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
     }
 
@@ -276,7 +276,7 @@ final class IPB4xExporter extends AbstractExporter
         $profileFields = [];
         $sql = "SELECT  *
                 FROM    " . $this->databasePrefix . "core_pfields_data";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $profileFields[] = $row;
@@ -295,7 +295,7 @@ final class IPB4xExporter extends AbstractExporter
                 ON          pfields_content.member_id = members.member_id
                 WHERE       members.member_id BETWEEN ? AND ?
                 ORDER BY    members.member_id";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -372,7 +372,7 @@ final class IPB4xExporter extends AbstractExporter
     {
         $sql = "SELECT  COUNT(*) AS count
                 FROM    " . $this->databasePrefix . "core_pfields_data";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -390,7 +390,7 @@ final class IPB4xExporter extends AbstractExporter
         $sql = "SELECT      *
                 FROM        " . $this->databasePrefix . "core_pfields_data
                 ORDER BY    pf_id";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -431,7 +431,7 @@ final class IPB4xExporter extends AbstractExporter
                 FROM        " . $this->databasePrefix . "core_groups
                 WHERE       g_id BETWEEN ? AND ?
                 ORDER BY    g_id";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $groupType = UserGroup::OTHER;
@@ -464,7 +464,7 @@ final class IPB4xExporter extends AbstractExporter
         $sql = "SELECT  MAX(member_id) AS maxID
                 FROM    " . $this->databasePrefix . "core_members
                 WHERE   pp_main_photo <> ''";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
         if ($row !== false) {
@@ -487,7 +487,7 @@ final class IPB4xExporter extends AbstractExporter
                 WHERE       member_id BETWEEN ? AND ?
                         AND pp_main_photo <> ''
                 ORDER BY    member_id";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $avatarName = \basename($row['pp_main_photo']);
@@ -530,7 +530,7 @@ final class IPB4xExporter extends AbstractExporter
                 ON          members.member_id = status_updates.status_author_id
                 WHERE       status_updates.status_id BETWEEN ? AND ?
                 ORDER BY    status_updates.status_id";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -569,7 +569,7 @@ final class IPB4xExporter extends AbstractExporter
                 ON          members.member_id = member_status_replies.reply_member_id
                 WHERE       member_status_replies.reply_id BETWEEN ? AND ?
                 ORDER BY    member_status_replies.reply_id";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -595,7 +595,7 @@ final class IPB4xExporter extends AbstractExporter
                 FROM    " . $this->databasePrefix . "core_follow
                 WHERE   follow_app = ?
                     AND follow_area = ?";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute(['core', 'member']);
         $row = $statement->fetchArray();
 
@@ -615,7 +615,7 @@ final class IPB4xExporter extends AbstractExporter
                 WHERE       follow_app = ?
                         AND follow_area = ?
                 ORDER BY    follow_id";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute(['core', 'member']);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -652,7 +652,7 @@ final class IPB4xExporter extends AbstractExporter
                 ON          members.member_id = message_topics.mt_starter_id
                 WHERE       message_topics.mt_id BETWEEN ? AND ?
                 ORDER BY    message_topics.mt_id";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -691,7 +691,7 @@ final class IPB4xExporter extends AbstractExporter
                 ON          members.member_id = message_posts.msg_author_id
                 WHERE       message_posts.msg_id BETWEEN ? AND ?
                 ORDER BY    message_posts.msg_id";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -730,7 +730,7 @@ final class IPB4xExporter extends AbstractExporter
                 ON          members.member_id = message_topic_user_map.map_user_id
                 WHERE       message_topic_user_map.map_id BETWEEN ? AND ?
                 ORDER BY    message_topic_user_map.map_id";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -774,7 +774,7 @@ final class IPB4xExporter extends AbstractExporter
     {
         $sql = "SELECT  COUNT(*) AS count
                 FROM    " . $this->databasePrefix . "forums_forums";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -792,7 +792,7 @@ final class IPB4xExporter extends AbstractExporter
         $sql = "SELECT      *
                 FROM        " . $this->databasePrefix . "forums_forums
                 ORDER BY    parent_id, id";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $this->boardCache[$row['parent_id']][] = $row;
@@ -864,7 +864,7 @@ final class IPB4xExporter extends AbstractExporter
                 FROM        " . $this->databasePrefix . "forums_topics
                 WHERE       tid BETWEEN ? AND ?
                 ORDER BY    tid";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $threadIDs[] = $row['tid'];
@@ -884,7 +884,7 @@ final class IPB4xExporter extends AbstractExporter
         $sql = "SELECT      topics.*
                 FROM        " . $this->databasePrefix . "forums_topics topics
                 " . $conditionBuilder;
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute($conditionBuilder->getParameters());
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -936,7 +936,7 @@ final class IPB4xExporter extends AbstractExporter
                 FROM        " . $this->databasePrefix . "forums_posts
                 WHERE       pid BETWEEN ? AND ?
                 ORDER BY    pid";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -969,7 +969,7 @@ final class IPB4xExporter extends AbstractExporter
                 FROM    " . $this->databasePrefix . "core_follow
                 WHERE   follow_app = ?
                     AND follow_area = ?";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute(['forums', 'topic']);
         $row = $statement->fetchArray();
 
@@ -989,7 +989,7 @@ final class IPB4xExporter extends AbstractExporter
                 WHERE       follow_app = ?
                         AND follow_area = ?
                 ORDER BY    follow_id";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute(['forums', 'topic']);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1025,7 +1025,7 @@ final class IPB4xExporter extends AbstractExporter
                 ON          topics.poll_state = polls.pid
                 WHERE       pid BETWEEN ? AND ?
                 ORDER BY    pid";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             if (!$row['topic_firstpost']) {
@@ -1097,7 +1097,7 @@ final class IPB4xExporter extends AbstractExporter
                 ON          polls.pid = voters.poll
                 WHERE       voters.vid BETWEEN ? AND ?
                 ORDER BY    voters.vid";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             try {
@@ -1139,7 +1139,7 @@ final class IPB4xExporter extends AbstractExporter
                 FROM    " . $this->databasePrefix . "core_reputation_index
                 WHERE   app = ?
                     AND type = ?";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute(['forums', 'pid']);
         $row = $statement->fetchArray();
 
@@ -1161,7 +1161,7 @@ final class IPB4xExporter extends AbstractExporter
                 WHERE       core_reputation_index.app = ?
                         AND core_reputation_index.type = ?
                 ORDER BY    core_reputation_index.id";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute(['forums', 'pid']);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1209,7 +1209,7 @@ final class IPB4xExporter extends AbstractExporter
                 FROM    " . $this->databasePrefix . "core_attachments_map
                 WHERE   location_key = ?
                     AND id2 IS NOT NULL";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$type]);
         $row = $statement->fetchArray();
 
@@ -1233,7 +1233,7 @@ final class IPB4xExporter extends AbstractExporter
                 WHERE       core_attachments_map.location_key = ?
                         AND core_attachments_map.id2 IS NOT NULL
                 ORDER BY    core_attachments_map.attachment_id";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute([$type]);
         while ($row = $statement->fetchArray()) {
             if (!$row['attach_id']) {
@@ -1267,7 +1267,7 @@ final class IPB4xExporter extends AbstractExporter
     {
         $sql = "SELECT  COUNT(*) AS count
                 FROM    " . $this->databasePrefix . "gallery_categories";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -1285,7 +1285,7 @@ final class IPB4xExporter extends AbstractExporter
         $sql = "SELECT      *
                 FROM        " . $this->databasePrefix . "gallery_categories
                 ORDER BY    category_id";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1322,7 +1322,7 @@ final class IPB4xExporter extends AbstractExporter
                 ON          members.member_id = albums.album_owner_id
                 WHERE       albums.album_id BETWEEN ? AND ?
                 ORDER BY    albums.album_id";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1361,7 +1361,7 @@ final class IPB4xExporter extends AbstractExporter
                 FROM        " . $this->databasePrefix . "gallery_images
                 WHERE       image_id BETWEEN ? AND ?
                 ORDER BY    image_id";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $imageIDs[] = $row['image_id'];
@@ -1381,7 +1381,7 @@ final class IPB4xExporter extends AbstractExporter
                 LEFT JOIN   " . $this->databasePrefix . "core_members members
                 ON          members.member_id = images.image_member_id
                 " . $conditionBuilder;
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute($conditionBuilder->getParameters());
         while ($row = $statement->fetchArray()) {
             $fileLocation = $this->fileSystemPath . 'uploads/' . $row['image_original_file_name'];
@@ -1440,7 +1440,7 @@ final class IPB4xExporter extends AbstractExporter
                 FROM        " . $this->databasePrefix . "gallery_comments
                 WHERE       comment_id BETWEEN ? AND ?
                 ORDER BY    comment_id";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1466,7 +1466,7 @@ final class IPB4xExporter extends AbstractExporter
                 FROM    " . $this->databasePrefix . "core_reputation_index
                 WHERE   app = ?
                     AND type = ?";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute(['gallery', 'image_id']);
         $row = $statement->fetchArray();
 
@@ -1488,7 +1488,7 @@ final class IPB4xExporter extends AbstractExporter
                 WHERE       core_reputation_index.app = ?
                         AND core_reputation_index.type = ?
                 ORDER BY    core_reputation_index.id";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute(['gallery', 'image_id']);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1527,7 +1527,7 @@ final class IPB4xExporter extends AbstractExporter
                 ON          members.member_id = blogs.blog_member_id
                 WHERE       blogs.blog_id BETWEEN ? AND ?
                 ORDER BY    blogs.blog_id";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1560,7 +1560,7 @@ final class IPB4xExporter extends AbstractExporter
     {
         $sql = "SELECT  COUNT(*) AS count
                 FROM    " . $this->databasePrefix . "blog_entry_categories";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -1578,7 +1578,7 @@ final class IPB4xExporter extends AbstractExporter
         $sql = "SELECT      *
                 FROM        " . $this->databasePrefix . "blog_entry_categories
                 ORDER BY    entry_category_id";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1613,7 +1613,7 @@ final class IPB4xExporter extends AbstractExporter
                 FROM        " . $this->databasePrefix . "blog_entries
                 WHERE       entry_id BETWEEN ? AND ?
                 ORDER BY    entry_id";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $entryIDs[] = $row['entry_id'];
@@ -1633,7 +1633,7 @@ final class IPB4xExporter extends AbstractExporter
         $sql = "SELECT      *
                 FROM        " . $this->databasePrefix . "blog_entries
                 " . $conditionBuilder;
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute($conditionBuilder->getParameters());
         while ($row = $statement->fetchArray()) {
             $additionalData = [];
@@ -1704,7 +1704,7 @@ final class IPB4xExporter extends AbstractExporter
                 FROM        " . $this->databasePrefix . "blog_comments
                 WHERE       comment_id BETWEEN ? AND ?
                 ORDER BY    comment_id";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1730,7 +1730,7 @@ final class IPB4xExporter extends AbstractExporter
                 FROM    " . $this->databasePrefix . "core_reputation_index
                 WHERE   app = ?
                     AND type = ?";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute(['blog', 'entry_id']);
         $row = $statement->fetchArray();
 
@@ -1752,7 +1752,7 @@ final class IPB4xExporter extends AbstractExporter
                 WHERE       core_reputation_index.app = ?
                         AND core_reputation_index.type = ?
                 ORDER BY    core_reputation_index.id";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute(['blog', 'entry_id']);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1789,7 +1789,7 @@ final class IPB4xExporter extends AbstractExporter
         $sql = "SELECT  tag_meta_id, tag_text
                 FROM    " . $this->databasePrefix . "core_tags
                 " . $conditionBuilder;
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute($conditionBuilder->getParameters());
         while ($row = $statement->fetchArray()) {
             if (!isset($tags[$row['tag_meta_id']])) {
@@ -1812,7 +1812,7 @@ final class IPB4xExporter extends AbstractExporter
             $sql = "SELECT  lang_id
                     FROM    " . $this->databasePrefix . "core_sys_lang
                     WHERE   lang_default = ?";
-            $statement = $this->database->prepareStatement($sql);
+            $statement = $this->database->prepareUnmanaged($sql);
             $statement->execute([1]);
             $row = $statement->fetchArray();
             if ($row !== false) {
@@ -1840,7 +1840,7 @@ final class IPB4xExporter extends AbstractExporter
                     FROM    " . $this->databasePrefix . "core_sys_lang_words
                     WHERE   lang_id = ?
                         AND word_key = ?";
-            $this->languageStatement = $this->database->prepareStatement($sql, 1);
+            $this->languageStatement = $this->database->prepareUnmanaged($sql, 1);
         }
         $this->languageStatement->execute([
             $this->getDefaultLanguageID(),

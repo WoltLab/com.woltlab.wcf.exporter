@@ -224,7 +224,7 @@ final class SMF2xExporter extends AbstractExporter
     {
         $sql = "SELECT  COUNT(*) AS count
                 FROM    " . $this->databasePrefix . "membergroups";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -256,7 +256,7 @@ final class SMF2xExporter extends AbstractExporter
         $sql = "SELECT      *
                 FROM        " . $this->databasePrefix . "membergroups
                 ORDER BY    id_group";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -291,7 +291,7 @@ final class SMF2xExporter extends AbstractExporter
         $profileFields = [];
         $sql = "SELECT  col_name, id_field
                 FROM    " . $this->databasePrefix . "custom_fields";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $profileFields[$row['col_name']] = $row;
@@ -309,7 +309,7 @@ final class SMF2xExporter extends AbstractExporter
                 FROM        " . $this->databasePrefix . "members
                 WHERE       id_member BETWEEN ? AND ?
                 ORDER BY    id_member";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $userIDs[] = $row['id_member'];
@@ -329,7 +329,7 @@ final class SMF2xExporter extends AbstractExporter
             $sql = "SELECT  *
                     FROM    " . $this->databasePrefix . "themes
                     " . $condition;
-            $statement = $this->database->prepareStatement($sql);
+            $statement = $this->database->prepareUnmanaged($sql);
             $statement->execute($condition->getParameters());
             while ($row = $statement->fetchArray()) {
                 if (!isset($profileFieldValues[$row['id_member']])) {
@@ -355,7 +355,7 @@ final class SMF2xExporter extends AbstractExporter
                 LEFT JOIN   " . $this->databasePrefix . "ban_groups ban_group
                 ON          ban_item.id_ban_group = ban_group.id_ban_group
                 " . $condition;
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute($condition->getParameters());
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -431,7 +431,7 @@ final class SMF2xExporter extends AbstractExporter
     {
         $sql = "SELECT  COUNT(*) AS count
                 FROM    " . $this->databasePrefix . "custom_fields";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -449,7 +449,7 @@ final class SMF2xExporter extends AbstractExporter
         $sql = "SELECT      *
                 FROM        " . $this->databasePrefix . "custom_fields
                 ORDER BY    id_field";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             switch ($row['field_type']) {
@@ -523,7 +523,7 @@ final class SMF2xExporter extends AbstractExporter
                 FROM    " . $this->databasePrefix . "membergroups
                 WHERE   min_posts <> ?
                     AND {$fieldName} <> ?";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([-1, '']);
         $row = $statement->fetchArray();
 
@@ -548,7 +548,7 @@ final class SMF2xExporter extends AbstractExporter
                 WHERE       min_posts <> ?
                         AND {$fieldName} <> ?
                 ORDER BY    id_group";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute([-1, '']);
         while ($row = $statement->fetchArray()) {
             [$repeatImage, $rankImage] = \explode('#', $row[$fieldName], 2);
@@ -577,7 +577,7 @@ final class SMF2xExporter extends AbstractExporter
         $sql = "SELECT  COUNT(*) AS count
                 FROM    " . $this->databasePrefix . "members
                 WHERE   buddy_list <> ?";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute(['']);
         $row = $statement->fetchArray();
 
@@ -596,7 +596,7 @@ final class SMF2xExporter extends AbstractExporter
                 FROM        " . $this->databasePrefix . "members
                 WHERE       buddy_list <> ?
                 ORDER BY    id_member";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute(['']);
         while ($row = $statement->fetchArray()) {
             $buddylist = \array_unique(ArrayUtil::toIntegerArray(\explode(',', $row['buddy_list'])));
@@ -628,7 +628,7 @@ final class SMF2xExporter extends AbstractExporter
                     FROM    " . $this->databasePrefix . "members
                     WHERE   avatar <> ?
                 ) AS count";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute(['', 0]);
         $row = $statement->fetchArray();
 
@@ -666,7 +666,7 @@ final class SMF2xExporter extends AbstractExporter
                     FROM    " . $this->databasePrefix . "members
                     WHERE   avatar <> ?
                 )";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute(['', 0]);
 
         while ($row = $statement->fetchArray()) {
@@ -712,7 +712,7 @@ final class SMF2xExporter extends AbstractExporter
             // SMF 2.1
             $sql = "SELECT  COUNT(*) AS count
                     FROM    " . $this->databasePrefix . "pm_labels";
-            $statement = $this->database->prepareStatement($sql);
+            $statement = $this->database->prepareUnmanaged($sql);
             $statement->execute();
             $row = $statement->fetchArray();
 
@@ -724,7 +724,7 @@ final class SMF2xExporter extends AbstractExporter
         $sql = "SELECT  COUNT(*) AS count
                 FROM    " . $this->databasePrefix . "members
                 WHERE   message_labels <> ?";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute(['']);
         $row = $statement->fetchArray();
 
@@ -744,7 +744,7 @@ final class SMF2xExporter extends AbstractExporter
             $sql = "SELECT      *
                     FROM        " . $this->databasePrefix . "pm_labels
                     ORDER BY    id_label";
-            $statement = $this->database->prepareStatement($sql, $limit, $offset);
+            $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
             $statement->execute();
             while ($row = $statement->fetchArray()) {
                 $data = [
@@ -769,7 +769,7 @@ final class SMF2xExporter extends AbstractExporter
                 FROM        " . $this->databasePrefix . "members
                 WHERE       message_labels <> ?
                 ORDER BY    id_member";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute(['']);
         while ($row = $statement->fetchArray()) {
             $labels = ArrayUtil::trim(\explode(',', $row['message_labels']), false);
@@ -836,7 +836,7 @@ final class SMF2xExporter extends AbstractExporter
                 FROM        " . $this->databasePrefix . "personal_messages pm
                 WHERE       pm.id_pm BETWEEN ? AND ?
                 ORDER BY    pm.id_pm";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             if ($row['participants'] === null) {
@@ -891,7 +891,7 @@ final class SMF2xExporter extends AbstractExporter
                 FROM        " . $this->databasePrefix . "personal_messages pm
                 WHERE       pm.id_pm BETWEEN ? AND ?
                 ORDER BY    pm.id_pm";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             if ($row['participants'] === null) {
@@ -925,7 +925,7 @@ final class SMF2xExporter extends AbstractExporter
     {
         $sql = "SELECT  COUNT(*) AS count
                 FROM    " . $this->databasePrefix . "pm_recipients";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -959,7 +959,7 @@ final class SMF2xExporter extends AbstractExporter
                     LEFT JOIN   " . $this->databasePrefix . "members members
                     ON          recipients.id_member = members.id_member
                     ORDER BY    recipients.id_pm, recipients.id_member";
-            $statement = $this->database->prepareStatement($sql, $limit, $offset);
+            $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
             $statement->execute();
         } catch (DatabaseException $e) {
             // SMF 2.0
@@ -975,7 +975,7 @@ final class SMF2xExporter extends AbstractExporter
                     LEFT JOIN   " . $this->databasePrefix . "members members
                     ON          recipients.id_member = members.id_member
                     ORDER BY    recipients.id_pm, recipients.id_member";
-            $statement = $this->database->prepareStatement($sql, $limit, $offset);
+            $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
             $statement->execute();
         }
 
@@ -1022,7 +1022,7 @@ final class SMF2xExporter extends AbstractExporter
                     SELECT  COUNT(*)
                     FROM    " . $this->databasePrefix . "categories
                 ) AS count";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -1040,7 +1040,7 @@ final class SMF2xExporter extends AbstractExporter
         $sql = "SELECT      *
                 FROM        " . $this->databasePrefix . "categories
                 ORDER BY    id_cat";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1058,7 +1058,7 @@ final class SMF2xExporter extends AbstractExporter
         $sql = "SELECT      *
                 FROM        " . $this->databasePrefix . "boards
                 ORDER BY    id_board";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $this->boardCache[$row['id_parent']][] = $row;
@@ -1124,7 +1124,7 @@ final class SMF2xExporter extends AbstractExporter
                 ON          post.id_msg = topic.id_first_msg
                 WHERE       topic.id_topic BETWEEN ? AND ?
                 ORDER BY    topic.id_topic";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1170,7 +1170,7 @@ final class SMF2xExporter extends AbstractExporter
                 ON          message.modified_name = member.real_name
                 WHERE       message.id_msg BETWEEN ? AND ?
                 ORDER BY    message.id_msg";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1205,7 +1205,7 @@ final class SMF2xExporter extends AbstractExporter
                 FROM    " . $this->databasePrefix . "attachments
                 WHERE   id_member = ?
                     AND id_msg <> ?";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([0, 0]);
         $row = $statement->fetchArray();
 
@@ -1227,7 +1227,7 @@ final class SMF2xExporter extends AbstractExporter
                 WHERE       attachment.id_member = ?
                         AND attachment.id_msg <> ?
                 ORDER BY    attachment.id_attach";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute([0, 0]);
         while ($row = $statement->fetchArray()) {
             if (\substr($row['filename'], -6) == '_thumb') {
@@ -1268,7 +1268,7 @@ final class SMF2xExporter extends AbstractExporter
                 FROM    " . $this->databasePrefix . "log_notify
                 WHERE   id_topic <> ?
                     AND id_board = ?";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([0, 0]);
         $row = $statement->fetchArray();
 
@@ -1288,7 +1288,7 @@ final class SMF2xExporter extends AbstractExporter
                 WHERE       id_topic <> ?
                         AND id_board = ?
                 ORDER BY    id_member, id_topic";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute([0, 0]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1309,7 +1309,7 @@ final class SMF2xExporter extends AbstractExporter
     {
         $sql = "SELECT  COUNT(*) AS count
                 FROM    " . $this->databasePrefix . "polls";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -1334,7 +1334,7 @@ final class SMF2xExporter extends AbstractExporter
                 INNER JOIN  " . $this->databasePrefix . "topics topic
                 ON          topic.id_poll = poll.id_poll
                 ORDER BY    id_poll";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1360,7 +1360,7 @@ final class SMF2xExporter extends AbstractExporter
     {
         $sql = "SELECT  COUNT(*) AS count
                 FROM    " . $this->databasePrefix . "poll_choices";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -1378,7 +1378,7 @@ final class SMF2xExporter extends AbstractExporter
         $sql = "SELECT      *
                 FROM        " . $this->databasePrefix . "poll_choices
                 ORDER BY    id_poll, id_choice";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1405,7 +1405,7 @@ final class SMF2xExporter extends AbstractExporter
         $sql = "SELECT  COUNT(*) AS count
                 FROM    " . $this->databasePrefix . "log_polls
                 WHERE   id_member <> ?";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([0]);
         $row = $statement->fetchArray();
 
@@ -1424,7 +1424,7 @@ final class SMF2xExporter extends AbstractExporter
                 FROM        " . $this->databasePrefix . "log_polls
                 WHERE       id_member <> ?
                 ORDER BY    id_poll, id_member, id_choice";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute([0]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1468,7 +1468,7 @@ final class SMF2xExporter extends AbstractExporter
                             ) AS moderators
                 FROM        " . $this->databasePrefix . "boards board
                 ORDER BY    id_board";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             if (!isset($profileToBoard[$row['id_profile']])) {
@@ -1582,7 +1582,7 @@ final class SMF2xExporter extends AbstractExporter
         $sql = "SELECT      *
                 FROM        " . $this->databasePrefix . "board_permissions
                 ORDER BY    id_group, id_profile, permission";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             if (!isset($profileToBoard[$row['id_profile']])) {
@@ -1648,7 +1648,7 @@ final class SMF2xExporter extends AbstractExporter
     {
         $sql = "SELECT  COUNT(DISTINCT filename) AS count
                 FROM    " . $this->databasePrefix . "smileys";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -1671,7 +1671,7 @@ final class SMF2xExporter extends AbstractExporter
                 FROM        " . $this->databasePrefix . "smileys
                 GROUP BY    filename
                 ORDER BY    id_smiley";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute([]);
         while ($row = $statement->fetchArray()) {
             $fileLocation = $this->readOption('smileys_dir') . '/' . $this->readOption('smiley_sets_default') . '/' . $row['filename'];
@@ -1716,7 +1716,7 @@ final class SMF2xExporter extends AbstractExporter
             $sql = "SELECT  value
                     FROM    " . $this->databasePrefix . "settings
                     WHERE   variable = ?";
-            $statement = $this->database->prepareStatement($sql);
+            $statement = $this->database->prepareUnmanaged($sql);
             $statement->execute([$optionName]);
             $row = $statement->fetchArray();
 

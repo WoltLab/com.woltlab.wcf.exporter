@@ -150,7 +150,7 @@ final class PhpBB31xExporter extends AbstractExporter
 
         $sql = "SELECT  COUNT(*)
                 FROM    " . $this->databasePrefix . "zebra";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
     }
 
@@ -276,7 +276,7 @@ final class PhpBB31xExporter extends AbstractExporter
                 FROM        " . $this->databasePrefix . "groups
                 WHERE       group_id BETWEEN ? AND ?
                 ORDER BY    group_id";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             switch ($row['group_id']) {
@@ -320,7 +320,7 @@ final class PhpBB31xExporter extends AbstractExporter
         $sql = "SELECT  MAX(user_id) AS maxID
                 FROM    " . $this->databasePrefix . "users
                 WHERE   user_type <> ?";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([self::USER_TYPE_USER_IGNORE]);
         $row = $statement->fetchArray();
         if ($row !== false) {
@@ -342,7 +342,7 @@ final class PhpBB31xExporter extends AbstractExporter
         $profileFields = [];
         $sql = "SELECT  *
                 FROM    " . $this->databasePrefix . "profile_fields";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $profileFields[] = $row;
@@ -371,7 +371,7 @@ final class PhpBB31xExporter extends AbstractExporter
                 WHERE       user_table.user_type <> ?
                         AND user_table.user_id BETWEEN ? AND ?
                 ORDER BY    user_table.user_id";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([0, 0, self::USER_TYPE_USER_IGNORE, $offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -469,7 +469,7 @@ final class PhpBB31xExporter extends AbstractExporter
     {
         $sql = "SELECT  COUNT(*) AS count
                 FROM    " . $this->databasePrefix . "profile_fields";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -504,7 +504,7 @@ final class PhpBB31xExporter extends AbstractExporter
                 FROM        " . $this->databasePrefix . "profile_fields fields
                 " . $condition . "
                 ORDER BY    fields.field_id";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute(\array_merge(
             ['profilefields.type.dropdown'],
             $condition->getParameters()
@@ -581,7 +581,7 @@ final class PhpBB31xExporter extends AbstractExporter
         $sql = "SELECT  COUNT(*) AS count
                 FROM    " . $this->databasePrefix . "ranks
                 WHERE   rank_special = ?";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([0]);
         $row = $statement->fetchArray();
 
@@ -600,7 +600,7 @@ final class PhpBB31xExporter extends AbstractExporter
                 FROM        " . $this->databasePrefix . "ranks
                 WHERE       rank_special = ?
                 ORDER BY    rank_id";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute([0]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -627,7 +627,7 @@ final class PhpBB31xExporter extends AbstractExporter
                 FROM    " . $this->databasePrefix . "zebra
                 WHERE   friend = ?
                     AND foe = ?";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([1, 0]);
         $row = $statement->fetchArray();
 
@@ -647,7 +647,7 @@ final class PhpBB31xExporter extends AbstractExporter
                 WHERE       friend = ?
                         AND foe = ?
                 ORDER BY    user_id, zebra_id";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute([1, 0]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -669,7 +669,7 @@ final class PhpBB31xExporter extends AbstractExporter
         $sql = "SELECT  COUNT(*) AS count
                 FROM    " . $this->databasePrefix . "users
                 WHERE   user_avatar_type IN (?, ?)";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([
             self::AVATAR_TYPE_GALLERY,
             self::AVATAR_TYPE_UPLOADED,
@@ -692,7 +692,7 @@ final class PhpBB31xExporter extends AbstractExporter
             $sql = "SELECT  config_name, config_value
                     FROM    " . $this->databasePrefix . "config
                     WHERE   config_name IN (?, ?, ?)";
-            $statement = $this->database->prepareStatement($sql);
+            $statement = $this->database->prepareUnmanaged($sql);
             $statement->execute(['avatar_path', 'avatar_salt', 'avatar_gallery_path']);
             while ($row = $statement->fetchArray()) {
                 $config_name = $row['config_name'];
@@ -705,7 +705,7 @@ final class PhpBB31xExporter extends AbstractExporter
                 FROM        " . $this->databasePrefix . "users
                 WHERE       user_avatar_type IN (?, ?)
                 ORDER BY    user_id";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute([self::AVATAR_TYPE_GALLERY, self::AVATAR_TYPE_UPLOADED]);
         while ($row = $statement->fetchArray()) {
             $extension = \pathinfo($row['user_avatar'], \PATHINFO_EXTENSION);
@@ -741,7 +741,7 @@ final class PhpBB31xExporter extends AbstractExporter
     {
         $sql = "SELECT  COUNT(*) AS count
                 FROM    " . $this->databasePrefix . "privmsgs_folder";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -759,7 +759,7 @@ final class PhpBB31xExporter extends AbstractExporter
         $sql = "SELECT      *
                 FROM        " . $this->databasePrefix . "privmsgs_folder
                 ORDER BY    folder_id";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -800,7 +800,7 @@ final class PhpBB31xExporter extends AbstractExporter
     {
         $sql = "SELECT  COUNT(*) AS count
                 FROM    " . $this->databasePrefix . "privmsgs";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -848,7 +848,7 @@ final class PhpBB31xExporter extends AbstractExporter
                     WHERE       forum_id = ?
                 )
                 ORDER BY    isDraft, msg_id";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute([0]);
         while ($row = $statement->fetchArray()) {
             if (!$row['isDraft']) {
@@ -886,7 +886,7 @@ final class PhpBB31xExporter extends AbstractExporter
     {
         $sql = "SELECT  COUNT(*) AS count
                 FROM    " . $this->databasePrefix . "privmsgs";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -947,7 +947,7 @@ final class PhpBB31xExporter extends AbstractExporter
                     WHERE       forum_id = ?
                 )
                 ORDER BY        msg_id";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute([1, 0]);
         while ($row = $statement->fetchArray()) {
             $participants = \explode(',', $row['participants'] ?: '');
@@ -976,7 +976,7 @@ final class PhpBB31xExporter extends AbstractExporter
     {
         $sql = "SELECT  COUNT(*) AS count
                 FROM    " . $this->databasePrefix . "privmsgs_to";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -1005,7 +1005,7 @@ final class PhpBB31xExporter extends AbstractExporter
                 LEFT JOIN   " . $this->databasePrefix . "users user_table
                 ON          to_table.user_id = user_table.user_id
                 ORDER BY    to_table.msg_id, to_table.user_id";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $participants = \explode(',', $row['participants'] ?: '');
@@ -1060,7 +1060,7 @@ final class PhpBB31xExporter extends AbstractExporter
     {
         $sql = "SELECT  COUNT(*) AS count
                 FROM    " . $this->databasePrefix . "forums";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -1078,7 +1078,7 @@ final class PhpBB31xExporter extends AbstractExporter
         $sql = "SELECT      *
                 FROM        " . $this->databasePrefix . "forums
                 ORDER BY    parent_id, left_id, forum_id";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $this->boardCache[$row['parent_id']][] = $row;
@@ -1153,7 +1153,7 @@ final class PhpBB31xExporter extends AbstractExporter
                 FROM        " . $this->databasePrefix . "topics
                 WHERE       topic_id BETWEEN ? AND ?
                 ORDER BY    topic_id";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1221,7 +1221,7 @@ final class PhpBB31xExporter extends AbstractExporter
                 ON          post_table.post_edit_user = editor.user_id
                 WHERE       post_id BETWEEN ? AND ?
                 ORDER BY    post_id";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([0, $offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1277,7 +1277,7 @@ final class PhpBB31xExporter extends AbstractExporter
     {
         $sql = "SELECT  COUNT(*) AS count
                 FROM    " . $this->databasePrefix . "topics_watch";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -1297,7 +1297,7 @@ final class PhpBB31xExporter extends AbstractExporter
         $sql = "SELECT      *
                 FROM        " . $this->databasePrefix . "topics_watch
                 ORDER BY    topic_id, user_id";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1320,7 +1320,7 @@ final class PhpBB31xExporter extends AbstractExporter
         $sql = "SELECT  COUNT(*) AS count
                 FROM    " . $this->databasePrefix . "topics
                 WHERE   poll_start <> ?";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([0]);
         $row = $statement->fetchArray();
 
@@ -1345,7 +1345,7 @@ final class PhpBB31xExporter extends AbstractExporter
                 FROM        " . $this->databasePrefix . "topics topic
                 WHERE       poll_start <> ?
                 ORDER BY    topic_id";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute([0]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1372,7 +1372,7 @@ final class PhpBB31xExporter extends AbstractExporter
     {
         $sql = "SELECT  COUNT(*) AS count
                 FROM    " . $this->databasePrefix . "poll_options";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -1390,7 +1390,7 @@ final class PhpBB31xExporter extends AbstractExporter
         $sql = "SELECT      *
                 FROM        " . $this->databasePrefix . "poll_options
                 ORDER BY    poll_option_id";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1417,7 +1417,7 @@ final class PhpBB31xExporter extends AbstractExporter
         $sql = "SELECT  COUNT(*) AS count
                 FROM    " . $this->databasePrefix . "poll_votes
                 WHERE   vote_user_id <> ?";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([0]);
         $row = $statement->fetchArray();
 
@@ -1436,7 +1436,7 @@ final class PhpBB31xExporter extends AbstractExporter
                 FROM        " . $this->databasePrefix . "poll_votes
                 WHERE       vote_user_id <> ?
                 ORDER BY    poll_option_id, vote_user_id";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute([0]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1465,7 +1465,7 @@ final class PhpBB31xExporter extends AbstractExporter
                     FROM    " . $this->databasePrefix . "acl_groups
                     WHERE   forum_id <> ?
                 ) AS count";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([0, 0]);
         $row = $statement->fetchArray();
 
@@ -1483,7 +1483,7 @@ final class PhpBB31xExporter extends AbstractExporter
         $sql = "SELECT  *
                 FROM    " . $this->databasePrefix . "acl_options
                 WHERE   is_local = ?";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([1]);
         $options = [];
         while ($row = $statement->fetchArray()) {
@@ -1495,7 +1495,7 @@ final class PhpBB31xExporter extends AbstractExporter
         $sql = "SELECT  *
                 FROM    " . $this->databasePrefix . "acl_roles_data
                 " . $condition;
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute($condition->getParameters());
         $roles = [];
         while ($row = $statement->fetchArray()) {
@@ -1510,7 +1510,7 @@ final class PhpBB31xExporter extends AbstractExporter
                     FROM        " . $this->databasePrefix . "acl_groups
                     WHERE       forum_id <> ?
                     ORDER BY    auth_role_id DESC";
-            $statement = $this->database->prepareStatement($sql);
+            $statement = $this->database->prepareUnmanaged($sql);
             $statement->execute([0]);
             $key = 'group';
         } elseif ($offset == 1) {
@@ -1519,7 +1519,7 @@ final class PhpBB31xExporter extends AbstractExporter
                     FROM        " . $this->databasePrefix . "acl_users
                     WHERE       forum_id <> ?
                     ORDER BY    auth_role_id DESC";
-            $statement = $this->database->prepareStatement($sql);
+            $statement = $this->database->prepareUnmanaged($sql);
             $statement->execute([0]);
             $key = 'user';
         }
@@ -1630,7 +1630,7 @@ final class PhpBB31xExporter extends AbstractExporter
     {
         $sql = "SELECT  COUNT(DISTINCT smiley_url) AS count
                 FROM    " . $this->databasePrefix . "smilies";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -1653,7 +1653,7 @@ final class PhpBB31xExporter extends AbstractExporter
                 FROM        " . $this->databasePrefix . "smilies
                 GROUP BY    smiley_url
                 ORDER BY    smiley_id";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute([]);
         while ($row = $statement->fetchArray()) {
             $fileLocation = $this->fileSystemPath . 'images/smilies/' . $row['smiley_url'];
@@ -1695,7 +1695,7 @@ final class PhpBB31xExporter extends AbstractExporter
         $sql = "SELECT  COUNT(*) AS count
                 FROM    " . $this->databasePrefix . "attachments
                 WHERE   in_message = ?";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$conversation ? 1 : 0]);
         $row = $statement->fetchArray();
 
@@ -1716,7 +1716,7 @@ final class PhpBB31xExporter extends AbstractExporter
             $sql = "SELECT  config_name, config_value
                     FROM    " . $this->databasePrefix . "config
                     WHERE   config_name IN (?)";
-            $statement = $this->database->prepareStatement($sql);
+            $statement = $this->database->prepareUnmanaged($sql);
             $statement->execute(['upload_path']);
             while ($row = $statement->fetchArray()) {
                 $config_name = $row['config_name'];
@@ -1729,7 +1729,7 @@ final class PhpBB31xExporter extends AbstractExporter
                 FROM        " . $this->databasePrefix . "attachments
                 WHERE       in_message = ?
                 ORDER BY    attach_id DESC";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute([$conversation ? 1 : 0]);
         while ($row = $statement->fetchArray()) {
             $fileLocation = FileUtil::addTrailingSlash($this->fileSystemPath . $upload_path) . $row['physical_filename'];
