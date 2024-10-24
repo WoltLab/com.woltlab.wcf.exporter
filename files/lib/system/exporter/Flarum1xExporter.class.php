@@ -72,7 +72,7 @@ final class Flarum1xExporter extends AbstractExporter
 
         $sql = "SELECT  COUNT(*)
                 FROM    migrations";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
     }
 
@@ -150,7 +150,7 @@ final class Flarum1xExporter extends AbstractExporter
                 FROM        `groups`
                 WHERE       id BETWEEN ? AND ?
                 ORDER BY    id";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $userOnlineMarking = '%s';
@@ -202,7 +202,7 @@ final class Flarum1xExporter extends AbstractExporter
                 FROM        users
                 WHERE       users.id BETWEEN ? AND ?
                 ORDER BY    users.id";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $banned = 0;
@@ -290,7 +290,7 @@ final class Flarum1xExporter extends AbstractExporter
     {
         $sql = "SELECT  COUNT(*) AS count
                 FROM    tags";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -307,7 +307,7 @@ final class Flarum1xExporter extends AbstractExporter
     {
         $sql = "SELECT  *
                 FROM    tags";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute();
         $objectType = ObjectTypeCache::getInstance()
             ->getObjectTypeByName('com.woltlab.wcf.label.objectType', 'com.woltlab.wbb.board');
@@ -384,7 +384,7 @@ final class Flarum1xExporter extends AbstractExporter
                 ON          users.id = discussions.user_id
                 WHERE       discussions.id BETWEEN ? AND ?
                 ORDER BY    discussions.id";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -434,7 +434,7 @@ final class Flarum1xExporter extends AbstractExporter
                 INNER JOIN  tags
                 ON          discussion_tag.tag_id = tags.id
                 {$condition}";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute($condition->getParameters());
 
         return $statement->fetchMap('discussion_id', 'name', false);
@@ -469,7 +469,7 @@ final class Flarum1xExporter extends AbstractExporter
                 ON          discussions.id = posts.discussion_id
                 WHERE       posts.id BETWEEN ? AND ?
                 ORDER BY    posts.id";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             switch ($row['type']) {
@@ -515,7 +515,7 @@ final class Flarum1xExporter extends AbstractExporter
     {
         $sql = "SELECT  COUNT(*) AS count
                 FROM    post_likes";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -537,7 +537,7 @@ final class Flarum1xExporter extends AbstractExporter
                 ON          post_likes.post_id = posts.id
                 ORDER BY    post_likes.post_id,
                             post_likes.user_id";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -561,7 +561,7 @@ final class Flarum1xExporter extends AbstractExporter
     {
         $sql = "SELECT  COUNT(*) AS count
                 FROM    polls";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -589,7 +589,7 @@ final class Flarum1xExporter extends AbstractExporter
                                 GROUP BY    discussion_id
                             )
                 ORDER BY    polls.id";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -615,7 +615,7 @@ final class Flarum1xExporter extends AbstractExporter
     {
         $sql = "SELECT  COUNT(*) AS count
                 FROM    poll_options";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -633,7 +633,7 @@ final class Flarum1xExporter extends AbstractExporter
         $sql = "SELECT      *
                 FROM        poll_options
                 ORDER BY    id";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -659,7 +659,7 @@ final class Flarum1xExporter extends AbstractExporter
     {
         $sql = "SELECT  COUNT(*) AS count
                 FROM    poll_votes";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -677,7 +677,7 @@ final class Flarum1xExporter extends AbstractExporter
         $sql = "SELECT      *
                 FROM        poll_votes
                 ORDER BY    id";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $data = [

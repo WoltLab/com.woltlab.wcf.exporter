@@ -104,7 +104,7 @@ final class WordPress3xExporter extends AbstractExporter
 
         $sql = "SELECT  COUNT(*)
                 FROM    " . $this->databasePrefix . "posts";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
     }
 
@@ -147,17 +147,17 @@ final class WordPress3xExporter extends AbstractExporter
     public function exportUsers($offset, $limit)
     {
         // prepare password update
-        $sql = "UPDATE  wcf" . WCF_N . "_user
+        $sql = "UPDATE  wcf1_user
                 SET     password = ?
                 WHERE   userID = ?";
-        $passwordUpdateStatement = WCF::getDB()->prepareStatement($sql);
+        $passwordUpdateStatement = WCF::getDB()->prepare($sql);
 
         // get users
         $sql = "SELECT      *
                 FROM        " . $this->databasePrefix . "users
                 WHERE       ID BETWEEN ? AND ?
                 ORDER BY    ID";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -190,7 +190,7 @@ final class WordPress3xExporter extends AbstractExporter
         $sql = "SELECT  COUNT(*) AS count
                 FROM    " . $this->databasePrefix . "term_taxonomy
                 WHERE   taxonomy = ?";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute(['category']);
         $row = $statement->fetchArray();
 
@@ -211,7 +211,7 @@ final class WordPress3xExporter extends AbstractExporter
                 ON          term.term_id = term_taxonomy.term_id
                 WHERE       term_taxonomy.taxonomy = ?
                 ORDER BY    term_taxonomy.parent, term_taxonomy.term_id";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute(['category']);
         while ($row = $statement->fetchArray()) {
             $this->categoryCache[$row['parent']][] = $row;
@@ -255,7 +255,7 @@ final class WordPress3xExporter extends AbstractExporter
                 FROM    " . $this->databasePrefix . "posts
                 WHERE   post_type = ?
                     AND post_status IN (?, ?, ?, ?, ?)";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute(['post', 'publish', 'pending', 'draft', 'future', 'private']);
         $row = $statement->fetchArray();
 
@@ -277,7 +277,7 @@ final class WordPress3xExporter extends AbstractExporter
                 WHERE       post_type = ?
                         AND post_status IN (?, ?, ?, ?, ?)
                 ORDER BY    ID";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute(['post', 'publish', 'pending', 'draft', 'future', 'private']);
         while ($row = $statement->fetchArray()) {
             $entryIDs[] = $row['ID'];
@@ -296,7 +296,7 @@ final class WordPress3xExporter extends AbstractExporter
                 LEFT JOIN   " . $this->databasePrefix . "terms term
                 ON          term.term_id = term_taxonomy.term_id
                 " . $conditionBuilder;
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute($conditionBuilder->getParameters());
         while ($row = $statement->fetchArray()) {
             if (!isset($tags[$row['object_id']])) {
@@ -315,7 +315,7 @@ final class WordPress3xExporter extends AbstractExporter
                 FROM    " . $this->databasePrefix . "term_relationships term_relationships,
                         " . $this->databasePrefix . "term_taxonomy term_taxonomy
                 " . $conditionBuilder;
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute($conditionBuilder->getParameters());
         while ($row = $statement->fetchArray()) {
             if (!isset($categories[$row['object_id']])) {
@@ -340,7 +340,7 @@ final class WordPress3xExporter extends AbstractExporter
                 LEFT JOIN   " . $this->databasePrefix . "users user
                 ON          user.ID = post.post_author
                 " . $conditionBuilder;
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute($conditionBuilder->getParameters());
         while ($row = $statement->fetchArray()) {
             $time = @\strtotime($row['post_date_gmt']);
@@ -384,7 +384,7 @@ final class WordPress3xExporter extends AbstractExporter
         $sql = "SELECT  COUNT(*) AS count
                 FROM    " . $this->databasePrefix . "comments
                 WHERE   comment_approved = ?";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([1]);
         $row = $statement->fetchArray();
 
@@ -402,13 +402,13 @@ final class WordPress3xExporter extends AbstractExporter
         $sql = "SELECT  comment_ID, comment_parent
                 FROM    " . $this->databasePrefix . "comments
                 WHERE   comment_ID = ?";
-        $parentCommentStatement = $this->database->prepareStatement($sql, $limit, $offset);
+        $parentCommentStatement = $this->database->prepareUnmanaged($sql, $limit, $offset);
 
         $sql = "SELECT      *
                 FROM        " . $this->databasePrefix . "comments
                 WHERE       comment_approved = ?
                 ORDER BY    comment_parent, comment_ID";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute([1]);
         while ($row = $statement->fetchArray()) {
             if (!$row['comment_parent']) {
@@ -472,7 +472,7 @@ final class WordPress3xExporter extends AbstractExporter
                             WHERE   post_type IN (?, ?)
                                 AND post_status IN (?, ?, ?, ?, ?, ?)
                         )";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([
             'attachment',
 
@@ -512,7 +512,7 @@ final class WordPress3xExporter extends AbstractExporter
                                     AND post_status IN (?, ?, ?, ?, ?, ?)
                             )
                 ORDER BY    ID";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute([
             '_wp_attached_file',
 
@@ -564,7 +564,7 @@ final class WordPress3xExporter extends AbstractExporter
                 FROM    " . $this->databasePrefix . "posts
                 WHERE   post_type = ?
                     AND post_status IN (?, ?, ?, ?, ?)";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([
             'page',
 
@@ -592,7 +592,7 @@ final class WordPress3xExporter extends AbstractExporter
                 WHERE       post_type = ?
                         AND post_status IN (?, ?, ?, ?, ?)
                 ORDER BY    ID";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute([
             'page',
 
