@@ -196,7 +196,7 @@ final class WBB3xExporter extends AbstractExporter
 
         $sql = "SELECT  COUNT(*)
                 FROM    wbb" . $this->dbNo . "_" . $this->instanceNo . "_post";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
     }
 
@@ -401,7 +401,7 @@ final class WBB3xExporter extends AbstractExporter
                 FROM        wcf" . $this->dbNo . "_group
                 WHERE       groupID BETWEEN ? AND ?
                 ORDER BY    groupID";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -436,9 +436,9 @@ final class WBB3xExporter extends AbstractExporter
         // cache existing user options
         $existingUserOptions = [];
         $sql = "SELECT  optionName, optionID
-                FROM    wcf" . WCF_N . "_user_option
+                FROM    wcf1_user_option
                 WHERE   optionName NOT LIKE 'option%'";
-        $statement = WCF::getDB()->prepareStatement($sql);
+        $statement = WCF::getDB()->prepare($sql);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $existingUserOptions[$row['optionName']] = true;
@@ -448,17 +448,17 @@ final class WBB3xExporter extends AbstractExporter
         $userOptions = [];
         $sql = "SELECT  optionName, optionID
                 FROM    wcf" . $this->dbNo . "_user_option";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $userOptions[$row['optionID']] = (isset($existingUserOptions[$row['optionName']]) ? $row['optionName'] : $row['optionID']);
         }
 
         // prepare password update
-        $sql = "UPDATE  wcf" . WCF_N . "_user
+        $sql = "UPDATE  wcf1_user
                 SET     password = ?
                 WHERE   userID = ?";
-        $passwordUpdateStatement = WCF::getDB()->prepareStatement($sql);
+        $passwordUpdateStatement = WCF::getDB()->prepare($sql);
 
         // get password encryption
         $encryption = 'wcf1';
@@ -470,7 +470,7 @@ final class WBB3xExporter extends AbstractExporter
                             'encryption_method',
                             'encryption_salt_position'
                         )";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $encryptionData = [];
         while ($row = $statement->fetchArray()) {
@@ -515,7 +515,7 @@ final class WBB3xExporter extends AbstractExporter
                 ON          user_option_value.userID = user_table.userID
                 WHERE       user_table.userID BETWEEN ? AND ?
                 ORDER BY    user_table.userID";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -594,7 +594,7 @@ final class WBB3xExporter extends AbstractExporter
                 FROM        wcf" . $this->dbNo . "_user_rank
                 WHERE       rankID BETWEEN ? AND ?
                 ORDER BY    rankID";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -619,7 +619,7 @@ final class WBB3xExporter extends AbstractExporter
     {
         $sql = "SELECT  COUNT(*) AS count
                 FROM    wcf" . $this->dbNo . "_user_whitelist";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -637,7 +637,7 @@ final class WBB3xExporter extends AbstractExporter
         $sql = "SELECT      *
                 FROM        wcf" . $this->dbNo . "_user_whitelist
                 ORDER BY    userID, whiteUserID";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -672,7 +672,7 @@ final class WBB3xExporter extends AbstractExporter
                 FROM        wcf" . $this->dbNo . "_user_guestbook
                 WHERE       entryID BETWEEN ? AND ?
                 ORDER BY    entryID";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -697,7 +697,7 @@ final class WBB3xExporter extends AbstractExporter
         $sql = "SELECT  MAX(entryID) AS maxID
                 FROM    wcf" . $this->dbNo . "_user_guestbook
                 WHERE   commentTime > ?";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([0]);
         $row = $statement->fetchArray();
         if ($row !== false) {
@@ -722,7 +722,7 @@ final class WBB3xExporter extends AbstractExporter
                 WHERE       user_guestbook.commentTime > ?
                         AND user_guestbook.entryID BETWEEN ? AND ?
                 ORDER BY    user_guestbook.entryID";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([0, $offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -747,7 +747,7 @@ final class WBB3xExporter extends AbstractExporter
         $sql = "SELECT  MAX(avatarID) AS maxID
                 FROM    wcf" . $this->dbNo . "_avatar
                 WHERE   userID <> ?";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([0]);
         $row = $statement->fetchArray();
         if ($row !== false) {
@@ -770,7 +770,7 @@ final class WBB3xExporter extends AbstractExporter
                 WHERE       userID <> ?
                         AND avatarID BETWEEN ? AND ?
                 ORDER BY    avatarID";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([0, $offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $fileLocation = $this->fileSystemPath . 'images/avatars/avatar-' . $row['avatarID'] . '.' . $row['avatarExtension'];
@@ -811,7 +811,7 @@ final class WBB3xExporter extends AbstractExporter
         $sql = "SELECT  COUNT(*) AS count
                 FROM    wcf" . $this->dbNo . "_user_option
                 " . $conditionBuilder;
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute($conditionBuilder->getParameters());
         $row = $statement->fetchArray();
 
@@ -852,7 +852,7 @@ final class WBB3xExporter extends AbstractExporter
                         ) AS name
                 FROM    wcf" . $this->dbNo . "_user_option user_option
                 " . $conditionBuilder;
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute($conditionBuilder->getParameters());
         while ($row = $statement->fetchArray()) {
             $editable = 0;
@@ -957,7 +957,7 @@ final class WBB3xExporter extends AbstractExporter
                 FROM        wcf" . $this->dbNo . "_pm_folder
                 WHERE       folderID BETWEEN ? AND ?
                 ORDER BY    folderID";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $cssClassName = '';
@@ -1029,7 +1029,7 @@ final class WBB3xExporter extends AbstractExporter
                 FROM        wcf" . $this->dbNo . "_pm pm
                 WHERE       pm.pmID BETWEEN ? AND ?
                 ORDER BY    pm.pmID";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $participants = \explode(',', $row['participants'] ?: '');
@@ -1079,7 +1079,7 @@ final class WBB3xExporter extends AbstractExporter
                 FROM        wcf" . $this->dbNo . "_pm pm
                 WHERE       pm.pmID BETWEEN ? AND ?
                 ORDER BY    pm.pmID";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $participants = \explode(',', $row['participants'] ?: '');
@@ -1109,7 +1109,7 @@ final class WBB3xExporter extends AbstractExporter
     {
         $sql = "SELECT  COUNT(*) AS count
                 FROM    wcf" . $this->dbNo . "_pm_to_user";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -1138,7 +1138,7 @@ final class WBB3xExporter extends AbstractExporter
                 LEFT JOIN   wcf" . $this->dbNo . "_pm pm
                 ON          pm.pmID = pm_to_user.pmID
                 ORDER BY    pm_to_user.pmID DESC, pm_to_user.recipientID DESC";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $participants = \explode(',', $row['participants'] ?: '');
@@ -1196,7 +1196,7 @@ final class WBB3xExporter extends AbstractExporter
     {
         $sql = "SELECT  COUNT(*) AS count
                 FROM    wbb" . $this->dbNo . "_" . $this->instanceNo . "_board";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -1216,7 +1216,7 @@ final class WBB3xExporter extends AbstractExporter
                 LEFT JOIN   wbb" . $this->dbNo . "_" . $this->instanceNo . "_board_structure structure
                 ON          structure.boardID = board.boardID
                 ORDER BY    board.parentID, structure.position";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $this->boardCache[$row['parentID']][] = $row;
@@ -1296,7 +1296,7 @@ final class WBB3xExporter extends AbstractExporter
         $sql = "SELECT  optionValue
                 FROM    wcf" . $this->dbNo . "_option
                 WHERE   optionName = ?";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute(['thread_default_prefixes']);
         $row = $statement->fetchArray();
         if ($row !== false) {
@@ -1310,13 +1310,13 @@ final class WBB3xExporter extends AbstractExporter
             $sql = "SELECT  boardID, prefixes, prefixMode
                     FROM    wbb" . $this->dbNo . "_" . $this->instanceNo . "_board
                     WHERE   prefixMode > ?";
-            $statement = $this->database->prepareStatement($sql);
+            $statement = $this->database->prepareUnmanaged($sql);
             $statement->execute([0]);
         } else {
             $sql = "SELECT  boardID, prefixes, 2 AS prefixMode
                     FROM    wbb" . $this->dbNo . "_" . $this->instanceNo . "_board
                     WHERE   prefixes <> ?";
-            $statement = $this->database->prepareStatement($sql);
+            $statement = $this->database->prepareUnmanaged($sql);
             $statement->execute(['']);
         }
 
@@ -1348,7 +1348,7 @@ final class WBB3xExporter extends AbstractExporter
                 FROM        wbb" . $this->dbNo . "_" . $this->instanceNo . "_thread
                 WHERE       threadID BETWEEN ? AND ?
                 ORDER BY    threadID";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $threadIDs[] = $row['threadID'];
@@ -1369,7 +1369,7 @@ final class WBB3xExporter extends AbstractExporter
             $sql = "SELECT  boardID, threadID
                     FROM    wbb" . $this->dbNo . "_" . $this->instanceNo . "_thread_announcement
                     " . $conditionBuilder;
-            $statement = $this->database->prepareStatement($sql);
+            $statement = $this->database->prepareUnmanaged($sql);
             $statement->execute($conditionBuilder->getParameters());
             while ($row = $statement->fetchArray()) {
                 if (!isset($assignedBoards[$row['threadID']])) {
@@ -1391,7 +1391,7 @@ final class WBB3xExporter extends AbstractExporter
                 LEFT JOIN   wcf" . $this->dbNo . "_language language
                 ON          language.languageID = thread.languageID
                 " . $conditionBuilder;
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute($conditionBuilder->getParameters());
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1457,7 +1457,7 @@ final class WBB3xExporter extends AbstractExporter
                 FROM        wbb" . $this->dbNo . "_" . $this->instanceNo . "_post
                 WHERE       postID BETWEEN ? AND ?
                 ORDER BY    postID";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1513,7 +1513,7 @@ final class WBB3xExporter extends AbstractExporter
     {
         $sql = "SELECT  COUNT(*) AS count
                 FROM    wbb" . $this->dbNo . "_" . $this->instanceNo . "_thread_subscription";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -1531,7 +1531,7 @@ final class WBB3xExporter extends AbstractExporter
         $sql = "SELECT      *
                 FROM        wbb" . $this->dbNo . "_" . $this->instanceNo . "_thread_subscription
                 ORDER BY    userID, threadID";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1554,7 +1554,7 @@ final class WBB3xExporter extends AbstractExporter
         $sql = "SELECT  MAX(pollID) AS maxID
                 FROM    wcf" . $this->dbNo . "_poll
                 WHERE   messageType = ?";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute(['post']);
         $row = $statement->fetchArray();
         if ($row !== false) {
@@ -1577,7 +1577,7 @@ final class WBB3xExporter extends AbstractExporter
                 WHERE       messageType = ?
                         AND pollID BETWEEN ? AND ?
                 ORDER BY    pollID";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute(['post', $offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1610,7 +1610,7 @@ final class WBB3xExporter extends AbstractExporter
                             FROM    wcf" . $this->dbNo . "_poll
                             WHERE   messageType = ?
                         )";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute(['post']);
         $row = $statement->fetchArray();
         if ($row !== false) {
@@ -1637,7 +1637,7 @@ final class WBB3xExporter extends AbstractExporter
                             )
                         AND pollOptionID BETWEEN ? AND ?
                 ORDER BY    pollOptionID";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute(['post', $offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1666,7 +1666,7 @@ final class WBB3xExporter extends AbstractExporter
                             WHERE   messageType = ?
                         )
                     AND userID <> ?";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute(['post', 0]);
         $row = $statement->fetchArray();
 
@@ -1690,7 +1690,7 @@ final class WBB3xExporter extends AbstractExporter
                             )
                         AND userID <> ?
                 ORDER BY    pollOptionID, userID";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute(['post', 0]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1714,7 +1714,7 @@ final class WBB3xExporter extends AbstractExporter
                 FROM    wbb" . $this->dbNo . "_" . $this->instanceNo . "_thread_rating
                 WHERE   userID <> ?
                     AND rating NOT IN (?, ?)";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([0, 0, 3]);
         $row = $statement->fetchArray();
 
@@ -1737,7 +1737,7 @@ final class WBB3xExporter extends AbstractExporter
                 WHERE       thread_rating.userID <> ?
                         AND thread_rating.rating NOT IN (?, ?)
                 ORDER BY    thread_rating.threadID, thread_rating.userID";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute([0, 0, 3]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1763,13 +1763,13 @@ final class WBB3xExporter extends AbstractExporter
             $sql = "SELECT  COUNT(*) AS count
                     FROM    wbb" . $this->dbNo . "_" . $this->instanceNo . "_board
                     WHERE   prefixMode > ?";
-            $statement = $this->database->prepareStatement($sql);
+            $statement = $this->database->prepareUnmanaged($sql);
             $statement->execute([0]);
         } else {
             $sql = "SELECT  COUNT(*) AS count
                     FROM    wbb" . $this->dbNo . "_" . $this->instanceNo . "_board
                     WHERE   prefixes <> ?";
-            $statement = $this->database->prepareStatement($sql);
+            $statement = $this->database->prepareUnmanaged($sql);
             $statement->execute(['']);
         }
 
@@ -1793,7 +1793,7 @@ final class WBB3xExporter extends AbstractExporter
         $sql = "SELECT  optionValue
                 FROM    wcf" . $this->dbNo . "_option
                 WHERE   optionName = ?";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute(['thread_default_prefixes']);
         $row = $statement->fetchArray();
         if ($row !== false) {
@@ -1805,13 +1805,13 @@ final class WBB3xExporter extends AbstractExporter
             $sql = "SELECT  boardID, prefixes, prefixMode
                     FROM    wbb" . $this->dbNo . "_" . $this->instanceNo . "_board
                     WHERE   prefixMode > ?";
-            $statement = $this->database->prepareStatement($sql);
+            $statement = $this->database->prepareUnmanaged($sql);
             $statement->execute([0]);
         } else {
             $sql = "SELECT  boardID, prefixes, 2 AS prefixMode
                     FROM    wbb" . $this->dbNo . "_" . $this->instanceNo . "_board
                     WHERE   prefixes <> ?";
-            $statement = $this->database->prepareStatement($sql);
+            $statement = $this->database->prepareUnmanaged($sql);
             $statement->execute(['']);
         }
 
@@ -1909,7 +1909,7 @@ final class WBB3xExporter extends AbstractExporter
                     SELECT  COUNT(*)
                     FROM    wbb" . $this->dbNo . "_" . $this->instanceNo . "_board_to_user
                 ) AS count";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -1942,7 +1942,7 @@ final class WBB3xExporter extends AbstractExporter
                     FROM    wbb" . $this->dbNo . "_" . $this->instanceNo . "_board_to_user
                 )
                 ORDER BY    boardID, userID, groupID, type";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             /** @noinspection PhpVariableVariableInspection */
@@ -1962,7 +1962,7 @@ final class WBB3xExporter extends AbstractExporter
             $sql = "SELECT  *
                     FROM    wbb" . $this->dbNo . "_" . $this->instanceNo . "_board_moderator
                     " . $conditionBuilder;
-            $statement = $this->database->prepareStatement($sql);
+            $statement = $this->database->prepareUnmanaged($sql);
             $statement->execute($conditionBuilder->getParameters());
             while ($row = $statement->fetchArray()) {
                 $data = [
@@ -2005,7 +2005,7 @@ final class WBB3xExporter extends AbstractExporter
             $sql = "SELECT  *
                     FROM    wbb" . $this->dbNo . "_" . $this->instanceNo . "_board_to_group
                     " . $conditionBuilder;
-            $statement = $this->database->prepareStatement($sql);
+            $statement = $this->database->prepareUnmanaged($sql);
             $statement->execute($conditionBuilder->getParameters());
             while ($row = $statement->fetchArray()) {
                 $data = [
@@ -2044,7 +2044,7 @@ final class WBB3xExporter extends AbstractExporter
             $sql = "SELECT  *
                     FROM    wbb" . $this->dbNo . "_" . $this->instanceNo . "_board_to_user
                     " . $conditionBuilder;
-            $statement = $this->database->prepareStatement($sql);
+            $statement = $this->database->prepareUnmanaged($sql);
             $statement->execute($conditionBuilder->getParameters());
             while ($row = $statement->fetchArray()) {
                 $data = [
@@ -2081,7 +2081,7 @@ final class WBB3xExporter extends AbstractExporter
     {
         $sql = "SELECT  COUNT(*) AS count
                 FROM    wcf" . $this->dbNo . "_smiley";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -2099,7 +2099,7 @@ final class WBB3xExporter extends AbstractExporter
         $sql = "SELECT      *
                 FROM        wcf" . $this->dbNo . "_smiley
                 ORDER BY    smileyID";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $fileLocation = $this->fileSystemPath . $row['smileyPath'];
@@ -2128,7 +2128,7 @@ final class WBB3xExporter extends AbstractExporter
     {
         $sql = "SELECT  COUNT(*) AS count
                 FROM    wcf" . $this->dbNo . "_smiley_category";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -2146,7 +2146,7 @@ final class WBB3xExporter extends AbstractExporter
         $sql = "SELECT      *
                 FROM        wcf" . $this->dbNo . "_smiley_category
                 ORDER BY    smileyCategoryID";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -2169,7 +2169,7 @@ final class WBB3xExporter extends AbstractExporter
         $sql = "SELECT  COUNT(*) AS count
                 FROM    wcf" . $this->dbNo . "_user_blog_category
                 WHERE   userID = ?";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([0]);
         $row = $statement->fetchArray();
 
@@ -2188,7 +2188,7 @@ final class WBB3xExporter extends AbstractExporter
                 FROM        wcf" . $this->dbNo . "_user_blog_category
                 WHERE       userID = ?
                 ORDER BY    categoryID";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute([0]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -2225,7 +2225,7 @@ final class WBB3xExporter extends AbstractExporter
                 FROM        wcf" . $this->dbNo . "_user_blog
                 WHERE       entryID BETWEEN ? AND ?
                 ORDER BY    entryID";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $entryIDs[] = $row['entryID'];
@@ -2248,7 +2248,7 @@ final class WBB3xExporter extends AbstractExporter
                 LEFT JOIN   wcf" . $this->dbNo . "_user_blog_category category
                 ON          category.categoryID = entry_to_category.categoryID
                 " . $conditionBuilder;
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute($conditionBuilder->getParameters());
         while ($row = $statement->fetchArray()) {
             if (!isset($categories[$row['entryID']])) {
@@ -2266,7 +2266,7 @@ final class WBB3xExporter extends AbstractExporter
                 LEFT JOIN   wcf" . $this->dbNo . "_language language
                 ON          language.languageID = user_blog.languageID
                 " . $conditionBuilder;
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute($conditionBuilder->getParameters());
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -2343,7 +2343,7 @@ final class WBB3xExporter extends AbstractExporter
                 FROM        wcf" . $this->dbNo . "_user_blog_comment
                 WHERE       commentID BETWEEN ? AND ?
                 ORDER BY    commentID";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -2370,7 +2370,7 @@ final class WBB3xExporter extends AbstractExporter
                 WHERE   objectName = ?
                     AND userID <> ?
                     AND rating NOT IN (?, ?)";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute(['com.woltlab.wcf.user.blog.entry', 0, 0, 3]);
         $row = $statement->fetchArray();
 
@@ -2393,7 +2393,7 @@ final class WBB3xExporter extends AbstractExporter
                         AND rating.userID <> ?
                         AND rating.rating NOT IN (?, ?)
                 ORDER BY    rating.objectID, rating.userID";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute([
             'com.woltlab.wcf.user.blog.entry',
             0,
@@ -2421,7 +2421,7 @@ final class WBB3xExporter extends AbstractExporter
     {
         $sql = "SELECT  COUNT(*) AS count
                 FROM    wcf" . $this->dbNo . "_user_gallery_category";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -2439,7 +2439,7 @@ final class WBB3xExporter extends AbstractExporter
         $sql = "SELECT      *
                 FROM        wcf" . $this->dbNo . "_user_gallery_category
                 ORDER BY    categoryID";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -2482,7 +2482,7 @@ final class WBB3xExporter extends AbstractExporter
                 ON          user_table.userID = gallery_album.ownerID
                 WHERE       gallery_album.albumID BETWEEN ? AND ?
                 ORDER BY    albumID";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -2524,7 +2524,7 @@ final class WBB3xExporter extends AbstractExporter
                 FROM        wcf" . $this->dbNo . "_user_gallery
                 WHERE       photoID BETWEEN ? AND ?
                 ORDER BY    photoID";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $imageIDs[] = $row['photoID'];
@@ -2547,7 +2547,7 @@ final class WBB3xExporter extends AbstractExporter
                 LEFT JOIN   wcf" . $this->dbNo . "_user_gallery_category category
                 ON          category.categoryID = photo_to_category.categoryID
                 " . $conditionBuilder;
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute($conditionBuilder->getParameters());
         while ($row = $statement->fetchArray()) {
             if (!isset($categories[$row['objectID']])) {
@@ -2563,7 +2563,7 @@ final class WBB3xExporter extends AbstractExporter
         $sql = "SELECT  user_gallery.*
                 FROM    wcf" . $this->dbNo . "_user_gallery user_gallery
                 " . $conditionBuilder;
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute($conditionBuilder->getParameters());
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -2626,7 +2626,7 @@ final class WBB3xExporter extends AbstractExporter
                 FROM        wcf" . $this->dbNo . "_user_gallery_comment
                 WHERE       commentID BETWEEN ? AND ?
                 ORDER BY    commentID";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -2653,7 +2653,7 @@ final class WBB3xExporter extends AbstractExporter
                 WHERE   objectName = ?
                     AND userID <> ?
                     AND rating NOT IN (?, ?)";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute(['com.woltlab.wcf.user.gallery.photo', 0, 0, 3]);
         $row = $statement->fetchArray();
 
@@ -2676,7 +2676,7 @@ final class WBB3xExporter extends AbstractExporter
                         AND rating.userID <> ?
                         AND rating.rating NOT IN (?, ?)
                 ORDER BY    rating.objectID, rating.userID";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute([
             'com.woltlab.wcf.user.gallery.photo',
             0,
@@ -2709,7 +2709,7 @@ final class WBB3xExporter extends AbstractExporter
                             FROM    wcf" . $this->dbNo . "_calendar_to_group
                         )
                     AND className <> ?";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute(['BirthdayEvent']);
         $row = $statement->fetchArray();
 
@@ -2732,7 +2732,7 @@ final class WBB3xExporter extends AbstractExporter
                             )
                         AND className <> ?
                 ORDER BY    calendarID";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute(['BirthdayEvent']);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -2771,7 +2771,7 @@ final class WBB3xExporter extends AbstractExporter
                 ON          calendar_event_participation.eventID = calendar_event.eventID
                 WHERE       calendar_event.eventID BETWEEN ? AND ?
                 ORDER BY    calendar_event.eventID";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $oldEventDateData = @\unserialize($row['eventDate']);
@@ -2938,7 +2938,7 @@ final class WBB3xExporter extends AbstractExporter
                     ORDER BY    attachmentID DESC";
         }
 
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute(['event', 0]);
         while ($row = $statement->fetchArray()) {
             $fileLocation = $this->fileSystemPath . 'attachments/attachment-' . $row['attachmentID'];
@@ -2970,7 +2970,7 @@ final class WBB3xExporter extends AbstractExporter
     {
         $sql = "SELECT  COUNT(*) AS count
                 FROM    wcf" . $this->dbNo . "_calendar_event_date";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -2988,7 +2988,7 @@ final class WBB3xExporter extends AbstractExporter
         $sql = "SELECT      *
                 FROM        wcf" . $this->dbNo . "_calendar_event_date
                 ORDER BY    eventID, startTime";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -3018,7 +3018,7 @@ final class WBB3xExporter extends AbstractExporter
                             SELECT  messageID
                             FROM    wcf" . $this->dbNo . "_calendar_event
                         )";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -3037,7 +3037,7 @@ final class WBB3xExporter extends AbstractExporter
                 FROM        wcf" . $this->dbNo . "_calendar_event_date
                 WHERE       eventID = ?
                 ORDER BY    startTime";
-        $firstEventDateStatement = $this->database->prepareStatement($sql, 1);
+        $firstEventDateStatement = $this->database->prepareUnmanaged($sql, 1);
 
         $sql = "SELECT      event_message.*
                 FROM        wcf" . $this->dbNo . "_calendar_event_message event_message
@@ -3046,7 +3046,7 @@ final class WBB3xExporter extends AbstractExporter
                                 FROM    wcf" . $this->dbNo . "_calendar_event
                             )
                 ORDER BY    event_message.messageID";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             // get first event date
@@ -3074,7 +3074,7 @@ final class WBB3xExporter extends AbstractExporter
     {
         $sql = "SELECT  COUNT(*) AS count
                 FROM    wcf" . $this->dbNo . "_calendar_event_participation_to_user";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -3093,14 +3093,14 @@ final class WBB3xExporter extends AbstractExporter
                 FROM        wcf" . $this->dbNo . "_calendar_event_date
                 WHERE       eventID = ?
                 ORDER BY    startTime";
-        $firstEventDateStatement = $this->database->prepareStatement($sql, 1);
+        $firstEventDateStatement = $this->database->prepareUnmanaged($sql, 1);
 
         $sql = "SELECT      participation_to_user.*, participation.eventID
                 FROM        wcf" . $this->dbNo . "_calendar_event_participation_to_user participation_to_user
                 LEFT JOIN   wcf" . $this->dbNo . "_calendar_event_participation participation
                 ON          participation.participationID = participation_to_user.participationID
                 ORDER BY    participation_to_user.participationID, participation_to_user.userID";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             // get first event date
@@ -3150,7 +3150,7 @@ final class WBB3xExporter extends AbstractExporter
                         AND messageType = ?
                         AND messageID > ?";
         }
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$packageID, $type, 0]);
 
         return $statement->fetchSingleColumn();
@@ -3187,7 +3187,7 @@ final class WBB3xExporter extends AbstractExporter
                     ORDER BY    attachmentID";
         }
 
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute([$packageID, $type, 0]);
         while ($row = $statement->fetchArray()) {
             $fileLocation = $this->fileSystemPath . 'attachments/attachment-' . $row['attachmentID'];
@@ -3227,7 +3227,7 @@ final class WBB3xExporter extends AbstractExporter
                     WHERE   messageType = ?
                     LIMIT   1";
         }
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$type]);
 
         return $statement->fetchSingleColumn() ?: 0;
@@ -3242,9 +3242,9 @@ final class WBB3xExporter extends AbstractExporter
     {
         $optionsNames = [];
         $sql = "SELECT  optionName
-                FROM    wcf" . WCF_N . "_user_option
+                FROM    wcf1_user_option
                 WHERE   optionName NOT LIKE ?";
-        $statement = WCF::getDB()->prepareStatement($sql);
+        $statement = WCF::getDB()->prepare($sql);
         $statement->execute(['option%']);
         while ($row = $statement->fetchArray()) {
             $optionsNames[] = $row['optionName'];
@@ -3265,7 +3265,7 @@ final class WBB3xExporter extends AbstractExporter
         $sql = "SELECT  packageVersion
                 FROM    wcf" . $this->dbNo . "_package
                 WHERE   package = ?";
-        $statement = $this->database->prepareStatement($sql, 1);
+        $statement = $this->database->prepareUnmanaged($sql, 1);
         $statement->execute([$name]);
         $row = $statement->fetchArray();
         if ($row !== false) {
@@ -3294,7 +3294,7 @@ final class WBB3xExporter extends AbstractExporter
                     FROM        wcf" . $this->dbNo . "_tag_taggable
                     WHERE       name = ?
                     ORDER BY    packageID";
-            $statement = $this->database->prepareStatement($sql, 1);
+            $statement = $this->database->prepareUnmanaged($sql, 1);
             $statement->execute([$name]);
             $taggableID = $statement->fetchColumn();
             if ($taggableID) {
@@ -3307,7 +3307,7 @@ final class WBB3xExporter extends AbstractExporter
                         INNER JOIN  wcf" . $this->dbNo . "_tag tag
                         ON          tag.tagID = tag_to_object.tagID
                         " . $conditionBuilder;
-                $statement = $this->database->prepareStatement($sql);
+                $statement = $this->database->prepareUnmanaged($sql);
                 $statement->execute($conditionBuilder->getParameters());
                 while ($row = $statement->fetchArray()) {
                     if (!isset($tags[$row['objectID']])) {

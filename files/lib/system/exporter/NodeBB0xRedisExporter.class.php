@@ -167,10 +167,10 @@ final class NodeBB0xRedisExporter extends AbstractExporter
     public function exportUsers($offset, $limit)
     {
         // prepare password update
-        $sql = "UPDATE  wcf" . WCF_N . "_user
+        $sql = "UPDATE  wcf1_user
                 SET     password = ?
                 WHERE   userID = ?";
-        $passwordUpdateStatement = WCF::getDB()->prepareStatement($sql);
+        $passwordUpdateStatement = WCF::getDB()->prepare($sql);
 
         $userIDs = $this->database->zrange('users:joindate', $offset, $offset + $limit);
         if (!$userIDs) {

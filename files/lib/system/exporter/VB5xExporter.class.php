@@ -294,7 +294,7 @@ final class VB5xExporter extends AbstractExporter
                 FROM        " . $this->databasePrefix . "usergroup
                 WHERE       usergroupid BETWEEN ? AND ?
                 ORDER BY    usergroupid";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             switch ($row['systemgroupid']) {
@@ -342,7 +342,7 @@ final class VB5xExporter extends AbstractExporter
         $userOptions = [];
         $sql = "SELECT  *
                 FROM    " . $this->databasePrefix . "profilefield";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             if ($row['type'] == 'select_multiple' || $row['type'] == 'checkbox') {
@@ -353,10 +353,10 @@ final class VB5xExporter extends AbstractExporter
         }
 
         // prepare password update
-        $sql = "UPDATE  wcf" . WCF_N . "_user
+        $sql = "UPDATE  wcf1_user
                 SET     password = ?
                 WHERE   userID = ?";
-        $passwordUpdateStatement = WCF::getDB()->prepareStatement($sql);
+        $passwordUpdateStatement = WCF::getDB()->prepare($sql);
 
         // get users
         $sql = "SELECT      userfield.*, user_table.*, textfield.*,
@@ -373,7 +373,7 @@ final class VB5xExporter extends AbstractExporter
                 ON          userfield.userid = user_table.userid
                 WHERE       user_table.userid BETWEEN ? AND ?
                 ORDER BY    user_table.userid";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -477,7 +477,7 @@ final class VB5xExporter extends AbstractExporter
                 ON          user.userid = customavatar.userid
                 WHERE       customavatar.userid BETWEEN ? AND ?
                 ORDER BY    customavatar.userid";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $file = null;
@@ -528,7 +528,7 @@ final class VB5xExporter extends AbstractExporter
     {
         $sql = "SELECT  COUNT(*) AS count
                 FROM    " . $this->databasePrefix . "profilefield";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -545,7 +545,7 @@ final class VB5xExporter extends AbstractExporter
     {
         $sql = "SELECT  *
                 FROM    " . $this->databasePrefix . "profilefield";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $editable = 0;
@@ -638,7 +638,7 @@ final class VB5xExporter extends AbstractExporter
                     FROM    " . $this->databasePrefix . "phrase
                     WHERE   languageid = ?
                         AND varname = ?";
-            $statement2 = $this->database->prepareStatement($sql);
+            $statement2 = $this->database->prepareUnmanaged($sql);
             $statement2->execute([0, 'field' . $row['profilefieldid'] . '_title']);
             $row2 = $statement2->fetchArray();
             if ($row2 !== false) {
@@ -682,7 +682,7 @@ final class VB5xExporter extends AbstractExporter
                                 WHERE   class = ?
                             ) x
                 ON          x.contenttypeid = node.contenttypeid";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute(['Channel']);
         $row = $statement->fetchArray();
 
@@ -711,7 +711,7 @@ final class VB5xExporter extends AbstractExporter
                 INNER JOIN  " . $this->databasePrefix . "channel channel
                 ON          channel.nodeid = node.nodeid
                 ORDER BY    parentid, displayorder";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute(['Channel']);
 
         $boardRoot = 0;
@@ -809,7 +809,7 @@ final class VB5xExporter extends AbstractExporter
                 ON          y.contenttypeid = child.contenttypeid
                 WHERE       child.nodeid BETWEEN ? AND ?
                 ORDER BY    child.nodeid ASC";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute(['Channel', 'Text', 'Poll', $offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -892,7 +892,7 @@ final class VB5xExporter extends AbstractExporter
                 ON          x.contenttypeid = child.contenttypeid
                 WHERE       child.nodeid BETWEEN ? AND ?
                 ORDER BY    child.nodeid ASC";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute(['Text', 'Poll', $offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -972,7 +972,7 @@ final class VB5xExporter extends AbstractExporter
                 ON          z.contenttypeid = child.contenttypeid
                 WHERE       child.nodeid BETWEEN ? AND ?
                 ORDER BY    child.nodeid ASC";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
 
         // Text in a Text or Poll should be a post
         // Text in a Channel should be a thread
@@ -1061,7 +1061,7 @@ final class VB5xExporter extends AbstractExporter
                 ON          poll.nodeid = node.nodeid
                 WHERE       poll.nodeid BETWEEN ? AND ?
                 ORDER BY    poll.nodeid";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1104,7 +1104,7 @@ final class VB5xExporter extends AbstractExporter
                 ON          poll.nodeid = polloption.nodeid
                 WHERE       polloption.polloptionid BETWEEN ? AND ?
                 ORDER BY    polloption.polloptionid";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1139,7 +1139,7 @@ final class VB5xExporter extends AbstractExporter
                 FROM        " . $this->databasePrefix . "pollvote
                 WHERE       pollvoteid BETWEEN ? AND ?
                 ORDER BY    pollvoteid";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1167,7 +1167,7 @@ final class VB5xExporter extends AbstractExporter
                                 WHERE   class = ?
                             ) x
                 ON          x.contenttypeid = node.contenttypeid";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute(['Channel']);
         $row = $statement->fetchArray();
 
@@ -1193,7 +1193,7 @@ final class VB5xExporter extends AbstractExporter
                 INNER JOIN  " . $this->databasePrefix . "channel channel
                 ON          channel.nodeid = node.nodeid
                 ORDER BY    nodeid";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute(['Channel']);
 
         $blogRoot = 0;
@@ -1278,7 +1278,7 @@ final class VB5xExporter extends AbstractExporter
                 ON          y.contenttypeid = child.contenttypeid
                 WHERE       child.nodeid BETWEEN ? AND ?
                 ORDER BY    child.nodeid ASC";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute(['Channel', 'Text', $offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             // The importer will create blogs on demand. As we cannot specifically filter out blogs within MySQL
@@ -1357,7 +1357,7 @@ final class VB5xExporter extends AbstractExporter
                 ON          z.contenttypeid = child.contenttypeid
                 WHERE       child.nodeid BETWEEN ? AND ?
                 ORDER BY    child.nodeid ASC";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
 
         $statement->execute(['Channel', 'Text', 'Attach', $offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -1442,7 +1442,7 @@ final class VB5xExporter extends AbstractExporter
                 ON          y.contenttypeid = child.contenttypeid
                 WHERE       child.nodeid BETWEEN ? AND ?
                 ORDER BY    child.nodeid ASC";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute(['Text', 'Text', $offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1485,7 +1485,7 @@ final class VB5xExporter extends AbstractExporter
                 ON          x.contenttypeid = node.contenttypeid
                 WHERE       node.nodeid BETWEEN ? AND ?
                 ORDER BY    node.nodeid ASC";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute(['Gallery', $offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1541,7 +1541,7 @@ final class VB5xExporter extends AbstractExporter
                 ON          y.contenttypeid = child.contenttypeid
                 WHERE       child.nodeid BETWEEN ? AND ?
                 ORDER BY    child.nodeid ASC";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute(['Gallery', 'Photo', $offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $file = null;
@@ -1590,7 +1590,7 @@ final class VB5xExporter extends AbstractExporter
     {
         $sql = "SELECT  COUNT(*) AS count
                 FROM    " . $this->databasePrefix . "smilie";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -1608,7 +1608,7 @@ final class VB5xExporter extends AbstractExporter
         $sql = "SELECT      *
                 FROM        " . $this->databasePrefix . "smilie
                 ORDER BY    smilieid";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $fileLocation = $this->fileSystemPath . $row['smiliepath'];
@@ -1638,7 +1638,7 @@ final class VB5xExporter extends AbstractExporter
         $sql = "SELECT  COUNT(*) AS count
                 FROM    " . $this->databasePrefix . "imagecategory
                 WHERE   imagetype = ?";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([3]);
         $row = $statement->fetchArray();
 
@@ -1657,7 +1657,7 @@ final class VB5xExporter extends AbstractExporter
                 FROM        " . $this->databasePrefix . "imagecategory
                 WHERE       imagetype = ?
                 ORDER BY    imagecategoryid";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute([3]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1686,7 +1686,7 @@ final class VB5xExporter extends AbstractExporter
             $sql = "SELECT  value
                     FROM    " . $this->databasePrefix . "setting
                     WHERE   varname = ?";
-            $statement = $this->database->prepareStatement($sql);
+            $statement = $this->database->prepareUnmanaged($sql);
             $statement->execute([$optionName]);
             $row = $statement->fetchArray();
 

@@ -113,7 +113,7 @@ final class MyBB16xExporter extends AbstractExporter
         $sql = "SELECT  cache
                 FROM    " . $this->databasePrefix . "datacache
                 WHERE   title = ?";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute(['version']);
         $row = $statement->fetchArray();
         $data = \unserialize($row['cache']);
@@ -244,7 +244,7 @@ final class MyBB16xExporter extends AbstractExporter
                 FROM        " . $this->databasePrefix . "usergroups
                 WHERE       gid BETWEEN ? AND ?
                 ORDER BY    gid";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             switch ($row['gid']) {
@@ -293,7 +293,7 @@ final class MyBB16xExporter extends AbstractExporter
         $profileFields = $knownProfileFields = [];
         $sql = "SELECT  *
                 FROM    " . $this->databasePrefix . "profilefields";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             if (\in_array($row['name'], self::$knownProfileFields)) {
@@ -304,10 +304,10 @@ final class MyBB16xExporter extends AbstractExporter
         }
 
         // prepare password update
-        $sql = "UPDATE  wcf" . WCF_N . "_user
+        $sql = "UPDATE  wcf1_user
                 SET     password = ?
                 WHERE   userID = ?";
-        $passwordUpdateStatement = WCF::getDB()->prepareStatement($sql);
+        $passwordUpdateStatement = WCF::getDB()->prepare($sql);
 
         // get users
         $sql = "SELECT      userfields_table.*,
@@ -320,7 +320,7 @@ final class MyBB16xExporter extends AbstractExporter
                 ON          user_table.uid = ban_table.uid
                 WHERE       user_table.uid BETWEEN ? AND ?
                 ORDER BY    user_table.uid";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -410,7 +410,7 @@ final class MyBB16xExporter extends AbstractExporter
         $sql = "SELECT  COUNT(*) AS count
                 FROM    " . $this->databasePrefix . "profilefields
                 " . $conditionBuilder;
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute($conditionBuilder->getParameters());
         $row = $statement->fetchArray();
 
@@ -432,7 +432,7 @@ final class MyBB16xExporter extends AbstractExporter
                 FROM        " . $this->databasePrefix . "profilefields
                 " . $conditionBuilder . "
                 ORDER BY    fid";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute($conditionBuilder->getParameters());
         while ($row = $statement->fetchArray()) {
             $selectOptions = '';
@@ -496,7 +496,7 @@ final class MyBB16xExporter extends AbstractExporter
                             FROM    " . $this->databasePrefix . "usergroups
                             WHERE   usertitle <> ? AND gid <> ?
                         ) AS count";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute(['', 1]);
         $row = $statement->fetchArray();
 
@@ -523,7 +523,7 @@ final class MyBB16xExporter extends AbstractExporter
                             AND gid <> ?
                 )
                 ORDER BY    utid";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute(['', 1]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -549,7 +549,7 @@ final class MyBB16xExporter extends AbstractExporter
         $sql = "SELECT  COUNT(*) AS count
                 FROM    " . $this->databasePrefix . "users
                 WHERE   buddylist <> ?";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute(['']);
         $row = $statement->fetchArray();
 
@@ -568,7 +568,7 @@ final class MyBB16xExporter extends AbstractExporter
                 FROM        " . $this->databasePrefix . "users
                 WHERE       buddylist <> ?
                 ORDER BY    uid";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute(['']);
         while ($row = $statement->fetchArray()) {
             $buddylist = \array_unique(ArrayUtil::toIntegerArray(\explode(',', $row['buddylist'])));
@@ -595,7 +595,7 @@ final class MyBB16xExporter extends AbstractExporter
                 FROM    " . $this->databasePrefix . "users
                 WHERE   avatar <> ?
                     AND avatartype IN (?, ?)";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute(['', 'upload', 'gallery']);
         $row = $statement->fetchArray();
 
@@ -615,7 +615,7 @@ final class MyBB16xExporter extends AbstractExporter
                 WHERE       avatar <> ?
                         AND avatartype IN (?, ?)
                 ORDER BY    uid";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute(['', 'upload', 'gallery']);
 
         while ($row = $statement->fetchArray()) {
@@ -657,7 +657,7 @@ final class MyBB16xExporter extends AbstractExporter
         $sql = "SELECT      uid, pmfolders
                 FROM        " . $this->databasePrefix . "users
                 ORDER BY    uid";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             if (empty($row['pmfolders'])) {
@@ -712,7 +712,7 @@ final class MyBB16xExporter extends AbstractExporter
                                 GROUP BY    fromid, dateline
                             )
                 ORDER BY    pmid";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $row['isDraft'] = $row['folder'] == 3 ? 1 : 0;
@@ -768,7 +768,7 @@ final class MyBB16xExporter extends AbstractExporter
                 ON          user_table.uid = message_table.uid
                 WHERE       pmid BETWEEN ? AND ?
                 ORDER BY    pmid";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $recipients = \unserialize($row['recipients']);
@@ -801,7 +801,7 @@ final class MyBB16xExporter extends AbstractExporter
     {
         $sql = "SELECT  COUNT(*) AS count
                 FROM    " . $this->databasePrefix . "forums";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -819,7 +819,7 @@ final class MyBB16xExporter extends AbstractExporter
         $sql = "SELECT      *
                 FROM        " . $this->databasePrefix . "forums
                 ORDER BY    pid, disporder, fid";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $this->boardCache[$row['pid']][] = $row;
@@ -890,7 +890,7 @@ final class MyBB16xExporter extends AbstractExporter
                 FROM        " . $this->databasePrefix . "threads
                 WHERE       tid BETWEEN ? AND ?
                 ORDER BY    tid";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -948,7 +948,7 @@ final class MyBB16xExporter extends AbstractExporter
                 ON          user_table.uid = post_table.edituid
                 WHERE       pid BETWEEN ? AND ?
                 ORDER BY    pid";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -995,7 +995,7 @@ final class MyBB16xExporter extends AbstractExporter
             $sql = "SELECT  value
                     FROM    " . $this->databasePrefix . "settings
                     WHERE   name = ?";
-            $statement = $this->database->prepareStatement($sql);
+            $statement = $this->database->prepareUnmanaged($sql);
             $statement->execute(['uploadspath']);
             $row = $statement->fetchArray();
             $uploadsPath = $row['value'];
@@ -1007,7 +1007,7 @@ final class MyBB16xExporter extends AbstractExporter
                 FROM        " . $this->databasePrefix . "attachments
                 WHERE       aid BETWEEN ? AND ?
                 ORDER BY    aid";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $fileLocation = FileUtil::addTrailingSlash($uploadsPath) . $row['attachname'];
@@ -1050,7 +1050,7 @@ final class MyBB16xExporter extends AbstractExporter
                 FROM        " . $this->databasePrefix . "threadsubscriptions
                 WHERE       sid BETWEEN ? AND ?
                 ORDER BY    sid";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1087,7 +1087,7 @@ final class MyBB16xExporter extends AbstractExporter
                 ON          poll_table.tid = thread_table.tid
                 WHERE       pid BETWEEN ? AND ?
                 ORDER BY    pid";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1126,7 +1126,7 @@ final class MyBB16xExporter extends AbstractExporter
         $sql = "SELECT      pid, options, votes
                 FROM        " . $this->databasePrefix . "polls
                 ORDER BY    pid";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $options = \explode('||~|~||', $row['options']);
@@ -1159,7 +1159,7 @@ final class MyBB16xExporter extends AbstractExporter
     {
         $sql = "SELECT  COUNT(*) AS count
                 FROM    " . $this->databasePrefix . "pollvotes";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -1177,7 +1177,7 @@ final class MyBB16xExporter extends AbstractExporter
         $sql = "SELECT      *
                 FROM        " . $this->databasePrefix . "pollvotes
                 ORDER BY    vid";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1202,7 +1202,7 @@ final class MyBB16xExporter extends AbstractExporter
                 WHERE   pid <> ?
                     AND adduid <> ?
                     AND reputation <> ?";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([0, 0, 0]);
         $row = $statement->fetchArray();
 
@@ -1223,7 +1223,7 @@ final class MyBB16xExporter extends AbstractExporter
                         AND adduid <> ?
                         AND reputation <> ?
                 ORDER BY    rid";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute([0, 0, 0]);
         while ($row = $statement->fetchArray()) {
             $data = [
@@ -1247,7 +1247,7 @@ final class MyBB16xExporter extends AbstractExporter
     {
         $sql = "SELECT  COUNT(*) AS count
                 FROM    " . $this->databasePrefix . "threadprefixes";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -1267,7 +1267,7 @@ final class MyBB16xExporter extends AbstractExporter
 
         $sql = "SELECT  *
                 FROM    " . $this->databasePrefix . "threadprefixes";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $forums = \array_unique(ArrayUtil::toIntegerArray(\explode(',', $row['forums'])));
@@ -1347,7 +1347,7 @@ final class MyBB16xExporter extends AbstractExporter
                             SELECT  COUNT(*)
                             FROM    " . $this->databasePrefix . "forumpermissions
                         ) AS count";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -1374,7 +1374,7 @@ final class MyBB16xExporter extends AbstractExporter
                     FROM    " . $this->databasePrefix . "forumpermissions
                 )
                 ORDER BY    type, id";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             /** @noinspection PhpVariableVariableInspection */
@@ -1421,7 +1421,7 @@ final class MyBB16xExporter extends AbstractExporter
             $sql = "SELECT  *
                     FROM    " . $this->databasePrefix . "moderators
                     " . $conditionBuilder;
-            $statement = $this->database->prepareStatement($sql);
+            $statement = $this->database->prepareUnmanaged($sql);
             $statement->execute($conditionBuilder->getParameters());
             while ($row = $statement->fetchArray()) {
                 foreach ($modPermissionMap as $mybbPermission => $permissions) {
@@ -1470,7 +1470,7 @@ final class MyBB16xExporter extends AbstractExporter
             $sql = "SELECT  *
                     FROM    " . $this->databasePrefix . "forumpermissions
                     " . $conditionBuilder;
-            $statement = $this->database->prepareStatement($sql);
+            $statement = $this->database->prepareUnmanaged($sql);
             $statement->execute($conditionBuilder->getParameters());
 
             while ($row = $statement->fetchArray()) {
@@ -1496,7 +1496,7 @@ final class MyBB16xExporter extends AbstractExporter
     {
         $sql = "SELECT  COUNT(*) AS count
                 FROM    " . $this->databasePrefix . "smilies";
-        $statement = $this->database->prepareStatement($sql);
+        $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
 
@@ -1514,7 +1514,7 @@ final class MyBB16xExporter extends AbstractExporter
         $sql = "SELECT      *
                 FROM        " . $this->databasePrefix . "smilies
                 ORDER BY    sid";
-        $statement = $this->database->prepareStatement($sql, $limit, $offset);
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute([]);
         while ($row = $statement->fetchArray()) {
             $fileLocation = $this->fileSystemPath . $row['image'];
