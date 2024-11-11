@@ -575,26 +575,12 @@ final class WBB4xExporter extends AbstractExporter
      */
     public function exportUsers($offset, $limit)
     {
-        // cache existing user options
-        $existingUserOptions = [];
-        $sql = "SELECT  optionName, optionID
-                FROM    wcf1_user_option
-                WHERE   optionName NOT LIKE 'option%'";
-        $statement = WCF::getDB()->prepare($sql);
-        $statement->execute();
-        while ($row = $statement->fetchArray()) {
-            $existingUserOptions[$row['optionName']] = true;
+        if (\version_compare($this->getPackageVersion('com.woltlab.wcf'), '6.2.0 Alpha 1', '>=')) {
+            $this->exportUsers62($offset, $limit);
+            return;
         }
 
-        // cache user options
-        $userOptions = [];
-        $sql = "SELECT  optionName, optionID
-                FROM    wcf" . $this->dbNo . "_user_option";
-        $statement = $this->database->prepareUnmanaged($sql);
-        $statement->execute();
-        while ($row = $statement->fetchArray()) {
-            $userOptions[$row['optionID']] = (isset($existingUserOptions[$row['optionName']]) ? $row['optionName'] : $row['optionID']);
-        }
+        $userOptions = $this->fetchUserOptions();
 
         // prepare password update
         $sql = "UPDATE  wcf1_user
@@ -626,65 +612,151 @@ final class WBB4xExporter extends AbstractExporter
         $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            $data = [
-                'username' => $row['username'],
-                'password' => null,
-                'email' => $row['email'],
-                'registrationDate' => $row['registrationDate'],
-                'banned' => $row['banned'],
-                'banReason' => $row['banReason'],
-                'activationCode' => $row['activationCode'],
-                'oldUsername' => $row['oldUsername'],
-                'registrationIpAddress' => $row['registrationIpAddress'],
-                'disableAvatar' => $row['disableAvatar'],
-                'disableAvatarReason' => $row['disableAvatarReason'],
-                'signature' => $row['signature'],
-                'signatureEnableHtml' => $row['signatureEnableHtml'],
-                'disableSignature' => $row['disableSignature'],
-                'disableSignatureReason' => $row['disableSignatureReason'],
-                'profileHits' => $row['profileHits'],
-                'userTitle' => $row['userTitle'],
-                'lastActivityTime' => $row['lastActivityTime'],
-                'authData' => $row['authData'],
-            ];
-            $additionalData = [
-                'groupIDs' => $row['groupIDs'] ? \explode(',', $row['groupIDs']) : [],
-                'languages' => $row['languageCodes'] ? \explode(',', $row['languageCodes']) : [],
-                'options' => [],
-            ];
-
-            // handle user options
-            foreach ($userOptions as $optionID => $optionName) {
-                if (isset($row['userOption' . $optionID])) {
-                    $additionalData['options'][$optionName] = $row['userOption' . $optionID];
-                }
-            }
-
-            if (!empty($row['avatarID'])) {
-                $additionalData['avatarLocation'] = \sprintf(
-                    $this->fileSystemPath . 'images/avatars/%s/%d-%s.%s',
-                    \substr($row['fileHash'], 0, 2),
-                    $row['avatarID'],
-                    $row['fileHash'],
-                    $row['avatarExtension']
-                );
-                $additionalData['avatarFilename'] = $row['avatarName'];
-            }
-
-            // import user
-            $newUserID = ImportHandler::getInstance()
-                ->getImporter('com.woltlab.wcf.user')
-                ->import(
-                    $row['userID'],
-                    $data,
-                    $additionalData
-                );
+            $newUserID = $this->exportUsersHelper($row, $userOptions);
 
             // update password hash
             if ($newUserID) {
                 $passwordUpdateStatement->execute([$row['password'], $newUserID]);
             }
         }
+    }
+
+    private function exportUsers62(int $offset, int $limit): void
+    {
+        $sql = "SELECT      avatarFileID
+                FROM        wcf" . $this->dbNo . "_user
+                WHERE       user_table.userID BETWEEN ? AND ?
+                        AND avatarFileID IS NOT NULL
+                ORDER BY    user_table.userID";
+        $statement = $this->database->prepareUnmanaged($sql);
+        $statement->execute([$offset + 1, $offset + $limit]);
+        $avatarFiles = $this->getFileLocations($statement->fetchSingleColumn());
+
+        $userOptions = $this->fetchUserOptions();
+
+        // prepare password update
+        $sql = "UPDATE  wcf1_user
+                SET     password = ?
+                WHERE   userID = ?";
+        $passwordUpdateStatement = WCF::getDB()->prepare($sql);
+
+        // get users
+        $sql = "SELECT      user_option_value.*, user_table.*,
+                            (
+                                SELECT  GROUP_CONCAT(groupID)
+                                FROM    wcf" . $this->dbNo . "_user_to_group
+                                WHERE   userID = user_table.userID
+                            ) AS groupIDs,
+                            (
+                                SELECT      GROUP_CONCAT(language.languageCode)
+                                FROM        wcf" . $this->dbNo . "_user_to_language user_to_language
+                                LEFT JOIN   wcf" . $this->dbNo . "_language language
+                                ON          language.languageID = user_to_language.languageID
+                                WHERE   user_to_language.userID = user_table.userID
+                            ) AS languageCodes
+                FROM        wcf" . $this->dbNo . "_user user_table
+                LEFT JOIN   wcf" . $this->dbNo . "_user_option_value user_option_value
+                ON          user_option_value.userID = user_table.userID
+                WHERE       user_table.userID BETWEEN ? AND ?
+                ORDER BY    user_table.userID";
+        $statement = $this->database->prepareUnmanaged($sql);
+        $statement->execute([$offset + 1, $offset + $limit]);
+        while ($row = $statement->fetchArray()) {
+            $newUserID = $this->exportUsersHelper($row, $userOptions, $avatarFiles);
+
+            // update password hash
+            if ($newUserID) {
+                $passwordUpdateStatement->execute([$row['password'], $newUserID]);
+            }
+        }
+    }
+
+    private function fetchUserOptions(): array
+    {
+        // cache existing user options
+        $existingUserOptions = [];
+        $sql = "SELECT  optionName, optionID
+                FROM    wcf1_user_option
+                WHERE   optionName NOT LIKE 'option%'";
+        $statement = WCF::getDB()->prepare($sql);
+        $statement->execute();
+        while ($row = $statement->fetchArray()) {
+            $existingUserOptions[$row['optionName']] = true;
+        }
+
+        // cache user options
+        $userOptions = [];
+        $sql = "SELECT  optionName, optionID
+                FROM    wcf" . $this->dbNo . "_user_option";
+        $statement = $this->database->prepareUnmanaged($sql);
+        $statement->execute();
+        while ($row = $statement->fetchArray()) {
+            $userOptions[$row['optionID']] = (isset($existingUserOptions[$row['optionName']]) ? $row['optionName'] : $row['optionID']);
+        }
+
+        return $userOptions;
+    }
+
+    private function exportUsersHelper(array $row, array $userOptions, array $avatarFiles = [])
+    {
+        $data = [
+            'username' => $row['username'],
+            'password' => null,
+            'email' => $row['email'],
+            'registrationDate' => $row['registrationDate'],
+            'banned' => $row['banned'],
+            'banReason' => $row['banReason'],
+            'activationCode' => $row['activationCode'],
+            'oldUsername' => $row['oldUsername'],
+            'registrationIpAddress' => $row['registrationIpAddress'],
+            'disableAvatar' => $row['disableAvatar'],
+            'disableAvatarReason' => $row['disableAvatarReason'],
+            'signature' => $row['signature'],
+            'signatureEnableHtml' => $row['signatureEnableHtml'],
+            'disableSignature' => $row['disableSignature'],
+            'disableSignatureReason' => $row['disableSignatureReason'],
+            'profileHits' => $row['profileHits'],
+            'userTitle' => $row['userTitle'],
+            'lastActivityTime' => $row['lastActivityTime'],
+            'authData' => $row['authData'],
+        ];
+        $additionalData = [
+            'groupIDs' => $row['groupIDs'] ? \explode(',', $row['groupIDs']) : [],
+            'languages' => $row['languageCodes'] ? \explode(',', $row['languageCodes']) : [],
+            'options' => [],
+        ];
+
+        // handle user options
+        foreach ($userOptions as $optionID => $optionName) {
+            if (isset($row['userOption' . $optionID])) {
+                $additionalData['options'][$optionName] = $row['userOption' . $optionID];
+            }
+        }
+
+        if (isset($avatarFiles[$row['avatarFileID']])) {
+            // Since WSC 6.2
+            ['location' => $location, 'filename' => $filename] = $avatarFiles[$row['avatarFileID']];
+            $additionalData['avatarLocation'] = $location;
+            $additionalData['avatarFilename'] = $filename;
+        } elseif (!empty($row['avatarID'])) {
+            $additionalData['avatarLocation'] = \sprintf(
+                $this->fileSystemPath . 'images/avatars/%s/%d-%s.%s',
+                \substr($row['fileHash'], 0, 2),
+                $row['avatarID'],
+                $row['fileHash'],
+                $row['avatarExtension']
+            );
+            $additionalData['avatarFilename'] = $row['avatarName'];
+        }
+
+        // import user
+        return ImportHandler::getInstance()
+            ->getImporter('com.woltlab.wcf.user')
+            ->import(
+                $row['userID'],
+                $data,
+                $additionalData
+            );
     }
 
     /**
