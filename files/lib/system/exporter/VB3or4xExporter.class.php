@@ -493,12 +493,14 @@ final class VB3or4xExporter extends AbstractExporter
         $passwordUpdateStatement = WCF::getDB()->prepare($sql);
 
         // get users
-        $sql = "SELECT      userfield.*, user_table.*, textfield.*,
+        $sql = "SELECT      userfield.*, customavatar.*, user_table.*, textfield.*,
                             useractivation.type AS activationType, useractivation.emailchange,
                             userban.liftdate, userban.reason AS banReason
                 FROM        " . $this->databasePrefix . "user user_table
                 LEFT JOIN   " . $this->databasePrefix . "usertextfield textfield
                 ON          user_table.userid = textfield.userid
+                LEFT JOIN   " . $this->databasePrefix . "customavatar customavatar
+                ON          user.userid = customavatar.userid
                 LEFT JOIN   " . $this->databasePrefix . "useractivation useractivation
                 ON          user_table.userid = useractivation.userid
                 LEFT JOIN   " . $this->databasePrefix . "userban userban
@@ -510,74 +512,105 @@ final class VB3or4xExporter extends AbstractExporter
         $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            $data = [
-                'username' => StringUtil::decodeHTML($row['username']),
-                'password' => null,
-                'email' => StringUtil::decodeHTML($row['email']),
-                'registrationDate' => $row['joindate'],
-                'banned' => $row['liftdate'] !== null && $row['liftdate'] == 0 ? 1 : 0,
-                'banReason' => StringUtil::decodeHTML($row['banReason'] ?? ''),
-                'activationCode' => $row['activationType'] !== null && $row['activationType'] == 0 && $row['emailchange'] == 0 ? UserRegistrationUtil::getActivationCode() : 0, // vB's codes are strings
-                'oldUsername' => '',
-                // TODO: check whether this is the registration IP
-                'registrationIpAddress' => UserUtil::convertIPv4To6($row['ipaddress']),
-                'signature' => self::fixBBCodes($row['signature'] ?? ''),
-                'userTitle' => ($row['customtitle'] != 0) ? StringUtil::decodeHTML($row['usertitle']) : '',
-                'lastActivityTime' => $row['lastactivity'],
-            ];
+            $file = null;
 
-            $options = [];
-            if ($row['birthday']) {
-                $options['birthday'] = self::convertBirthday($row['birthday']);
-            }
+            try {
+                $data = [
+                    'username' => StringUtil::decodeHTML($row['username']),
+                    'password' => null,
+                    'email' => StringUtil::decodeHTML($row['email']),
+                    'registrationDate' => $row['joindate'],
+                    'banned' => $row['liftdate'] !== null && $row['liftdate'] == 0 ? 1 : 0,
+                    'banReason' => StringUtil::decodeHTML($row['banReason'] ?? ''),
+                    'activationCode' => $row['activationType'] !== null && $row['activationType'] == 0 && $row['emailchange'] == 0 ? UserRegistrationUtil::getActivationCode() : 0, // vB's codes are strings
+                    'oldUsername' => '',
+                    // TODO: check whether this is the registration IP
+                    'registrationIpAddress' => UserUtil::convertIPv4To6($row['ipaddress']),
+                    'signature' => self::fixBBCodes($row['signature'] ?? ''),
+                    'userTitle' => ($row['customtitle'] != 0) ? StringUtil::decodeHTML($row['usertitle']) : '',
+                    'lastActivityTime' => $row['lastactivity'],
+                ];
 
-            $additionalData = [
-                'groupIDs' => \explode(',', $row['membergroupids'] . ',' . $row['usergroupid']),
-                'options' => $options,
-            ];
-
-            // handle user options
-            foreach ($userOptions as $userOption) {
-                $optionID = $userOption['profilefieldid'];
-                if (isset($row['field' . $optionID])) {
-                    $userOptionValue = $row['field' . $optionID];
-                    if (
-                        $userOptionValue
-                        && ($userOption['type'] == 'select_multiple' || $userOption['type'] == 'checkbox')
-                    ) {
-                        if (\is_array($userOption['data'])) {
-                            $newUserOptionValue = '';
-                            foreach ($userOption['data'] as $key => $value) {
-                                if ($userOptionValue & 2 ** $key) {
-                                    if (!empty($newUserOptionValue)) {
-                                        $newUserOptionValue .= "\n";
-                                    }
-                                    $newUserOptionValue .= $value;
-                                }
-                            }
-                            $userOptionValue = $newUserOptionValue;
-                        }
-                    }
-
-                    $additionalData['options'][$optionID] = $userOptionValue;
+                $options = [];
+                if ($row['birthday']) {
+                    $options['birthday'] = self::convertBirthday($row['birthday']);
                 }
-            }
 
-            // import user
-            $newUserID = ImportHandler::getInstance()
-                ->getImporter('com.woltlab.wcf.user')
-                ->import(
-                    $row['userid'],
-                    $data,
-                    $additionalData
-                );
+                $additionalData = [
+                    'groupIDs' => \explode(',', $row['membergroupids'] . ',' . $row['usergroupid']),
+                    'options' => $options,
+                ];
 
-            // update password hash
-            if ($newUserID) {
-                $passwordUpdateStatement->execute([
-                    'vb3:' . $row['password'] . ':' . $row['salt'],
-                    $newUserID,
-                ]);
+                // handle user options
+                foreach ($userOptions as $userOption) {
+                    $optionID = $userOption['profilefieldid'];
+                    if (isset($row['field' . $optionID])) {
+                        $userOptionValue = $row['field' . $optionID];
+                        if (
+                            $userOptionValue
+                            && ($userOption['type'] == 'select_multiple' || $userOption['type'] == 'checkbox')
+                        ) {
+                            if (\is_array($userOption['data'])) {
+                                $newUserOptionValue = '';
+                                foreach ($userOption['data'] as $key => $value) {
+                                    if ($userOptionValue & 2 ** $key) {
+                                        if (!empty($newUserOptionValue)) {
+                                            $newUserOptionValue .= "\n";
+                                        }
+                                        $newUserOptionValue .= $value;
+                                    }
+                                }
+                                $userOptionValue = $newUserOptionValue;
+                            }
+                        }
+
+                        $additionalData['options'][$optionID] = $userOptionValue;
+                    }
+                }
+
+                if ($this->readOption('usefileavatar') && !empty($row['avatarrevision'])) {
+                    $file = $this->readOption('avatarpath');
+                    if (!\str_starts_with($file, '/')) {
+                        $file = \realpath($this->fileSystemPath . $file);
+                    }
+                    $file = FileUtil::addTrailingSlash($file);
+                    $file = $file . 'avatar' . $row['userid'] . '_' . $row['avatarrevision'] . '.gif';
+
+                    $additionalData['avatarLocation'] = $file;
+                    $additionalData['avatarFilename'] = StringUtil::decodeHTML($row['filename']);
+                } elseif (!empty($row['filedata'])) {
+                    $file = FileUtil::getTemporaryFilename('avatar_');
+                    \file_put_contents($file, $row['filedata']);
+
+                    $additionalData['avatarLocation'] = $file;
+                    $additionalData['avatarFilename'] = StringUtil::decodeHTML($row['filename']);
+                }
+
+                $data = [
+                    'avatarName' => StringUtil::decodeHTML($row['filename']),
+                    'userID' => $row['userid'],
+                ];
+
+                // import user
+                $newUserID = ImportHandler::getInstance()
+                    ->getImporter('com.woltlab.wcf.user')
+                    ->import(
+                        $row['userid'],
+                        $data,
+                        $additionalData
+                    );
+
+                // update password hash
+                if ($newUserID) {
+                    $passwordUpdateStatement->execute([
+                        'vb3:' . $row['password'] . ':' . $row['salt'],
+                        $newUserID,
+                    ]);
+                }
+            } finally {
+                if (!$this->readOption('usefileavatar') && $file) {
+                    @\unlink($file);
+                }
             }
         }
     }
@@ -717,77 +750,6 @@ final class VB3or4xExporter extends AbstractExporter
             ImportHandler::getInstance()
                 ->getImporter('com.woltlab.wcf.user.comment')
                 ->import($row['vmid'], $data);
-        }
-    }
-
-    /**
-     * Counts user avatars.
-     */
-    public function countUserAvatars()
-    {
-        $sql = "SELECT  COUNT(*) AS count
-                FROM    " . $this->databasePrefix . "customavatar";
-        $statement = $this->database->prepareUnmanaged($sql);
-        $statement->execute();
-        $row = $statement->fetchArray();
-
-        return $row['count'];
-    }
-
-    /**
-     * Exports user avatars.
-     *
-     * @param   integer     $offset
-     * @param   integer     $limit
-     * @throws  \Exception
-     */
-    public function exportUserAvatars($offset, $limit)
-    {
-        $sql = "SELECT      customavatar.*, user.avatarrevision
-                FROM        " . $this->databasePrefix . "customavatar customavatar
-                LEFT JOIN   " . $this->databasePrefix . "user user
-                ON          user.userid = customavatar.userid
-                ORDER BY    customavatar.userid";
-        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
-        $statement->execute();
-        while ($row = $statement->fetchArray()) {
-            $file = null;
-
-            try {
-                if ($this->readOption('usefileavatar')) {
-                    $file = $this->readOption('avatarpath');
-                    if (!\str_starts_with($file, '/')) {
-                        $file = \realpath($this->fileSystemPath . $file);
-                    }
-                    $file = FileUtil::addTrailingSlash($file) . 'avatar' . $row['userid'] . '_' . $row['avatarrevision'] . '.gif';
-                } else {
-                    $file = FileUtil::getTemporaryFilename('avatar_');
-                    \file_put_contents($file, $row['filedata']);
-                }
-
-                $data = [
-                    'avatarName' => StringUtil::decodeHTML($row['filename']),
-                    'userID' => $row['userid'],
-                ];
-
-                ImportHandler::getInstance()
-                    ->getImporter('com.woltlab.wcf.user.avatar')
-                    ->import(
-                        $row['userid'],
-                        $data,
-                        ['fileLocation' => $file]
-                    );
-
-                if (!$this->readOption('usefileavatar')) {
-                    \unlink($file);
-                }
-            } catch (\Exception $e) {
-                if (!$this->readOption('usefileavatar') && $file) {
-                    @\unlink($file);
-                }
-
-                throw $e;
-            }
         }
     }
 

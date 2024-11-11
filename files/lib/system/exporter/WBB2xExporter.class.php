@@ -301,7 +301,7 @@ final class WBB2xExporter extends AbstractExporter
         $passwordUpdateStatement = WCF::getDB()->prepare($sql);
 
         // get users
-        $sql = "SELECT      userfields.*, user.*,
+        $sql = "SELECT      userfields.*, user.*, avatars.*,
                             (
                                 SELECT  GROUP_CONCAT(groupid)
                                 FROM    " . $this->databasePrefix . "user2groups
@@ -310,6 +310,8 @@ final class WBB2xExporter extends AbstractExporter
                 FROM        " . $this->databasePrefix . "users user
                 LEFT JOIN   " . $this->databasePrefix . "userfields userfields
                 ON          userfields.userid = user.userid
+                LEFT JOIN   " . $this->databasePrefix . "avatars avatars
+                ON          avatars.userid = user.userid
                 WHERE       user.userid BETWEEN ? AND ?
                 ORDER BY    user.userid";
         $statement = $this->database->prepareUnmanaged($sql);
@@ -349,6 +351,15 @@ final class WBB2xExporter extends AbstractExporter
                 'groupIDs' => \explode(',', $row['groupIDs']),
                 'options' => $options,
             ];
+
+            if (!empty($row['avatarid'])) {
+                $additionalData['avatarLocation'] = \sprintf(
+                    $this->fileSystemPath . 'images/avatars/avatar-%d.%s',
+                    $row['avatarid'],
+                    $row['avatarextension']
+                );
+                $additionalData['avatarFilename'] = $row['avatarname'];
+            }
 
             // import user
             $newUserID = ImportHandler::getInstance()
@@ -412,53 +423,6 @@ final class WBB2xExporter extends AbstractExporter
             ImportHandler::getInstance()
                 ->getImporter('com.woltlab.wcf.user.rank')
                 ->import($row['rankid'], $data);
-        }
-    }
-
-    /**
-     * Counts user avatars.
-     */
-    public function countUserAvatars()
-    {
-        $sql = "SELECT  COUNT(*) AS count
-                FROM    " . $this->databasePrefix . "avatars
-                WHERE   userid <> ?";
-        $statement = $this->database->prepareUnmanaged($sql);
-        $statement->execute([0]);
-        $row = $statement->fetchArray();
-
-        return $row['count'];
-    }
-
-    /**
-     * Exports user avatars.
-     *
-     * @param   integer     $offset
-     * @param   integer     $limit
-     */
-    public function exportUserAvatars($offset, $limit)
-    {
-        $sql = "SELECT      *
-                FROM        " . $this->databasePrefix . "avatars
-                WHERE       userid <> ?
-                ORDER BY    avatarid";
-        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
-        $statement->execute([0]);
-        while ($row = $statement->fetchArray()) {
-            $fileLocation = $this->fileSystemPath . 'images/avatars/avatar-' . $row['avatarid'] . '.' . $row['avatarextension'];
-
-            $data = [
-                'avatarName' => $row['avatarname'],
-                'userID' => $row['userid'],
-            ];
-
-            ImportHandler::getInstance()
-                ->getImporter('com.woltlab.wcf.user.avatar')
-                ->import(
-                    $row['avatarid'],
-                    $data,
-                    ['fileLocation' => $fileLocation]
-                );
         }
     }
 

@@ -300,6 +300,23 @@ final class IPB3xExporter extends AbstractExporter
                 }
             }
 
+            if (!empty($row['pp_main_photo'])) {
+                $additionalData['avatarLocation'] = $this->fileSystemPath . 'uploads/' . $row['pp_main_photo'];
+            } elseif (!empty($row['avatar_location'])) {
+                $source = '';
+                if ($row['avatar_type'] != 'url') {
+                    $source = $this->fileSystemPath;
+                    if ($row['avatar_type'] == 'upload') {
+                        $source .= 'uploads/';
+                    } else {
+                        $source .= 'style_avatars/';
+                    }
+                }
+                $source .= $row['avatar_location'];
+
+                $additionalData['avatarLocation'] = $source;
+            }
+
             // import user
             $newUserID = ImportHandler::getInstance()
                 ->getImporter('com.woltlab.wcf.user')
@@ -413,78 +430,6 @@ final class IPB3xExporter extends AbstractExporter
             ImportHandler::getInstance()
                 ->getImporter('com.woltlab.wcf.user.group')
                 ->import($row['g_id'], $data);
-        }
-    }
-
-    /**
-     * Counts user avatars.
-     */
-    public function countUserAvatars()
-    {
-        $sql = "SELECT  MAX(pp_member_id) AS maxID
-                FROM    " . $this->databasePrefix . "profile_portal
-                WHERE   avatar_location <> ''
-                    OR pp_main_photo <> ''";
-        $statement = $this->database->prepareUnmanaged($sql);
-        $statement->execute();
-        $row = $statement->fetchArray();
-        if ($row !== false) {
-            return $row['maxID'];
-        }
-
-        return 0;
-    }
-
-    /**
-     * Exports user avatars.
-     *
-     * @param   integer     $offset
-     * @param   integer     $limit
-     */
-    public function exportUserAvatars($offset, $limit)
-    {
-        $sql = "SELECT      *
-                FROM        " . $this->databasePrefix . "profile_portal
-                WHERE       pp_member_id BETWEEN ? AND ?
-                        AND (
-                                avatar_location <> ''
-                             OR pp_main_photo <> ''
-                             )
-                ORDER BY    pp_member_id";
-        $statement = $this->database->prepareUnmanaged($sql);
-        $statement->execute([$offset + 1, $offset + $limit]);
-        while ($row = $statement->fetchArray()) {
-            if ($row['pp_main_photo']) {
-                $avatarName = \basename($row['pp_main_photo']);
-
-                $source = $this->fileSystemPath . 'uploads/' . $row['pp_main_photo'];
-            } else {
-                $avatarName = \basename($row['avatar_location']);
-
-                $source = '';
-                if ($row['avatar_type'] != 'url') {
-                    $source = $this->fileSystemPath;
-                    if ($row['avatar_type'] == 'upload') {
-                        $source .= 'uploads/';
-                    } else {
-                        $source .= 'style_avatars/';
-                    }
-                }
-                $source .= $row['avatar_location'];
-            }
-
-            $data = [
-                'avatarName' => $avatarName,
-                'userID' => $row['pp_member_id'],
-            ];
-
-            ImportHandler::getInstance()
-                ->getImporter('com.woltlab.wcf.user.avatar')
-                ->import(
-                    $row['pp_member_id'],
-                    $data,
-                    ['fileLocation' => $source]
-                );
         }
     }
 

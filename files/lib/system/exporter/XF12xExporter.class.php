@@ -375,6 +375,17 @@ final class XF12xExporter extends AbstractExporter
                 'options' => $options,
             ];
 
+            if ($row['avatar_date'] != 0) {
+                $config = $this->getConfig();
+
+                $additionalData['avatarLocation'] = \sprintf(
+                    '%s/avatars/l/%s/%s.jpg',
+                    $this->fileSystemPath . $config['externalDataPath'],
+                    \floor($row['user_id'] / 1000),
+                    $row['user_id']
+                );
+            }
+
             // import user
             $newUserID = ImportHandler::getInstance()
                 ->getImporter('com.woltlab.wcf.user')
@@ -677,54 +688,6 @@ final class XF12xExporter extends AbstractExporter
             ImportHandler::getInstance()
                 ->getImporter('com.woltlab.wcf.user.comment.response')
                 ->import($row['profile_post_comment_id'], $data);
-        }
-    }
-
-    /**
-     * Counts user avatars.
-     */
-    public function countUserAvatars()
-    {
-        $sql = "SELECT  COUNT(*) AS count
-                FROM    xf_user
-                WHERE   avatar_date <> ?";
-        $statement = $this->database->prepareUnmanaged($sql);
-        $statement->execute([0]);
-        $row = $statement->fetchArray();
-
-        return $row['count'];
-    }
-
-    /**
-     * Exports user avatars.
-     *
-     * @param   integer     $offset
-     * @param   integer     $limit
-     */
-    public function exportUserAvatars($offset, $limit)
-    {
-        $sql = "SELECT      user_id
-                FROM        xf_user
-                WHERE       avatar_date <> ?
-                ORDER BY    user_id";
-        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
-        $statement->execute([0]);
-        while ($row = $statement->fetchArray()) {
-            $config = $this->getConfig();
-            $location = $this->fileSystemPath . $config['externalDataPath'] . '/avatars/l/' . \floor($row['user_id'] / 1000) . '/' . $row['user_id'] . '.jpg';
-
-            $data = [
-                'avatarName' => '',
-                'userID' => $row['user_id'],
-            ];
-
-            ImportHandler::getInstance()
-                ->getImporter('com.woltlab.wcf.user.avatar')
-                ->import(
-                    $row['user_id'],
-                    $data,
-                    ['fileLocation' => $location]
-                );
         }
     }
 

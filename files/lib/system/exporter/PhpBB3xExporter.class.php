@@ -317,6 +317,20 @@ final class PhpBB3xExporter extends AbstractExporter
      */
     public function exportUsers($offset, $limit)
     {
+        static $avatar_salt = null, $avatar_path = null, $avatar_gallery_path = null;
+        if ($avatar_salt === null) {
+            $sql = "SELECT  config_name, config_value
+                    FROM    " . $this->databasePrefix . "config
+                    WHERE   config_name IN (?, ?, ?)";
+            $statement = $this->database->prepareUnmanaged($sql);
+            $statement->execute(['avatar_path', 'avatar_salt', 'avatar_gallery_path']);
+            while ($row = $statement->fetchArray()) {
+                $config_name = $row['config_name'];
+                /** @noinspection PhpVariableVariableInspection */
+                ${$config_name} = $row['config_value'];
+            }
+        }
+
         // cache profile fields
         $profileFields = [];
         $sql = "SELECT  *
@@ -392,6 +406,22 @@ final class PhpBB3xExporter extends AbstractExporter
                         $additionalData['options'][$profileField['field_id']] = $row['pf_' . $profileField['field_name']];
                     }
                 }
+            }
+
+            if (\in_array($row['user_avatar_type'], [self::AVATAR_TYPE_GALLERY, self::AVATAR_TYPE_UPLOADED])) {
+                $extension = \pathinfo($row['user_avatar'], \PATHINFO_EXTENSION);
+
+                $additionalData['avatarLocation'] = match ($row['user_avatar_type']) {
+                    self::AVATAR_TYPE_UPLOADED =>
+                        FileUtil::addTrailingSlash(
+                            $this->fileSystemPath . $avatar_path
+                        ) . $avatar_salt . '_' . \intval($row['user_avatar']) . '.' . $extension,
+                    self::AVATAR_TYPE_GALLERY =>
+                        FileUtil::addTrailingSlash(
+                            $this->fileSystemPath . $avatar_gallery_path
+                        ) . $row['user_avatar'],
+                    default => throw new \LogicException('Unreachable'),
+                };
             }
 
             // import user
@@ -583,77 +613,6 @@ final class PhpBB3xExporter extends AbstractExporter
             ImportHandler::getInstance()
                 ->getImporter('com.woltlab.wcf.user.follower')
                 ->import(0, $data);
-        }
-    }
-
-    /**
-     * Counts user avatars.
-     */
-    public function countUserAvatars()
-    {
-        $sql = "SELECT  COUNT(*) AS count
-                FROM    " . $this->databasePrefix . "users
-                WHERE   user_avatar_type IN (?, ?)";
-        $statement = $this->database->prepareUnmanaged($sql);
-        $statement->execute([self::AVATAR_TYPE_GALLERY, self::AVATAR_TYPE_UPLOADED]);
-        $row = $statement->fetchArray();
-
-        return $row['count'];
-    }
-
-    /**
-     * Exports user avatars.
-     *
-     * @param   integer     $offset
-     * @param   integer     $limit
-     */
-    public function exportUserAvatars($offset, $limit)
-    {
-        static $avatar_salt = null, $avatar_path = null, $avatar_gallery_path = null;
-        if ($avatar_salt === null) {
-            $sql = "SELECT  config_name, config_value
-                    FROM    " . $this->databasePrefix . "config
-                    WHERE   config_name IN (?, ?, ?)";
-            $statement = $this->database->prepareUnmanaged($sql);
-            $statement->execute(['avatar_path', 'avatar_salt', 'avatar_gallery_path']);
-            while ($row = $statement->fetchArray()) {
-                $config_name = $row['config_name'];
-                /** @noinspection PhpVariableVariableInspection */
-                ${$config_name} = $row['config_value'];
-            }
-        }
-
-        $sql = "SELECT      user_id, user_avatar, user_avatar_type, user_avatar_width, user_avatar_height
-                FROM        " . $this->databasePrefix . "users
-                WHERE       user_avatar_type IN (?, ?)
-                ORDER BY    user_id";
-        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
-        $statement->execute([self::AVATAR_TYPE_GALLERY, self::AVATAR_TYPE_UPLOADED]);
-        while ($row = $statement->fetchArray()) {
-            $extension = \pathinfo($row['user_avatar'], \PATHINFO_EXTENSION);
-            switch ($row['user_avatar_type']) {
-                case self::AVATAR_TYPE_UPLOADED:
-                    $location = FileUtil::addTrailingSlash($this->fileSystemPath . $avatar_path) . $avatar_salt . '_' . \intval($row['user_avatar']) . '.' . $extension;
-                    break;
-                case self::AVATAR_TYPE_GALLERY:
-                    $location = FileUtil::addTrailingSlash($this->fileSystemPath . $avatar_gallery_path) . $row['user_avatar'];
-                    break;
-                default:
-                    continue 2;
-            }
-
-            $data = [
-                'avatarName' => \basename($row['user_avatar']),
-                'userID' => $row['user_id'],
-            ];
-
-            ImportHandler::getInstance()
-                ->getImporter('com.woltlab.wcf.user.avatar')
-                ->import(
-                    0,
-                    $data,
-                    ['fileLocation' => $location]
-                );
         }
     }
 

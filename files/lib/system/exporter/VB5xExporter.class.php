@@ -353,12 +353,14 @@ final class VB5xExporter extends AbstractExporter
         $passwordUpdateStatement = WCF::getDB()->prepare($sql);
 
         // get users
-        $sql = "SELECT      userfield.*, user_table.*, textfield.*,
+        $sql = "SELECT      userfield.*, customavatar.*, user_table.*, textfield.*,
                             useractivation.type AS activationType, useractivation.emailchange,
                             userban.liftdate, userban.reason AS banReason
                 FROM        " . $this->databasePrefix . "user user_table
                 LEFT JOIN   " . $this->databasePrefix . "usertextfield textfield
                 ON          user_table.userid = textfield.userid
+                LEFT JOIN   " . $this->databasePrefix . "customavatar customavatar
+                ON          user.userid = customavatar.userid
                 LEFT JOIN   " . $this->databasePrefix . "useractivation useractivation
                 ON          user_table.userid = useractivation.userid
                 LEFT JOIN   " . $this->databasePrefix . "userban userban
@@ -370,147 +372,96 @@ final class VB5xExporter extends AbstractExporter
         $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            $data = [
-                'username' => $row['username'],
-                'password' => null,
-                'email' => $row['email'],
-                'registrationDate' => $row['joindate'],
-                'banned' => $row['liftdate'] !== null && $row['liftdate'] == 0 ? 1 : 0,
-                'banReason' => $row['banReason'],
-                'activationCode' => $row['activationType'] !== null && $row['activationType'] == 0 && $row['emailchange'] == 0 ? UserRegistrationUtil::getActivationCode() : 0, // vB's codes are strings
-                'oldUsername' => '',
-                'registrationIpAddress' => UserUtil::convertIPv4To6($row['ipaddress']), // TODO: check whether this is the registration IP
-                'signature' => self::fixBBCodes($row['signature'] ?: ''),
-                'userTitle' => ($row['customtitle'] != 0) ? $row['usertitle'] : '',
-                'lastActivityTime' => $row['lastactivity'],
-            ];
-
-            $options = [];
-            if ($row['birthday']) {
-                $options['birthday'] = self::convertBirthday($row['birthday']);
-            }
-
-            $additionalData = [
-                'groupIDs' => \explode(',', $row['membergroupids'] . ',' . $row['usergroupid']),
-                'options' => $options,
-            ];
-
-            // handle user options
-            foreach ($userOptions as $userOption) {
-                $optionID = $userOption['profilefieldid'];
-                if (isset($row['field' . $optionID])) {
-                    $userOptionValue = $row['field' . $optionID];
-                    if (
-                        $userOptionValue
-                        && ($userOption['type'] == 'select_multiple' || $userOption['type'] == 'checkbox')
-                    ) {
-                        if (\is_array($userOption['data'])) {
-                            $newUserOptionValue = '';
-                            foreach ($userOption['data'] as $key => $value) {
-                                if ($userOptionValue & 2 ** $key) {
-                                    if (!empty($newUserOptionValue)) {
-                                        $newUserOptionValue .= "\n";
-                                    }
-                                    $newUserOptionValue .= $value;
-                                }
-                            }
-                            $userOptionValue = $newUserOptionValue;
-                        }
-                    }
-
-                    $additionalData['options'][$optionID] = $userOptionValue;
-                }
-            }
-
-            // import user
-            $newUserID = ImportHandler::getInstance()
-                ->getImporter('com.woltlab.wcf.user')
-                ->import(
-                    $row['userid'],
-                    $data,
-                    $additionalData
-                );
-
-            // update password hash
-            if ($newUserID) {
-                if (\str_starts_with($row['scheme'], 'blowfish')) {
-                    $password = 'vb5Bcrypt:' . $row['token'];
-                } elseif (\str_starts_with($row['scheme'], 'argon2')) {
-                    $password = 'vb5Argon2:' . $row['token'];
-                } elseif ($row['scheme'] == 'legacy') {
-                    $password = 'vb5:' . \implode(':', \explode(' ', $row['token'], 2));
-                } else {
-                    continue;
-                }
-
-                $passwordUpdateStatement->execute([$password, $newUserID]);
-            }
-        }
-    }
-
-    /**
-     * Counts user avatars.
-     */
-    public function countUserAvatars()
-    {
-        return $this->__getMaxID($this->databasePrefix . "customavatar", 'userid');
-    }
-
-    /**
-     * Exports user avatars.
-     *
-     * @param   integer     $offset
-     * @param   integer     $limit
-     * @throws  \Exception
-     */
-    public function exportUserAvatars($offset, $limit)
-    {
-        $sql = "SELECT      customavatar.*, user.avatarrevision
-                FROM        " . $this->databasePrefix . "customavatar customavatar
-                LEFT JOIN   " . $this->databasePrefix . "user user
-                ON          user.userid = customavatar.userid
-                WHERE       customavatar.userid BETWEEN ? AND ?
-                ORDER BY    customavatar.userid";
-        $statement = $this->database->prepareUnmanaged($sql);
-        $statement->execute([$offset + 1, $offset + $limit]);
-        while ($row = $statement->fetchArray()) {
             $file = null;
 
             try {
-                // TODO: not yet supported
-                if (false && $this->readOption('usefileavatar')) {
-                    $file = $this->readOption('avatarpath');
-                    if (!\str_starts_with($file, '/')) {
-                        $file = \realpath($this->fileSystemPath . $file);
-                    }
-                    $file = FileUtil::addTrailingSlash($file) . 'avatar' . $row['userid'] . '_' . $row['avatarrevision'] . '.gif';
-                } else {
-                    $file = FileUtil::getTemporaryFilename('avatar_');
-                    \file_put_contents($file, $row['filedata']);
-                }
-
                 $data = [
-                    'avatarName' => $row['filename'],
-                    'userID' => $row['userid'],
+                    'username' => $row['username'],
+                    'password' => null,
+                    'email' => $row['email'],
+                    'registrationDate' => $row['joindate'],
+                    'banned' => $row['liftdate'] !== null && $row['liftdate'] == 0 ? 1 : 0,
+                    'banReason' => $row['banReason'],
+                    'activationCode' => $row['activationType'] !== null && $row['activationType'] == 0 && $row['emailchange'] == 0 ? UserRegistrationUtil::getActivationCode() : 0, // vB's codes are strings
+                    'oldUsername' => '',
+                    'registrationIpAddress' => UserUtil::convertIPv4To6($row['ipaddress']), // TODO: check whether this is the registration IP
+                    'signature' => self::fixBBCodes($row['signature'] ?: ''),
+                    'userTitle' => ($row['customtitle'] != 0) ? $row['usertitle'] : '',
+                    'lastActivityTime' => $row['lastactivity'],
                 ];
 
-                ImportHandler::getInstance()
-                    ->getImporter('com.woltlab.wcf.user.avatar')
+                $options = [];
+                if ($row['birthday']) {
+                    $options['birthday'] = self::convertBirthday($row['birthday']);
+                }
+
+                $additionalData = [
+                    'groupIDs' => \explode(',', $row['membergroupids'] . ',' . $row['usergroupid']),
+                    'options' => $options,
+                ];
+
+                // handle user options
+                foreach ($userOptions as $userOption) {
+                    $optionID = $userOption['profilefieldid'];
+                    if (isset($row['field' . $optionID])) {
+                        $userOptionValue = $row['field' . $optionID];
+                        if (
+                            $userOptionValue
+                            && ($userOption['type'] == 'select_multiple' || $userOption['type'] == 'checkbox')
+                        ) {
+                            if (\is_array($userOption['data'])) {
+                                $newUserOptionValue = '';
+                                foreach ($userOption['data'] as $key => $value) {
+                                    if ($userOptionValue & 2 ** $key) {
+                                        if (!empty($newUserOptionValue)) {
+                                            $newUserOptionValue .= "\n";
+                                        }
+                                        $newUserOptionValue .= $value;
+                                    }
+                                }
+                                $userOptionValue = $newUserOptionValue;
+                            }
+                        }
+
+                        $additionalData['options'][$optionID] = $userOptionValue;
+                    }
+                }
+
+                if (!empty($row['filedata']) && !empty($row['filename'])) {
+                    $file = FileUtil::getTemporaryFilename('avatar_');
+                    \file_put_contents($file, $row['filedata']);
+
+                    $additionalData['avatarLocation'] = $file;
+                    $additionalData['avatarFilename'] = $row['filename'];
+                }
+
+                // import user
+                $newUserID = ImportHandler::getInstance()
+                    ->getImporter('com.woltlab.wcf.user')
                     ->import(
                         $row['userid'],
                         $data,
-                        ['fileLocation' => $file]
+                        $additionalData
                     );
 
-                if (!$this->readOption('usefileavatar')) {
-                    \unlink($file);
+                // update password hash
+                if ($newUserID) {
+                    if (\str_starts_with($row['scheme'], 'blowfish')) {
+                        $password = 'vb5Bcrypt:' . $row['token'];
+                    } elseif (\str_starts_with($row['scheme'], 'argon2')) {
+                        $password = 'vb5Argon2:' . $row['token'];
+                    } elseif ($row['scheme'] == 'legacy') {
+                        $password = 'vb5:' . \implode(':', \explode(' ', $row['token'], 2));
+                    } else {
+                        continue;
+                    }
+
+                    $passwordUpdateStatement->execute([$password, $newUserID]);
                 }
-            } catch (\Exception $e) {
-                if (!$this->readOption('usefileavatar') && $file) {
+            } finally {
+                if ($file) {
                     @\unlink($file);
                 }
-
-                throw $e;
             }
         }
     }

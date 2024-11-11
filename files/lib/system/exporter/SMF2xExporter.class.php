@@ -333,6 +333,30 @@ final class SMF2xExporter extends AbstractExporter
             }
         }
 
+        // fetch avatars
+        $conditionBuilder = new PreparedStatementConditionBuilder();
+        $conditionBuilder->add('id_member IN(?)', [$userIDs]);
+        $sql = "SELECT  id_member,
+                        filename AS avatarName,
+                        (id_attach || '_' || file_hash) AS filename,
+                        id_attach,
+                        file_hash,
+                        id_folder
+                FROM    " . $this->databasePrefix . "attachments
+                {$conditionBuilder}";
+        $statement = $this->database->prepareUnmanaged($sql);
+        $statement->execute($conditionBuilder->getParameters());
+
+        $userAvatarFiles = [];
+        while ($row = $statement->fetchArray()) {
+            $userAvatarFiles[$row['id_member']] = $this->getAttachmentFilename(
+                $row['id_attach'],
+                $row['id_folder'],
+                $row['file_hash'],
+                $row['filename']
+            );
+        }
+
         // get users
         $condition = new PreparedStatementConditionBuilder();
         $condition->add('member.id_member IN(?)', [$userIDs]);
@@ -395,6 +419,12 @@ final class SMF2xExporter extends AbstractExporter
                     }
                     $additionalData['options'][$key] = $val;
                 }
+            }
+
+            if (!empty($row['avatar']) && !FileUtil::isURL($row['avatar'])) {
+                $additionalData['avatarLocation'] = $this->readOption('avatar_directory') . '/' . $row['avatar'];
+            } elseif (isset($userAvatarFiles[$row['id_member']])) {
+                $additionalData['avatarLocation'] = $userAvatarFiles[$row['id_member']];
             }
 
             // import user
@@ -605,95 +635,6 @@ final class SMF2xExporter extends AbstractExporter
                     ->getImporter('com.woltlab.wcf.user.follower')
                     ->import(0, $data);
             }
-        }
-    }
-
-    /**
-     * Counts user avatars.
-     */
-    public function countUserAvatars()
-    {
-        $sql = "SELECT  (
-                    SELECT  COUNT(*) AS count
-                    FROM    " . $this->databasePrefix . "attachments
-                    WHERE   id_member <> ?
-                ) + (
-                    SELECT  COUNT(*) AS count
-                    FROM    " . $this->databasePrefix . "members
-                    WHERE   avatar <> ?
-                ) AS count";
-        $statement = $this->database->prepareUnmanaged($sql);
-        $statement->execute(['', 0]);
-        $row = $statement->fetchArray();
-
-        return $row['count'];
-    }
-
-    /**
-     * Exports user avatars.
-     *
-     * @param   integer     $offset
-     * @param   integer     $limit
-     */
-    public function exportUserAvatars($offset, $limit)
-    {
-        $sql = "(
-                    SELECT  id_member,
-                            'attachment' AS type,
-                            filename AS avatarName,
-                            (id_attach || '_' || file_hash) AS filename,
-                            id_attach,
-                            file_hash,
-                            id_folder
-                    FROM    " . $this->databasePrefix . "attachments
-                    WHERE   id_member <> ?
-                )
-                UNION
-                (
-                    SELECT  id_member,
-                            'user' AS type,
-                            avatar AS avatarName,
-                            avatar AS filename,
-                            '' AS id_attach,
-                            '' AS file_hash,
-                            '' AS id_folder
-                    FROM    " . $this->databasePrefix . "members
-                    WHERE   avatar <> ?
-                )";
-        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
-        $statement->execute(['', 0]);
-
-        while ($row = $statement->fetchArray()) {
-            switch ($row['type']) {
-                case 'attachment':
-                    $fileLocation = $this->getAttachmentFilename(
-                        $row['id_attach'],
-                        $row['id_folder'],
-                        $row['file_hash'],
-                        $row['filename']
-                    );
-                    break;
-                case 'user':
-                    if (FileUtil::isURL($row['filename'])) {
-                        return;
-                    }
-                    $fileLocation = $this->readOption('avatar_directory') . '/' . $row['filename'];
-                    break;
-            }
-
-            $data = [
-                'avatarName' => \basename($row['avatarName']),
-                'userID' => $row['id_member'],
-            ];
-
-            /** @noinspection PhpUndefinedVariableInspection */
-            ImportHandler::getInstance()
-                ->getImporter('com.woltlab.wcf.user.avatar')
-                ->import(
-                    0,
-                    $data,
-                    ['fileLocation' => $fileLocation]
-                );
         }
     }
 

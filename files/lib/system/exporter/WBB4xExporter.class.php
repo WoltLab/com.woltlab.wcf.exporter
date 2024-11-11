@@ -603,7 +603,7 @@ final class WBB4xExporter extends AbstractExporter
         $passwordUpdateStatement = WCF::getDB()->prepare($sql);
 
         // get users
-        $sql = "SELECT      user_option_value.*, user_table.*,
+        $sql = "SELECT      user_option_value.*, user_table.*, avatars.*,
                             (
                                 SELECT  GROUP_CONCAT(groupID)
                                 FROM    wcf" . $this->dbNo . "_user_to_group
@@ -619,6 +619,8 @@ final class WBB4xExporter extends AbstractExporter
                 FROM        wcf" . $this->dbNo . "_user user_table
                 LEFT JOIN   wcf" . $this->dbNo . "_user_option_value user_option_value
                 ON          user_option_value.userID = user_table.userID
+                LEFT JOIN   " . $this->databasePrefix . "avatars avatars
+                ON          avatars.userid = user.userid
                 WHERE       user_table.userID BETWEEN ? AND ?
                 ORDER BY    user_table.userID";
         $statement = $this->database->prepareUnmanaged($sql);
@@ -656,6 +658,17 @@ final class WBB4xExporter extends AbstractExporter
                 if (isset($row['userOption' . $optionID])) {
                     $additionalData['options'][$optionName] = $row['userOption' . $optionID];
                 }
+            }
+
+            if (!empty($row['avatarID'])) {
+                $additionalData['avatarLocation'] = \sprintf(
+                    $this->fileSystemPath . 'images/avatars/%s/%d-%s.%s',
+                    \substr($row['fileHash'], 0, 2),
+                    $row['avatarID'],
+                    $row['fileHash'],
+                    $row['avatarExtension']
+                );
+                $additionalData['avatarFilename'] = $row['avatarName'];
             }
 
             // import user
@@ -799,46 +812,6 @@ final class WBB4xExporter extends AbstractExporter
             $offset,
             $limit
         );
-    }
-
-    /**
-     * Counts user avatars.
-     */
-    public function countUserAvatars()
-    {
-        return $this->__getMaxID("wcf" . $this->dbNo . "_user_avatar", 'avatarID');
-    }
-
-    /**
-     * Exports user avatars.
-     *
-     * @param   integer     $offset
-     * @param   integer     $limit
-     */
-    public function exportUserAvatars($offset, $limit)
-    {
-        $sql = "SELECT      *
-                FROM        wcf" . $this->dbNo . "_user_avatar
-                WHERE       avatarID BETWEEN ? AND ?
-                ORDER BY    avatarID";
-        $statement = $this->database->prepareUnmanaged($sql);
-        $statement->execute([$offset + 1, $offset + $limit]);
-        while ($row = $statement->fetchArray()) {
-            $fileLocation = $this->fileSystemPath . 'images/avatars/' . \substr($row['fileHash'], 0, 2) . '/' . $row['avatarID'] . '-' . $row['fileHash'] . '.' . $row['avatarExtension'];
-
-            $data = [
-                'avatarName' => $row['avatarName'],
-                'userID' => $row['userID'],
-            ];
-
-            ImportHandler::getInstance()
-                ->getImporter('com.woltlab.wcf.user.avatar')
-                ->import(
-                    $row['avatarID'],
-                    $data,
-                    ['fileLocation' => $fileLocation]
-                );
-        }
     }
 
     /**
