@@ -412,14 +412,12 @@ final class PhpBB3xExporter extends AbstractExporter
                 $extension = \pathinfo($row['user_avatar'], \PATHINFO_EXTENSION);
 
                 $additionalData['avatarLocation'] = match ($row['user_avatar_type']) {
-                    self::AVATAR_TYPE_UPLOADED =>
-                        FileUtil::addTrailingSlash(
-                            $this->fileSystemPath . $avatar_path
-                        ) . $avatar_salt . '_' . \intval($row['user_avatar']) . '.' . $extension,
-                    self::AVATAR_TYPE_GALLERY =>
-                        FileUtil::addTrailingSlash(
-                            $this->fileSystemPath . $avatar_gallery_path
-                        ) . $row['user_avatar'],
+                    self::AVATAR_TYPE_UPLOADED => FileUtil::addTrailingSlash(
+                        $this->fileSystemPath . $avatar_path
+                    ) . $avatar_salt . '_' . \intval($row['user_avatar']) . '.' . $extension,
+                    self::AVATAR_TYPE_GALLERY => FileUtil::addTrailingSlash(
+                        $this->fileSystemPath . $avatar_gallery_path
+                    ) . $row['user_avatar'],
                     default => throw new \LogicException('Unreachable'),
                 };
             }

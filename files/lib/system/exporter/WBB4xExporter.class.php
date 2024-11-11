@@ -577,6 +577,7 @@ final class WBB4xExporter extends AbstractExporter
     {
         if (\version_compare($this->getPackageVersion('com.woltlab.wcf'), '6.2.0 Alpha 1', '>=')) {
             $this->exportUsers62($offset, $limit);
+
             return;
         }
 
