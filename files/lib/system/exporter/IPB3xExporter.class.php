@@ -38,7 +38,6 @@ final class IPB3xExporter extends AbstractExporter
         'com.woltlab.wcf.user.follower' => 'Followers',
         'com.woltlab.wcf.user.comment' => 'StatusUpdates',
         'com.woltlab.wcf.user.comment.response' => 'StatusReplies',
-        'com.woltlab.wcf.user.avatar' => 'UserAvatars',
         'com.woltlab.wcf.user.option' => 'UserOptions',
         'com.woltlab.wcf.conversation' => 'Conversations',
         'com.woltlab.wcf.conversation.message' => 'ConversationMessages',
@@ -65,7 +64,6 @@ final class IPB3xExporter extends AbstractExporter
         return [
             'com.woltlab.wcf.user' => [
                 'com.woltlab.wcf.user.group',
-                'com.woltlab.wcf.user.avatar',
                 'com.woltlab.wcf.user.option',
                 'com.woltlab.wcf.user.comment',
                 'com.woltlab.wcf.user.follower',
@@ -105,7 +103,7 @@ final class IPB3xExporter extends AbstractExporter
     public function validateFileAccess()
     {
         if (
-            \in_array('com.woltlab.wcf.user.avatar', $this->selectedData)
+            \in_array('com.woltlab.wcf.user', $this->selectedData)
             || \in_array('com.woltlab.wbb.attachment', $this->selectedData)
             || \in_array('com.woltlab.wcf.conversation.attachment', $this->selectedData)
             || \in_array('com.woltlab.gallery.image', $this->selectedData)
@@ -134,9 +132,6 @@ final class IPB3xExporter extends AbstractExporter
                 $queue[] = 'com.woltlab.wcf.user.option';
             }
             $queue[] = 'com.woltlab.wcf.user';
-            if (\in_array('com.woltlab.wcf.user.avatar', $this->selectedData)) {
-                $queue[] = 'com.woltlab.wcf.user.avatar';
-            }
 
             if (\in_array('com.woltlab.wcf.user.comment', $this->selectedData)) {
                 $queue[] = 'com.woltlab.wcf.user.comment';

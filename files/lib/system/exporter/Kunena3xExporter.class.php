@@ -33,7 +33,6 @@ final class Kunena3xExporter extends AbstractExporter
         'com.woltlab.wcf.user' => 'Users',
         'com.woltlab.wcf.user.group' => 'UserGroups',
         'com.woltlab.wcf.user.rank' => 'UserRanks',
-        'com.woltlab.wcf.user.avatar' => 'UserAvatars',
         'com.woltlab.wbb.board' => 'Boards',
         'com.woltlab.wbb.thread' => 'Threads',
         'com.woltlab.wbb.post' => 'Posts',
@@ -44,7 +43,7 @@ final class Kunena3xExporter extends AbstractExporter
      * @inheritDoc
      */
     protected $limits = [
-        'com.woltlab.wcf.user' => 200,
+        'com.woltlab.wcf.user' => 100,
         'com.woltlab.wbb.thread' => 200,
         'com.woltlab.wbb.attachment' => 100,
     ];
@@ -57,7 +56,6 @@ final class Kunena3xExporter extends AbstractExporter
         return [
             'com.woltlab.wcf.user' => [
                 'com.woltlab.wcf.user.group',
-                'com.woltlab.wcf.user.avatar',
                 'com.woltlab.wcf.user.rank',
             ],
             'com.woltlab.wbb.board' => [
@@ -82,9 +80,6 @@ final class Kunena3xExporter extends AbstractExporter
                 }
             }
             $queue[] = 'com.woltlab.wcf.user';
-            if (\in_array('com.woltlab.wcf.user.avatar', $this->selectedData)) {
-                $queue[] = 'com.woltlab.wcf.user.avatar';
-            }
         }
 
         // board
@@ -120,7 +115,7 @@ final class Kunena3xExporter extends AbstractExporter
     public function validateFileAccess()
     {
         if (
-            \in_array('com.woltlab.wcf.user.avatar', $this->selectedData)
+            \in_array('com.woltlab.wcf.user', $this->selectedData)
             || \in_array('com.woltlab.wbb.attachment', $this->selectedData)
         ) {
             if (

@@ -49,7 +49,6 @@ final class VB5xExporter extends AbstractExporter
     protected $methods = [
         'com.woltlab.wcf.user' => 'Users',
         'com.woltlab.wcf.user.group' => 'UserGroups',
-        'com.woltlab.wcf.user.avatar' => 'UserAvatars',
         'com.woltlab.wcf.user.option' => 'UserOptions',
         'com.woltlab.wbb.board' => 'Boards',
         'com.woltlab.wbb.thread' => 'Threads',
@@ -75,7 +74,6 @@ final class VB5xExporter extends AbstractExporter
      */
     protected $limits = [
         'com.woltlab.wcf.user' => 100,
-        'com.woltlab.wcf.user.avatar' => 100,
         'com.woltlab.wcf.conversation.attachment' => 100,
         'com.woltlab.wbb.thread' => 200,
         'com.woltlab.wbb.attachment' => 100,
@@ -92,7 +90,6 @@ final class VB5xExporter extends AbstractExporter
         return [
             'com.woltlab.wcf.user' => [
                 'com.woltlab.wcf.user.group',
-                'com.woltlab.wcf.user.avatar',
                 'com.woltlab.wcf.user.option',
                 /*  'com.woltlab.wcf.user.comment',
                 'com.woltlab.wcf.user.follower',
@@ -168,7 +165,7 @@ final class VB5xExporter extends AbstractExporter
             }
         }
 
-        if (\in_array('com.woltlab.wcf.user.avatar', $this->selectedData)) {
+        if (\in_array('com.woltlab.wcf.user', $this->selectedData)) {
             if ($this->readOption('usefileavatar')) {
                 // TODO: Not yet supported
                 return false;
@@ -195,9 +192,6 @@ final class VB5xExporter extends AbstractExporter
                 $queue[] = 'com.woltlab.wcf.user.option';
             }
             $queue[] = 'com.woltlab.wcf.user';
-            if (\in_array('com.woltlab.wcf.user.avatar', $this->selectedData)) {
-                $queue[] = 'com.woltlab.wcf.user.avatar';
-            }
 
             /*if (in_array('com.woltlab.wcf.user.comment', $this->selectedData)) {
                 $queue[] = 'com.woltlab.wcf.user.comment';

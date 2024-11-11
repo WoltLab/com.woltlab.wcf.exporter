@@ -43,7 +43,7 @@ final class Flarum1xExporter extends AbstractExporter
      * @inheritDoc
      */
     protected $limits = [
-        'com.woltlab.wcf.user' => 200,
+        'com.woltlab.wcf.user' => 100,
     ];
 
     /**

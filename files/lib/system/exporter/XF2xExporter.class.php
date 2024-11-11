@@ -49,7 +49,6 @@ final class XF2xExporter extends AbstractExporter
         'com.woltlab.wcf.user.follower' => 'Followers',
         'com.woltlab.wcf.user.comment' => 'WallEntries',
         'com.woltlab.wcf.user.comment.response' => 'WallResponses',
-        'com.woltlab.wcf.user.avatar' => 'UserAvatars',
         'com.woltlab.wcf.user.option' => 'UserOptions',
         'com.woltlab.wcf.conversation.label' => 'ConversationFolders',
         'com.woltlab.wcf.conversation' => 'Conversations',
@@ -84,8 +83,7 @@ final class XF2xExporter extends AbstractExporter
      * @inheritDoc
      */
     protected $limits = [
-        'com.woltlab.wcf.user' => 200,
-        'com.woltlab.wcf.user.avatar' => 100,
+        'com.woltlab.wcf.user' => 100,
         'com.woltlab.wcf.user.follower' => 100,
         'com.woltlab.gallery.image' => 100,
         'com.woltlab.filebase.file' => 100,
@@ -100,7 +98,6 @@ final class XF2xExporter extends AbstractExporter
         return [
             'com.woltlab.wcf.user' => [
                 'com.woltlab.wcf.user.group',
-                'com.woltlab.wcf.user.avatar',
                 'com.woltlab.wcf.user.option',
                 'com.woltlab.wcf.user.comment',
                 'com.woltlab.wcf.user.follower',
@@ -150,7 +147,7 @@ final class XF2xExporter extends AbstractExporter
     public function validateFileAccess()
     {
         if (
-            \in_array('com.woltlab.wcf.user.avatar', $this->selectedData)
+            \in_array('com.woltlab.wcf.user', $this->selectedData)
             || \in_array('com.woltlab.wbb.attachment', $this->selectedData)
             || \in_array('com.woltlab.wcf.smiley', $this->selectedData)
             || \in_array('com.woltlab.gallery.image', $this->selectedData)
@@ -185,9 +182,6 @@ final class XF2xExporter extends AbstractExporter
                 $queue[] = 'com.woltlab.wcf.user.option';
             }
             $queue[] = 'com.woltlab.wcf.user';
-            if (\in_array('com.woltlab.wcf.user.avatar', $this->selectedData)) {
-                $queue[] = 'com.woltlab.wcf.user.avatar';
-            }
 
             if (\in_array('com.woltlab.wcf.user.comment', $this->selectedData)) {
                 $queue[] = 'com.woltlab.wcf.user.comment';

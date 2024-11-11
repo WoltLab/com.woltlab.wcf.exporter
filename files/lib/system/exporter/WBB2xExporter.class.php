@@ -35,7 +35,6 @@ final class WBB2xExporter extends AbstractExporter
         'com.woltlab.wcf.user' => 'Users',
         'com.woltlab.wcf.user.group' => 'UserGroups',
         'com.woltlab.wcf.user.rank' => 'UserRanks',
-        'com.woltlab.wcf.user.avatar' => 'UserAvatars',
         'com.woltlab.wcf.user.option' => 'UserOptions',
         'com.woltlab.wcf.conversation.label' => 'ConversationFolders',
         'com.woltlab.wcf.conversation' => 'Conversations',
@@ -100,7 +99,7 @@ final class WBB2xExporter extends AbstractExporter
     public function validateFileAccess()
     {
         if (
-            \in_array('com.woltlab.wcf.user.avatar', $this->selectedData)
+            \in_array('com.woltlab.wcf.user', $this->selectedData)
             || \in_array('com.woltlab.wbb.attachment', $this->selectedData)
             || \in_array('com.woltlab.wcf.conversation.attachment', $this->selectedData)
             || \in_array('com.woltlab.wcf.smiley', $this->selectedData)
@@ -121,7 +120,6 @@ final class WBB2xExporter extends AbstractExporter
         return [
             'com.woltlab.wcf.user' => [
                 'com.woltlab.wcf.user.group',
-                'com.woltlab.wcf.user.avatar',
                 'com.woltlab.wcf.user.option',
                 'com.woltlab.wcf.user.rank',
             ],
@@ -159,9 +157,6 @@ final class WBB2xExporter extends AbstractExporter
                 $queue[] = 'com.woltlab.wcf.user.option';
             }
             $queue[] = 'com.woltlab.wcf.user';
-            if (\in_array('com.woltlab.wcf.user.avatar', $this->selectedData)) {
-                $queue[] = 'com.woltlab.wcf.user.avatar';
-            }
 
             // conversation
             if (\in_array('com.woltlab.wcf.conversation', $this->selectedData)) {

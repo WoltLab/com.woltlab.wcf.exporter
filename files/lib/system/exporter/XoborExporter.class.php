@@ -39,8 +39,7 @@ final class XoborExporter extends AbstractExporter
      * @inheritDoc
      */
     protected $limits = [
-        'com.woltlab.wcf.user' => 200,
-        'com.woltlab.wcf.user.avatar' => 100,
+        'com.woltlab.wcf.user' => 100,
         'com.woltlab.wcf.user.follower' => 100,
     ];
 
