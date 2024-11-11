@@ -508,8 +508,8 @@ final class WBB3xExporter extends AbstractExporter
                 FROM        wcf" . $this->dbNo . "_user user_table
                 LEFT JOIN   wcf" . $this->dbNo . "_user_option_value user_option_value
                 ON          user_option_value.userID = user_table.userID
-                LEFT JOIN   " . $this->databasePrefix . "avatars avatars
-                ON          avatars.userid = user.userid
+                LEFT JOIN   wcf" . $this->dbNo . "_avatar avatars
+                ON          avatars.userID = user_table.userID
                 WHERE       user_table.userID BETWEEN ? AND ?
                 ORDER BY    user_table.userID";
         $statement = $this->database->prepareUnmanaged($sql);
