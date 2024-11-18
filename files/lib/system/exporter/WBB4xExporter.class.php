@@ -812,6 +812,16 @@ final class WBB4xExporter extends AbstractExporter
      */
     public function countUserAvatars()
     {
+        if (\version_compare($this->getPackageVersion('com.woltlab.wcf'), '6.2.0 Alpha 1', '>=')) {
+            $sql = "SELECT   COUNT(*) as counter
+                    FROM     wcf" . $this->dbNo . "_user
+                    WHERE    avatarFileID IS NOT NULL";
+            $statement = $this->database->prepareUnmanaged($sql);
+            $statement->execute();
+
+            return $statement->fetchSingleColumn();
+        }
+
         return $this->__getMaxID("wcf" . $this->dbNo . "_user_avatar", 'avatarID');
     }
 
@@ -823,6 +833,12 @@ final class WBB4xExporter extends AbstractExporter
      */
     public function exportUserAvatars($offset, $limit)
     {
+        if (\version_compare($this->getPackageVersion('com.woltlab.wcf'), '6.2.0 Alpha 1', '>=')) {
+            $this->exportUserAvatars62($offset, $limit);
+
+            return;
+        }
+
         $sql = "SELECT      *
                 FROM        wcf" . $this->dbNo . "_user_avatar
                 WHERE       avatarID BETWEEN ? AND ?
@@ -841,6 +857,37 @@ final class WBB4xExporter extends AbstractExporter
                 ->getImporter('com.woltlab.wcf.user.avatar')
                 ->import(
                     $row['avatarID'],
+                    $data,
+                    ['fileLocation' => $fileLocation]
+                );
+        }
+    }
+
+    private function exportUserAvatars62(int $offset, int $limit): void
+    {
+        $sql = "SELECT   userID, avatarFileID
+                FROM     wcf" . $this->dbNo . "_user
+                WHERE    avatarFileID IS NOT NULL
+                ORDER BY userID";
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
+        $statement->execute();
+
+        $userIDToFileID = $statement->fetchMap('userID', 'avatarFileID');
+        $fileIDs = \array_values($userIDToFileID);
+        $avatarLocations = $this->getFileLocations($fileIDs);
+
+        foreach ($userIDToFileID as $userID => $fileID) {
+            ['location' => $fileLocation, 'filename' => $avatarName] = $avatarLocations[$fileID];
+
+            $data = [
+                'avatarName' => $avatarName,
+                'userID' => $userID,
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.user.avatar')
+                ->import(
+                    $fileID,
                     $data,
                     ['fileLocation' => $fileLocation]
                 );
