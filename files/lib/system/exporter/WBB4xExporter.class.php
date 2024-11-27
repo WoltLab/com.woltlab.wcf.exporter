@@ -812,7 +812,7 @@ final class WBB4xExporter extends AbstractExporter
      */
     public function countUserAvatars()
     {
-        if (\version_compare($this->getPackageVersion('com.woltlab.wcf'), '6.2.0 Alpha 1', '>=')) {
+        if (Package::compareVersion($this->getPackageVersion('com.woltlab.wcf'), '6.2.0 Alpha 1', '>=')) {
             $sql = "SELECT   COUNT(*) as counter
                     FROM     wcf" . $this->dbNo . "_user
                     WHERE    avatarFileID IS NOT NULL";
@@ -833,7 +833,7 @@ final class WBB4xExporter extends AbstractExporter
      */
     public function exportUserAvatars($offset, $limit)
     {
-        if (\version_compare($this->getPackageVersion('com.woltlab.wcf'), '6.2.0 Alpha 1', '>=')) {
+        if (Package::compareVersion($this->getPackageVersion('com.woltlab.wcf'), '6.2.0 Alpha 1', '>=')) {
             $this->exportUserAvatars62($offset, $limit);
 
             return;
