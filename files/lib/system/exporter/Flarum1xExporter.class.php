@@ -57,7 +57,7 @@ final class Flarum1xExporter extends AbstractExporter
             ],
             'com.woltlab.wbb.board' => [
                 'com.woltlab.wbb.like',
-                'com.woltlab.wbb.poll',
+                //'com.woltlab.wbb.poll',
                 'com.woltlab.wcf.label',
             ],
         ];
@@ -231,7 +231,7 @@ final class Flarum1xExporter extends AbstractExporter
 
             $additionalData = [
                 'groupIDs' => \array_unique(
-                    ArrayUtil::toIntegerArray(\explode(',', $row['groupIDs']))
+                    ArrayUtil::toIntegerArray(\explode(',', $row['groupIDs'] ?: ''))
                 ),
                 'options' => [],
             ];
@@ -747,7 +747,13 @@ final class Flarum1xExporter extends AbstractExporter
             );
         }, $message);
 
-        $out = $parsedown->text($message);
+        $out = \preg_replace(
+            '/\[upl-image-preview.*?url=([^ \]]++).*?\]/',
+            '![image](\\1)',
+            $message
+        );
+
+        $out = $parsedown->text($out);
 
         $out = \preg_replace(
             '/<pre><code class="language-([a-zA-Z0-9]+)">/',
