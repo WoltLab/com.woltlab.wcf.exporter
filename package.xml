@@ -30,10 +30,6 @@
 		<instruction type="objectType" />
 	</instructions>
 
-	<instructions type="update" fromversion="6.0.*">
-		<instruction type="file"/>
-	</instructions>
-
 	<instructions type="update" fromversion="6.1.0 RC 1">
 		<instruction type="file">files_update.tar</instruction>
 	</instructions>
