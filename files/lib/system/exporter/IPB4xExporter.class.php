@@ -350,7 +350,7 @@ final class IPB4xExporter extends AbstractExporter
                 );
 
             // update password hash
-            if ($newUserID) {
+            if ($newUserID && $row['members_pass_hash']) {
                 if (\str_starts_with($row['members_pass_hash'], '$2')) {
                     $password = 'Bcrypt:' . $row['members_pass_hash'];
                 } else {
