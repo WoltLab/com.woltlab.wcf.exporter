@@ -2757,6 +2757,19 @@ final class WBB4xExporter extends AbstractExporter
             '>='
         );
 
+        $coverPhotoFiles = [];
+        if (\version_compare($this->getPackageVersion('com.woltlab.calendar'), '6.2.0 Alpha 1', '>=')) {
+            $conditionBuilder = new PreparedStatementConditionBuilder();
+            $conditionBuilder->add('eventID IN (?)', [$eventIDs]);
+
+            $sql = "SELECT coverPhotoFileID
+                    FROM   calendar" . $this->dbNo . "_event
+                    " . $conditionBuilder;
+            $statement = $this->database->prepareUnmanaged($sql);
+            $statement->execute($conditionBuilder->getParameters());
+            $coverPhotoFiles = $this->getFileLocations($statement->fetchAll(\PDO::FETCH_COLUMN));
+        }
+
         $sql = "SELECT  packageDir
                 FROM    wcf" . $this->dbNo . "_package
                 WHERE   package = ?";
@@ -2823,7 +2836,6 @@ final class WBB4xExporter extends AbstractExporter
                 'subject' => $row['subject'],
                 'message' => $row['message'],
                 'time' => $row['time'],
-                'eventDate' => $row['eventDate'],
                 'views' => $row['views'],
                 'enableHtml' => $row['enableHtml'],
                 'enableComments' => $row['enableComments'],
@@ -2840,6 +2852,7 @@ final class WBB4xExporter extends AbstractExporter
                 'maxCompanions' => $row['maxCompanions'],
                 'participationIsChangeable' => $row['participationIsChangeable'],
                 'participationIsPublic' => $row['participationIsPublic'],
+                ...$this->getEventDateData($row),
             ];
 
             if (\version_compare($this->getPackageVersion('com.woltlab.calendar'), '3.0.0 Alpha 1', '<')) {
@@ -2851,8 +2864,16 @@ final class WBB4xExporter extends AbstractExporter
                 // 3.0+
                 $data['categoryID'] = $row['categoryID'];
             }
-            if ($sourceVersion52 && $row['coverPhotoID']) {
-                $additionalData['coverPhoto'] = $this->getCoverPhotoPath($calendarFilePath, $row);
+            if ($sourceVersion52) {
+                if (!empty($row['coverPhotoFileID']) && isset($coverPhotoFiles[$row['coverPhotoFileID']])) {
+                    // since 6.2.0
+                    ['location' => $location, 'filename' => $filename] = $coverPhotoFiles[$row['coverPhotoFileID']];
+                    $additionalData['coverPhotoLocation'] = $location;
+                    $additionalData['coverPhotoFilename'] = $filename;
+                } elseif (!empty($row['coverPhotoID'])) {
+                    // before 6.2.0
+                    $additionalData['coverPhotoLocation'] = $this->getCoverPhotoPath($calendarFilePath, $row);
+                }
             }
 
             ImportHandler::getInstance()
@@ -2863,6 +2884,41 @@ final class WBB4xExporter extends AbstractExporter
                     $additionalData
                 );
         }
+    }
+
+    private function getEventDateData(array $row): array
+    {
+        if (!empty($row['eventDate'])) {
+            $row = \unserialize($row['eventDate']);
+        }
+
+        $repeatWeeklyByDay = $row['repeatWeeklyByDay'] ?? [];
+        if (\is_array($repeatWeeklyByDay)) {
+            $repeatWeeklyByDay = \implode(',', $repeatWeeklyByDay);
+        }
+
+        return [
+            'isFullDay' => $row['isFullDay'] ?? 0,
+            'enableRepeat' => $row['enableRepeat'] ?? 0,
+            'firstDayOfWeek' => $row['firstDayOfWeek'] ?? null,
+            'startTime' => $row['startTime'] ?? null,
+            'endTime' => $row['endTime'] ?? null,
+            'timezone' => $row['timezone'] ?? 'UTC',
+            'repeatType' => $row['repeatType'] ?? null,
+            'repeatWeeklyByDay' => $repeatWeeklyByDay,
+            'repeatMonthlyByMonthDay' => $row['repeatMonthlyByMonthDay'] ?? null,
+            'repeatMonthlyDayOffset' => $row['repeatMonthlyDayOffset'] ?? null,
+            'repeatMonthlyByWeekDay' => $row['repeatMonthlyByWeekDay'] ?? null,
+            'repeatYearlyByMonthDay' => $row['repeatYearlyByMonthDay'] ?? null,
+            'repeatYearlyByMonthDom' => $row['repeatYearlyByMonthDom'] ?? null,
+            'repeatYearlyDayOffset' => $row['repeatYearlyDayOffset'] ?? null,
+            'repeatYearlyByWeekDay' => $row['repeatYearlyByWeekDay'] ?? null,
+            'repeatYearlyByMonth' => $row['repeatYearlyByMonth'] ?? null,
+            'repeatEndType' => $row['repeatEndType'] ?? null,
+            'repeatInterval' => $row['repeatInterval'] ?? null,
+            'repeatEndCount' => $row['repeatEndCount'] ?? null,
+            'repeatEndDate' => $row['repeatEndDate'] ?? null,
+        ];
     }
 
     /**
@@ -4618,7 +4674,7 @@ final class WBB4xExporter extends AbstractExporter
      *
      * @param int[] $fileIDs
      *
-     * @return array{int, array{location: string, filename: string}}[]
+     * @return array{int, array{location: string, filename: string}}
      */
     private function getFileLocations(array $fileIDs): array
     {
