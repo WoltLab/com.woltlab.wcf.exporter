@@ -2055,7 +2055,12 @@ final class WBB4xExporter extends AbstractExporter
      */
     public function exportBlogs($offset, $limit)
     {
-        $sourceVersion52 = \version_compare(
+        $sourceVersion62 = \version_compare(
+            $this->getPackageVersion('com.woltlab.blog'),
+            '6.2.0 Alpha 1',
+            '>='
+        );
+        $sourceVersion52 = !$sourceVersion62 && \version_compare(
             $this->getPackageVersion('com.woltlab.blog'),
             '5.2.0 Alpha 1',
             '>='
@@ -2069,6 +2074,7 @@ final class WBB4xExporter extends AbstractExporter
         $packageDir = $statement->fetchColumn();
         $blogFilePath = FileUtil::getRealPath($this->fileSystemPath . '/' . $packageDir);
 
+        $coverPhotoFiles = [];
         if ($sourceVersion52) {
             $sql = "SELECT      blog.*, language.languageCode, coverPhoto.fileExtension, coverPhoto.fileHash
                 FROM        blog" . $this->dbNo . "_blog blog
@@ -2079,6 +2085,16 @@ final class WBB4xExporter extends AbstractExporter
                 WHERE       blog.blogID BETWEEN ? AND ?
                 ORDER BY    blog.blogID";
         } else {
+            if ($sourceVersion62) {
+                $sql = "SELECT   coverPhotoFileID
+                        FROM     blog" . $this->dbNo . "_blog
+                        WHERE    blogID BETWEEN ? AND ?
+                        ORDER BY blogID";
+                $statement = $this->database->prepareUnmanaged($sql);
+                $statement->execute([$offset + 1, $offset + $limit]);
+                $coverPhotoFiles = $this->getFileLocations($statement->fetchAll(\PDO::FETCH_COLUMN));
+            }
+
             $sql = "SELECT      blog.*, language.languageCode
                 FROM        blog" . $this->dbNo . "_blog blog
                 LEFT JOIN   wcf" . $this->dbNo . "_language language
@@ -2086,6 +2102,7 @@ final class WBB4xExporter extends AbstractExporter
                 WHERE       blog.blogID BETWEEN ? AND ?
                 ORDER BY    blog.blogID";
         }
+
         $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
@@ -2102,7 +2119,14 @@ final class WBB4xExporter extends AbstractExporter
             if ($row['languageCode']) {
                 $additionalData['languageCode'] = $row['languageCode'];
             }
-            if ($sourceVersion52 && $row['coverPhotoID']) {
+
+            if ($sourceVersion62) {
+                if (!empty($row['coverPhotoFileID']) && isset($coverPhotoFiles[$row['coverPhotoFileID']])) {
+                    ['location' => $location, 'filename' => $filename] = $coverPhotoFiles[$row['coverPhotoFileID']];
+                    $additionalData['coverPhotoLocation'] = $location;
+                    $additionalData['coverPhotoFilename'] = $filename;
+                }
+            } elseif ($sourceVersion52 && $row['coverPhotoID']) {
                 $additionalData['coverPhoto'] = $this->getCoverPhotoPath($blogFilePath, $row);
             }
 
@@ -2166,7 +2190,12 @@ final class WBB4xExporter extends AbstractExporter
             '2.1.0 Alpha 1',
             '>='
         );
-        $sourceVersion52 = \version_compare(
+        $sourceVersion62 = \version_compare(
+            $this->getPackageVersion('com.woltlab.blog'),
+            '6.2.0 Alpha 1',
+            '>='
+        );
+        $sourceVersion52 = !$sourceVersion62 && \version_compare(
             $this->getPackageVersion('com.woltlab.blog'),
             '5.2.0 Alpha 1',
             '>='
@@ -2220,6 +2249,7 @@ final class WBB4xExporter extends AbstractExporter
         $conditionBuilder = new PreparedStatementConditionBuilder();
         $conditionBuilder->add('entry.entryID IN (?)', [$entryIDs]);
 
+        $coverPhotoFiles = [];
         if ($sourceVersion52) {
             $sql = "SELECT      entry.*, language.languageCode, coverPhoto.fileExtension, coverPhoto.fileHash
                 FROM        blog" . $this->dbNo . "_entry entry
@@ -2229,6 +2259,15 @@ final class WBB4xExporter extends AbstractExporter
                 ON          entry.coverPhotoID = entry.coverPhotoID
                 " . $conditionBuilder;
         } else {
+            if ($sourceVersion62) {
+                $sql = "SELECT entry.coverPhotoFileID
+                        FROM   blog" . $this->dbNo . "_entry entry
+                        " . $conditionBuilder;
+                $statement = $this->database->prepareUnmanaged($sql);
+                $statement->execute($conditionBuilder->getParameters());
+                $coverPhotoFiles = $this->getFileLocations($statement->fetchAll(\PDO::FETCH_COLUMN));
+            }
+
             $sql = "SELECT      entry.*, language.languageCode
                 FROM        blog" . $this->dbNo . "_entry entry
                 LEFT JOIN   wcf" . $this->dbNo . "_language language
@@ -2248,7 +2287,13 @@ final class WBB4xExporter extends AbstractExporter
             if (isset($categories[$row['entryID']])) {
                 $additionalData['categories'] = $categories[$row['entryID']];
             }
-            if ($sourceVersion52 && $row['coverPhotoID']) {
+            if ($sourceVersion62) {
+                if (!empty($row['coverPhotoFileID']) && isset($coverPhotoFiles[$row['coverPhotoFileID']])) {
+                    ['location' => $location, 'filename' => $filename] = $coverPhotoFiles[$row['coverPhotoFileID']];
+                    $additionalData['coverPhotoLocation'] = $location;
+                    $additionalData['coverPhotoFilename'] = $filename;
+                }
+            } elseif ($sourceVersion52 && $row['coverPhotoID']) {
                 $additionalData['coverPhoto'] = $this->getCoverPhotoPath($blogFilePath, $row);
             }
 
@@ -4674,7 +4719,7 @@ final class WBB4xExporter extends AbstractExporter
      *
      * @param int[] $fileIDs
      *
-     * @return array{int, array{location: string, filename: string}}
+     * @return array<int, array{location: string, filename: string}>
      */
     private function getFileLocations(array $fileIDs): array
     {
