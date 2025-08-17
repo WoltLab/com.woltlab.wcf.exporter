@@ -376,7 +376,6 @@ final class PhpBB3xExporter extends AbstractExporter
             $options = [
                 'location' => $row['user_from'],
                 'birthday' => $birthday ? $birthday->format('Y-m-d') : '',
-                'icq' => $row['user_icq'],
                 'homepage' => $row['user_website'],
                 'hobbies' => $row['user_interests'],
             ];

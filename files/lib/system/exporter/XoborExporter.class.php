@@ -143,7 +143,6 @@ final class XoborExporter extends AbstractExporter
                 'birthday' => $row['birthday'],
                 'occupation' => $row['occupation'],
                 'homepage' => $row['homepage'],
-                'icq' => $row['icq'],
                 'hobbies' => $row['hobby'],
                 'aboutMe' => $row['story_editable'],
                 'location' => $row['ploc'],
