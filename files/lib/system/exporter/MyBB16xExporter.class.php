@@ -346,7 +346,6 @@ final class MyBB16xExporter extends AbstractExporter
             $options = [
                 'location' => (isset($knownProfileFields['Location']) && !empty($row['fid' . $knownProfileFields['Location']['fid']])) ? $row['fid' . $knownProfileFields['Location']['fid']] : '',
                 'birthday' => $birthday ? $birthday->format('Y-m-d') : '',
-                'icq' => $row['icq'],
                 'homepage' => $row['website'],
             ];
 
