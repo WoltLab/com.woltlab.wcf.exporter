@@ -31,7 +31,7 @@ use wcf\util\UserUtil;
  */
 final class XF2xExporter extends AbstractExporter
 {
-    protected static $knownProfileFields = ['facebook', 'twitter', 'skype', 'occupation'];
+    protected static $knownProfileFields = ['facebook', 'twitter', 'occupation'];
 
     /**
      * board cache

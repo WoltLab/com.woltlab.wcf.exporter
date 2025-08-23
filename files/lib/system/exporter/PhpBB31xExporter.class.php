@@ -27,8 +27,13 @@ use wcf\util\UserUtil;
 final class PhpBB31xExporter extends AbstractExporter
 {
     protected static $knownProfileFields = [
-        'phpbb_location', 'phpbb_website', 'phpbb_interests', 'phpbb_occupation',
-        'phpbb_facebook', 'phpbb_twitter', 'phpbb_googleplus', 'phpbb_skype',
+        'phpbb_location',
+        'phpbb_website',
+        'phpbb_interests',
+        'phpbb_occupation',
+        'phpbb_facebook',
+        'phpbb_twitter',
+        'phpbb_googleplus',
     ];
 
     private const TOPIC_TYPE_GLOBAL = 3;
@@ -423,8 +428,6 @@ final class PhpBB31xExporter extends AbstractExporter
                         case 'phpbb_googleplus':
                             $profileField['field_id'] = 'googlePlus';
                             break;
-                        case 'phpbb_skype':
-                            $profileField['field_id'] = 'skype';
                     }
                     // prevent issues with 0 being false for select
                     if ($profileField['field_type'] == 'profilefields.type.dropdown') {
@@ -1588,8 +1591,14 @@ final class PhpBB31xExporter extends AbstractExporter
             'm_approve' => ['canEnableThread'],
             'm_chgposter' => [],
             'm_delete' => [
-                'canDeleteThread', 'canReadDeletedThread', 'canRestoreThread', 'canDeleteThreadCompletely',
-                'canDeletePost', 'canReadDeletedPost', 'canRestorePost', 'canDeletePostCompletely',
+                'canDeleteThread',
+                'canReadDeletedThread',
+                'canRestoreThread',
+                'canDeleteThreadCompletely',
+                'canDeletePost',
+                'canReadDeletedPost',
+                'canRestorePost',
+                'canDeletePostCompletely',
             ],
             'm_edit' => ['canEditPost'],
             'm_info' => [],

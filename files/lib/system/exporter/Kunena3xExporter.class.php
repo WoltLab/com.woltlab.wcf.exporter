@@ -239,7 +239,6 @@ final class Kunena3xExporter extends AbstractExporter
             $options = [
                 'location' => $row['location'] ?: '',
                 'birthday' => $row['birthdate'] ?: '',
-                'skype' => $row['skype'] ?: '',
                 'homepage' => $row['websiteurl'] ?: '',
                 'gender' => $row['gender'] ?: '',
             ];

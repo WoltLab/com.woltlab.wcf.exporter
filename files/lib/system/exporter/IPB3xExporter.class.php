@@ -21,7 +21,7 @@ use wcf\util\UserUtil;
  */
 final class IPB3xExporter extends AbstractExporter
 {
-    protected static $knownProfileFields = ['website', 'gender', 'location', 'interests', 'skype'];
+    protected static $knownProfileFields = ['website', 'gender', 'location', 'interests'];
 
     /**
      * board cache
@@ -264,7 +264,6 @@ final class IPB3xExporter extends AbstractExporter
                 //'timezone' => $row['time_offset'],
                 'homepage' => (isset($knownProfileFields['website']) && !empty($row['field_' . $knownProfileFields['website']['pf_id']])) ? $row['field_' . $knownProfileFields['website']['pf_id']] : '',
                 'hobbies' => (isset($knownProfileFields['interests']) && !empty($row['field_' . $knownProfileFields['interests']['pf_id']])) ? $row['field_' . $knownProfileFields['interests']['pf_id']] : '',
-                'skype' => (isset($knownProfileFields['skype']) && !empty($row['field_' . $knownProfileFields['skype']['pf_id']])) ? $row['field_' . $knownProfileFields['skype']['pf_id']] : '',
                 'location' => (isset($knownProfileFields['location']) && !empty($row['field_' . $knownProfileFields['location']['pf_id']])) ? $row['field_' . $knownProfileFields['location']['pf_id']] : '',
             ];
 
