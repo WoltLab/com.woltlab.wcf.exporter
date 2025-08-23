@@ -27,7 +27,7 @@ use wcf\util\UserUtil;
  */
 final class XF12xExporter extends AbstractExporter
 {
-    protected static $knownProfileFields = ['facebook', 'icq', 'twitter', 'skype'];
+    protected static $knownProfileFields = ['facebook', 'twitter', 'skype'];
 
     /**
      * board cache

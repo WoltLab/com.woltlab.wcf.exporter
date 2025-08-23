@@ -28,7 +28,7 @@ final class PhpBB31xExporter extends AbstractExporter
 {
     protected static $knownProfileFields = [
         'phpbb_location', 'phpbb_website', 'phpbb_interests', 'phpbb_occupation',
-        'phpbb_icq', 'phpbb_facebook', 'phpbb_twitter', 'phpbb_googleplus', 'phpbb_skype',
+        'phpbb_facebook', 'phpbb_twitter', 'phpbb_googleplus', 'phpbb_skype',
     ];
 
     private const TOPIC_TYPE_GLOBAL = 3;
@@ -413,9 +413,6 @@ final class PhpBB31xExporter extends AbstractExporter
                             break;
                         case 'phpbb_occupation':
                             $profileField['field_id'] = 'occupation';
-                            break;
-                        case 'phpbb_icq':
-                            $profileField['field_id'] = 'icq';
                             break;
                         case 'phpbb_facebook':
                             $profileField['field_id'] = 'facebook';

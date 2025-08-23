@@ -338,7 +338,6 @@ final class WBB2xExporter extends AbstractExporter
                 'birthday' => $row['birthday'],
                 'gender' => $row['gender'],
                 'homepage' => $row['homepage'],
-                'icq' => $row['icq'] ? $row['icq'] : '',
                 'location' => !empty($row['field1']) ? $row['field1'] : '',
                 'hobbies' => !empty($row['field2']) ? $row['field2'] : '',
                 'occupation' => !empty($row['field3']) ? $row['field3'] : '',
