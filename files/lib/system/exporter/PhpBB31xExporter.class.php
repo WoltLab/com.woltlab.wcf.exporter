@@ -33,7 +33,6 @@ final class PhpBB31xExporter extends AbstractExporter
         'phpbb_occupation',
         'phpbb_facebook',
         'phpbb_twitter',
-        'phpbb_googleplus',
     ];
 
     private const TOPIC_TYPE_GLOBAL = 3;
@@ -425,9 +424,6 @@ final class PhpBB31xExporter extends AbstractExporter
                         case 'phpbb_twitter':
                             $profileField['field_id'] = 'twitter';
                             break;
-                        case 'phpbb_googleplus':
-                            $profileField['field_id'] = 'googlePlus';
-                            break;
                     }
                     // prevent issues with 0 being false for select
                     if ($profileField['field_type'] == 'profilefields.type.dropdown') {
@@ -517,7 +513,6 @@ final class PhpBB31xExporter extends AbstractExporter
                 case 'profilefields.type.url':
                     $type = 'URL';
                     break;
-                case 'profilefields.type.googleplus':
                 case 'profilefields.type.string':
                     $type = 'text';
                     break;
@@ -539,9 +534,6 @@ final class PhpBB31xExporter extends AbstractExporter
             switch ($row['field_type']) {
                 case 'profilefields.type.dropdown':
                     $outputClass = SelectOptionsUserOptionOutput::class;
-                    break;
-                case 'profilefields.type.googleplus':
-                    $outputClass = 'wcf\system\option\user\GooglePlusUserOptionOutput';
                     break;
                 case 'profilefields.type.url':
                     $outputClass = URLUserOptionOutput::class;
