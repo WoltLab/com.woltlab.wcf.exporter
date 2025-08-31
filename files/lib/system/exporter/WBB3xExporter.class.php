@@ -534,7 +534,6 @@ final class WBB3xExporter extends AbstractExporter
                 'signatureEnableHtml' => $row['enableSignatureHtml'],
                 'disableSignature' => $row['disableSignature'],
                 'disableSignatureReason' => $row['disableSignatureReason'],
-                'profileHits' => $row['profileHits'],
                 'userTitle' => $row['userTitle'],
                 'lastActivityTime' => $row['lastActivityTime'],
             ];
