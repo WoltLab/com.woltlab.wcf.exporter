@@ -250,7 +250,6 @@ final class IPB3xExporter extends AbstractExporter
                 'banned' => $row['member_banned'],
                 'registrationIpAddress' => UserUtil::convertIPv4To6($row['ip_address']),
                 'signature' => self::fixMessage($row['signature']),
-                'profileHits' => $row['members_profile_views'],
                 'userTitle' => $row['title'] ? self::fixSubject($row['title']) : '',
                 'lastActivityTime' => $row['last_activity'],
             ];
