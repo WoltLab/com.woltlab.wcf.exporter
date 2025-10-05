@@ -3007,7 +3007,6 @@ final class WBB4xExporter extends AbstractExporter
             'repeatMonthlyDayOffset' => $row['repeatMonthlyDayOffset'] ?? null,
             'repeatMonthlyByWeekDay' => $row['repeatMonthlyByWeekDay'] ?? null,
             'repeatYearlyByMonthDay' => $row['repeatYearlyByMonthDay'] ?? null,
-            'repeatYearlyByMonthDom' => $row['repeatYearlyByMonthDom'] ?? null,
             'repeatYearlyDayOffset' => $row['repeatYearlyDayOffset'] ?? null,
             'repeatYearlyByWeekDay' => $row['repeatYearlyByWeekDay'] ?? null,
             'repeatYearlyByMonth' => $row['repeatYearlyByMonth'] ?? null,
