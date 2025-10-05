@@ -48,6 +48,7 @@ final class WBB4xExporter extends AbstractExporter
         'com.woltlab.wcf.user.comment' => 'ProfileComments',
         'com.woltlab.wcf.user.comment.response' => 'ProfileCommentResponses',
         'com.woltlab.wcf.user.avatar' => 'UserAvatars',
+        'com.woltlab.wcf.user.coverPhoto' => 'UserCoverPhotos',
         'com.woltlab.wcf.user.option' => 'UserOptions',
         'com.woltlab.wcf.conversation.label' => 'ConversationLabels',
         'com.woltlab.wcf.conversation' => 'Conversations',
@@ -119,6 +120,7 @@ final class WBB4xExporter extends AbstractExporter
     protected $limits = [
         'com.woltlab.wcf.user' => 100,
         'com.woltlab.wcf.user.avatar' => 100,
+        'com.woltlab.wcf.user.coverPhoto' => 100,
         'com.woltlab.wcf.conversation.attachment' => 100,
         'com.woltlab.wbb.thread' => 200,
         'com.woltlab.wbb.attachment' => 100,
@@ -135,6 +137,7 @@ final class WBB4xExporter extends AbstractExporter
      */
     protected $requiresFileAccess = [
         'com.woltlab.wcf.user.avatar',
+        'com.woltlab.wcf.user.coverPhoto',
         'com.woltlab.wbb.attachment',
         'com.woltlab.wcf.conversation.attachment',
         'com.woltlab.wcf.smiley',
@@ -177,6 +180,7 @@ final class WBB4xExporter extends AbstractExporter
             'com.woltlab.wcf.user' => [
                 'com.woltlab.wcf.user.group',
                 'com.woltlab.wcf.user.avatar',
+                'com.woltlab.wcf.user.coverPhoto',
                 'com.woltlab.wcf.user.option',
                 'com.woltlab.wcf.user.comment',
                 'com.woltlab.wcf.user.follower',
@@ -298,6 +302,9 @@ final class WBB4xExporter extends AbstractExporter
             $queue[] = 'com.woltlab.wcf.user';
             if (\in_array('com.woltlab.wcf.user.avatar', $this->selectedData)) {
                 $queue[] = 'com.woltlab.wcf.user.avatar';
+            }
+            if (\in_array('com.woltlab.wcf.user.coverPhoto', $this->selectedData)) {
+                $queue[] = 'com.woltlab.wcf.user.coverPhoto';
             }
 
             if (\in_array('com.woltlab.wcf.user.comment', $this->selectedData)) {
@@ -885,6 +892,52 @@ final class WBB4xExporter extends AbstractExporter
 
             ImportHandler::getInstance()
                 ->getImporter('com.woltlab.wcf.user.avatar')
+                ->import(
+                    $fileID,
+                    $data,
+                    ['fileLocation' => $fileLocation]
+                );
+        }
+    }
+
+    public function countUserCoverPhotos(): int
+    {
+        if (!Package::compareVersion($this->getPackageVersion('com.woltlab.wcf'), '6.2.0 Alpha 1', '>=')) {
+            return 0;
+        }
+
+        $sql = "SELECT   COUNT(*)
+                FROM     wcf" . $this->dbNo . "_user
+                WHERE    coverPhotoFileID IS NOT NULL";
+        $statement = $this->database->prepareUnmanaged($sql);
+        $statement->execute();
+
+        return $statement->fetchSingleColumn();
+    }
+
+    public function exportUserCoverPhotos(int $offset, int $limit): void
+    {
+        $sql = "SELECT   userID, coverPhotoFileID
+                FROM     wcf" . $this->dbNo . "_user
+                WHERE    coverPhotoFileID IS NOT NULL
+                ORDER BY userID";
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
+        $statement->execute();
+
+        $userIDToFileID = $statement->fetchMap('userID', 'coverPhotoFileID');
+        $fileIDs = \array_values($userIDToFileID);
+        $coverPhotoLocations = $this->getFileLocations($fileIDs);
+
+        foreach ($userIDToFileID as $userID => $fileID) {
+            ['location' => $fileLocation, 'filename' => $coverPhotoName] = $coverPhotoLocations[$fileID];
+
+            $data = [
+                'coverPhotoName' => $coverPhotoName,
+                'userID' => $userID,
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.user.coverPhoto')
                 ->import(
                     $fileID,
                     $data,
