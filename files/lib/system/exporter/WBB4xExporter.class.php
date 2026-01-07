@@ -74,6 +74,7 @@ final class WBB4xExporter extends AbstractExporter
 
         'com.woltlab.wcf.article.category' => 'ArticleCategories',
         'com.woltlab.wcf.article' => 'Articles',
+        'com.woltlab.wcf.article.attachment' => 'ArticleAttachments',
         'com.woltlab.wcf.article.comment' => 'ArticleComments',
         'com.woltlab.wcf.article.comment.response' => 'ArticleCommentResponses',
 
@@ -121,6 +122,7 @@ final class WBB4xExporter extends AbstractExporter
         'com.woltlab.wcf.user' => 100,
         'com.woltlab.wcf.user.avatar' => 100,
         'com.woltlab.wcf.user.coverPhoto' => 100,
+        'com.woltlab.wcf.article.attachment' => 100,
         'com.woltlab.wcf.conversation.attachment' => 100,
         'com.woltlab.wbb.thread' => 200,
         'com.woltlab.wbb.attachment' => 100,
@@ -139,6 +141,7 @@ final class WBB4xExporter extends AbstractExporter
         'com.woltlab.wcf.user.avatar',
         'com.woltlab.wcf.user.coverPhoto',
         'com.woltlab.wbb.attachment',
+        'com.woltlab.wcf.article.attachment',
         'com.woltlab.wcf.conversation.attachment',
         'com.woltlab.wcf.smiley',
         'com.woltlab.wcf.media',
@@ -220,6 +223,7 @@ final class WBB4xExporter extends AbstractExporter
             ],
             'com.woltlab.wcf.article' => [
                 'com.woltlab.wcf.article.category',
+                'com.woltlab.wcf.article.attachment',
                 'com.woltlab.wcf.article.comment',
             ],
             'com.woltlab.wcf.smiley' => [],
@@ -482,7 +486,12 @@ final class WBB4xExporter extends AbstractExporter
                 if (\in_array('com.woltlab.wcf.article.category', $this->selectedData)) {
                     $queue[] = 'com.woltlab.wcf.article.category';
                 }
+
                 $queue[] = 'com.woltlab.wcf.article';
+
+                if (\in_array('com.woltlab.wcf.article.attachment', $this->selectedData)) {
+                    $queue[] = 'com.woltlab.wcf.article.attachment';
+                }
                 if (\in_array('com.woltlab.wcf.article.comment', $this->selectedData)) {
                     $queue[] = 'com.woltlab.wcf.article.comment';
                     $queue[] = 'com.woltlab.wcf.article.comment.response';
@@ -4205,6 +4214,31 @@ final class WBB4xExporter extends AbstractExporter
     }
 
     /**
+     * Counts article attachments.
+     *
+     * @since 6.2
+     */
+    public function countArticleAttachments(): int
+    {
+        return $this->countAttachments('com.woltlab.wcf.article');
+    }
+
+    /**
+     * Exports article attachments.
+     *
+     * @since 6.2
+     */
+    public function exportArticleAttachments(int $offset, int $limit): void
+    {
+        $this->exportAttachments(
+            'com.woltlab.wcf.article',
+            'com.woltlab.wcf.article.attachment',
+            $offset,
+            $limit
+        );
+    }
+
+    /**
      * Counts article comments.
      */
     public function countArticleComments()
@@ -4454,6 +4488,12 @@ final class WBB4xExporter extends AbstractExporter
      */
     private function exportAttachments($objectType, $importer, $offset, $limit)
     {
+        if (\version_compare($this->getPackageVersion('com.woltlab.wcf'), '6.1.0 Alpha 1', '>=')) {
+            $this->exportAttachmentsFromFiles($objectType, $importer, $offset, $limit);
+
+            return;
+        }
+
         $sql = "SELECT      *
                 FROM        wcf" . $this->dbNo . "_attachment
                 WHERE       objectTypeID = ?
@@ -4483,6 +4523,87 @@ final class WBB4xExporter extends AbstractExporter
                 ->getImporter($importer)
                 ->import(
                     $row['attachmentID'],
+                    $data,
+                    ['fileLocation' => $fileLocation]
+                );
+        }
+    }
+
+    /**
+     * Exports the attachments stored using the upload pipeline starting with
+     * WoltLab Suite 6.1.
+     *
+     * @since 6.2
+     */
+    private function exportAttachmentsFromFiles(string $objectType, string $importer, int $offset, int $limit): void
+    {
+        $sql = "SELECT      attachmentID, objectID, userID, downloads, lastDownloadTime, uploadTime, showOrder, fileID
+                FROM        wcf" . $this->dbNo . "_attachment
+                WHERE       objectTypeID = ?
+                        AND objectID IS NOT NULL
+                        AND fileID IS NOT NULL
+                ORDER BY    attachmentID";
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
+        $statement->execute([
+            $this->getObjectTypeID('com.woltlab.wcf.attachment.objectType', $objectType)
+        ]);
+        $attachments = $statement->fetchAll(\PDO::FETCH_ASSOC);
+        $fileIDs = \array_map(static fn(array $row) => $row['fileID'], $attachments);
+        if ($fileIDs === []) {
+            return;
+        }
+
+        $conditions = new PreparedStatementConditionBuilder();
+        $conditions->add("fileID IN (?)", [$fileIDs]);
+
+        $sql = "SELECT  fileID, filename, fileHash, fileExtension
+                FROM    wcf" . $this->dbNo . "_file
+                {$conditions}";
+        $statement = $this->database->prepareUnmanaged($sql);
+        $statement->execute($conditions->getParameters());
+        $files = [];
+        while ($row = $statement->fetchArray()) {
+            $files[$row['fileID']] = $row;
+        }
+
+        foreach ($attachments as $attachment) {
+            $file = $files[$attachment['fileID']] ?? null;
+            if ($file === null) {
+                continue;
+            }
+
+            $data = [
+                'objectID' => $attachment['objectID'],
+                'userID' => $attachment['userID'] ?: null,
+                'filename' => $file['filename'],
+                'downloads' => $attachment['downloads'],
+                'lastDownloadTime' => $attachment['lastDownloadTime'],
+                'uploadTime' => $attachment['uploadTime'],
+                'showOrder' => $attachment['showOrder'],
+            ];
+
+            $sourceFilename = \sprintf(
+                '%d-%s.%s',
+                $file['fileID'],
+                $file['fileHash'],
+                $file['fileExtension'],
+            );
+            $folderA = \substr($file['fileHash'], 0, 2);
+            $folderB = \substr($file['fileHash'], 2, 2);
+
+            $relativePath = \sprintf(
+                '_data/%s/files/%s/%s/',
+                $file['fileExtension'] !== 'bin' ? 'public' : 'private',
+                $folderA,
+                $folderB,
+            );
+
+            $fileLocation = $this->fileSystemPath . $relativePath . $sourceFilename;
+
+            ImportHandler::getInstance()
+                ->getImporter($importer)
+                ->import(
+                    $attachment['attachmentID'],
                     $data,
                     ['fileLocation' => $fileLocation]
                 );
