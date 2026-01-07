@@ -4128,6 +4128,7 @@ final class WBB4xExporter extends AbstractExporter
 
         // get article contents
         $contents = [];
+        $contentIDs = [];
         $conditionBuilder = new PreparedStatementConditionBuilder();
         $conditionBuilder->add('article_content.articleID IN (?)', [$articleIDs]);
         $sql = "SELECT  article_content.*,
@@ -4154,6 +4155,16 @@ final class WBB4xExporter extends AbstractExporter
                 'metaTitle' => $row['metaTitle'] ?? '',
                 'metaDescription' => $row['metaDescription'] ?? '',
             ];
+
+            $contentIDs[$row['languageCode'] ?: 0] = $row['articleContentID'];
+        }
+
+        $tags = $this->getTags('com.woltlab.wcf.article', \array_values($contentIDs));
+        foreach ($contents as $articleID => $data) {
+            foreach ($data as $languageCode => $articleContent) {
+                $contentID = $contentIDs[$languageCode];
+                $contents[$articleID][$languageCode]['tags'] = $tags[$contentID] ?? [];
+            }
         }
 
         $conditionBuilder = new PreparedStatementConditionBuilder();
