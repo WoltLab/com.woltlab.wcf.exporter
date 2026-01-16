@@ -1063,7 +1063,7 @@ final class VB3or4xExporter extends AbstractExporter
         $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            $participants = \explode(',', $row['participants']);
+            $participants = \explode(',', $row['participants'] ?: '');
             $participants[] = $row['fromuserid'];
             $conversationID = $this->getConversationID($row['parentpmid'] ?: $row['pmid'], $participants);
 
@@ -1120,7 +1120,7 @@ final class VB3or4xExporter extends AbstractExporter
         $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            $participants = \explode(',', $row['participants']);
+            $participants = \explode(',', $row['participants'] ?: '');
             $participants[] = $row['fromuserid'];
             $conversationID = $this->getConversationID($row['conversationID'], $participants);
 
@@ -1176,7 +1176,7 @@ final class VB3or4xExporter extends AbstractExporter
         $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
-            $participants = \explode(',', $row['participants']);
+            $participants = \explode(',', $row['participants'] ?: '');
             $participants[] = $row['fromuserid'];
             $conversationID = $this->getConversationID(
                 $row['parentpmid'] ?: $row['pmid'],
