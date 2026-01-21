@@ -4055,6 +4055,7 @@ final class WBB4xExporter extends AbstractExporter
                 'uploadTime' => $row['uploadTime'],
                 'userID' => $row['userID'],
                 'username' => $row['username'],
+                'captionEnableHtml' => $row['captionEnableHtml'] ?? 0,
             ];
 
             $additionalData = [
