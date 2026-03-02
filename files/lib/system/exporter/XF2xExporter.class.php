@@ -2288,7 +2288,6 @@ final class XF2xExporter extends AbstractExporter
             'enableClickjackingProtection' => true,
             'maxImageResizePixelCount' => 20000000,
         ];
-        /** @noinspection PhpIncludeInspection */
         require($this->fileSystemPath . 'src/config.php');
 
         return $config;
@@ -2324,7 +2323,6 @@ final class XF2xExporter extends AbstractExporter
                         break;
                 }
 
-                /** @noinspection PhpUndefinedVariableInspection */
                 return '[media]' . $url;
             };
 

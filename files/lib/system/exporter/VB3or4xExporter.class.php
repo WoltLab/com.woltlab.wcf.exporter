@@ -2055,7 +2055,6 @@ final class VB3or4xExporter extends AbstractExporter
                     'height' => $row['height'],
                 ];
 
-                /** @noinspection PhpUndefinedVariableInspection */
                 $additionalData = [
                     'fileLocation' => $file,
                 ];
@@ -2068,11 +2067,9 @@ final class VB3or4xExporter extends AbstractExporter
                         $additionalData
                     );
             } catch (\Exception $e) {
-                /** @noinspection PhpUndefinedVariableInspection */
                 if ($vB === 3 && $this->readOption('album_dataloc') == self::GALLERY_DATABASE && $file) {
                     @\unlink($file);
                 }
-                /** @noinspection PhpUndefinedVariableInspection */
                 if ($vB === 4 && $this->readOption('attachfile') == self::ATTACHFILE_DATABASE && $file) {
                     @\unlink($file);
                 }
@@ -2191,12 +2188,10 @@ final class VB3or4xExporter extends AbstractExporter
         foreach (DateUtil::getAvailableTimezones() as $timezone) {
             $dateTimeZone = new \DateTimeZone($timezone);
             $offset = $dateTimeZone->getOffset(new \DateTime("now", $dateTimeZone));
-            /** @noinspection PhpIllegalArrayKeyTypeInspection */
             $timezones[\round($offset / 360, 0)] = $timezone;
         }
 
         while ($row = $statement->fetchArray()) {
-            /** @noinspection PhpIllegalArrayKeyTypeInspection */
             $eventDateData = [
                 'startTime' => $row['dateline_from'],
                 // vBulletin does not properly support endTime for recurring events

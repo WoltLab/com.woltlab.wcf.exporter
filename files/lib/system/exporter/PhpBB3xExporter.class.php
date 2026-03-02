@@ -623,7 +623,6 @@ final class PhpBB3xExporter extends AbstractExporter
             $statement->execute(['avatar_path', 'avatar_salt', 'avatar_gallery_path']);
             while ($row = $statement->fetchArray()) {
                 $config_name = $row['config_name'];
-                /** @noinspection PhpVariableVariableInspection */
                 ${$config_name} = $row['config_value'];
             }
         }
@@ -797,7 +796,6 @@ final class PhpBB3xExporter extends AbstractExporter
                 'isDraft' => $row['isDraft'],
             ];
 
-            /** @noinspection PhpUndefinedVariableInspection */
             ImportHandler::getInstance()
                 ->getImporter('com.woltlab.wcf.conversation')
                 ->import(
@@ -1650,7 +1648,6 @@ final class PhpBB3xExporter extends AbstractExporter
             $statement->execute(['upload_path']);
             while ($row = $statement->fetchArray()) {
                 $config_name = $row['config_name'];
-                /** @noinspection PhpVariableVariableInspection */
                 ${$config_name} = $row['config_value'];
             }
         }

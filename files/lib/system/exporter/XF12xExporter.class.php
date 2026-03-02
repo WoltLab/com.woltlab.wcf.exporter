@@ -422,7 +422,6 @@ final class XF12xExporter extends AbstractExporter
                         $password = 'invalid:-:-';
                         break;
                 }
-                /** @noinspection PhpUndefinedVariableInspection */
                 $passwordUpdateStatement->execute([$password, $newUserID]);
             }
         }
@@ -1778,7 +1777,6 @@ final class XF12xExporter extends AbstractExporter
             'enableClickjackingProtection' => true,
             'maxImageResizePixelCount' => 20000000,
         ];
-        /** @noinspection PhpIncludeInspection */
         require($this->fileSystemPath . 'library/config.php');
 
         return $config;
@@ -1814,7 +1812,6 @@ final class XF12xExporter extends AbstractExporter
                         break;
                 }
 
-                /** @noinspection PhpUndefinedVariableInspection */
                 return '[media]' . $url;
             };
 

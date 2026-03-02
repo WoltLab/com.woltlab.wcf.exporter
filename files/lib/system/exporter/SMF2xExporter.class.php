@@ -692,7 +692,6 @@ final class SMF2xExporter extends AbstractExporter
                 'userID' => $row['id_member'],
             ];
 
-            /** @noinspection PhpUndefinedVariableInspection */
             ImportHandler::getInstance()
                 ->getImporter('com.woltlab.wcf.user.avatar')
                 ->import(
