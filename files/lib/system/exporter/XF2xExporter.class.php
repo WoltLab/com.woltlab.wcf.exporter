@@ -7,7 +7,6 @@ use wbb\data\board\Board;
 use wcf\data\conversation\Conversation;
 use wcf\data\like\Like;
 use wcf\data\object\type\ObjectTypeCache;
-use wcf\data\package\PackageCache;
 use wcf\data\user\group\UserGroup;
 use wcf\data\user\option\UserOption;
 use wcf\system\database\util\PreparedStatementConditionBuilder;
@@ -1794,11 +1793,6 @@ final class XF2xExporter extends AbstractExporter
      */
     public function exportFilebaseFiles($offset, $limit)
     {
-        static $supportThreadInstalled = null;
-        if ($supportThreadInstalled === null) {
-            $supportThreadInstalled = PackageCache::getInstance()->getPackageByIdentifier('com.woltlab.filebase.supportThread') !== null;
-        }
-
         // get file ids
         $sql = "SELECT      resource_id
                 FROM        xf_rm_resource
@@ -1876,11 +1870,6 @@ final class XF2xExporter extends AbstractExporter
                         $additionalData['iconLocation'] = $iconLocation;
                     }
                 }
-            }
-
-            if ($supportThreadInstalled && $row['discussion_thread_id']) {
-                $data['supportThreadID'] = ImportHandler::getInstance()
-                    ->getNewID('com.woltlab.wbb.thread', $row['discussion_thread_id']);
             }
 
             ImportHandler::getInstance()
