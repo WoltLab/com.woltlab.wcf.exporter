@@ -2,6 +2,7 @@
 
 namespace wcf\system\exporter;
 
+use blog\data\blog\Blog;
 use wbb\data\board\Board;
 use wcf\data\like\Like;
 use wcf\data\user\group\UserGroup;
@@ -659,7 +660,7 @@ final class IPB4xExporter extends AbstractExporter
                 'time' => $row['mt_date'],
                 'userID' => $row['mt_starter_id'] ?: null,
                 'username' => $row['mt_is_system'] ? 'System' : ($row['name'] ?: ''),
-                'isDraft' => $row['mt_is_draft'],
+                'isDraft' => $row['mt_is_draft'] ?? 0,
             ];
 
             ImportHandler::getInstance()
@@ -920,7 +921,10 @@ final class IPB4xExporter extends AbstractExporter
      */
     public function countPosts()
     {
-        return $this->__getMaxID($this->databasePrefix . "forums_posts", 'pid');
+        return \max(
+            $this->__getMaxID($this->databasePrefix . "forums_posts", 'pid'),
+            $this->__getMaxID($this->databasePrefix . "forums_archive_posts", 'archive_id')
+        );
     }
 
     /**
@@ -931,12 +935,22 @@ final class IPB4xExporter extends AbstractExporter
      */
     public function exportPosts($offset, $limit)
     {
-        $sql = "SELECT      *
+        $sql = "SELECT      pid, topic_id, author_id, author_name,
+                            post, post_date, queued,
+                            edit_time, post_edit_reason,
+                            ip_address, pdelete_time
                 FROM        " . $this->databasePrefix . "forums_posts
                 WHERE       pid BETWEEN ? AND ?
+                UNION
+                SELECT      archive_id AS pid, archive_topic_id AS topic_id, archive_author_id AS author_id, archive_author_name AS author_name,
+                            archive_content AS post, archive_content_date AS post_date, archive_queued AS queued,
+                            archive_edit_time AS edit_time, archive_edit_reason AS post_edit_reason,
+                            archive_ip_address AS ip_address, 0 AS pdelete_time
+                FROM        " . $this->databasePrefix . "forums_archive_posts
+                WHERE       archive_id BETWEEN ? AND ?
                 ORDER BY    pid";
         $statement = $this->database->prepareUnmanaged($sql);
-        $statement->execute([$offset + 1, $offset + $limit]);
+        $statement->execute([$offset + 1, $offset + $limit, $offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
                 'threadID' => $row['topic_id'],
@@ -1204,10 +1218,12 @@ final class IPB4xExporter extends AbstractExporter
      */
     private function countAttachments($type)
     {
+        $id = ($type === 'blog_Entries' ? 'id1' : 'id2');
+
         $sql = "SELECT  COUNT(*) AS count
                 FROM    " . $this->databasePrefix . "core_attachments_map
                 WHERE   location_key = ?
-                    AND id2 IS NOT NULL";
+                    AND {$id} IS NOT NULL";
         $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute([$type]);
         $row = $statement->fetchArray();
@@ -1225,12 +1241,14 @@ final class IPB4xExporter extends AbstractExporter
      */
     private function exportAttachments($type, $objectType, $offset, $limit)
     {
-        $sql = "SELECT      core_attachments.*, core_attachments_map.id2
+        $id = ($type === 'blog_Entries' ? 'id1' : 'id2');
+
+        $sql = "SELECT      core_attachments.*, core_attachments_map.id2, core_attachments_map.id1
                 FROM        " . $this->databasePrefix . "core_attachments_map core_attachments_map
                 LEFT JOIN   " . $this->databasePrefix . "core_attachments core_attachments
                 ON          core_attachments.attach_id = core_attachments_map.attachment_id
                 WHERE       core_attachments_map.location_key = ?
-                        AND core_attachments_map.id2 IS NOT NULL
+                        AND core_attachments_map.{$id} IS NOT NULL
                 ORDER BY    core_attachments_map.attachment_id";
         $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute([$type]);
@@ -1242,7 +1260,7 @@ final class IPB4xExporter extends AbstractExporter
             $fileLocation = $this->fileSystemPath . 'uploads/' . $row['attach_location'];
 
             $data = [
-                'objectID' => $row['id2'],
+                'objectID' => $row[$id],
                 'userID' => $row['attach_member_id'] ?: null,
                 'filename' => $row['attach_file'],
                 'downloads' => $row['attach_hits'],
@@ -1535,6 +1553,7 @@ final class IPB4xExporter extends AbstractExporter
                 'title' => $this->getLanguageVar('blogs_blog', $row['blog_id']),
                 'description' => self::fixMessage($this->getLanguageVar('blogs_blog', $row['blog_id'], 'desc')),
                 'isFeatured' => $row['blog_pinned'],
+                'accessLevel' => isset($row['blog_social_group']) ? Blog::ACCESS_OWNER : Blog::ACCESS_EVERYONE,
             ];
 
             $additionalData = [];
@@ -1558,7 +1577,7 @@ final class IPB4xExporter extends AbstractExporter
     public function countBlogCategories()
     {
         $sql = "SELECT  COUNT(*) AS count
-                FROM    " . $this->databasePrefix . "blog_entry_categories";
+                FROM    " . $this->databasePrefix . "blog_categories";
         $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute();
         $row = $statement->fetchArray();
@@ -1575,18 +1594,18 @@ final class IPB4xExporter extends AbstractExporter
     public function exportBlogCategories($offset, $limit)
     {
         $sql = "SELECT      *
-                FROM        " . $this->databasePrefix . "blog_entry_categories
-                ORDER BY    entry_category_id";
+                FROM        " . $this->databasePrefix . "blog_categories
+                ORDER BY    category_id";
         $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
             $data = [
-                'title' => $row['entry_category_name'],
+                'title' => $row['category_seo_name'],
             ];
 
             ImportHandler::getInstance()
                 ->getImporter('com.woltlab.blog.category')
-                ->import($row['entry_category_id'], $data);
+                ->import($row['category_id'], $data);
         }
     }
 
@@ -1629,8 +1648,9 @@ final class IPB4xExporter extends AbstractExporter
         $conditionBuilder = new PreparedStatementConditionBuilder();
         $conditionBuilder->add('entry_id IN (?)', [$entryIDs]);
 
-        $sql = "SELECT      *
-                FROM        " . $this->databasePrefix . "blog_entries
+        $sql = "SELECT      blog_entries.*,
+                            (SELECT blog_category_id FROM " . $this->databasePrefix . "blog_blogs WHERE blog_id = blog_entries.entry_blog_id) AS category_id
+                FROM        " . $this->databasePrefix . "blog_entries blog_entries
                 " . $conditionBuilder;
         $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute($conditionBuilder->getParameters());
@@ -1639,8 +1659,8 @@ final class IPB4xExporter extends AbstractExporter
             if (isset($tags[$row['entry_id']])) {
                 $additionalData['tags'] = $tags[$row['entry_id']];
             }
-            if ($row['entry_category_id']) {
-                $additionalData['categories'] = [$row['entry_category_id']];
+            if ($row['category_id']) {
+                $additionalData['categories'] = [$row['category_id']];
             }
 
             $data = [
@@ -1884,6 +1904,9 @@ final class IPB4xExporter extends AbstractExporter
             $string
         );
 
+        // Remove blank paragraphs, as Invision uses them to create spacing between other paragraphs.
+        $string = \str_ireplace('<p></p>', '', $string);
+
         // <p> to newline
         $string = \str_ireplace('<p>', "", $string);
         $string = \str_ireplace('</p>', "\n\n", $string);
@@ -1961,6 +1984,9 @@ final class IPB4xExporter extends AbstractExporter
             $string
         );
 
+        // replace `<fileStore.core_Attachment>` to simplify regex
+        $string = \str_ireplace('<fileStore.core_Attachment>', '', $string);
+
         // embedded attachments
         $string = \preg_replace(
             '~<a class="ipsAttachLink" (?:rel="[^"]*" )?href="[^"]*id=(\d+)[^"]*".*?</a>~i',
@@ -1969,6 +1995,11 @@ final class IPB4xExporter extends AbstractExporter
         );
         $string = \preg_replace(
             '~<a.*?><img data-fileid="(\d+)".*?</a>~i',
+            '[attach]\\1[/attach]',
+            $string
+        );
+        $string = \preg_replace(
+            '~<img[^>]*data-fileid="(\d+)"[^>]*>~i',
             '[attach]\\1[/attach]',
             $string
         );
@@ -1985,9 +2016,17 @@ final class IPB4xExporter extends AbstractExporter
             $string
         );
 
+        // replace base_url placeholder in urls/images
+        $string = \str_ireplace('<___base_url___>/', WCF::getPath(), $string);
+
         // quotes
         $string = \preg_replace(
             '~<blockquote[^>]*data-author="([^"]+)"[^>]*>(.*?)</blockquote>~is',
+            "[quote='\\1']\\2[/quote]",
+            $string
+        );
+        $string = \preg_replace(
+            '~<blockquote[^>]*data-ipsquote-username="([^"]+)"[^>]*>(.*?)</blockquote>~is',
             "[quote='\\1']\\2[/quote]",
             $string
         );
@@ -1996,9 +2035,11 @@ final class IPB4xExporter extends AbstractExporter
             '[quote]\\1[/quote]',
             $string
         );
-
-        // replace base_url placeholder in urls/images
-        $string = \str_ireplace('<___base_url___>/', WCF::getPath(), $string);
+        $string = \preg_replace(
+            '~<header class="ipsQuote_citation">(.*?)</header>~is',
+            '',
+            $string
+        );
 
         // code
         for ($i = 0, $length = \count($codes); $i < $length; $i++) {
