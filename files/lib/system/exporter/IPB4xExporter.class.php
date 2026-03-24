@@ -395,8 +395,10 @@ final class IPB4xExporter extends AbstractExporter
         while ($row = $statement->fetchArray()) {
             $data = [
                 'categoryName' => 'profile.personal',
-                'optionType' => 'textarea',
+                'optionType' => $row['pf_type'] === 'Editor' ? 'message' : 'textarea',
                 'askDuringRegistration' => $row['pf_show_on_reg'],
+                'editable' => 3,
+                'visible' => 15,
             ];
 
             ImportHandler::getInstance()
@@ -1662,6 +1664,9 @@ final class IPB4xExporter extends AbstractExporter
             if ($row['category_id']) {
                 $additionalData['categories'] = [$row['category_id']];
             }
+            if (!empty($row['entry_cover_photo'])) {
+                $additionalData['coverPhoto'] = $this->fileSystemPath . 'uploads/' . $row['entry_cover_photo'];
+            }
 
             $data = [
                 'userID' => $row['entry_author_id'],
@@ -1855,7 +1860,7 @@ final class IPB4xExporter extends AbstractExporter
     private function getLanguageVar($prefix, $id, $suffix = '')
     {
         if ($this->languageStatement === null) {
-            $sql = "SELECT  word_custom
+            $sql = "SELECT  word_custom, word_default
                     FROM    " . $this->databasePrefix . "core_sys_lang_words
                     WHERE   lang_id = ?
                         AND word_key = ?";
@@ -1867,7 +1872,7 @@ final class IPB4xExporter extends AbstractExporter
         ]);
         $row = $this->languageStatement->fetchArray();
         if ($row !== false) {
-            return $row['word_custom'];
+            return $row['word_custom'] ?: $row['word_default'];
         }
 
         return '';
@@ -1984,6 +1989,9 @@ final class IPB4xExporter extends AbstractExporter
             $string
         );
 
+        // replace base_url placeholder in urls/images
+        $string = \str_ireplace('<___base_url___>/', WCF::getPath(), $string);
+
         // replace `<fileStore.core_Attachment>` to simplify regex
         $string = \str_ireplace('<fileStore.core_Attachment>', '', $string);
 
@@ -2015,9 +2023,6 @@ final class IPB4xExporter extends AbstractExporter
             '[url=\'\\1\']\\2[/url]',
             $string
         );
-
-        // replace base_url placeholder in urls/images
-        $string = \str_ireplace('<___base_url___>/', WCF::getPath(), $string);
 
         // quotes
         $string = \preg_replace(
@@ -2069,6 +2074,9 @@ final class IPB4xExporter extends AbstractExporter
 
         // images
         $string = \preg_replace('~<img[^>]+src=["\']([^"\']+)["\'][^>]*/?>~is', '[img]\\1[/img]', $string);
+
+        // youtube
+        $string = \preg_replace('~<iframe[^>]*src="https://www.youtube(?:-nocookie)?.com/embed/([a-zA-Z0-9_-]+)[^"]*"[^>]*></iframe>~is', '[media]https://www.youtube.com/watch?v=\\1[/media]', $string);
 
         // strip tags
         $string = StringUtil::stripHTML($string);
