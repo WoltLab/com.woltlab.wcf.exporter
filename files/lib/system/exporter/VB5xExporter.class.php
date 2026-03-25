@@ -170,8 +170,13 @@ final class VB5xExporter extends AbstractExporter
 
         if (\in_array('com.woltlab.wcf.user.avatar', $this->selectedData)) {
             if ($this->readOption('usefileavatar')) {
-                // TODO: Not yet supported
-                return false;
+                $path = $this->readOption('avatarpath');
+                if (!\str_starts_with($path, '/')) {
+                    $path = \realpath($this->fileSystemPath . $path);
+                }
+                if (!\is_dir($path)) {
+                    return false;
+                }
             }
         }
 
@@ -483,13 +488,12 @@ final class VB5xExporter extends AbstractExporter
             $file = null;
 
             try {
-                // TODO: not yet supported
-                if (false && $this->readOption('usefileavatar')) {
+                if ($this->readOption('usefileavatar')) {
                     $file = $this->readOption('avatarpath');
                     if (!\str_starts_with($file, '/')) {
                         $file = \realpath($this->fileSystemPath . $file);
                     }
-                    $file = FileUtil::addTrailingSlash($file) . 'avatar' . $row['userid'] . '_' . $row['avatarrevision'] . '.gif';
+                    $file = FileUtil::addTrailingSlash($file) . $row['filename'];
                 } else {
                     $file = FileUtil::getTemporaryFilename('avatar_');
                     \file_put_contents($file, $row['filedata']);
@@ -755,7 +759,7 @@ final class VB5xExporter extends AbstractExporter
                 'position' => $board['displayorder'] ?: 0,
                 'boardType' => $boardType,
                 'title' => $board['title'],
-                'description' => $board['description'],
+                'description' => $board['description'] ?? '',
                 'descriptionUseHtml' => 0,
                 'enableMarkingAsDone' => 0,
                 'ignorable' => 1,
@@ -1340,7 +1344,7 @@ final class VB5xExporter extends AbstractExporter
                 INNER JOIN  (
                                 SELECT  contenttypeid
                                 FROM    " . $this->databasePrefix . "contenttype
-                                WHERE   class IN(?)
+                                WHERE   class IN (?)
                             ) x
                 ON          x.contenttypeid = grandparent.contenttypeid
                 INNER JOIN  (
@@ -1368,6 +1372,23 @@ final class VB5xExporter extends AbstractExporter
                     case self::ATTACHFILE_DATABASE:
                         $file = FileUtil::getTemporaryFilename('attachment_');
                         \file_put_contents($file, $row['filedata']);
+                        break;
+
+                    case self::ATTACHFILE_FILESYSTEM:
+                        $file = $this->readOption('attachpath');
+                        if (!StringUtil::startsWith($file, '/')) {
+                            $file = \realpath($this->fileSystemPath . $file);
+                        }
+                        $file = FileUtil::addTrailingSlash($file);
+                        $file .= $row['userid'] . '/' . $row['filedataid'] . '.attach';
+                        break;
+                    case self::ATTACHFILE_FILESYSTEM_SUBFOLDER:
+                        $file = $this->readOption('attachpath');
+                        if (!StringUtil::startsWith($file, '/')) {
+                            $file = \realpath($this->fileSystemPath . $file);
+                        }
+                        $file = FileUtil::addTrailingSlash($file);
+                        $file .= \implode('/', \str_split($row['userid'])) . '/' . $row['filedataid'] . '.attach';
                         break;
                 }
 
@@ -1551,6 +1572,23 @@ final class VB5xExporter extends AbstractExporter
                     case self::ATTACHFILE_DATABASE:
                         $file = FileUtil::getTemporaryFilename('attachment_');
                         \file_put_contents($file, $row['filedata']);
+                        break;
+
+                    case self::ATTACHFILE_FILESYSTEM:
+                        $file = $this->readOption('attachpath');
+                        if (!StringUtil::startsWith($file, '/')) {
+                            $file = \realpath($this->fileSystemPath . $file);
+                        }
+                        $file = FileUtil::addTrailingSlash($file);
+                        $file .= $row['userid'] . '/' . $row['filedataid'] . '.attach';
+                        break;
+                    case self::ATTACHFILE_FILESYSTEM_SUBFOLDER:
+                        $file = $this->readOption('attachpath');
+                        if (!StringUtil::startsWith($file, '/')) {
+                            $file = \realpath($this->fileSystemPath . $file);
+                        }
+                        $file = FileUtil::addTrailingSlash($file);
+                        $file .= \implode('/', \str_split($row['userid'])) . '/' . $row['filedataid'] . '.attach';
                         break;
                 }
 
