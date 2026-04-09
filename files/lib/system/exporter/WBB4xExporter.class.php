@@ -2313,12 +2313,12 @@ final class WBB4xExporter extends AbstractExporter
         $coverPhotoFiles = [];
         if ($sourceVersion52) {
             $sql = "SELECT      entry.*, language.languageCode, coverPhoto.fileExtension, coverPhoto.fileHash
-                FROM        blog" . $this->dbNo . "_entry entry
-                LEFT JOIN   wcf" . $this->dbNo . "_language language
-                ON          language.languageID = entry.languageID
-                LEFT JOIN   blog" . $this->dbNo . "_cover_photo coverPhoto
-                ON          entry.coverPhotoID = entry.coverPhotoID
-                " . $conditionBuilder;
+                    FROM        blog" . $this->dbNo . "_entry entry
+                    LEFT JOIN   wcf" . $this->dbNo . "_language language
+                    ON          language.languageID = entry.languageID
+                    LEFT JOIN   blog" . $this->dbNo . "_cover_photo coverPhoto
+                    ON          coverPhoto.coverPhotoID = entry.coverPhotoID
+                    " . $conditionBuilder;
         } else {
             if ($sourceVersion62) {
                 $sql = "SELECT entry.coverPhotoFileID
@@ -2330,10 +2330,10 @@ final class WBB4xExporter extends AbstractExporter
             }
 
             $sql = "SELECT      entry.*, language.languageCode
-                FROM        blog" . $this->dbNo . "_entry entry
-                LEFT JOIN   wcf" . $this->dbNo . "_language language
-                ON          language.languageID = entry.languageID
-                " . $conditionBuilder;
+                    FROM        blog" . $this->dbNo . "_entry entry
+                    LEFT JOIN   wcf" . $this->dbNo . "_language language
+                    ON          language.languageID = entry.languageID
+                    " . $conditionBuilder;
         }
         $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute($conditionBuilder->getParameters());
