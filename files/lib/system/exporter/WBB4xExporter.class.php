@@ -3051,6 +3051,22 @@ final class WBB4xExporter extends AbstractExporter
      */
     public function exportCalendarEventDates($offset, $limit)
     {
+        $sourceVersion31 = \version_compare(
+            $this->getPackageVersion('com.woltlab.calendar'),
+            '3.1.0 Alpha 1',
+            '>='
+        );
+        $sourceVersion52 = \version_compare(
+            $this->getPackageVersion('com.woltlab.calendar'),
+            '5.2.0 Alpha 1',
+            '>='
+        );
+        $sourceVersion54 = \version_compare(
+            $this->getPackageVersion('com.woltlab.calendar'),
+            '5.4.0 Alpha 1',
+            '>='
+        );
+
         $sql = "SELECT      *
                 FROM        calendar" . $this->dbNo . "_event_date
                 WHERE       eventDateID BETWEEN ? AND ?
@@ -3065,6 +3081,21 @@ final class WBB4xExporter extends AbstractExporter
                 'isFullDay' => $row['isFullDay'],
                 'participants' => $row['participants'],
             ];
+
+            if ($sourceVersion31) {
+                // since 3.1.0
+                $data['cancelTime'] = $row['cancelTime'];
+            }
+            if ($sourceVersion52) {
+                // since 5.2.0, `EventDateImporter` does not map this user id
+                $data['canceledByUserID'] = ImportHandler::getInstance()
+                    ->getNewID('com.woltlab.wcf.user', $row['canceledByUserID']);
+                $data['canceledByUsername'] = $row['canceledByUsername'];
+            }
+            if ($sourceVersion54) {
+                // since 5.4.0
+                $data['cancelReason'] = $row['cancelReason'];
+            }
 
             ImportHandler::getInstance()
                 ->getImporter('com.woltlab.calendar.event.date')
