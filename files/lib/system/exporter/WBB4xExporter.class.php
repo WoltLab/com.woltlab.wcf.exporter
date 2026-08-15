@@ -2867,6 +2867,7 @@ final class WBB4xExporter extends AbstractExporter
         if (\version_compare($this->getPackageVersion('com.woltlab.calendar'), '6.2.0 Alpha 1', '>=')) {
             $conditionBuilder = new PreparedStatementConditionBuilder();
             $conditionBuilder->add('eventID IN (?)', [$eventIDs]);
+            $conditionBuilder->add('coverPhotoFileID IS NOT NULL');
 
             $sql = "SELECT coverPhotoFileID
                     FROM   calendar" . $this->dbNo . "_event
