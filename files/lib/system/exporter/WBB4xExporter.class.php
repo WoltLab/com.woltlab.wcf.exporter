@@ -3005,7 +3005,6 @@ final class WBB4xExporter extends AbstractExporter
 
         return [
             'isFullDay' => $row['isFullDay'] ?? 0,
-            'enableRepeat' => $row['enableRepeat'] ?? 0,
             'firstDayOfWeek' => $row['firstDayOfWeek'] ?? null,
             'startTime' => $row['startTime'] ?? null,
             'endTime' => $row['endTime'] ?? null,
