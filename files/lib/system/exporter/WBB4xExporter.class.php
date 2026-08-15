@@ -2995,7 +2995,10 @@ final class WBB4xExporter extends AbstractExporter
     private function getEventDateData(array $row): array
     {
         if (!empty($row['eventDate'])) {
-            $row = \unserialize($row['eventDate']);
+            $eventDate = @\unserialize($row['eventDate']);
+            if (\is_array($eventDate)) {
+                $row = $eventDate;
+            }
         }
 
         $repeatWeeklyByDay = $row['repeatWeeklyByDay'] ?? [];
@@ -3003,25 +3006,31 @@ final class WBB4xExporter extends AbstractExporter
             $repeatWeeklyByDay = \implode(',', $repeatWeeklyByDay);
         }
 
+        $repeatEndDate = $row['repeatEndDate'] ?? null;
+        if ($repeatEndDate > 2_147_483_647) {
+            $repeatEndDate = 2_147_483_647;
+        }
+
         return [
-            'isFullDay' => $row['isFullDay'] ?? 0,
-            'firstDayOfWeek' => $row['firstDayOfWeek'] ?? null,
-            'startTime' => $row['startTime'] ?? null,
-            'endTime' => $row['endTime'] ?? null,
-            'timezone' => $row['timezone'] ?? 'UTC',
-            'repeatType' => $row['repeatType'] ?? null,
+            'isFullDay' => !empty($row['isFullDay']) ? 1 : 0,
+            'firstDayOfWeek' => \intval($row['firstDayOfWeek'] ?? 0),
+            'startTime' => $row['startTime'] ?? 0,
+            'endTime' => $row['endTime'] ?? 0,
+            'timezone' => !empty($row['timezone']) ? $row['timezone'] : 'UTC',
+            'repeatType' => !empty($row['repeatType']) ? $row['repeatType'] : null,
             'repeatWeeklyByDay' => $repeatWeeklyByDay,
-            'repeatMonthlyByMonthDay' => $row['repeatMonthlyByMonthDay'] ?? null,
-            'repeatMonthlyDayOffset' => $row['repeatMonthlyDayOffset'] ?? null,
-            'repeatMonthlyByWeekDay' => $row['repeatMonthlyByWeekDay'] ?? null,
-            'repeatYearlyByMonthDay' => $row['repeatYearlyByMonthDay'] ?? null,
-            'repeatYearlyDayOffset' => $row['repeatYearlyDayOffset'] ?? null,
-            'repeatYearlyByWeekDay' => $row['repeatYearlyByWeekDay'] ?? null,
-            'repeatYearlyByMonth' => $row['repeatYearlyByMonth'] ?? null,
-            'repeatEndType' => $row['repeatEndType'] ?? null,
-            'repeatInterval' => $row['repeatInterval'] ?? null,
-            'repeatEndCount' => $row['repeatEndCount'] ?? null,
-            'repeatEndDate' => $row['repeatEndDate'] ?? null,
+            'repeatMonthlyByMonthDay' => $row['repeatMonthlyByMonthDay'] ?? 1,
+            'repeatMonthlyDayOffset' => $row['repeatMonthlyDayOffset'] ?? 1,
+            'repeatMonthlyByWeekDay' => $row['repeatMonthlyByWeekDay'] ?? 1,
+            'repeatYearlyByMonthDay' => $row['repeatYearlyByMonthDay'] ?? 1,
+            'repeatYearlyDayOffset' => $row['repeatYearlyDayOffset'] ?? 1,
+            'repeatYearlyByWeekDay' => $row['repeatYearlyByWeekDay'] ?? 1,
+            // `repeatYearlyByMonthDom` is the pre-6.2 key for `yearlyByDayOfMonth`
+            'repeatYearlyByMonth' => $row['repeatYearlyByMonth'] ?? $row['repeatYearlyByMonthDom'] ?? 1,
+            'repeatEndType' => $row['repeatEndType'] ?? 'unlimited',
+            'repeatInterval' => $row['repeatInterval'] ?? 1,
+            'repeatEndCount' => $row['repeatEndCount'] ?? 1000,
+            'repeatEndDate' => $repeatEndDate,
         ];
     }
 
