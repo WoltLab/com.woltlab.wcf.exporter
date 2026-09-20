@@ -2850,7 +2850,7 @@ final class WBB3xExporter extends AbstractExporter
                 'isFullDay' => $oldEventDateData['isFullDay'],
                 'timezone' => 'UTC',
                 'firstDayOfWeek' => $oldEventDateData['wkst'] ?? 1,
-                'repeatType' => $repeatType,
+                'repeatType' => $repeatType !== '' ? $repeatType : null,
                 'repeatInterval' => $oldEventDateData['repeatInterval'] ?? 1,
                 'repeatWeeklyByDay' => $repeatWeeklyByDay,
                 'repeatMonthlyByMonthDay' => $repeatMonthlyByMonthDay,
@@ -2876,7 +2876,7 @@ final class WBB3xExporter extends AbstractExporter
                 'ipAddress' => $row['ipAddress'],
                 'attachments' => $row['attachments'],
                 'enableHtml' => $row['enableHtml'],
-                'eventDate' => \serialize($eventDateData),
+                ...$eventDateData,
             ];
             if ($row['participationID']) {
                 $data['enableParticipation'] = 1;

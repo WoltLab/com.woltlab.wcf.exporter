@@ -2192,6 +2192,11 @@ final class VB3or4xExporter extends AbstractExporter
         }
 
         while ($row = $statement->fetchArray()) {
+            $repeatEndDate = $row['dateline_to'];
+            if ($repeatEndDate > 2_147_483_647) {
+                $repeatEndDate = 2_147_483_647;
+            }
+
             $eventDateData = [
                 'startTime' => $row['dateline_from'],
                 // vBulletin does not properly support endTime for recurring events
@@ -2199,10 +2204,10 @@ final class VB3or4xExporter extends AbstractExporter
                 'isFullDay' => $row['dateline_to'] ? 0 : 1,
                 'timezone' => $timezones[\round($row['utc'] * 10, 0)],
                 'repeatEndType' => 'date',
-                'repeatEndDate' => $row['dateline_to'],
+                'repeatEndDate' => $repeatEndDate,
                 'repeatEndCount' => 1000,
                 'firstDayOfWeek' => 1,
-                'repeatType' => '',
+                'repeatType' => null,
                 'repeatInterval' => 1,
                 'repeatWeeklyByDay' => [],
                 'repeatMonthlyByMonthDay' => 1,
@@ -2216,7 +2221,7 @@ final class VB3or4xExporter extends AbstractExporter
 
             switch ($row['recurring']) {
                 case 0:
-                    $eventDateData['repeatType'] = '';
+                    $eventDateData['repeatType'] = null;
                     break;
                 case 1:
                     $eventDateData['repeatType'] = 'daily';
@@ -2277,7 +2282,7 @@ final class VB3or4xExporter extends AbstractExporter
                 'subject' => $row['title'],
                 'message' => self::fixBBCodes($row['event']),
                 'time' => $row['dateline'],
-                'eventDate' => \serialize($eventDateData),
+                ...$eventDateData,
             ];
 
             ImportHandler::getInstance()
