@@ -2867,6 +2867,7 @@ final class WBB4xExporter extends AbstractExporter
         if (\version_compare($this->getPackageVersion('com.woltlab.calendar'), '6.2.0 Alpha 1', '>=')) {
             $conditionBuilder = new PreparedStatementConditionBuilder();
             $conditionBuilder->add('eventID IN (?)', [$eventIDs]);
+            $conditionBuilder->add('coverPhotoFileID IS NOT NULL');
 
             $sql = "SELECT coverPhotoFileID
                     FROM   calendar" . $this->dbNo . "_event
@@ -2995,7 +2996,10 @@ final class WBB4xExporter extends AbstractExporter
     private function getEventDateData(array $row): array
     {
         if (!empty($row['eventDate'])) {
-            $row = \unserialize($row['eventDate']);
+            $eventDate = @\unserialize($row['eventDate']);
+            if (\is_array($eventDate)) {
+                $row = $eventDate;
+            }
         }
 
         $repeatWeeklyByDay = $row['repeatWeeklyByDay'] ?? [];
@@ -3003,26 +3007,31 @@ final class WBB4xExporter extends AbstractExporter
             $repeatWeeklyByDay = \implode(',', $repeatWeeklyByDay);
         }
 
+        $repeatEndDate = $row['repeatEndDate'] ?? null;
+        if ($repeatEndDate > 2_147_483_647) {
+            $repeatEndDate = 2_147_483_647;
+        }
+
         return [
-            'isFullDay' => $row['isFullDay'] ?? 0,
-            'enableRepeat' => $row['enableRepeat'] ?? 0,
-            'firstDayOfWeek' => $row['firstDayOfWeek'] ?? null,
-            'startTime' => $row['startTime'] ?? null,
-            'endTime' => $row['endTime'] ?? null,
-            'timezone' => $row['timezone'] ?? 'UTC',
-            'repeatType' => $row['repeatType'] ?? null,
+            'isFullDay' => !empty($row['isFullDay']) ? 1 : 0,
+            'firstDayOfWeek' => \intval($row['firstDayOfWeek'] ?? 0),
+            'startTime' => $row['startTime'] ?? 0,
+            'endTime' => $row['endTime'] ?? 0,
+            'timezone' => !empty($row['timezone']) ? $row['timezone'] : 'UTC',
+            'repeatType' => !empty($row['repeatType']) ? $row['repeatType'] : null,
             'repeatWeeklyByDay' => $repeatWeeklyByDay,
-            'repeatMonthlyByMonthDay' => $row['repeatMonthlyByMonthDay'] ?? null,
-            'repeatMonthlyDayOffset' => $row['repeatMonthlyDayOffset'] ?? null,
-            'repeatMonthlyByWeekDay' => $row['repeatMonthlyByWeekDay'] ?? null,
-            'repeatYearlyByMonthDay' => $row['repeatYearlyByMonthDay'] ?? null,
-            'repeatYearlyDayOffset' => $row['repeatYearlyDayOffset'] ?? null,
-            'repeatYearlyByWeekDay' => $row['repeatYearlyByWeekDay'] ?? null,
-            'repeatYearlyByMonth' => $row['repeatYearlyByMonth'] ?? null,
-            'repeatEndType' => $row['repeatEndType'] ?? null,
-            'repeatInterval' => $row['repeatInterval'] ?? null,
-            'repeatEndCount' => $row['repeatEndCount'] ?? null,
-            'repeatEndDate' => $row['repeatEndDate'] ?? null,
+            'repeatMonthlyByMonthDay' => $row['repeatMonthlyByMonthDay'] ?? 1,
+            'repeatMonthlyDayOffset' => $row['repeatMonthlyDayOffset'] ?? 1,
+            'repeatMonthlyByWeekDay' => $row['repeatMonthlyByWeekDay'] ?? 1,
+            'repeatYearlyByMonthDay' => $row['repeatYearlyByMonthDay'] ?? 1,
+            'repeatYearlyDayOffset' => $row['repeatYearlyDayOffset'] ?? 1,
+            'repeatYearlyByWeekDay' => $row['repeatYearlyByWeekDay'] ?? 1,
+            // `repeatYearlyByMonthDom` is the pre-6.2 key for `yearlyByDayOfMonth`
+            'repeatYearlyByMonth' => $row['repeatYearlyByMonth'] ?? $row['repeatYearlyByMonthDom'] ?? 1,
+            'repeatEndType' => $row['repeatEndType'] ?? 'unlimited',
+            'repeatInterval' => $row['repeatInterval'] ?? 1,
+            'repeatEndCount' => $row['repeatEndCount'] ?? 1000,
+            'repeatEndDate' => $repeatEndDate,
         ];
     }
 
@@ -3042,6 +3051,22 @@ final class WBB4xExporter extends AbstractExporter
      */
     public function exportCalendarEventDates($offset, $limit)
     {
+        $sourceVersion31 = \version_compare(
+            $this->getPackageVersion('com.woltlab.calendar'),
+            '3.1.0 Alpha 1',
+            '>='
+        );
+        $sourceVersion52 = \version_compare(
+            $this->getPackageVersion('com.woltlab.calendar'),
+            '5.2.0 Alpha 1',
+            '>='
+        );
+        $sourceVersion54 = \version_compare(
+            $this->getPackageVersion('com.woltlab.calendar'),
+            '5.4.0 Alpha 1',
+            '>='
+        );
+
         $sql = "SELECT      *
                 FROM        calendar" . $this->dbNo . "_event_date
                 WHERE       eventDateID BETWEEN ? AND ?
@@ -3056,6 +3081,21 @@ final class WBB4xExporter extends AbstractExporter
                 'isFullDay' => $row['isFullDay'],
                 'participants' => $row['participants'],
             ];
+
+            if ($sourceVersion31) {
+                // since 3.1.0
+                $data['cancelTime'] = $row['cancelTime'];
+            }
+            if ($sourceVersion52) {
+                // since 5.2.0, `EventDateImporter` does not map this user id
+                $data['canceledByUserID'] = ImportHandler::getInstance()
+                    ->getNewID('com.woltlab.wcf.user', $row['canceledByUserID']);
+                $data['canceledByUsername'] = $row['canceledByUsername'];
+            }
+            if ($sourceVersion54) {
+                // since 5.4.0
+                $data['cancelReason'] = $row['cancelReason'];
+            }
 
             ImportHandler::getInstance()
                 ->getImporter('com.woltlab.calendar.event.date')

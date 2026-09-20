@@ -58,6 +58,10 @@ final class VB5xExporter extends AbstractExporter
         'com.woltlab.wbb.poll' => 'Polls',
         'com.woltlab.wbb.poll.option' => 'PollOptions',
         'com.woltlab.wbb.poll.option.vote' => 'PollOptionVotes',
+        'com.woltlab.wcf.conversation' => 'Conversations',
+        'com.woltlab.wcf.conversation.message' => 'ConversationMessages',
+        'com.woltlab.wcf.conversation.user' => 'ConversationUsers',
+        'com.woltlab.wcf.conversation.attachment' => 'ConversationAttachments',
         'com.woltlab.wcf.smiley.category' => 'SmileyCategories',
         'com.woltlab.wcf.smiley' => 'Smilies',
 
@@ -106,9 +110,9 @@ final class VB5xExporter extends AbstractExporter
                 'com.woltlab.wbb.like',
                 'com.woltlab.wcf.label'*/
             ],
-            /*  'com.woltlab.wcf.conversation' => array(
-                'com.woltlab.wcf.conversation.label'
-            ),*/
+            'com.woltlab.wcf.conversation' => [
+                'com.woltlab.wcf.conversation.attachment',
+            ],
             'com.woltlab.wcf.smiley' => [],
 
             'com.woltlab.blog.entry' => [
@@ -156,7 +160,10 @@ final class VB5xExporter extends AbstractExporter
             }
         }
 
-        if (\in_array('com.woltlab.wbb.attachment', $this->selectedData)) {
+        if (
+            \in_array('com.woltlab.wbb.attachment', $this->selectedData)
+            || \in_array('com.woltlab.wcf.conversation.attachment', $this->selectedData)
+        ) {
             if ($this->readOption('attachfile') != self::ATTACHFILE_DATABASE) {
                 $path = $this->readOption('attachpath');
                 if (!\str_starts_with($path, '/')) {
@@ -208,16 +215,18 @@ final class VB5xExporter extends AbstractExporter
                 $queue[] = 'com.woltlab.wcf.user.comment';
             }
 
-            if (in_array('com.woltlab.wcf.user.follower', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.follower';
+            if (in_array('com.woltlab.wcf.user.follower', $this->selectedData)) $queue[] = 'com.woltlab.wcf.user.follower';*/
+        }
 
-            // conversation
-            if (in_array('com.woltlab.wcf.conversation', $this->selectedData)) {
-                if (in_array('com.woltlab.wcf.conversation.label', $this->selectedData)) $queue[] = 'com.woltlab.wcf.conversation.label';
+        // conversation
+        if (\in_array('com.woltlab.wcf.conversation', $this->selectedData)) {
+            $queue[] = 'com.woltlab.wcf.conversation';
+            $queue[] = 'com.woltlab.wcf.conversation.message';
+            $queue[] = 'com.woltlab.wcf.conversation.user';
 
-                $queue[] = 'com.woltlab.wcf.conversation';
-                $queue[] = 'com.woltlab.wcf.conversation.message';
-                $queue[] = 'com.woltlab.wcf.conversation.user';
-            }*/
+            if (\in_array('com.woltlab.wcf.conversation.attachment', $this->selectedData)) {
+                $queue[] = 'com.woltlab.wcf.conversation.attachment';
+            }
         }
 
         // board
@@ -670,6 +679,247 @@ final class VB5xExporter extends AbstractExporter
                     $data,
                     ['name' => $fieldName]
                 );
+        }
+    }
+
+    /**
+     * Counts conversations.
+     */
+    public function countConversations()
+    {
+        return $this->__getMaxID($this->databasePrefix . "node", 'nodeid');
+    }
+
+    /**
+     * Exports conversations.
+     *
+     * @param   integer     $offset
+     * @param   integer     $limit
+     */
+    public function exportConversations($offset, $limit)
+    {
+        $sql = "SELECT      child.nodeid, child.userid, child.authorname,
+                            child.title, child.created
+                FROM        " . $this->databasePrefix . "node child
+                INNER JOIN  " . $this->databasePrefix . "node parent
+                ON          child.parentid = parent.nodeid
+                INNER JOIN  " . $this->databasePrefix . "privatemessage pm
+                ON          child.nodeid = pm.nodeid
+                INNER JOIN  (
+                                SELECT  contenttypeid
+                                FROM    " . $this->databasePrefix . "contenttype
+                                WHERE   class = ?
+                            ) x
+                ON          x.contenttypeid = parent.contenttypeid
+                WHERE       pm.msgtype = ?
+                AND         child.nodeid BETWEEN ? AND ?
+                ORDER BY    child.nodeid ASC";
+        $statement = $this->database->prepareUnmanaged($sql);
+        $statement->execute(['Channel', 'message', $offset + 1, $offset + $limit]);
+        while ($row = $statement->fetchArray()) {
+            $data = [
+                'subject' => StringUtil::decodeHTML($row['title']),
+                'time' => $row['created'],
+                'userID' => $row['userid'],
+                'username' => StringUtil::decodeHTML($row['authorname']),
+                'isDraft' => 0,
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.conversation')
+                ->import($row['nodeid'], $data);
+        }
+    }
+
+    /**
+     * Counts conversation messages.
+     */
+    public function countConversationMessages()
+    {
+        return $this->__getMaxID($this->databasePrefix . "node", 'nodeid');
+    }
+
+    /**
+     * Exports conversation messages.
+     *
+     * @param   integer     $offset
+     * @param   integer     $limit
+     */
+    public function exportConversationMessages($offset, $limit)
+    {
+        $sql = "SELECT      node.nodeid, node.parentid, node.userid,
+                            node.authorname, node.created,
+                            COALESCE(NULLIF(node.starter, 0), node.nodeid) AS conversationID,
+                            text.rawtext
+                FROM        " . $this->databasePrefix . "node node
+                INNER JOIN  " . $this->databasePrefix . "text text
+                ON          node.nodeid = text.nodeid
+                INNER JOIN  " . $this->databasePrefix . "privatemessage pm
+                ON          node.nodeid = pm.nodeid
+                WHERE       pm.msgtype = ?
+                AND         node.nodeid BETWEEN ? AND ?
+                ORDER BY    node.nodeid ASC";
+        $statement = $this->database->prepareUnmanaged($sql);
+        $statement->execute(['message', $offset + 1, $offset + $limit]);
+        while ($row = $statement->fetchArray()) {
+            $data = [
+                'conversationID' => $row['conversationID'],
+                'userID' => $row['userid'],
+                'username' => StringUtil::decodeHTML($row['authorname']),
+                'message' => self::fixBBCodes($row['rawtext']),
+                'time' => $row['created'],
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.conversation.message')
+                ->import($row['nodeid'], $data);
+        }
+    }
+
+    /**
+     * Counts conversation users.
+     */
+    public function countConversationUsers()
+    {
+        return $this->__getMaxID($this->databasePrefix . "node", 'nodeid');
+    }
+
+    /**
+     * Exports conversation users.
+     *
+     * @param   integer     $offset
+     * @param   integer     $limit
+     */
+    public function exportConversationUsers($offset, $limit)
+    {
+        $sql = "SELECT      node.nodeid, node.created,
+                            COALESCE(NULLIF(node.starter, 0), node.nodeid) AS conversationID,
+                            sentto.userid, sentto.msgread,
+                            user.username
+                FROM        " . $this->databasePrefix . "node node
+                INNER JOIN  " . $this->databasePrefix . "privatemessage pm
+                ON          node.nodeid = pm.nodeid
+                INNER JOIN  " . $this->databasePrefix . "sentto sentto
+                ON          node.nodeid = sentto.nodeid
+                INNER JOIN  " . $this->databasePrefix . "user user
+                ON          sentto.userid = user.userid
+                WHERE       pm.msgtype = ?
+                AND         node.nodeid BETWEEN ? AND ?
+                ORDER BY    node.nodeid ASC";
+        $statement = $this->database->prepareUnmanaged($sql);
+        $statement->execute(['message', $offset + 1, $offset + $limit]);
+        while ($row = $statement->fetchArray()) {
+            $data = [
+                'conversationID' => $row['conversationID'],
+                'participantID' => $row['userid'],
+                'username' => StringUtil::decodeHTML($row['username'] ?: ''),
+                'hideConversation' => 0,
+                'isInvisible' => 0,
+                'lastVisitTime' => $row['msgread'] ? $row['created'] : 0,
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wcf.conversation.user')
+                ->import(0, $data);
+        }
+    }
+
+    /**
+     * Counts conversation attachments.
+     */
+    public function countConversationAttachments()
+    {
+        return $this->__getMaxID($this->databasePrefix . "node", 'nodeid');
+    }
+
+    /**
+     * Exports conversation attachments.
+     *
+     * @param   integer     $offset
+     * @param   integer     $limit
+     * @throws  \Exception
+     */
+    public function exportConversationAttachments($offset, $limit)
+    {
+        $sql = "SELECT      child.*, attach.*, filedata.*
+                FROM        " . $this->databasePrefix . "node child
+                INNER JOIN  " . $this->databasePrefix . "node parent
+                ON          child.parentid = parent.nodeid
+                INNER JOIN  " . $this->databasePrefix . "attach attach
+                ON          child.nodeid = attach.nodeid
+                INNER JOIN  " . $this->databasePrefix . "filedata filedata
+                ON          attach.filedataid = filedata.filedataid
+                INNER JOIN  " . $this->databasePrefix . "privatemessage pm
+                ON          parent.nodeid = pm.nodeid
+                INNER JOIN  (
+                                SELECT  contenttypeid
+                                FROM    " . $this->databasePrefix . "contenttype
+                                WHERE   class = ?
+                            ) x
+                ON          x.contenttypeid = child.contenttypeid
+                WHERE       pm.msgtype = ?
+                AND         child.nodeid BETWEEN ? AND ?
+                ORDER BY    child.nodeid ASC";
+        $statement = $this->database->prepareUnmanaged($sql);
+        $statement->execute(['Attach', 'message', $offset + 1, $offset + $limit]);
+        while ($row = $statement->fetchArray()) {
+            $file = null;
+
+            try {
+                switch ($this->readOption('attachfile')) {
+                    case self::ATTACHFILE_DATABASE:
+                        $file = FileUtil::getTemporaryFilename('attachment_');
+                        \file_put_contents($file, $row['filedata']);
+                        break;
+                    case self::ATTACHFILE_FILESYSTEM:
+                        $file = $this->readOption('attachpath');
+                        if (!\str_starts_with($file, '/')) {
+                            $file = \realpath($this->fileSystemPath . $file);
+                        }
+                        $file = FileUtil::addTrailingSlash($file);
+                        $file .= $row['userid'] . '/' . $row['filedataid'] . '.attach';
+                        break;
+                    case self::ATTACHFILE_FILESYSTEM_SUBFOLDER:
+                        $file = $this->readOption('attachpath');
+                        if (!\str_starts_with($file, '/')) {
+                            $file = \realpath($this->fileSystemPath . $file);
+                        }
+                        $file = FileUtil::addTrailingSlash($file);
+                        $file .= \implode('/', \str_split($row['userid'])) . '/' . $row['filedataid'] . '.attach';
+                        break;
+                }
+
+                if (!\is_file($file) || !\is_readable($file)) {
+                    continue;
+                }
+
+                $data = [
+                    'objectID' => $row['parentid'],
+                    'userID' => $row['userid'] ?: null,
+                    'filename' => $row['filename'],
+                    'downloads' => $row['counter'],
+                    'uploadTime' => $row['dateline'],
+                    'showOrder' => $row['displayOrder'] ?? 0,
+                ];
+
+                ImportHandler::getInstance()
+                    ->getImporter('com.woltlab.wcf.conversation.attachment')
+                    ->import(
+                        $row['nodeid'],
+                        $data,
+                        ['fileLocation' => $file]
+                    );
+
+                if ($this->readOption('attachfile') == self::ATTACHFILE_DATABASE) {
+                    \unlink($file);
+                }
+            } catch (\Exception $e) {
+                if ($this->readOption('attachfile') == self::ATTACHFILE_DATABASE && $file) {
+                    @\unlink($file);
+                }
+
+                throw $e;
+            }
         }
     }
 
