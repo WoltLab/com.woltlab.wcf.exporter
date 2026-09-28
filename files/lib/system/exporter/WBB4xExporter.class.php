@@ -4954,7 +4954,7 @@ final class WBB4xExporter extends AbstractExporter
         $conditionBuilder = new PreparedStatementConditionBuilder();
         $conditionBuilder->add('fileID IN (?)', [$fileIDs]);
 
-        $sql = "SELECT  fileID, fileHash, filename, fileExtension, mimeType
+        $sql = "SELECT  fileID, fileHash, filename, fileExtension
                 FROM    wcf" . $this->dbNo . "_file
                 " . $conditionBuilder;
 
@@ -4963,9 +4963,8 @@ final class WBB4xExporter extends AbstractExporter
 
         $files = [];
         while ($row = $statement->fetchArray()) {
-            $fileExtension = File::getSafeFileExtension($row['mimeType'], $row['filename']);
             /** @see File::isStaticFile() */
-            $isStaticFile = $fileExtension !== 'bin';
+            $isStaticFile = $row['fileExtension'] !== 'bin';
 
             /** @see File::getPathname() */
             $folderA = \substr($row['fileHash'], 0, 2);
