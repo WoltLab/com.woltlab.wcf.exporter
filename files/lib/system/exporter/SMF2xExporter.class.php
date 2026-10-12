@@ -8,7 +8,6 @@ use wcf\data\user\option\UserOption;
 use wcf\system\database\exception\DatabaseException;
 use wcf\system\database\util\PreparedStatementConditionBuilder;
 use wcf\system\importer\ImportHandler;
-use wcf\system\option\user\SelectOptionsUserOptionOutput;
 use wcf\system\Regex;
 use wcf\system\request\LinkHandler;
 use wcf\system\WCF;
@@ -495,7 +494,6 @@ final class SMF2xExporter extends AbstractExporter
                 'selectOptions' => \implode("\n", \explode(',', $row['field_options'])),
                 'visible' => $visible,
                 'searchable' => $row['can_search'] ? 1 : 0,
-                'outputClass' => $row['field_type'] == 'select' ? SelectOptionsUserOptionOutput::class : '',
                 'defaultValue' => $row['default_value'],
             ];
 

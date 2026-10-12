@@ -8,8 +8,6 @@ use wcf\data\user\group\UserGroup;
 use wcf\data\user\option\UserOption;
 use wcf\system\database\util\PreparedStatementConditionBuilder;
 use wcf\system\importer\ImportHandler;
-use wcf\system\option\user\SelectOptionsUserOptionOutput;
-use wcf\system\option\user\URLUserOptionOutput;
 use wcf\system\request\LinkHandler;
 use wcf\system\WCF;
 use wcf\util\FileUtil;
@@ -531,17 +529,6 @@ final class PhpBB31xExporter extends AbstractExporter
                 default:
                     continue 2;
             }
-            switch ($row['field_type']) {
-                case 'profilefields.type.dropdown':
-                    $outputClass = SelectOptionsUserOptionOutput::class;
-                    break;
-                case 'profilefields.type.url':
-                    $outputClass = URLUserOptionOutput::class;
-                    break;
-                default:
-                    $outputClass = '';
-            }
-
             $data = [
                 'categoryName' => 'profile.personal',
                 'optionType' => $type,
@@ -551,7 +538,6 @@ final class PhpBB31xExporter extends AbstractExporter
                 'selectOptions' => $row['selectOptions'] ?: '',
                 'visible' => $row['field_no_view'] ? UserOption::VISIBILITY_ADMINISTRATOR | UserOption::VISIBILITY_OWNER : UserOption::VISIBILITY_ALL,
                 'showOrder' => $row['field_order'],
-                'outputClass' => $outputClass,
                 'isDisabled' => $row['field_active'] ? 0 : 1,
             ];
 

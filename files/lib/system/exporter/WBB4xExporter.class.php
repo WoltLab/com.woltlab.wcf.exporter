@@ -9,12 +9,12 @@ use wcf\data\file\File;
 use wcf\data\object\type\ObjectTypeCache;
 use wcf\data\package\Package;
 use wcf\data\package\PackageCache;
+use wcf\data\user\option\UserOption;
 use wcf\system\database\util\PreparedStatementConditionBuilder;
 use wcf\system\importer\ImportHandler;
 use wcf\system\language\LanguageFactory;
 use wcf\system\WCF;
 use wcf\util\FileUtil;
-use wcf\util\StringUtil;
 
 /**
  * Exporter for Burning Board 4.x
@@ -1004,32 +1004,51 @@ final class WBB4xExporter extends AbstractExporter
             $conditionBuilder->add('optionName NOT IN (?)', [$optionsNames]);
         }
 
+        // Since 6.3, the titles are stored in the `*_l10n` table and the user
+        // options use form options with a JSON-encoded configuration.
+        $hasFormOptions = Package::compareVersion($this->getPackageVersion('com.woltlab.wcf'), '6.3.0 Alpha 1', '>=');
+        if ($hasFormOptions) {
+            // Prefer the monolingual value, then the default language.
+            $l10nSelect = "
+                SELECT      %s
+                FROM        wcf" . $this->dbNo . "_user_option_l10n
+                WHERE       optionID = user_option.optionID
+                ORDER BY    languageID IS NOT NULL,
+                            languageID = (
+                                SELECT  languageID
+                                FROM    wcf" . $this->dbNo . "_language
+                                WHERE   isDefault = 1
+                            ) DESC,
+                            languageID
+                LIMIT       1";
+            $nameSelect = \sprintf($l10nSelect, 'title');
+            $descriptionSelect = \sprintf($l10nSelect, 'description');
+        } else {
+            $languageItemSelect = "
+                SELECT  languageItemValue
+                FROM    wcf" . $this->dbNo . "_language_item
+                WHERE   languageItem = CONCAT('wcf.user.option.', user_option.optionName%s)
+                    AND languageID = (
+                            SELECT  languageID
+                            FROM    wcf" . $this->dbNo . "_language
+                            WHERE   isDefault = 1
+                        )
+                LIMIT   1";
+            $nameSelect = \sprintf($languageItemSelect, '');
+            $descriptionSelect = \sprintf($languageItemSelect, ", '.description'");
+        }
+
         $sql = "SELECT  user_option.*,
-                        (
-                            SELECT  languageItemValue
-                            FROM    wcf" . $this->dbNo . "_language_item
-                            WHERE   languageItem = CONCAT('wcf.user.option.', user_option.optionName)
-                                AND languageID = (
-                                        SELECT  languageID
-                                        FROM    wcf" . $this->dbNo . "_language
-                                        WHERE   isDefault = 1
-                                    )
-                            LIMIT   1
-                        ) AS name
+                        ({$nameSelect}) AS name,
+                        ({$descriptionSelect}) AS description
                 FROM    wcf" . $this->dbNo . "_user_option user_option
                 " . $conditionBuilder;
         $statement = $this->database->prepareUnmanaged($sql);
         $statement->execute($conditionBuilder->getParameters());
         while ($row = $statement->fetchArray()) {
-            $optionType = StringUtil::firstCharToUpperCase($row['optionType']);
-            $className = 'wcf\system\option\\' . $optionType . 'OptionType';
-            if (!\class_exists($className)) {
+            if (!self::isSupportedUserOptionType($row['optionType'])) {
                 $row['optionType'] = 'textarea';
-            }
-            $outputClass = '';
-            // Try to preserve known values for the output class.
-            if ($row['outputClass'] && \class_exists($row['outputClass'])) {
-                $outputClass = $row['outputClass'];
+                $row['configuration'] = '';
             }
 
             $labeledUrl = null;
@@ -1050,18 +1069,64 @@ final class WBB4xExporter extends AbstractExporter
                 'editable' => $row['editable'],
                 'visible' => $row['visible'],
                 'showOrder' => $row['showOrder'],
-                'outputClass' => $outputClass,
                 'labeledUrl' => $labeledUrl,
             ];
+            if ($hasFormOptions) {
+                $data['configuration'] = $this->getUserOptionConfiguration($row['configuration'] ?? '');
+            }
 
             ImportHandler::getInstance()
                 ->getImporter('com.woltlab.wcf.user.option')
                 ->import(
                     $row['optionID'],
                     $data,
-                    ['name' => $row['name'] ?: $row['optionName']]
+                    [
+                        'name' => $row['name'] ?: $row['optionName'],
+                        'description' => $row['description'] ?? '',
+                    ]
                 );
         }
+    }
+
+    /**
+     * Returns true if the given option type is supported by user options,
+     * either as a form option or as a legacy option type that is converted
+     * into a form option.
+     */
+    private static function isSupportedUserOptionType(string $optionType): bool
+    {
+        return isset(UserOption::getAvailableFormOptions()[$optionType])
+            || isset(UserOption::LEGACY_OPTION_TYPES[$optionType])
+            // `birthday` is stored as-is and uses the date form option.
+            || $optionType === 'birthday';
+    }
+
+    /**
+     * Returns the configuration of a user option with monolingual labels for the
+     * select options, since the language ids of the imported system differ.
+     */
+    private function getUserOptionConfiguration(string $configuration): string
+    {
+        if ($configuration === '') {
+            return '';
+        }
+
+        $configuration = \json_decode($configuration, true, flags: \JSON_THROW_ON_ERROR);
+        if (isset($configuration['selectOptions'])) {
+            $defaultLanguageID = $this->getDefaultLanguageID();
+
+            $selectOptions = [];
+            foreach (\json_decode($configuration['selectOptions'], true, flags: \JSON_THROW_ON_ERROR) as $selectOption) {
+                $values = $selectOption['value'];
+                $value = $values[0] ?? $values[$defaultLanguageID] ?? \reset($values);
+                $selectOption['value'] = [0 => $value !== false ? (string)$value : ''];
+                $selectOptions[] = $selectOption;
+            }
+
+            $configuration['selectOptions'] = \json_encode($selectOptions, \JSON_THROW_ON_ERROR);
+        }
+
+        return \json_encode($configuration, \JSON_THROW_ON_ERROR);
     }
 
     /**
@@ -4669,6 +4734,20 @@ final class WBB4xExporter extends AbstractExporter
         }
 
         return $optionsNames;
+    }
+
+    /**
+     * Returns the id of the default language of the imported system.
+     */
+    private function getDefaultLanguageID(): int
+    {
+        $sql = "SELECT  languageID
+                FROM    wcf" . $this->dbNo . "_language
+                WHERE   isDefault = ?";
+        $statement = $this->database->prepareUnmanaged($sql, 1);
+        $statement->execute([1]);
+
+        return (int)$statement->fetchSingleColumn();
     }
 
     /**

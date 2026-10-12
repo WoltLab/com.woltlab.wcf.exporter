@@ -8,7 +8,6 @@ use wcf\data\user\group\UserGroup;
 use wcf\data\user\option\UserOption;
 use wcf\system\database\util\PreparedStatementConditionBuilder;
 use wcf\system\importer\ImportHandler;
-use wcf\system\option\user\SelectOptionsUserOptionOutput;
 use wcf\system\WCF;
 use wcf\util\FileUtil;
 use wcf\util\MessageUtil;
@@ -488,7 +487,6 @@ final class PhpBB3xExporter extends AbstractExporter
                 'selectOptions' => $row['selectOptions'] ?: '',
                 'visible' => $row['field_no_view'] ? UserOption::VISIBILITY_ADMINISTRATOR | UserOption::VISIBILITY_OWNER : UserOption::VISIBILITY_ALL,
                 'showOrder' => $row['field_order'],
-                'outputClass' => $type == 'select' ? SelectOptionsUserOptionOutput::class : '',
             ];
 
             ImportHandler::getInstance()
