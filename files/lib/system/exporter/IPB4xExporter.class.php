@@ -1049,7 +1049,7 @@ final class IPB4xExporter extends AbstractExporter
 
             try {
                 $data = JSON::decode($row['choices']);
-            } catch (SystemException $e) {
+            } catch (SystemException | \TypeError $e) {
                 $data = @\unserialize($row['choices']); // ipb3.4 fallback
                 if (!$data) {
                     $data = @\unserialize(\str_replace('\"', '"', $row['choices'])); // pre ipb3.4 fallback
@@ -1117,7 +1117,7 @@ final class IPB4xExporter extends AbstractExporter
         while ($row = $statement->fetchArray()) {
             try {
                 $data = JSON::decode($row['member_choices']);
-            } catch (SystemException $e) {
+            } catch (SystemException | \TypeError $e) {
                 $data = @\unserialize($row['member_choices']); // ipb3.4 fallback
                 if (!$data) {
                     $data = @\unserialize(\str_replace('\"', '"', $row['member_choices'])); // pre ipb3.4 fallback
