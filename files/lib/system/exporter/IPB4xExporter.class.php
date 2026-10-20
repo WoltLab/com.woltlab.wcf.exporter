@@ -4,6 +4,7 @@ namespace wcf\system\exporter;
 
 use blog\data\blog\Blog;
 use wbb\data\board\Board;
+use wcf\data\bbcode\media\provider\BBCodeMediaProvider;
 use wcf\data\like\Like;
 use wcf\data\user\group\UserGroup;
 use wcf\system\database\util\PreparedStatementConditionBuilder;
@@ -2077,6 +2078,32 @@ final class IPB4xExporter extends AbstractExporter
 
         // youtube
         $string = \preg_replace('~<iframe[^>]*src="https://www.youtube(?:-nocookie)?.com/embed/([a-zA-Z0-9_-]+)[^"]*"[^>]*></iframe>~is', '[media]https://www.youtube.com/watch?v=\\1[/media]', $string);
+
+        // embedded content (Spotify, X/Twitter, SoundCloud, etc.)
+        $string = \preg_replace_callback(
+            '~<iframe[^>]*?\s(?:data-embed-)?src="[^"]*?controller=embed[^"]*?(?:&amp;|&)url=([^"]+)"[^>]*>\s*</iframe>~is',
+            static function ($matches) {
+                $url = StringUtil::decodeHTML($matches[1]);
+                if (\preg_match('~^https?%3A~i', $url)) {
+                    $url = \rawurldecode($url);
+                }
+                if (!\preg_match('~^https?://~i', $url)) {
+                    return '';
+                }
+
+                // the Twitter media provider only accepts `https://twitter.com/` and `https://x.com/`
+                $url = \preg_replace('~^https?://(?:www\.|mobile\.)?(twitter|x)\.com/~i', 'https://\\1.com/', $url);
+
+                // the message is decoded once more at the end
+                $encodedUrl = StringUtil::encodeHTML($url);
+                if (BBCodeMediaProvider::isMediaURL($url)) {
+                    return '[media]' . $encodedUrl . '[/media]';
+                }
+
+                return '[url]' . $encodedUrl . '[/url]';
+            },
+            $string
+        );
 
         // strip tags
         $string = StringUtil::stripHTML($string);
