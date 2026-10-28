@@ -321,17 +321,17 @@ final class WBB2xExporter extends AbstractExporter
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
-                'username' => $row['username'],
+                'username' => self::decodeNumericEntities($row['username'] ?? ''),
                 'password' => null,
                 'email' => $row['email'],
                 'registrationDate' => $row['regdate'],
-                'signature' => self::fixBBCodes($row['signature']),
+                'signature' => self::fixBBCodes($row['signature'] ?? ''),
                 'lastActivityTime' => $row['lastactivity'],
-                'userTitle' => $row['title'],
+                'userTitle' => $row['title'] ?? '',
                 'disableSignature' => $row['disablesignature'],
                 'banned' => $row['blocked'],
                 'signatureEnableHtml' => $row['allowsightml'],
-                'registrationIpAddress' => !empty($row['reg_ipaddress']) ? $row['reg_ipaddress'] : '',
+                'registrationIpAddress' => UserUtil::convertIPv4To6($row['reg_ipaddress']),
             ];
 
             $options = [
@@ -350,7 +350,7 @@ final class WBB2xExporter extends AbstractExporter
             }
 
             $additionalData = [
-                'groupIDs' => \explode(',', $row['groupIDs']),
+                'groupIDs' => $row['groupIDs'] !== null ? \explode(',', $row['groupIDs']) : [],
                 'options' => $options,
             ];
 
@@ -562,7 +562,7 @@ final class WBB2xExporter extends AbstractExporter
         while ($row = $statement->fetchArray()) {
             $data = [
                 'userID' => $row['userid'],
-                'label' => \mb_substr($row['title'], 0, 80),
+                'label' => \mb_substr($row['title'] ?? '', 0, 80),
             ];
 
             ImportHandler::getInstance()
@@ -597,10 +597,10 @@ final class WBB2xExporter extends AbstractExporter
         $statement->execute([$offset + 1, $offset + $limit]);
         while ($row = $statement->fetchArray()) {
             $data = [
-                'subject' => $row['subject'],
+                'subject' => self::decodeNumericEntities($row['subject'] ?? ''),
                 'time' => $row['sendtime'],
                 'userID' => $row['senderid'],
-                'username' => $row['username'] ?: '',
+                'username' => self::decodeNumericEntities($row['username'] ?: ''),
             ];
 
             ImportHandler::getInstance()
@@ -611,8 +611,8 @@ final class WBB2xExporter extends AbstractExporter
             $data = [
                 'conversationID' => $row['privatemessageid'],
                 'userID' => $row['senderid'],
-                'username' => $row['username'] ?: '',
-                'message' => self::fixBBCodes($row['message']),
+                'username' => self::decodeNumericEntities($row['username'] ?: ''),
+                'message' => self::fixBBCodes($row['message'] ?? ''),
                 'time' => $row['sendtime'],
                 'attachments' => $row['attachments'],
                 'enableHtml' => $row['allowhtml'],
@@ -655,7 +655,7 @@ final class WBB2xExporter extends AbstractExporter
             $data = [
                 'conversationID' => $row['privatemessageid'],
                 'participantID' => $row['recipientid'],
-                'username' => $row['recipient'],
+                'username' => self::decodeNumericEntities($row['recipient'] ?? ''),
                 'hideConversation' => $row['deletepm'],
                 'isInvisible' => $row['blindcopy'],
                 'lastVisitTime' => $row['view'],
@@ -742,8 +742,8 @@ final class WBB2xExporter extends AbstractExporter
                 'parentID' => $board['parentid'] ?: null,
                 'position' => $board['boardorder'],
                 'boardType' => !$board['isboard'] ? 1 : (!empty($board['externalurl']) ? 2 : 0),
-                'title' => $board['title'],
-                'description' => $board['description'],
+                'title' => $board['title'] ?? '',
+                'description' => $board['description'] ?? '',
                 'externalURL' => (!empty($board['externalurl']) ? $board['externalurl'] : ''),
                 'countUserPosts' => $board['countuserposts'],
                 'isClosed' => $board['closed'],
@@ -866,10 +866,10 @@ final class WBB2xExporter extends AbstractExporter
         while ($row = $statement->fetchArray()) {
             $data = [
                 'boardID' => $row['boardid'],
-                'topic' => $row['topic'],
+                'topic' => self::decodeNumericEntities($row['topic'] ?? ''),
                 'time' => $row['starttime'],
                 'userID' => $row['starterid'],
-                'username' => $row['starter'],
+                'username' => self::decodeNumericEntities($row['starter'] ?? ''),
                 'views' => $row['views'],
                 'isAnnouncement' => \intval($row['important'] == 2),
                 'isSticky' => \intval($row['important'] == 1),
@@ -923,13 +923,13 @@ final class WBB2xExporter extends AbstractExporter
             $data = [
                 'threadID' => $row['threadid'],
                 'userID' => $row['userid'],
-                'username' => $row['username'],
-                'subject' => $row['posttopic'],
-                'message' => self::fixBBCodes($row['message']),
+                'username' => self::decodeNumericEntities($row['username'] ?? ''),
+                'subject' => self::decodeNumericEntities($row['posttopic'] ?? ''),
+                'message' => self::fixBBCodes($row['message'] ?? ''),
                 'time' => $row['posttime'],
                 'isDisabled' => \intval(!$row['visible']),
                 'editorID' => $row['editorid'] ?: null,
-                'editor' => $row['editor'],
+                'editor' => self::decodeNumericEntities($row['editor'] ?? ''),
                 'lastEditTime' => $row['edittime'],
                 'editCount' => $row['editcount'],
                 'attachments' => (!empty($row['attachments']) ? $row['attachments'] : 0),
@@ -1061,7 +1061,7 @@ final class WBB2xExporter extends AbstractExporter
 
             $data = [
                 'objectID' => $postID,
-                'question' => $row['question'],
+                'question' => self::decodeNumericEntities($row['question'] ?? ''),
                 'time' => $row['starttime'],
                 'endTime' => $row['timeout'] ? $row['starttime'] + $row['timeout'] * 86400 : 0,
                 'maxVotes' => $row['choicecount'],
@@ -1104,7 +1104,7 @@ final class WBB2xExporter extends AbstractExporter
         while ($row = $statement->fetchArray()) {
             $data = [
                 'pollID' => $row['pollid'],
-                'optionValue' => $row['polloption'],
+                'optionValue' => self::decodeNumericEntities($row['polloption'] ?? ''),
                 'votes' => $row['votes'],
             ];
 
@@ -1325,8 +1325,8 @@ final class WBB2xExporter extends AbstractExporter
             }
 
             $data = [
-                'smileyTitle' => $row['smilietitle'],
-                'smileyCode' => $row['smiliecode'],
+                'smileyTitle' => $row['smilietitle'] ?? '',
+                'smileyCode' => $row['smiliecode'] ?? '',
                 'showOrder' => $row['smilieorder'],
             ];
 
@@ -1380,7 +1380,7 @@ final class WBB2xExporter extends AbstractExporter
             $data = [
                 'objectID' => $row[$indexName],
                 'userID' => (!empty($row['userid']) ? $row['userid'] : null),
-                'filename' => $row['attachmentname'] . '.' . $row['attachmentextension'],
+                'filename' => self::decodeNumericEntities($row['attachmentname']) . '.' . $row['attachmentextension'],
                 'downloads' => $row['counter'],
                 'uploadTime' => (!empty($row['uploadtime']) ? $row['uploadtime'] : 0),
                 'showOrder' => 0,
@@ -1404,10 +1404,25 @@ final class WBB2xExporter extends AbstractExporter
      */
     private static function fixBBCodes($text)
     {
+        $text = self::decodeNumericEntities($text);
         $text = \str_ireplace('[center]', '[align=center]', $text);
         $text = \str_ireplace('[/center]', '[/align]', $text);
 
         // remove crap
         return MessageUtil::stripCrap($text);
+    }
+
+    /**
+     * Decodes numeric character references, which Burning Board 2 used to store
+     * characters outside of the board's charset. Named entities are left alone,
+     * because a literal `&` is stored unencoded.
+     */
+    private static function decodeNumericEntities(string $text): string
+    {
+        return \preg_replace_callback(
+            '~&#(?:[0-9]+|x[0-9a-f]+);~i',
+            static fn(array $matches): string => \html_entity_decode($matches[0], \ENT_QUOTES | \ENT_HTML5, 'UTF-8'),
+            $text
+        );
     }
 }
