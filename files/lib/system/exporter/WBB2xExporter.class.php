@@ -1375,7 +1375,14 @@ final class WBB2xExporter extends AbstractExporter
         $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute([0]);
         while ($row = $statement->fetchArray()) {
-            $fileLocation = $this->fileSystemPath . 'attachments/attachment-' . $row['attachmentid'] . '.' . $row['attachmentextension'];
+            $filename = 'attachment-' . $row['attachmentid'] . '.' . $row['attachmentextension'];
+
+            // Burning Board 2.3 groups attachments into directories of 1000 each, the flat
+            // layout is kept as a fallback for releases that store them in a single directory.
+            $fileLocation = $this->fileSystemPath . 'attachments/' . \intdiv($row['attachmentid'], 1000) . '/' . $filename;
+            if (!\file_exists($fileLocation)) {
+                $fileLocation = $this->fileSystemPath . 'attachments/' . $filename;
+            }
 
             $data = [
                 'objectID' => $row[$indexName],
