@@ -65,6 +65,11 @@ final class SMF2xExporter extends AbstractExporter
     protected $boardCache = [];
 
     /**
+     * @var array<string, string>
+     */
+    private array $resolvedDirectories = [];
+
+    /**
      * @inheritDoc
      */
     protected $methods = [
@@ -716,7 +721,7 @@ final class SMF2xExporter extends AbstractExporter
                     if ($row['attachment_type'] === 1) {
                         // Uploaded avatars are stored outside the attachment directories when
                         // `custom_avatar_dir` is configured, which is always the case in SMF 2.1.
-                        $fileLocation = $this->readOption('custom_avatar_dir') . '/' . $row['avatarName'];
+                        $fileLocation = $this->resolveDirectory($this->readOption('custom_avatar_dir')) . '/' . $row['avatarName'];
                     } else {
                         $fileLocation = $this->getAttachmentFilename(
                             $row['id_attach'],
@@ -730,7 +735,7 @@ final class SMF2xExporter extends AbstractExporter
                     if (FileUtil::isURL($row['filename'])) {
                         continue 2;
                     }
-                    $fileLocation = $this->readOption('avatar_directory') . '/' . $row['filename'];
+                    $fileLocation = $this->resolveDirectory($this->readOption('avatar_directory')) . '/' . $row['filename'];
                     break;
             }
 
@@ -1747,7 +1752,7 @@ final class SMF2xExporter extends AbstractExporter
             $statement->execute([]);
         }
         while ($row = $statement->fetchArray()) {
-            $fileLocation = $this->readOption('smileys_dir') . '/' . $this->readOption('smiley_sets_default') . '/' . $row['filename'];
+            $fileLocation = $this->resolveDirectory($this->readOption('smileys_dir')) . '/' . $this->readOption('smiley_sets_default') . '/' . $row['filename'];
 
             $aliases = \explode("\n", $row['aliases']);
             $code = \array_shift($aliases);
@@ -1917,6 +1922,30 @@ final class SMF2xExporter extends AbstractExporter
         return UserUtil::convertIPv4To6($ipAddress);
     }
 
+    /**
+     * SMF stores absolute paths, which no longer match once the files have been moved to
+     * another server. A missing directory is looked up in the given file system path instead.
+     */
+    private function resolveDirectory(string $directory): string
+    {
+        if (!isset($this->resolvedDirectories[$directory])) {
+            $resolved = $directory;
+
+            // Without a file system path, the fallback would be relative to the working directory.
+            // The old path may lie outside `open_basedir`, which raises a warning.
+            if ($directory !== '' && $this->fileSystemPath !== '' && !@\is_dir($directory)) {
+                $fallback = $this->fileSystemPath . \basename($directory);
+                if (\is_dir($fallback)) {
+                    $resolved = $fallback;
+                }
+            }
+
+            $this->resolvedDirectories[$directory] = $resolved;
+        }
+
+        return $this->resolvedDirectories[$directory];
+    }
+
     private function getAttachmentFilename($id, $dir, $hash, $filename)
     {
         if (!empty($this->readOption('currentAttachmentUploadDir'))) {
@@ -1933,12 +1962,12 @@ final class SMF2xExporter extends AbstractExporter
             }
 
             if (isset($dirs[$dir])) {
-                $path = $dirs[$dir];
+                $path = $this->resolveDirectory($dirs[$dir]);
             } else {
                 $path = $this->fileSystemPath . 'attachments';
             }
         } else {
-            $path = $this->readOption('attachmentUploadDir');
+            $path = $this->resolveDirectory($this->readOption('attachmentUploadDir'));
         }
 
         if ($hash) {
