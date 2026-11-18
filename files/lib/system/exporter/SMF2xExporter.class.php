@@ -43,6 +43,22 @@ final class SMF2xExporter extends AbstractExporter
     private const GROUP_MODERATORS = 3;
 
     /**
+     * Profile fields that SMF 2.1 ships as custom fields, migrated from columns of `members`.
+     * Location and gender are imported into the Core options, ICQ and Skype are not imported.
+     * Only applies to SMF 2.1, SMF 2.0 derives the column name from the name of a field created
+     * by the administrator, which can yield the same names.
+     */
+    private const DEFAULT_PROFILE_FIELDS = ['cust_icq', 'cust_skype', 'cust_loca', 'cust_gender'];
+
+    /**
+     * Maps the options of the default gender field to the values of the Core option `gender`.
+     */
+    private const GENDERS = [
+        '{gender_1}' => 1,
+        '{gender_2}' => 2,
+    ];
+
+    /**
      * board cache
      * @var array
      */
@@ -320,6 +336,8 @@ final class SMF2xExporter extends AbstractExporter
             return;
         }
 
+        $isSmf21 = \version_compare($this->readOption('smfVersion'), '2.1.0', '>=');
+
         // get profile field values
         $profileFieldValues = [];
         if (!empty($profileFields)) {
@@ -335,7 +353,7 @@ final class SMF2xExporter extends AbstractExporter
                 if (!isset($profileFieldValues[$row['id_member']])) {
                     $profileFieldValues[$row['id_member']] = [];
                 }
-                $profileFieldValues[$row['id_member']][$profileFields[$row['variable']]['id_field']] = $row['value'];
+                $profileFieldValues[$row['id_member']][$row['variable']] = $row['value'];
             }
         }
 
@@ -368,15 +386,15 @@ final class SMF2xExporter extends AbstractExporter
                 'banReason' => $row['banReason'],
                 // smf's codes are strings
                 'activationCode' => $row['validation_code'] ? UserRegistrationUtil::getActivationCode() : 0,
-                'registrationIpAddress' => $row['member_ip'], // member_ip2 is HTTP_X_FORWARDED_FOR
-                'signature' => $row['signature'],
+                'registrationIpAddress' => self::decodeIpAddress($row['member_ip']), // member_ip2 is HTTP_X_FORWARDED_FOR
+                'signature' => self::fixBBCodes($row['signature']),
                 'userTitle' => StringUtil::decodeHTML($row['usertitle']),
                 'lastActivityTime' => $row['last_login'],
             ];
 
             // get user options
             $options = [
-                'birthday' => $row['birthdate'],
+                'birthday' => self::convertBirthday($row['birthdate']),
                 'homepage' => $row['website_url'],
                 'aboutMe' => $row['personal_text'],
             ];
@@ -395,11 +413,22 @@ final class SMF2xExporter extends AbstractExporter
 
             // handle user options
             if (isset($profileFieldValues[$row['id_member']])) {
-                foreach ($profileFieldValues[$row['id_member']] as $key => $val) {
+                foreach ($profileFieldValues[$row['id_member']] as $colName => $val) {
                     if (!$val) {
                         continue;
                     }
-                    $additionalData['options'][$key] = $val;
+
+                    if ($isSmf21 && \in_array($colName, self::DEFAULT_PROFILE_FIELDS, true)) {
+                        if ($colName === 'cust_loca') {
+                            $additionalData['options']['location'] = $val;
+                        } elseif ($colName === 'cust_gender') {
+                            if (isset(self::GENDERS[$val])) {
+                                $additionalData['options']['gender'] = self::GENDERS[$val];
+                            }
+                        }
+                    } else {
+                        $additionalData['options'][$profileFields[$colName]['id_field']] = $val;
+                    }
                 }
             }
 
@@ -414,10 +443,14 @@ final class SMF2xExporter extends AbstractExporter
 
             // update password hash
             if ($newUserID) {
+                // SMF 2.1 hashes with bcrypt, accounts that have not logged in since the upgrade
+                // from SMF 2.0 still carry the SHA-1 hash.
+                $algorithm = \str_starts_with($row['passwd'], '$2y$') ? 'smf21' : 'smf2';
+
                 // The lowered username is used for the salt. The column `passwd_salt` is in fact used
                 // for the auto login.
                 $passwordUpdateStatement->execute([
-                    'smf2:' . $row['passwd'] . ':' . \mb_strtolower($row['member_name']),
+                    $algorithm . ':' . $row['passwd'] . ':' . \mb_strtolower($row['member_name']),
                     $newUserID,
                 ]);
             }
@@ -446,12 +479,18 @@ final class SMF2xExporter extends AbstractExporter
      */
     public function exportUserOptions($offset, $limit)
     {
+        $isSmf21 = \version_compare($this->readOption('smfVersion'), '2.1.0', '>=');
+
         $sql = "SELECT      *
                 FROM        " . $this->databasePrefix . "custom_fields
                 ORDER BY    id_field";
         $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
         $statement->execute();
         while ($row = $statement->fetchArray()) {
+            if ($isSmf21 && \in_array($row['col_name'], self::DEFAULT_PROFILE_FIELDS, true)) {
+                continue;
+            }
+
             switch ($row['field_type']) {
                 case 'text':
                 case 'textarea':
@@ -515,7 +554,7 @@ final class SMF2xExporter extends AbstractExporter
     public function countUserRanks()
     {
         $fieldName = 'stars';
-        if (\version_compare($this->readOption('smfVersion'), '2.1.0', '>')) {
+        if (\version_compare($this->readOption('smfVersion'), '2.1.0', '>=')) {
             $fieldName = 'icons';
         }
 
@@ -539,7 +578,7 @@ final class SMF2xExporter extends AbstractExporter
     public function exportUserRanks($offset, $limit)
     {
         $fieldName = 'stars';
-        if (\version_compare($this->readOption('smfVersion'), '2.1.0', '>')) {
+        if (\version_compare($this->readOption('smfVersion'), '2.1.0', '>=')) {
             $fieldName = 'icons';
         }
 
@@ -629,7 +668,7 @@ final class SMF2xExporter extends AbstractExporter
                     WHERE   avatar <> ?
                 ) AS count";
         $statement = $this->database->prepareUnmanaged($sql);
-        $statement->execute(['', 0]);
+        $statement->execute([0, '']);
         $row = $statement->fetchArray();
 
         return $row['count'];
@@ -650,7 +689,8 @@ final class SMF2xExporter extends AbstractExporter
                             (id_attach || '_' || file_hash) AS filename,
                             id_attach,
                             file_hash,
-                            id_folder
+                            id_folder,
+                            attachment_type
                     FROM    " . $this->databasePrefix . "attachments
                     WHERE   id_member <> ?
                 )
@@ -662,26 +702,33 @@ final class SMF2xExporter extends AbstractExporter
                             avatar AS filename,
                             '' AS id_attach,
                             '' AS file_hash,
-                            '' AS id_folder
+                            '' AS id_folder,
+                            0 AS attachment_type
                     FROM    " . $this->databasePrefix . "members
                     WHERE   avatar <> ?
                 )";
         $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
-        $statement->execute(['', 0]);
+        $statement->execute([0, '']);
 
         while ($row = $statement->fetchArray()) {
             switch ($row['type']) {
                 case 'attachment':
-                    $fileLocation = $this->getAttachmentFilename(
-                        $row['id_attach'],
-                        $row['id_folder'],
-                        $row['file_hash'],
-                        $row['filename']
-                    );
+                    if ($row['attachment_type'] === 1) {
+                        // Uploaded avatars are stored outside the attachment directories when
+                        // `custom_avatar_dir` is configured, which is always the case in SMF 2.1.
+                        $fileLocation = $this->readOption('custom_avatar_dir') . '/' . $row['avatarName'];
+                    } else {
+                        $fileLocation = $this->getAttachmentFilename(
+                            $row['id_attach'],
+                            $row['id_folder'],
+                            $row['file_hash'],
+                            $row['filename']
+                        );
+                    }
                     break;
                 case 'user':
                     if (FileUtil::isURL($row['filename'])) {
-                        return;
+                        continue 2;
                     }
                     $fileLocation = $this->readOption('avatar_directory') . '/' . $row['filename'];
                     break;
@@ -1185,9 +1232,10 @@ final class SMF2xExporter extends AbstractExporter
                 'editor' => $row['modified_name'],
                 'lastEditTime' => $row['modified_time'],
                 'editCount' => $row['modified_time'] ? 1 : 0,
-                'editReason' => !empty($row['editReason']) ? $row['editReason'] : '',
+                // `modified_reason` does not exist before SMF 2.1
+                'editReason' => $row['modified_reason'] ?? '',
                 'enableHtml' => 0,
-                'ipAddress' => UserUtil::convertIPv4To6($row['poster_ip']),
+                'ipAddress' => self::decodeIpAddress($row['poster_ip']),
             ];
 
             ImportHandler::getInstance()
@@ -1646,10 +1694,18 @@ final class SMF2xExporter extends AbstractExporter
      */
     public function countSmilies()
     {
-        $sql = "SELECT  COUNT(DISTINCT filename) AS count
-                FROM    " . $this->databasePrefix . "smileys";
-        $statement = $this->database->prepareUnmanaged($sql);
-        $statement->execute();
+        if (\version_compare($this->readOption('smfVersion'), '2.1.0', '>=')) {
+            $sql = "SELECT  COUNT(DISTINCT filename) AS count
+                    FROM    " . $this->databasePrefix . "smiley_files
+                    WHERE   smiley_set = ?";
+            $statement = $this->database->prepareUnmanaged($sql);
+            $statement->execute([$this->readOption('smiley_sets_default')]);
+        } else {
+            $sql = "SELECT  COUNT(DISTINCT filename) AS count
+                    FROM    " . $this->databasePrefix . "smileys";
+            $statement = $this->database->prepareUnmanaged($sql);
+            $statement->execute();
+        }
         $row = $statement->fetchArray();
 
         return $row['count'];
@@ -1663,16 +1719,33 @@ final class SMF2xExporter extends AbstractExporter
      */
     public function exportSmilies($offset, $limit)
     {
-        $sql = "SELECT      MIN(id_smiley) AS id_smiley,
-                            GROUP_CONCAT(code SEPARATOR '\n') AS aliases,
-                            filename,
-                            MIN(smiley_order) AS smiley_order,
-                            GROUP_CONCAT(description SEPARATOR '\n') AS description
-                FROM        " . $this->databasePrefix . "smileys
-                GROUP BY    filename
-                ORDER BY    id_smiley";
-        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
-        $statement->execute([]);
+        if (\version_compare($this->readOption('smfVersion'), '2.1.0', '>=')) {
+            // SMF 2.1 stores the file name per smiley set.
+            $sql = "SELECT      MIN(smiley.id_smiley) AS id_smiley,
+                                GROUP_CONCAT(smiley.code SEPARATOR '\n') AS aliases,
+                                smiley_file.filename,
+                                MIN(smiley.smiley_order) AS smiley_order,
+                                GROUP_CONCAT(smiley.description SEPARATOR '\n') AS description
+                    FROM        " . $this->databasePrefix . "smileys smiley
+                    INNER JOIN  " . $this->databasePrefix . "smiley_files smiley_file
+                    ON          smiley_file.id_smiley = smiley.id_smiley
+                            AND smiley_file.smiley_set = ?
+                    GROUP BY    smiley_file.filename
+                    ORDER BY    id_smiley";
+            $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
+            $statement->execute([$this->readOption('smiley_sets_default')]);
+        } else {
+            $sql = "SELECT      MIN(id_smiley) AS id_smiley,
+                                GROUP_CONCAT(code SEPARATOR '\n') AS aliases,
+                                filename,
+                                MIN(smiley_order) AS smiley_order,
+                                GROUP_CONCAT(description SEPARATOR '\n') AS description
+                    FROM        " . $this->databasePrefix . "smileys
+                    GROUP BY    filename
+                    ORDER BY    id_smiley";
+            $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
+            $statement->execute([]);
+        }
         while ($row = $statement->fetchArray()) {
             $fileLocation = $this->readOption('smileys_dir') . '/' . $this->readOption('smiley_sets_default') . '/' . $row['filename'];
 
@@ -1739,7 +1812,13 @@ final class SMF2xExporter extends AbstractExporter
         static $quoteCallback = null;
 
         if ($sizeRegex === null) {
-            $quoteRegex = new Regex('\[quote author=(.*?)(?: link=topic=\d+\.msg(\d+)#msg\\2 date=\d+)?\]');
+            // SMF 2.0 links to `topic=X.msgY#msgY`, SMF 2.1 to `msg=Y` or, in personal messages,
+            // to the profile of the author. The author is quoted when it is not a member.
+            $quoteRegex = new Regex(
+                '\[quote author=(?|"([^"\]]*)"|(.*?))'
+                . '(?: link=(?:board=\d+;)?(?|(?:topic|threadid)=\d+\.msg(\d+)#msg\d+|msg=(\d+)|[^\s\]]+))?'
+                . '(?: date=\d+)?\]'
+            );
             $quoteCallback = static function ($matches) {
                 $username = \str_replace(["\\", "'"], ["\\\\", "\\'"], $matches[1]);
                 $postID = $matches[2] ?? null;
@@ -1787,6 +1866,9 @@ final class SMF2xExporter extends AbstractExporter
         // fix size bbcode
         $message = $sizeRegex->replace($message, '[size=\\1]');
 
+        // SMF 2.1 embeds attachments as `[attach id=X …]name[/attach]`
+        $message = \preg_replace('~\[attach id=(\d+)[^\]]*\].*?\[/attach\]~is', '[attach=\\1][/attach]', $message);
+
         // convert html entities in text
         $message = StringUtil::decodeHTML($message);
 
@@ -1797,6 +1879,42 @@ final class SMF2xExporter extends AbstractExporter
         $message = MessageUtil::stripCrap($message);
 
         return $message;
+    }
+
+    /**
+     * SMF stores a missing birthday as `0001-01-01` (2.0) or `1004-01-01` (2.1) and raises the
+     * year of a birthday without year to `0004` or `1004`. Core uses the year `0000` for the latter.
+     */
+    private static function convertBirthday(string $birthdate): string
+    {
+        if (\in_array($birthdate, ['0000-00-00', '0001-01-01', '1004-01-01'], true)) {
+            return '';
+        }
+
+        if ((int)\substr($birthdate, 0, 4) <= 1004) {
+            return '0000' . \substr($birthdate, 4);
+        }
+
+        return $birthdate;
+    }
+
+    /**
+     * SMF 2.1 stores IP addresses as the binary output of `inet_pton()`, SMF 2.0 as text.
+     */
+    private static function decodeIpAddress(?string $ipAddress): string
+    {
+        if ($ipAddress === null) {
+            return '';
+        }
+
+        if (\filter_var($ipAddress, \FILTER_VALIDATE_IP) === false) {
+            $ipAddress = \inet_ntop($ipAddress);
+            if ($ipAddress === false) {
+                return '';
+            }
+        }
+
+        return UserUtil::convertIPv4To6($ipAddress);
     }
 
     private function getAttachmentFilename($id, $dir, $hash, $filename)
@@ -1824,7 +1942,14 @@ final class SMF2xExporter extends AbstractExporter
         }
 
         if ($hash) {
-            return $path . '/' . $id . '_' . $hash;
+            $fileLocation = $path . '/' . $id . '_' . $hash;
+
+            // SMF 2.1 appends `.dat`, its upgrade renames existing files accordingly.
+            if (\file_exists($fileLocation . '.dat')) {
+                return $fileLocation . '.dat';
+            }
+
+            return $fileLocation;
         } else {
             // sanitize spaces
             $filename = \preg_replace('/\s/', '_', $filename);
