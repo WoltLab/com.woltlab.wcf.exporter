@@ -43,6 +43,18 @@ final class IPB4xExporter extends AbstractExporter
     protected $boardCache = [];
 
     /**
+     * pages database cache
+     * @var array<int, array<string, mixed>>
+     */
+    private array $wsdbDatabaseCache;
+
+    /**
+     * pages field cache (database id => field id => field)
+     * @var array<int, array<int, array<string, mixed>>>
+     */
+    private array $wsdbFieldCache;
+
+    /**
      * @inheritDoc
      */
     protected $methods = [
@@ -78,6 +90,16 @@ final class IPB4xExporter extends AbstractExporter
         'com.woltlab.blog.entry.attachment' => 'BlogAttachments',
         'com.woltlab.blog.entry.comment' => 'BlogComments',
         'com.woltlab.blog.entry.like' => 'BlogEntryLikes',
+
+        'com.woltlab.wsdb.database' => 'WsdbDatabases',
+        'com.woltlab.wsdb.category' => 'WsdbCategories',
+        'com.woltlab.wsdb.option' => 'WsdbOptions',
+        'com.woltlab.wsdb.record' => 'WsdbRecords',
+        'com.woltlab.wsdb.record.attachment' => 'WsdbRecordAttachments',
+        'com.woltlab.wsdb.record.comment' => 'WsdbRecordComments',
+        'com.woltlab.wsdb.record.like' => 'WsdbRecordLikes',
+        'com.woltlab.wsdb.review' => 'WsdbReviews',
+        'com.woltlab.wsdb.category.watch' => 'WsdbCategoryWatches',
     ];
 
     /**
@@ -88,6 +110,9 @@ final class IPB4xExporter extends AbstractExporter
         'com.woltlab.wcf.user.avatar' => 100,
         'com.woltlab.wcf.user.follower' => 100,
         'com.woltlab.gallery.image' => 100,
+        'com.woltlab.wsdb.option' => 50,
+        'com.woltlab.wsdb.record' => 100,
+        'com.woltlab.wsdb.record.attachment' => 100,
     ];
 
     /**
@@ -124,6 +149,14 @@ final class IPB4xExporter extends AbstractExporter
                 'com.woltlab.blog.entry.comment',
                 'com.woltlab.blog.entry.like',
             ],
+            'com.woltlab.wsdb.record' => [
+                'com.woltlab.wsdb.category',
+                'com.woltlab.wsdb.record.attachment',
+                'com.woltlab.wsdb.record.comment',
+                'com.woltlab.wsdb.record.like',
+                'com.woltlab.wsdb.review',
+                'com.woltlab.wsdb.category.watch',
+            ],
         ];
     }
 
@@ -151,6 +184,7 @@ final class IPB4xExporter extends AbstractExporter
             || \in_array('com.woltlab.wcf.conversation.attachment', $this->selectedData)
             || \in_array('com.woltlab.gallery.image', $this->selectedData)
             || \in_array('com.woltlab.blog.entry.attachment', $this->selectedData)
+            || \in_array('com.woltlab.wsdb.record.attachment', $this->selectedData)
         ) {
             if (empty($this->fileSystemPath) || !@\file_exists($this->fileSystemPath . 'conf_global.php')) {
                 return false;
@@ -252,6 +286,34 @@ final class IPB4xExporter extends AbstractExporter
             }
             if (\in_array('com.woltlab.blog.entry.like', $this->selectedData)) {
                 $queue[] = 'com.woltlab.blog.entry.like';
+            }
+        }
+
+        // database (pages)
+        if (\in_array('com.woltlab.wsdb.record', $this->selectedData)) {
+            $queue[] = 'com.woltlab.wsdb.database';
+            if (\in_array('com.woltlab.wsdb.category', $this->selectedData)) {
+                $queue[] = 'com.woltlab.wsdb.category';
+            }
+            $queue[] = 'com.woltlab.wsdb.option';
+            $queue[] = 'com.woltlab.wsdb.record';
+            if (\in_array('com.woltlab.wsdb.record.attachment', $this->selectedData)) {
+                $queue[] = 'com.woltlab.wsdb.record.attachment';
+            }
+            if (\in_array('com.woltlab.wsdb.record.comment', $this->selectedData)) {
+                $queue[] = 'com.woltlab.wsdb.record.comment';
+            }
+            if (\in_array('com.woltlab.wsdb.review', $this->selectedData)) {
+                $queue[] = 'com.woltlab.wsdb.review';
+            }
+            if (\in_array('com.woltlab.wsdb.record.like', $this->selectedData)) {
+                $queue[] = 'com.woltlab.wsdb.record.like';
+            }
+            if (
+                \in_array('com.woltlab.wsdb.category', $this->selectedData)
+                && \in_array('com.woltlab.wsdb.category.watch', $this->selectedData)
+            ) {
+                $queue[] = 'com.woltlab.wsdb.category.watch';
             }
         }
 
@@ -1221,7 +1283,7 @@ final class IPB4xExporter extends AbstractExporter
      */
     private function countAttachments($type)
     {
-        $id = ($type === 'blog_Entries' ? 'id1' : 'id2');
+        $id = (\in_array($type, ['blog_Entries', 'cms_Records']) ? 'id1' : 'id2');
 
         $sql = "SELECT  COUNT(*) AS count
                 FROM    " . $this->databasePrefix . "core_attachments_map
@@ -1244,9 +1306,9 @@ final class IPB4xExporter extends AbstractExporter
      */
     private function exportAttachments($type, $objectType, $offset, $limit)
     {
-        $id = ($type === 'blog_Entries' ? 'id1' : 'id2');
+        $id = (\in_array($type, ['blog_Entries', 'cms_Records']) ? 'id1' : 'id2');
 
-        $sql = "SELECT      core_attachments.*, core_attachments_map.id2, core_attachments_map.id1
+        $sql = "SELECT      core_attachments.*, core_attachments_map.id2, core_attachments_map.id1, core_attachments_map.id3
                 FROM        " . $this->databasePrefix . "core_attachments_map core_attachments_map
                 LEFT JOIN   " . $this->databasePrefix . "core_attachments core_attachments
                 ON          core_attachments.attach_id = core_attachments_map.attachment_id
@@ -1262,8 +1324,18 @@ final class IPB4xExporter extends AbstractExporter
 
             $fileLocation = $this->fileSystemPath . 'uploads/' . $row['attach_location'];
 
+            $objectID = $row[$id];
+            if ($type === 'cms_Records') {
+                // records are identified by the database id (id3) and the record id (id1)
+                $databaseID = $this->getWsdbAttachmentDatabaseID($row['id3']);
+                if (!$databaseID) {
+                    continue;
+                }
+                $objectID = $databaseID . '-' . $objectID;
+            }
+
             $data = [
-                'objectID' => $row[$id],
+                'objectID' => $objectID,
                 'userID' => $row['attach_member_id'] ?: null,
                 'filename' => $row['attach_file'],
                 'downloads' => $row['attach_hits'],
@@ -1792,6 +1864,942 @@ final class IPB4xExporter extends AbstractExporter
                 ->getImporter('com.woltlab.blog.entry.like')
                 ->import(0, $data);
         }
+    }
+
+    /**
+     * Counts pages databases.
+     */
+    public function countWsdbDatabases()
+    {
+        return \count($this->getWsdbDatabases());
+    }
+
+    /**
+     * Exports pages databases.
+     *
+     * @param   integer     $offset
+     * @param   integer     $limit
+     */
+    public function exportWsdbDatabases($offset, $limit)
+    {
+        foreach (\array_slice($this->getWsdbDatabases(), $offset, $limit, true) as $databaseID => $row) {
+            $options = (int)$row['database_options'];
+            $fixedFieldPerms = $row['database_fixed_field_perms'] ? @\json_decode($row['database_fixed_field_perms'], true) : [];
+            $displaySettings = $row['database_display_settings'] ? @\json_decode($row['database_display_settings'], true) : [];
+
+            $data = [
+                'name' => $this->getLanguageVar('content_db', $databaseID) ?: $row['database_key'],
+                'path' => $row['database_key'],
+                'enableCategories' => (
+                    $row['database_use_categories'] && \in_array('com.woltlab.wsdb.category', $this->selectedData)
+                ) ? 1 : 0,
+                'enableComments' => ($options & 1) ? 1 : 0,
+                'enableReviews' => ($options & 2) ? 1 : 0,
+                'enableReactions' => 1,
+                'enableLabels' => 0,
+                'enableTagging' => $row['database_tags_enabled'] ? 1 : 0,
+                'enableCoverPhoto' => !empty($fixedFieldPerms['record_image']['visible']) ? 1 : 0,
+                'landingPageType' => (
+                    $row['database_use_categories'] && ($displaySettings['index']['type'] ?? '') === 'categories'
+                ) ? 'categories' : 'records',
+                'listingSortOrder' => \strtoupper($row['database_field_direction'] ?? '') === 'ASC' ? 'ASC' : 'DESC',
+                'listingItemsPerPage' => \max(1, \min(100, (int)$row['database_field_perpage'] ?: 20)),
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wsdb.database')
+                ->import($databaseID, $data, [
+                    'recordSingular' => $this->getLanguageVar('content_db_lang_sl', $databaseID),
+                    'recordPlural' => $this->getLanguageVar('content_db_lang_pl', $databaseID),
+                ]);
+        }
+    }
+
+    /**
+     * Counts pages categories.
+     */
+    public function countWsdbCategories()
+    {
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "cms_database_categories";
+        $statement = $this->database->prepareUnmanaged($sql);
+        $statement->execute();
+        $row = $statement->fetchArray();
+
+        return ($row['count'] ? 1 : 0);
+    }
+
+    /**
+     * Exports pages categories.
+     *
+     * @param   integer     $offset
+     * @param   integer     $limit
+     */
+    public function exportWsdbCategories($offset, $limit)
+    {
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "cms_database_categories
+                ORDER BY    category_parent_id, category_position, category_id";
+        $statement = $this->database->prepareUnmanaged($sql);
+        $statement->execute();
+        $categories = [];
+        while ($row = $statement->fetchArray()) {
+            $categories[$row['category_parent_id']][] = $row;
+        }
+
+        $this->exportWsdbCategoriesRecursively($categories, 0);
+    }
+
+    /**
+     * Exports the pages categories with the given parent id and their children.
+     *
+     * @param   array<int, array<int, array<string, mixed>>>    $categories
+     * @param   integer     $parentID
+     */
+    private function exportWsdbCategoriesRecursively(array $categories, $parentID)
+    {
+        if (!isset($categories[$parentID])) {
+            return;
+        }
+
+        foreach ($categories[$parentID] as $row) {
+            $data = [
+                'title' => $this->getLanguageVar('content_cat_name', $row['category_id']) ?: $row['category_name'],
+                'description' => $this->getLanguageVar('content_cat_name', $row['category_id'], 'desc'),
+                'parentCategoryID' => $row['category_parent_id'],
+                'showOrder' => $row['category_position'],
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wsdb.category')
+                ->import($row['category_id'], $data, [
+                    'databaseID' => $row['category_database_id'],
+                    'canContainRecords' => $row['category_show_records'] ? 1 : 0,
+                ]);
+
+            $this->exportWsdbCategoriesRecursively($categories, $row['category_id']);
+        }
+    }
+
+    /**
+     * Counts pages fields.
+     */
+    public function countWsdbOptions()
+    {
+        return \count($this->getWsdbOptionFields());
+    }
+
+    /**
+     * Exports pages fields.
+     *
+     * @param   integer     $offset
+     * @param   integer     $limit
+     */
+    public function exportWsdbOptions($offset, $limit)
+    {
+        $fieldCategories = $this->getWsdbFieldCategories();
+
+        foreach (\array_slice($this->getWsdbOptionFields(), $offset, $limit) as $row) {
+            $optionType = $this->getWsdbOptionType($row);
+            $showInListing = $row['field_display_listing'] ? 1 : 0;
+
+            $configuration = [];
+            if ($row['field_required'] && $optionType !== 'boolean') {
+                $configuration['required'] = 1;
+            }
+            if ($row['field_max_length'] > 0 && \in_array($optionType, ['text', 'textarea'])) {
+                $configuration['maxLength'] = (int)$row['field_max_length'];
+            }
+
+            $data = [
+                'databaseID' => $row['field_database_id'],
+                'optionType' => $optionType,
+                'name' => $this->getLanguageVar('content_field', $row['field_id']) ?: $row['field_key'],
+                'description' => $this->getLanguageVar('content_field', $row['field_id'], 'desc'),
+                'showOrder' => $row['field_position'],
+                'showInListing' => $showInListing,
+                'enableFiltering' => $row['field_filter'] ? 1 : 0,
+                'listingPosition' => $showInListing ? 'bottom' : null,
+                'displayPosition' => $row['field_display_display'] ? 'descriptionList' : null,
+                'configuration' => $configuration,
+            ];
+
+            $additionalData = [];
+            if (\in_array($optionType, ['checkboxes', 'radioButton', 'select'])) {
+                $additionalData['selectOptions'] = $this->getWsdbFieldChoices($row);
+            }
+            if (isset($fieldCategories[$row['field_id']])) {
+                $additionalData['categoryIDs'] = $fieldCategories[$row['field_id']];
+            }
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wsdb.option')
+                ->import($row['field_id'], $data, $additionalData);
+        }
+    }
+
+    /**
+     * Counts pages records.
+     */
+    public function countWsdbRecords()
+    {
+        $count = 0;
+        foreach (\array_keys($this->getWsdbDatabases()) as $databaseID) {
+            $count += $this->countWsdbDatabaseRecords($databaseID);
+        }
+
+        return $count;
+    }
+
+    /**
+     * Exports pages records.
+     *
+     * Records are stored in a separate table for each database, the offset is
+     * therefore mapped onto the tables in the order of the database ids.
+     *
+     * @param   integer     $offset
+     * @param   integer     $limit
+     */
+    public function exportWsdbRecords($offset, $limit)
+    {
+        foreach (\array_keys($this->getWsdbDatabases()) as $databaseID) {
+            if ($limit <= 0) {
+                break;
+            }
+
+            $count = $this->countWsdbDatabaseRecords($databaseID);
+            if ($offset >= $count) {
+                $offset -= $count;
+                continue;
+            }
+
+            $exported = $this->exportWsdbDatabaseRecords($databaseID, $offset, $limit);
+            $offset = 0;
+            $limit -= $exported;
+        }
+    }
+
+    /**
+     * Exports the records of the given database and returns the number of exported records.
+     *
+     * @param   integer     $databaseID
+     * @param   integer     $offset
+     * @param   integer     $limit
+     * @return  integer
+     */
+    private function exportWsdbDatabaseRecords($databaseID, $offset, $limit)
+    {
+        $database = $this->getWsdbDatabases()[$databaseID];
+        $titleField = 'field_' . $database['database_field_title'];
+        $contentField = 'field_' . $database['database_field_content'];
+
+        $sql = "SELECT      records.*, core_members.name AS member_name
+                FROM        " . $this->databasePrefix . "cms_custom_database_" . $databaseID . " records
+                LEFT JOIN   " . $this->databasePrefix . "core_members core_members
+                ON          core_members.member_id = records.member_id
+                ORDER BY    records.primary_id_field";
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
+        $statement->execute();
+        $records = [];
+        while ($row = $statement->fetchArray()) {
+            $records[$row['primary_id_field']] = $row;
+        }
+        if ($records === []) {
+            return 0;
+        }
+
+        $tags = [];
+        if ($database['database_tags_enabled']) {
+            $tags = $this->getTags('cms', 'records' . $databaseID, \array_keys($records));
+        }
+
+        $fields = $this->getWsdbFields()[$databaseID] ?? [];
+        $memberNames = $this->getWsdbMemberNames($records, $fields);
+
+        foreach ($records as $recordID => $row) {
+            $isFuture = $row['record_future_date'] && $row['record_publish_date'] > TIME_NOW;
+            $isDeleted = $row['record_approved'] < 0;
+
+            $data = [
+                'databaseID' => $databaseID,
+                'categoryID' => $row['category_id'] ?: null,
+                'userID' => ($row['record_is_anon'] ?? 0) ? null : ($row['member_id'] ?: null),
+                'username' => ($row['member_name'] ?? '') ?: ($row['record_author_name'] ?? ''),
+                'time' => $row['record_publish_date'] ?: $row['record_saved'],
+                'isDisabled' => (!$row['record_approved'] || $isFuture) ? 1 : 0,
+                'isDeleted' => $isDeleted ? 1 : 0,
+                'deleteTime' => $isDeleted ? TIME_NOW : 0,
+                'publicationDate' => $isFuture ? $row['record_publish_date'] : 0,
+            ];
+
+            $optionValues = [];
+            foreach ($fields as $fieldID => $field) {
+                if (!$this->isWsdbOptionField($field)) {
+                    continue;
+                }
+
+                $value = $this->getWsdbFieldValue($field, $row['field_' . $fieldID] ?? null, $memberNames);
+                if ($value !== null) {
+                    $optionValues[$fieldID] = $value;
+                }
+            }
+
+            $additionalData = [
+                'title' => (string)($row[$titleField] ?? ''),
+                'description' => self::fixMessage($row[$contentField] ?? ''),
+                'options' => $optionValues,
+                'tags' => $tags[$recordID] ?? [],
+            ];
+
+            if ($row['record_image'] && $this->fileSystemPath) {
+                $coverPhotoLocation = $this->fileSystemPath . 'uploads/' . $row['record_image'];
+                if (\is_readable($coverPhotoLocation)) {
+                    $additionalData['coverPhotoLocation'] = $coverPhotoLocation;
+                }
+            }
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wsdb.record')
+                ->import($databaseID . '-' . $recordID, $data, $additionalData);
+        }
+
+        return \count($records);
+    }
+
+    /**
+     * Counts pages record attachments.
+     */
+    public function countWsdbRecordAttachments()
+    {
+        return $this->countAttachments('cms_Records');
+    }
+
+    /**
+     * Exports pages record attachments.
+     *
+     * @param   integer     $offset
+     * @param   integer     $limit
+     */
+    public function exportWsdbRecordAttachments($offset, $limit)
+    {
+        $this->exportAttachments('cms_Records', 'com.woltlab.wsdb.record.attachment', $offset, $limit);
+    }
+
+    /**
+     * Counts pages record comments.
+     */
+    public function countWsdbRecordComments()
+    {
+        return $this->__getMaxID($this->databasePrefix . "cms_database_comments", 'comment_id');
+    }
+
+    /**
+     * Exports pages record comments.
+     *
+     * @param   integer     $offset
+     * @param   integer     $limit
+     */
+    public function exportWsdbRecordComments($offset, $limit)
+    {
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "cms_database_comments
+                WHERE       comment_id BETWEEN ? AND ?
+                ORDER BY    comment_id";
+        $statement = $this->database->prepareUnmanaged($sql);
+        $statement->execute([$offset + 1, $offset + $limit]);
+        while ($row = $statement->fetchArray()) {
+            $data = [
+                'objectID' => $row['comment_database_id'] . '-' . $row['comment_record_id'],
+                'userID' => ($row['comment_is_anon'] ?? 0) ? null : ($row['comment_user'] ?: null),
+                'username' => $row['comment_author'] ?? '',
+                'message' => self::fixMessage($row['comment_post']),
+                'time' => $row['comment_date'],
+                'isDisabled' => $row['comment_approved'] == 1 ? 0 : 1,
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wsdb.record.comment')
+                ->import($row['comment_id'], $data);
+        }
+    }
+
+    /**
+     * Counts pages record reviews.
+     */
+    public function countWsdbReviews()
+    {
+        return $this->__getMaxID($this->databasePrefix . "cms_database_reviews", 'review_id');
+    }
+
+    /**
+     * Exports pages record reviews.
+     *
+     * @param   integer     $offset
+     * @param   integer     $limit
+     */
+    public function exportWsdbReviews($offset, $limit)
+    {
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "cms_database_reviews
+                WHERE       review_id BETWEEN ? AND ?
+                ORDER BY    review_id";
+        $statement = $this->database->prepareUnmanaged($sql);
+        $statement->execute([$offset + 1, $offset + $limit]);
+        $reviews = [];
+        while ($row = $statement->fetchArray()) {
+            if ($row['review_approved'] != 1 || !isset($this->getWsdbDatabases()[$row['review_database_id']])) {
+                continue;
+            }
+
+            $reviews[] = $row;
+        }
+
+        $recordAuthors = [];
+        foreach ($reviews as $row) {
+            if ($row['review_author_response']) {
+                $recordAuthors[$row['review_database_id']][] = $row['review_item'];
+            }
+        }
+        foreach ($recordAuthors as $databaseID => $recordIDs) {
+            $recordAuthors[$databaseID] = $this->getWsdbRecordAuthors($databaseID, $recordIDs);
+        }
+
+        foreach ($reviews as $row) {
+            $data = [
+                'recordID' => $row['review_database_id'] . '-' . $row['review_item'],
+                'userID' => $row['review_author'] ?: null,
+                'username' => $row['review_author_name'] ?? '',
+                'time' => $row['review_date'],
+                'message' => self::fixMessage($row['review_content']),
+                'rating' => $row['review_rating'],
+            ];
+
+            $additionalData = [];
+            if ($row['review_author_response']) {
+                $author = $recordAuthors[$row['review_database_id']][$row['review_item']] ?? null;
+                $additionalData['response'] = [
+                    'userID' => $author['userID'] ?? null,
+                    'username' => $author['username'] ?? '',
+                    'time' => $row['review_edit_time'] ?: $row['review_date'],
+                    'message' => self::fixMessage($row['review_author_response']),
+                ];
+            }
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wsdb.review')
+                ->import($row['review_id'], $data, $additionalData);
+        }
+    }
+
+    /**
+     * Counts pages record likes.
+     */
+    public function countWsdbRecordLikes()
+    {
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "core_reputation_index
+                WHERE   app = ?
+                    AND type LIKE ?";
+        $statement = $this->database->prepareUnmanaged($sql);
+        $statement->execute(['cms', 'record\_id\_%']);
+        $row = $statement->fetchArray();
+
+        return $row['count'];
+    }
+
+    /**
+     * Exports pages record likes.
+     *
+     * @param   integer     $offset
+     * @param   integer     $limit
+     */
+    public function exportWsdbRecordLikes($offset, $limit)
+    {
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "core_reputation_index
+                WHERE       app = ?
+                        AND type LIKE ?
+                ORDER BY    id";
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
+        $statement->execute(['cms', 'record\_id\_%']);
+        $likes = [];
+        $recordIDs = [];
+        while ($row = $statement->fetchArray()) {
+            $databaseID = (int)\substr($row['type'], \strlen('record_id_'));
+            if (!isset($this->getWsdbDatabases()[$databaseID])) {
+                continue;
+            }
+
+            $row['databaseID'] = $databaseID;
+            $likes[] = $row;
+            $recordIDs[$databaseID][] = $row['type_id'];
+        }
+
+        $recordAuthors = [];
+        foreach ($recordIDs as $databaseID => $ids) {
+            $recordAuthors[$databaseID] = $this->getWsdbRecordAuthors($databaseID, $ids);
+        }
+
+        foreach ($likes as $row) {
+            $data = [
+                'objectID' => $row['databaseID'] . '-' . $row['type_id'],
+                'objectUserID' => $recordAuthors[$row['databaseID']][$row['type_id']]['userID'] ?? null,
+                'userID' => $row['member_id'],
+                'likeValue' => Like::LIKE,
+                'time' => $row['rep_date'],
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wsdb.record.like')
+                ->import(0, $data);
+        }
+    }
+
+    /**
+     * Counts watched pages categories.
+     */
+    public function countWsdbCategoryWatches()
+    {
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "core_follow
+                WHERE   follow_app = ?
+                    AND follow_area LIKE ?";
+        $statement = $this->database->prepareUnmanaged($sql);
+        $statement->execute(['cms', 'categories%']);
+        $row = $statement->fetchArray();
+
+        return $row['count'];
+    }
+
+    /**
+     * Exports watched pages categories.
+     *
+     * @param   integer     $offset
+     * @param   integer     $limit
+     */
+    public function exportWsdbCategoryWatches($offset, $limit)
+    {
+        $sql = "SELECT      *
+                FROM        " . $this->databasePrefix . "core_follow
+                WHERE       follow_app = ?
+                        AND follow_area LIKE ?
+                ORDER BY    follow_id";
+        $statement = $this->database->prepareUnmanaged($sql, $limit, $offset);
+        $statement->execute(['cms', 'categories%']);
+        while ($row = $statement->fetchArray()) {
+            $data = [
+                'objectID' => $row['follow_rel_id'],
+                'userID' => $row['follow_member_id'],
+            ];
+
+            ImportHandler::getInstance()
+                ->getImporter('com.woltlab.wsdb.category.watch')
+                ->import(0, $data);
+        }
+    }
+
+    /**
+     * Returns the id of the pages database an attachment belongs to.
+     *
+     * @param   ?string     $id3
+     * @return  integer
+     */
+    private function getWsdbAttachmentDatabaseID($id3)
+    {
+        if ($id3 !== null && \preg_match('/(\d+)/', $id3, $match)) {
+            $databaseID = (int)$match[1];
+            if (isset($this->getWsdbDatabases()[$databaseID])) {
+                return $databaseID;
+            }
+        }
+
+        // fall back to the only database, if there is just one
+        $databaseIDs = \array_keys($this->getWsdbDatabases());
+        if (\count($databaseIDs) === 1) {
+            return $databaseIDs[0];
+        }
+
+        return 0;
+    }
+
+    /**
+     * Returns the pages databases.
+     *
+     * @return  array<int, array<string, mixed>>
+     */
+    private function getWsdbDatabases()
+    {
+        if (!isset($this->wsdbDatabaseCache)) {
+            $this->wsdbDatabaseCache = [];
+
+            $sql = "SELECT      *
+                    FROM        " . $this->databasePrefix . "cms_databases
+                    ORDER BY    database_id";
+            $statement = $this->database->prepareUnmanaged($sql);
+            $statement->execute();
+            while ($row = $statement->fetchArray()) {
+                $this->wsdbDatabaseCache[$row['database_id']] = $row;
+            }
+        }
+
+        return $this->wsdbDatabaseCache;
+    }
+
+    /**
+     * Returns the number of records of the given pages database.
+     *
+     * @param   integer     $databaseID
+     * @return  integer
+     */
+    private function countWsdbDatabaseRecords($databaseID)
+    {
+        $sql = "SELECT  COUNT(*) AS count
+                FROM    " . $this->databasePrefix . "cms_custom_database_" . $databaseID;
+        $statement = $this->database->prepareUnmanaged($sql);
+        $statement->execute();
+        $row = $statement->fetchArray();
+
+        return $row['count'];
+    }
+
+    /**
+     * Returns the fields of all pages databases.
+     *
+     * @return  array<int, array<int, array<string, mixed>>>
+     */
+    private function getWsdbFields()
+    {
+        if (!isset($this->wsdbFieldCache)) {
+            $this->wsdbFieldCache = [];
+
+            $sql = "SELECT      *
+                    FROM        " . $this->databasePrefix . "cms_database_fields
+                    ORDER BY    field_database_id, field_position, field_id";
+            $statement = $this->database->prepareUnmanaged($sql);
+            $statement->execute();
+            while ($row = $statement->fetchArray()) {
+                if (!isset($this->getWsdbDatabases()[$row['field_database_id']])) {
+                    continue;
+                }
+
+                $this->wsdbFieldCache[$row['field_database_id']][$row['field_id']] = $row;
+            }
+        }
+
+        return $this->wsdbFieldCache;
+    }
+
+    /**
+     * Returns the fields that are imported as options.
+     *
+     * @return  array<int, array<string, mixed>>
+     */
+    private function getWsdbOptionFields()
+    {
+        $fields = [];
+        foreach ($this->getWsdbFields() as $databaseFields) {
+            foreach ($databaseFields as $field) {
+                if ($this->isWsdbOptionField($field)) {
+                    $fields[] = $field;
+                }
+            }
+        }
+
+        return $fields;
+    }
+
+    /**
+     * Returns true if the given field is imported as an option. The title and the
+     * content field are imported as the title and the description of the record.
+     *
+     * @param   array<string, mixed>    $field
+     * @return  boolean
+     */
+    private function isWsdbOptionField(array $field)
+    {
+        $database = $this->getWsdbDatabases()[$field['field_database_id']];
+        if (
+            $field['field_id'] == $database['database_field_title']
+            || $field['field_id'] == $database['database_field_content']
+        ) {
+            return false;
+        }
+
+        return $this->getWsdbOptionType($field) !== '';
+    }
+
+    /**
+     * Returns the option type for the given field or an empty string if the field
+     * type is not supported.
+     *
+     * @param   array<string, mixed>    $field
+     * @return  string
+     */
+    private function getWsdbOptionType(array $field)
+    {
+        switch ($field['field_type']) {
+            case 'Text':
+            case 'Tel':
+            case 'Address':
+            case 'Member':
+                return 'text';
+
+            case 'TextArea':
+                return 'textarea';
+
+            case 'Editor':
+                return 'wysiwyg';
+
+            case 'Codemirror':
+                return 'sourceCode';
+
+            case 'Radio':
+                return 'radioButton';
+
+            case 'Select':
+                return $field['field_is_multiple'] ? 'checkboxes' : 'select';
+
+            case 'CheckboxSet':
+                return 'checkboxes';
+
+            case 'Checkbox':
+            case 'YesNo':
+                return 'boolean';
+
+            case 'Date':
+                return 'date';
+
+            case 'Number':
+                return 'float';
+
+            case 'Url':
+            case 'Youtube':
+            case 'Spotify':
+            case 'Soundcloud':
+                return 'url';
+
+            case 'Email':
+                return 'email';
+
+            default:
+                // Item, Upload, Poll, Password and unknown field types
+                return '';
+        }
+    }
+
+    /**
+     * Returns the choices of the given selection field.
+     *
+     * @param   array<string, mixed>    $field
+     * @return  array<string, string>
+     */
+    private function getWsdbFieldChoices(array $field)
+    {
+        $choices = [];
+        $extra = $field['field_extra'] ? @\json_decode($field['field_extra'], true) : null;
+        if (\is_array($extra)) {
+            foreach ($extra as $key => $value) {
+                if (\is_array($value)) {
+                    // newer versions store the choices as key/value pairs
+                    $key = $value['key'] ?? $key;
+                    $value = $value['value'] ?? '';
+                }
+
+                $choices[(string)$key] = (string)$value;
+            }
+        }
+
+        return $choices;
+    }
+
+    /**
+     * Returns the ids of the categories an option is limited to (field id => category ids).
+     * Fields that are available in all categories are omitted.
+     *
+     * @return  array<int, int[]>
+     */
+    private function getWsdbFieldCategories()
+    {
+        $sql = "SELECT  category_id, category_database_id, category_fields
+                FROM    " . $this->databasePrefix . "cms_database_categories";
+        $statement = $this->database->prepareUnmanaged($sql);
+        $statement->execute();
+        $categories = [];
+        while ($row = $statement->fetchArray()) {
+            $categories[] = $row;
+        }
+
+        $fieldCategories = [];
+        foreach ($this->getWsdbFields() as $databaseID => $fields) {
+            $databaseCategories = \array_filter(
+                $categories,
+                static fn ($category) => $category['category_database_id'] == $databaseID
+            );
+
+            foreach (\array_keys($fields) as $fieldID) {
+                $categoryIDs = [];
+                $isLimited = false;
+                foreach ($databaseCategories as $category) {
+                    $allowedFields = null;
+                    if ($category['category_fields'] && $category['category_fields'] !== '*') {
+                        $allowedFields = @\json_decode($category['category_fields'], true);
+                    }
+
+                    if (\is_array($allowedFields) && !\in_array($fieldID, $allowedFields)) {
+                        $isLimited = true;
+                    } else {
+                        $categoryIDs[] = $category['category_id'];
+                    }
+                }
+
+                if ($isLimited && $categoryIDs !== []) {
+                    $fieldCategories[$fieldID] = $categoryIDs;
+                }
+            }
+        }
+
+        return $fieldCategories;
+    }
+
+    /**
+     * Returns the value of a field in the format of the matching option type.
+     *
+     * @param   array<string, mixed>    $field
+     * @param   mixed                   $value
+     * @param   array<int, string>      $memberNames
+     * @return  mixed
+     */
+    private function getWsdbFieldValue(array $field, $value, array $memberNames)
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        switch ($field['field_type']) {
+            case 'Member':
+                $names = [];
+                foreach (\preg_split('/[\s,]+/', $value, -1, \PREG_SPLIT_NO_EMPTY) as $memberID) {
+                    if (isset($memberNames[$memberID])) {
+                        $names[] = $memberNames[$memberID];
+                    }
+                }
+
+                return $names !== [] ? \implode(', ', $names) : null;
+
+            case 'Editor':
+                return self::fixMessage($value);
+
+            case 'Checkbox':
+            case 'YesNo':
+                return $value ? 1 : 0;
+
+            case 'Date':
+                if (\is_numeric($value)) {
+                    return \gmdate('Y-m-d', (int)$value);
+                }
+                $time = \strtotime($value);
+
+                return $time !== false ? \gmdate('Y-m-d', $time) : null;
+
+            case 'Number':
+                return \is_numeric($value) ? (float)$value : null;
+
+            case 'Select':
+            case 'CheckboxSet':
+                return \implode(',', \array_filter(
+                    \array_map('trim', \explode(',', $value)),
+                    static fn ($choice) => $choice !== ''
+                ));
+
+            case 'Address':
+                $address = @\json_decode($value, true);
+                if (\is_array($address)) {
+                    $parts = [];
+                    \array_walk_recursive($address, static function ($part) use (&$parts) {
+                        if (\is_scalar($part) && (string)$part !== '') {
+                            $parts[] = (string)$part;
+                        }
+                    });
+
+                    return \implode(', ', $parts);
+                }
+
+                return $value;
+
+            default:
+                return $value;
+        }
+    }
+
+    /**
+     * Returns the names of the members referenced in member fields of the given records.
+     *
+     * @param   array<int, array<string, mixed>>    $records
+     * @param   array<int, array<string, mixed>>    $fields
+     * @return  array<int, string>
+     */
+    private function getWsdbMemberNames(array $records, array $fields)
+    {
+        $memberIDs = [];
+        foreach ($fields as $fieldID => $field) {
+            if ($field['field_type'] !== 'Member') {
+                continue;
+            }
+
+            foreach ($records as $row) {
+                if (!empty($row['field_' . $fieldID])) {
+                    foreach (\preg_split('/[\s,]+/', $row['field_' . $fieldID], -1, \PREG_SPLIT_NO_EMPTY) as $memberID) {
+                        $memberIDs[] = (int)$memberID;
+                    }
+                }
+            }
+        }
+        $memberIDs = \array_unique(\array_filter($memberIDs));
+        if ($memberIDs === []) {
+            return [];
+        }
+
+        $conditionBuilder = new PreparedStatementConditionBuilder();
+        $conditionBuilder->add('member_id IN (?)', [$memberIDs]);
+
+        $sql = "SELECT  member_id, name
+                FROM    " . $this->databasePrefix . "core_members
+                " . $conditionBuilder;
+        $statement = $this->database->prepareUnmanaged($sql);
+        $statement->execute($conditionBuilder->getParameters());
+
+        return $statement->fetchMap('member_id', 'name');
+    }
+
+    /**
+     * Returns the authors of the given records (record id => userID, username).
+     *
+     * @param   integer     $databaseID
+     * @param   integer[]   $recordIDs
+     * @return  array<int, array{userID: ?int, username: string}>
+     */
+    private function getWsdbRecordAuthors($databaseID, array $recordIDs)
+    {
+        $conditionBuilder = new PreparedStatementConditionBuilder();
+        $conditionBuilder->add('records.primary_id_field IN (?)', [\array_unique($recordIDs)]);
+
+        $sql = "SELECT      records.primary_id_field, records.member_id, records.record_author_name,
+                            core_members.name AS member_name
+                FROM        " . $this->databasePrefix . "cms_custom_database_" . $databaseID . " records
+                LEFT JOIN   " . $this->databasePrefix . "core_members core_members
+                ON          core_members.member_id = records.member_id
+                " . $conditionBuilder;
+        $statement = $this->database->prepareUnmanaged($sql);
+        $statement->execute($conditionBuilder->getParameters());
+        $authors = [];
+        while ($row = $statement->fetchArray()) {
+            $authors[$row['primary_id_field']] = [
+                'userID' => $row['member_id'] ?: null,
+                'username' => ($row['member_name'] ?? '') ?: ($row['record_author_name'] ?? ''),
+            ];
+        }
+
+        return $authors;
     }
 
     /**
