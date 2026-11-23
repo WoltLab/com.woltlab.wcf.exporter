@@ -3389,6 +3389,17 @@ final class WBB4xExporter extends AbstractExporter
                 WHERE       language_item.languageItem = ?";
         $languageStatement = $this->database->prepareUnmanaged($sql);
 
+        // Since 6.3, the license text is stored in the `*_l10n` table, a
+        // `languageID` of `NULL` denotes a monolingual value.
+        $hasL10n = Package::compareVersion($this->getPackageVersion('com.woltlab.filebase'), '6.3.0 Alpha 1', '>=');
+        if ($hasL10n) {
+            $sql = "SELECT      l10n.languageID, l10n.text, language.languageCode
+                    FROM        filebase" . $this->dbNo . "_license_l10n l10n
+                    LEFT JOIN   wcf" . $this->dbNo . "_language language ON (language.languageID = l10n.languageID)
+                    WHERE       l10n.licenseID = ?";
+            $l10nStatement = $this->database->prepareUnmanaged($sql);
+        }
+
         while ($row = $statement->fetchArray()) {
             $additionalData = [];
             $data = [
@@ -3398,7 +3409,18 @@ final class WBB4xExporter extends AbstractExporter
             ];
             if (\version_compare($this->getPackageVersion('com.woltlab.filebase'), '5.2.0 Alpha 1', '>=')) {
                 // support licenseType `text`
-                if ($row['licenseType'] === License::LICENSE_TYPE_TEXT) {
+                if ($row['licenseType'] === License::LICENSE_TYPE_TEXT && $hasL10n) {
+                    $data['licenseType'] = License::LICENSE_TYPE_TEXT;
+
+                    $l10nStatement->execute([$row['licenseID']]);
+                    while ($l10nRow = $l10nStatement->fetchArray()) {
+                        if ($l10nRow['languageID'] === null) {
+                            $data['licenseText'] = $l10nRow['text'];
+                        } elseif ($l10nRow['languageCode'] !== null) {
+                            $additionalData['licenseText'][$l10nRow['languageCode']] = $l10nRow['text'];
+                        }
+                    }
+                } elseif ($row['licenseType'] === License::LICENSE_TYPE_TEXT) {
                     $data['licenseType'] = License::LICENSE_TYPE_TEXT;
                     $data['licenseText'] = $row['licenseText'];
 
